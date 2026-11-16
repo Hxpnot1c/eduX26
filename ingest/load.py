@@ -1,7 +1,7 @@
 """Load a course pack into content.db.
 
 Recreates the database from content_schema.sql, inserts rows (unknown columns into
-extra), fills question_node, id_map and note_fts, computes node weights, applies the
+extra), fills question_node, id_map, note_fts and node_fts, computes node weights, applies the
 teacher feedback overlay and prints a load report.
 """
 
@@ -70,6 +70,7 @@ def load_pack(
         report.feedback_not_applied = apply_feedback(conn, feedback_csv, report.course_id)
         fill_question_node(conn)
         build_note_index(conn)
+        build_node_index(conn)
         compute_weights(conn, settings)
         report.suggested_links = compute_link_weights(conn, settings)
         report.counts = count_rows(conn)
@@ -448,6 +449,14 @@ def suggest_links(conn: sqlite3.Connection, tree: Tree, questions: dict[str, tup
                     linked.update({(p, q), (q, p)})
     return [f"{p} <-> {q}: tested together in {n} questions"
             for (p, q), n in sorted(together.items(), key=lambda kv: -kv[1]) if n >= min_questions and (p, q) not in linked]
+
+
+def build_node_index(conn: sqlite3.Connection) -> None:
+    """Fill node_fts from each node's name, aliases and description, so students' own words find nodes."""
+    conn.execute("DELETE FROM node_fts")
+    for nid, name, aliases, description in conn.execute("SELECT id, name, aliases, description FROM node").fetchall():
+        conn.execute("INSERT INTO node_fts (id, name, aliases, description) VALUES (?, ?, ?, ?)",
+                     (nid, name, " ".join(split_list(aliases)), description))
 
 
 def count_rows(conn: sqlite3.Connection) -> dict[str, int]:

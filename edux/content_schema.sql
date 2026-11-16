@@ -15,6 +15,7 @@ CREATE TABLE note (id TEXT PRIMARY KEY, node_id TEXT NOT NULL, summary TEXT NOT 
   source_id TEXT, location TEXT,
   status TEXT DEFAULT 'draft', flag TEXT DEFAULT '', updated_by TEXT DEFAULT 'extraction', updated_at TEXT, extra TEXT);
 CREATE VIRTUAL TABLE note_fts USING fts5(id UNINDEXED, body, tokenize = 'porter');
+CREATE VIRTUAL TABLE node_fts USING fts5(id UNINDEXED, name, aliases, description, tokenize = 'porter');
 CREATE TABLE misconception (id TEXT PRIMARY KEY, node_id TEXT NOT NULL, wrong_idea TEXT NOT NULL, correction TEXT NOT NULL, source_ids TEXT DEFAULT '',
   status TEXT DEFAULT 'draft', flag TEXT DEFAULT '', updated_by TEXT DEFAULT 'extraction', updated_at TEXT, extra TEXT);
 CREATE TABLE mark_point (id TEXT PRIMARY KEY, node_id TEXT NOT NULL, point TEXT NOT NULL, exemplar TEXT DEFAULT '', source_ids TEXT NOT NULL,
