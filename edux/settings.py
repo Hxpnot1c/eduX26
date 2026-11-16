@@ -108,6 +108,15 @@ class TeachingNote:
 
 
 @dataclass(frozen=True)
+class Prequestion:
+    enabled: bool
+    max_options: int
+    min_distractors: int
+    exchange_weight: float
+    full_weight_at: float
+
+
+@dataclass(frozen=True)
 class Session:
     gap_minutes: float
     fatigue_min_minutes: float
@@ -162,6 +171,7 @@ class Settings:
     scheduling: Scheduling
     support: Support
     teaching_note: TeachingNote
+    prequestion: Prequestion
     session: Session
     difficulty: Difficulty
     link_weight: LinkWeight

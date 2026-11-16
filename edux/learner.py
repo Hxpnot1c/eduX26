@@ -452,6 +452,16 @@ def session_start(conn: sqlite3.Connection, student_id: str, ts: str) -> str:
     return _event_ts(start)
 
 
+def prequestion_weight(conn: sqlite3.Connection, student_id: str, part_id: str, ts: str) -> float:
+    """How much a pre-question answer counts, 0–1, from how much the part has been covered so far:
+    min(1, (exchanges on it × exchange_weight + n_evidence) / full_weight_at). 0 means never taught."""
+    s = _settings().prequestion
+    exchanges = sum(1 for r in conn.execute("SELECT node_ids FROM exchange_log WHERE student_id = ? AND ts <= ?",
+                                            (student_id, ts)) if part_id in _tagged_parts(split(r["node_ids"])))
+    state = _load_state(conn, student_id, part_id, ts)
+    return min(1.0, (exchanges * s.exchange_weight + state["n_evidence"]) / s.full_weight_at)
+
+
 def apply_evidence_event(event: dict) -> None:
     """Apply one evidence event: score -> correct, the immediate-recall discount for chat evidence,
     surprise against the model's expectation (stored in evidence_derived), misconception activation
@@ -464,10 +474,13 @@ def apply_evidence_event(event: dict) -> None:
     part_id = node["id"]
     correct = event["score"] >= s.bkt.correct_share
     evidence_type = event["evidence_type"]
-    if event["origin"] == "chat" and _recently_taught(conn, student_id, part_id, ts):
-        evidence_type = "immediate"
+    if evidence_type == "prequestion":
+        weight = prequestion_weight(conn, student_id, part_id, ts)
+    else:
+        weight = 1.0
+        if event["origin"] == "chat" and _recently_taught(conn, student_id, part_id, ts):
+            evidence_type = "immediate"
     p_before = _p_at(_load_state(conn, student_id, part_id, ts), ts)
-    weight = 1.0
     surprise = weight * (event["score"] - p_before)
     conn.execute(
         """INSERT OR REPLACE INTO evidence_derived (evidence_id, student_id, session_id, p_before, surprise, weight, fatigued)
@@ -475,10 +488,13 @@ def apply_evidence_event(event: dict) -> None:
         (event["id"], student_id, session_start(conn, student_id, ts), p_before, surprise, weight))
     if not correct:
         _activate_misconceptions(conn, student_id, split(event.get("misconception_ids")), ts)
-    _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts)
+    if weight > 0:  # an untaught pre-question is diagnostic only
+        _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts, weight=weight)
 
 
-def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, evidence_type: str, correct: bool, ts: str) -> None:
+def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, evidence_type: str, correct: bool, ts: str,
+                    weight: float = 1.0) -> None:
+    """The BKT update on one part; weight (0–1) scales how far p_known moves towards the BKT result."""
     s = _settings()
     if evidence_type not in s.bkt.evidence:
         raise ValueError(f"evidence_type must be one of {', '.join(s.bkt.evidence)}")
@@ -499,6 +515,7 @@ def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, evi
     else:
         p = before * slip / (before * slip + (1 - before) * (1 - guess))
     p += (1 - p) * s.bkt.learn_rate
+    p = before + weight * (p - before)
 
     factor = s.decay.on_success if correct else s.decay.on_failure
     state["half_life_days"] = max(s.decay.min_half_life_days, state["half_life_days"] * factor)
