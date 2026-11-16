@@ -1,11 +1,15 @@
 """Load settings.toml and context.toml into typed dataclasses and compute settings_hash.
 
 Every teaching or scoring number lives in settings.toml; what the chatbot is given
-lives in context.toml and text/. Missing or mistyped keys fail loudly at startup.
+lives in context.toml and text/. Missing, unknown or mistyped keys fail loudly at startup.
 """
 
 from __future__ import annotations
 
+import dataclasses
+import hashlib
+import tomllib
+import typing
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -15,36 +19,210 @@ CONTEXT_PATH = ROOT / "context.toml"
 TEXT_DIR = ROOT / "text"
 
 
+class SettingsError(ValueError):
+    """A settings or context file is missing a key, has an unknown key or a wrong type."""
+
+
+@dataclass(frozen=True)
+class Levels:
+    new: float
+    secure: float
+
+
+@dataclass(frozen=True)
+class SlipGuess:
+    slip: float
+    guess: float
+
+
+@dataclass(frozen=True)
+class Bkt:
+    prior: float
+    learn_rate: float
+    correct_share: float
+    evidence: dict[str, SlipGuess]
+
+
+@dataclass(frozen=True)
+class Nudges:
+    depth: dict[str, float]
+    engagement: dict[str, float]
+    concept_tag_strength: float
+
+
+@dataclass(frozen=True)
+class Offloading:
+    guess_after: float
+    checks_discounted: int
+
+
+@dataclass(frozen=True)
+class Decay:
+    base_half_life_days: float
+    on_success: float
+    on_failure: float
+    min_half_life_days: float
+
+
+@dataclass(frozen=True)
+class Propagation:
+    prereq_boost: float
+    queue_band: tuple[float, float]
+
+
+@dataclass(frozen=True)
+class Importance:
+    w_exam: float
+    w_dependents: float
+
+
+@dataclass(frozen=True)
+class Scheduling:
+    share_far: float
+    share_mid: float
+    share_near: float
+    min_gap_days: float
+    just_show_me_gap_days: float
+    max_reviews_per_reply: int
+    overconfident_after: int
+    overconfident_below: float
+
+
+@dataclass(frozen=True)
+class Support:
+    worked_example_below: float
+    hint_below: float
+
+
+@dataclass(frozen=True)
+class TeachingNote:
+    max_words: int
+    exam_close_days: int
+    approach_min_records: int
+
+
 @dataclass(frozen=True)
 class Settings:
-    """Typed view of settings.toml (protocol, levels, bkt, nudges, decay, scheduling, ...)."""
+    """Typed view of settings.toml."""
+
+    protocol: str
+    levels: Levels
+    bkt: Bkt
+    nudges: Nudges
+    offloading: Offloading
+    decay: Decay
+    propagation: Propagation
+    importance: Importance
+    authority: dict[str, int]
+    scheduling: Scheduling
+    support: Support
+    teaching_note: TeachingNote
+
+
+@dataclass(frozen=True)
+class Profile:
+    blocks: list[str]
 
 
 @dataclass(frozen=True)
 class ContextConfig:
     """Typed view of context.toml: default profile, profiles and their blocks, limits."""
 
+    default_profile: str
+    profiles: dict[str, Profile]
+    limits: dict[str, int]
+
+
+def _convert(value: object, tp: object, where: str) -> object:
+    """Check value against the type hint tp and build dataclasses; raise SettingsError on mismatch."""
+    origin = typing.get_origin(tp)
+    if dataclasses.is_dataclass(tp):
+        if not isinstance(value, dict):
+            raise SettingsError(f"{where}: expected a table")
+        return _build(tp, value, where)
+    if origin is dict:
+        _, value_tp = typing.get_args(tp)
+        if not isinstance(value, dict):
+            raise SettingsError(f"{where}: expected a table")
+        return {k: _convert(v, value_tp, f"{where}.{k}") for k, v in value.items()}
+    if origin in (list, tuple):
+        args = typing.get_args(tp)
+        if not isinstance(value, list):
+            raise SettingsError(f"{where}: expected an array")
+        if origin is tuple:
+            if len(value) != len(args):
+                raise SettingsError(f"{where}: expected {len(args)} items, got {len(value)}")
+            return tuple(_convert(v, a, f"{where}[{i}]") for i, (v, a) in enumerate(zip(value, args)))
+        return [_convert(v, args[0], f"{where}[{i}]") for i, v in enumerate(value)]
+    if tp is float:
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise SettingsError(f"{where}: expected a number, got {value!r}")
+        return float(value)
+    if tp is int:
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise SettingsError(f"{where}: expected an integer, got {value!r}")
+        return value
+    if tp is str:
+        if not isinstance(value, str):
+            raise SettingsError(f"{where}: expected a string, got {value!r}")
+        return value
+    if tp is bool:
+        if not isinstance(value, bool):
+            raise SettingsError(f"{where}: expected true or false, got {value!r}")
+        return value
+    raise SettingsError(f"{where}: unsupported type {tp}")
+
+
+def _build(cls: type, data: dict, where: str) -> object:
+    hints = typing.get_type_hints(cls)
+    names = [f.name for f in dataclasses.fields(cls)]
+    missing = [n for n in names if n not in data]
+    unknown = [k for k in data if k not in names]
+    if missing:
+        raise SettingsError(f"{where}: missing {', '.join(missing)}")
+    if unknown:
+        raise SettingsError(f"{where}: unknown {', '.join(unknown)}")
+    prefix = f"{where}." if where else ""
+    return cls(**{n: _convert(data[n], hints[n], f"{prefix}{n}") for n in names})
+
+
+def _read_toml(path: Path) -> dict:
+    try:
+        with path.open("rb") as f:
+            return tomllib.load(f)
+    except FileNotFoundError as e:
+        raise SettingsError(f"{path} not found") from e
+    except tomllib.TOMLDecodeError as e:
+        raise SettingsError(f"{path}: {e}") from e
+
 
 def load_settings(path: Path = SETTINGS_PATH) -> Settings:
-    """Parse settings.toml, raising on a missing or mistyped key."""
-    raise NotImplementedError
+    """Parse settings.toml, raising on a missing, unknown or mistyped key."""
+    settings = _build(Settings, _read_toml(path), "")
+    if not 0 < settings.levels.new < settings.levels.secure < 1:
+        raise SettingsError("levels: expected 0 < new < secure < 1")
+    return settings
 
 
 def load_context(path: Path = CONTEXT_PATH) -> ContextConfig:
-    """Parse context.toml, raising on a missing or mistyped key."""
-    raise NotImplementedError
+    """Parse context.toml, raising on a missing, unknown or mistyped key."""
+    context = _build(ContextConfig, _read_toml(path), "")
+    if context.default_profile not in context.profiles:
+        raise SettingsError(f"default_profile: no profile named {context.default_profile!r}")
+    return context
 
 
 def settings_hash(settings_path: Path = SETTINGS_PATH, context_path: Path = CONTEXT_PATH) -> str:
     """First 8 hex characters of the SHA-256 of settings.toml plus context.toml."""
-    raise NotImplementedError
+    digest = hashlib.sha256(settings_path.read_bytes() + context_path.read_bytes())
+    return digest.hexdigest()[:8]
 
 
 def protocol_label(settings: Settings, profile: str) -> str:
     """Protocol recorded on events: the settings protocol plus the context profile, e.g. "v0.1/full"."""
-    raise NotImplementedError
+    return f"{settings.protocol}/{profile}"
 
 
 def read_text(relative_path: str) -> str:
     """Read a markdown file from text/, e.g. "tools/log_exchange.md"."""
-    raise NotImplementedError
+    return (TEXT_DIR / relative_path).read_text(encoding="utf-8")
