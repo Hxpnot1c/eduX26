@@ -9,11 +9,13 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
 from edux import db
+from edux.settings import Settings, load_settings
 from ingest import registry
 from ingest.registry import FileSpec, split_list
 from ingest.validate import Issue, Table, read_pack, validate_tables
@@ -38,9 +40,12 @@ class LoadReport:
         return not self.errors
 
 
-def load_pack(pack_dir: Path, db_path: Path | None = None, feedback_dir: Path | None = None) -> LoadReport:
+def load_pack(
+    pack_dir: Path, db_path: Path | None = None, feedback_dir: Path | None = None, settings: Settings | None = None
+) -> LoadReport:
     """Validate and load a pack into a fresh content.db; return the report."""
     db_path = db_path or db.content_db_path()
+    settings = settings or load_settings()
     report = LoadReport(pack_path=str(pack_dir), db_path=str(db_path))
     if not pack_dir.is_dir():
         report.errors.append(Issue(str(pack_dir), None, "course pack folder not found"))
@@ -58,6 +63,7 @@ def load_pack(pack_dir: Path, db_path: Path | None = None, feedback_dir: Path | 
         insert_rows(conn, tables, report.course_id)
         fill_question_node(conn)
         build_note_index(conn)
+        compute_weights(conn, settings)
         report.counts = count_rows(conn)
         write_load_info(conn, report)
         conn.commit()
@@ -132,6 +138,123 @@ def build_note_index(conn: sqlite3.Connection) -> None:
     for nid, summary, points, wording in conn.execute("SELECT id, summary, key_points, key_wording FROM note").fetchall():
         body = "\n".join([summary or "", *split_list(points), *split_list(wording)])
         conn.execute("INSERT INTO note_fts (id, body) VALUES (?, ?)", (nid, body))
+
+
+class Tree:
+    """The non-rejected node tree, with parts under each node."""
+
+    def __init__(self, conn: sqlite3.Connection):
+        rows = conn.execute("SELECT id, parent_id, level FROM node WHERE status != 'rejected'").fetchall()
+        self.level = {r["id"]: r["level"] for r in rows}
+        self.parent = {r["id"]: r["parent_id"] for r in rows if r["parent_id"] in self.level}
+        self.children: dict[str, list[str]] = defaultdict(list)
+        for child, parent in self.parent.items():
+            self.children[parent].append(child)
+        self._parts: dict[str, list[str]] = {}
+
+    def __contains__(self, node_id: str) -> bool:
+        return node_id in self.level
+
+    def parts_under(self, node_id: str) -> list[str]:
+        """Parts in a node's subtree; a part gives itself."""
+        if node_id not in self._parts:
+            if self.level.get(node_id) == "part":
+                self._parts[node_id] = [node_id]
+            else:
+                self._parts[node_id] = [p for c in self.children.get(node_id, []) for p in self.parts_under(c)]
+        return self._parts[node_id]
+
+    def targets(self, node_id: str) -> list[str]:
+        """Where something tagged to a node lands: its parts, or the node itself if it has none."""
+        return self.parts_under(node_id) or [node_id]
+
+    def ancestors_and_self(self, node_id: str) -> list[str]:
+        chain = [node_id]
+        while chain[-1] in self.parent and self.parent[chain[-1]] not in chain:
+            chain.append(self.parent[chain[-1]])
+        return chain
+
+
+def percentile_ranks(values: dict[str, float]) -> dict[str, float]:
+    """Percentile rank (0–1) of each value among the others; ties share the mid rank, a lone value gets 0.5."""
+    n = len(values)
+    if n < 2:
+        return {k: 0.5 for k in values}
+    ordered = sorted(values.values())
+    ranks = {}
+    for key, v in values.items():
+        less = sum(1 for x in ordered if x < v)
+        equal = sum(1 for x in ordered if x == v)
+        ranks[key] = (less + (equal - 1) / 2) / (n - 1)
+    return ranks
+
+
+def question_marks_by_part(conn: sqlite3.Connection, tree: Tree) -> dict[str, float]:
+    """Marks of non-rejected questions split equally across their tagged nodes, then across each node's parts."""
+    marks: dict[str, float] = defaultdict(float)
+    for marks_total, node_ids in conn.execute("SELECT marks, node_ids FROM question WHERE status != 'rejected'"):
+        tags = [n for n in split_list(node_ids) if n in tree]
+        for tag in tags:
+            targets = tree.targets(tag)
+            for target in targets:
+                marks[target] += marks_total / len(tags) / len(targets)
+    return marks
+
+
+def prerequisite_reach(conn: sqlite3.Connection, tree: Tree) -> dict[str, set[str]]:
+    """For each part, the parts reachable from it through prerequisite edges (concept edges apply to their parts)."""
+    graph: dict[str, set[str]] = defaultdict(set)
+    rows = conn.execute("SELECT from_id, to_id FROM edge WHERE type = 'prerequisite' AND status != 'rejected'")
+    for from_id, to_id in rows:
+        if from_id in tree and to_id in tree:
+            for a in tree.targets(from_id):
+                graph[a].update(tree.targets(to_id))
+    reach: dict[str, set[str]] = {}
+    for start in graph:
+        seen, stack = set(), [start]
+        while stack:
+            for nxt in graph.get(stack.pop(), ()):
+                if nxt not in seen:
+                    seen.add(nxt)
+                    stack.append(nxt)
+        reach[start] = seen
+    return reach
+
+
+def compute_weights(conn: sqlite3.Connection, settings: Settings) -> None:
+    """Fill node_weight with exam_weight, dependents and importance.
+
+    exam_weight: share of all question marks tagged to the node or its descendants (the course sums to 1).
+    dependents: parts reachable from the node's parts through prerequisite edges.
+    importance: w_exam x percentile(exam_weight) + w_dependents x percentile(dependents), ranked within each level.
+    """
+    tree = Tree(conn)
+    part_marks = question_marks_by_part(conn, tree)
+    total = sum(part_marks.values())
+    raw: dict[str, float] = defaultdict(float)
+    for target, m in part_marks.items():
+        for node_id in tree.ancestors_and_self(target):
+            raw[node_id] += m
+    reach = prerequisite_reach(conn, tree)
+
+    exam_weight, dependents = {}, {}
+    for node_id in tree.level:
+        exam_weight[node_id] = raw[node_id] / total if total else 0.0
+        own = set(tree.targets(node_id))
+        reached = set().union(*(reach.get(p, set()) for p in own))
+        dependents[node_id] = len(reached - own)
+
+    importance = {}
+    for level in set(tree.level.values()):
+        ids = [i for i, lv in tree.level.items() if lv == level]
+        pe = percentile_ranks({i: exam_weight[i] for i in ids})
+        pd = percentile_ranks({i: float(dependents[i]) for i in ids})
+        for i in ids:
+            importance[i] = settings.importance.w_exam * pe[i] + settings.importance.w_dependents * pd[i]
+
+    conn.execute("DELETE FROM node_weight")
+    conn.executemany("INSERT INTO node_weight VALUES (?, ?, ?, ?)",
+                     [(i, exam_weight[i], dependents[i], importance[i]) for i in tree.level])
 
 
 def count_rows(conn: sqlite3.Connection) -> dict[str, int]:
