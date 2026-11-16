@@ -73,6 +73,18 @@ max_words = 200
 exam_close_days = 14
 approach_min_records = 2   # past approaches needed before "what worked before" is shown
 
+[session]                  # sessions, fatigue and getting stuck, derived from events
+gap_minutes = 30           # a longer gap starts a new session
+fatigue_min_minutes = 25   # no fatigue call before this
+fatigue_window = 4         # pieces of evidence in the rolling mean
+fatigue_threshold = -0.25  # mean surprise at or below this = doing worse than expected
+fatigue_min_parts = 2      # the drop must span at least this many parts
+fatigue_slip_add = 0.15    # extra slip while fatigued
+slip_cap = 0.40
+signal_window = 6          # exchanges used for the supporting signals
+stuck_attempts = 3
+stuck_below = 0.5
+
 [difficulty]               # optional teacher-set difficulty per node (0 easy – 1 hard), inherited by parts
 default = 0.5              # used when no node above the part has one
 prior_shift = 0.15         # starting p_known moves down (hard) or up (easy) by up to this much

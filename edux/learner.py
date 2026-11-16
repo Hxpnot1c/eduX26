@@ -428,9 +428,34 @@ def _recently_taught(conn: sqlite3.Connection, student_id: str, part_id: str, ts
     return any(part_id in _tagged_parts(split(r["node_ids"])) for r in rows)
 
 
+# --- sessions ----------------------------------------------------------------
+
+
+def _event_times(conn: sqlite3.Connection, student_id: str, until: str) -> list[str]:
+    """Timestamps of the student's exchanges and evidence up to until, newest first."""
+    rows = conn.execute(
+        """SELECT ts FROM exchange_log WHERE student_id = ? AND ts <= ?
+           UNION ALL SELECT ts FROM evidence_log WHERE student_id = ? AND ts <= ? ORDER BY ts DESC""",
+        (student_id, until, student_id, until))
+    return [r["ts"] for r in rows]
+
+
+def session_start(conn: sqlite3.Connection, student_id: str, ts: str) -> str:
+    """The start of the session containing ts: walk back through both logs until a gap longer than session.gap_minutes."""
+    gap = timedelta(minutes=_settings().session.gap_minutes)
+    start = previous = parse_ts(ts)
+    for earlier in _event_times(conn, student_id, ts):
+        t = parse_ts(earlier)
+        if previous - t > gap:
+            break
+        start = previous = t
+    return _event_ts(start)
+
+
 def apply_evidence_event(event: dict) -> None:
     """Apply one evidence event: score -> correct, the immediate-recall discount for chat evidence,
-    misconception activation on wrong evidence, then the BKT update (_apply_evidence)."""
+    surprise against the model's expectation (stored in evidence_derived), misconception activation
+    on wrong evidence, then the BKT update (_apply_evidence)."""
     s, conn = _settings(), _conn()
     student_id, ts = event["student_id"], event["ts"]
     node = graph.get_node(event["part_id"])
@@ -441,6 +466,13 @@ def apply_evidence_event(event: dict) -> None:
     evidence_type = event["evidence_type"]
     if event["origin"] == "chat" and _recently_taught(conn, student_id, part_id, ts):
         evidence_type = "immediate"
+    p_before = _p_at(_load_state(conn, student_id, part_id, ts), ts)
+    weight = 1.0
+    surprise = weight * (event["score"] - p_before)
+    conn.execute(
+        """INSERT OR REPLACE INTO evidence_derived (evidence_id, student_id, session_id, p_before, surprise, weight, fatigued)
+           VALUES (?, ?, ?, ?, ?, ?, 0)""",
+        (event["id"], student_id, session_start(conn, student_id, ts), p_before, surprise, weight))
     if not correct:
         _activate_misconceptions(conn, student_id, split(event.get("misconception_ids")), ts)
     _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts)
@@ -610,7 +642,7 @@ def misconception_link_signal(from_id: str, to_id: str) -> float:
     return 0.0
 
 
-DERIVED_TABLES = ("part_state", "student_misconception", "approach_record", "review_queue")
+DERIVED_TABLES = ("part_state", "student_misconception", "approach_record", "review_queue", "evidence_derived")
 
 
 def rebuild_state(student_id: str) -> int:
