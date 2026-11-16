@@ -105,6 +105,56 @@ def profile_of(student: dict) -> str:
 # --- events ----------------------------------------------------------------
 
 
+def _event_ts(ts: str | datetime | None) -> str:
+    """An event timestamp: ISO, UTC, to the second (so stored timestamps compare correctly as text)."""
+    return parse_ts(ts).astimezone(timezone.utc).isoformat(timespec="seconds") if ts else now_iso()
+
+
+def _evidence_rows(evidence: list[dict]) -> list[tuple[str, str, float, list[str]]]:
+    """Validate evidence items and expand concept ids to their parts: (part_id, type, score, misconception_ids)."""
+    s = _settings()
+    rows = []
+    for item in evidence:
+        node = graph.get_node(item.get("part_id") or "")
+        if node is None:
+            raise ValueError(f"evidence: unknown part {item.get('part_id')!r}")
+        if item.get("type") not in s.bkt.evidence:
+            raise ValueError(f"evidence type must be one of {', '.join(s.bkt.evidence)}")
+        try:
+            score = float(item.get("score"))
+        except (TypeError, ValueError):
+            raise ValueError(f"evidence score must be a number from 0 to 1, got {item.get('score')!r}") from None
+        if not 0 <= score <= 1:
+            raise ValueError(f"evidence score must be from 0 to 1, got {score}")
+        parts = [node["id"]] if node["level"] == "part" else graph.parts_of(node["id"])
+        if not parts:
+            raise ValueError(f"evidence: {node['id']!r} has no parts")
+        rows += [(part, item["type"], score, list(item.get("misconception_ids") or [])) for part in parts]
+    return rows
+
+
+def _write_evidence(conn: sqlite3.Connection, student: dict, ts: str, rows: list, origin: str,
+                    exchange_id: int | None = None, check_id: str | None = None) -> list[int]:
+    s = _settings()
+    ids = []
+    for part_id, evidence_type, score, misconception_ids in rows:
+        cur = conn.execute(
+            """INSERT INTO evidence_log (student_id, ts, part_id, evidence_type, score, origin, exchange_id, check_id,
+                 misconception_ids, protocol, settings_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (student["id"], ts, part_id, evidence_type, score, origin, exchange_id, check_id, ";".join(misconception_ids),
+             protocol_label(s, profile_of(student)), settings_hash()))
+        ids.append(cur.lastrowid)
+    return ids
+
+
+def _dispatch(job: tuple[int | None, list[int]], apply: str) -> None:
+    if apply == "now":
+        apply_job(job)
+    elif apply == "background":
+        start_worker()
+        _queue.put(job)
+
+
 def record_exchange(
     student_id: str,
     node_ids: list[str],
@@ -118,10 +168,13 @@ def record_exchange(
     prompt_text: str | None = None,
     client: str | None = None,
     ts: str | None = None,
+    evidence: list[dict] | None = None,
     apply: str = "background",
 ) -> int:
-    """Write an exchange event with protocol and settings_hash, then apply it; return the event id.
+    """Write an exchange event, and any evidence that came with it, then apply them; return the exchange id.
 
+    evidence is a list of {part_id, type, score, misconception_ids?}: what the student produced in this turn,
+    scored 0–1. Concept ids expand to their parts with the score unchanged. All rows share the exchange's ts.
     apply is "background" (queue for the worker thread), "now" (apply before returning) or "none".
     prompt_text is stored only when STORE_PROMPTS=1.
     """
@@ -139,25 +192,48 @@ def record_exchange(
         raise ValueError(f"support_given must be one of {', '.join(SUPPORT_GIVEN)}")
     if choice_taken is not None and choice_taken not in CHOICE_TAKEN:
         raise ValueError(f"choice_taken must be one of {', '.join(CHOICE_TAKEN)}")
+    evidence_rows = _evidence_rows(evidence or [])
     store_prompt = os.environ.get("STORE_PROMPTS", "0") == "1"
+    ts = _event_ts(ts)
     conn = _conn()
     with conn:
         cur = conn.execute(
             """INSERT INTO exchange_log (student_id, ts, client, node_ids, question_depth, engagement, offloading,
                  support_given, choice_taken, misconception_ids, conflict_flagged, protocol, settings_hash, prompt_text)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (student_id, parse_ts(ts).isoformat(timespec="seconds") if ts else now_iso(), client, ";".join(node_ids),
-             question_depth, engagement, int(offloading), support_given, choice_taken, ";".join(misconception_ids or []),
-             int(conflict_flagged), protocol_label(s, profile_of(student)), settings_hash(),
-             prompt_text if store_prompt else None),
+            (student_id, ts, client, ";".join(node_ids), question_depth, engagement, int(offloading), support_given,
+             choice_taken, ";".join(misconception_ids or []), int(conflict_flagged), protocol_label(s, profile_of(student)),
+             settings_hash(), prompt_text if store_prompt else None),
         )
-    event_id = cur.lastrowid
-    if apply == "now":
-        apply_event(event_id)
-    elif apply == "background":
-        start_worker()
-        _queue.put(event_id)
-    return event_id
+        exchange_id = cur.lastrowid
+        evidence_ids = _write_evidence(conn, student, ts, evidence_rows, "chat", exchange_id=exchange_id)
+    _dispatch((exchange_id, evidence_ids), apply)
+    return exchange_id
+
+
+def record_evidence(
+    student_id: str,
+    part_id: str,
+    evidence_type: str,
+    score: float,
+    misconception_ids: list[str] | None = None,
+    ts: str | None = None,
+    origin: str = "chat",
+    check_id: str | None = None,
+    apply: str = "background",
+) -> list[int]:
+    """Write evidence with no exchange (demo seeding, checks), then apply it; return the evidence ids (one per part)."""
+    student = get_student(student_id)
+    if student is None:
+        raise ValueError(f"unknown student {student_id!r}")
+    if origin not in ("chat", "check"):
+        raise ValueError("origin must be chat or check")
+    rows = _evidence_rows([{"part_id": part_id, "type": evidence_type, "score": score, "misconception_ids": misconception_ids}])
+    conn = _conn()
+    with conn:
+        ids = _write_evidence(conn, student, _event_ts(ts), rows, origin, check_id=check_id)
+    _dispatch((None, ids), apply)
+    return ids
 
 
 def get_event(event_id: int) -> dict:
@@ -167,18 +243,30 @@ def get_event(event_id: int) -> dict:
     return dict(row)
 
 
-def apply_event(event_id: int) -> None:
-    """Apply one stored exchange event to the derived state, in its own transaction."""
+def get_evidence(evidence_id: int) -> dict:
+    row = _conn().execute("SELECT * FROM evidence_log WHERE id = ?", (evidence_id,)).fetchone()
+    if row is None:
+        raise ValueError(f"no evidence event {evidence_id}")
+    return dict(row)
+
+
+def apply_job(job: tuple[int | None, list[int]]) -> None:
+    """Apply an exchange (if any) and then its evidence, in one transaction."""
+    exchange_id, evidence_ids = job
     conn = _conn()
     with conn:
-        apply_exchange(get_event(event_id))
+        if exchange_id is not None:
+            apply_exchange(get_event(exchange_id))
+        for evidence_id in evidence_ids:
+            apply_evidence_event(get_evidence(evidence_id))
 
 
 # --- state -----------------------------------------------------------------
 
 
 def difficulty_signal(part_id: str) -> float | None:
-    """Cross-student difficulty (0–1) of a part, e.g. from first-attempt failure rates. None until checks exist."""
+    """Cross-student difficulty (0–1) of a part, e.g. from first-attempt failure rates in evidence_log.
+    None until there is enough evidence across students."""
     return None
 
 
@@ -294,7 +382,12 @@ def apply_exchange(event: dict) -> None:
             _queue_review(conn, student_id, part, t, "untested")
         _save_state(conn, state)
 
-    for misconception_id in split(event.get("misconception_ids")):
+    _activate_misconceptions(conn, student_id, split(event.get("misconception_ids")), ts)
+
+
+def _activate_misconceptions(conn: sqlite3.Connection, student_id: str, misconception_ids: list[str], ts: str) -> None:
+    """Mark known, non-rejected misconceptions active for the student (old ids resolve through id_map)."""
+    for misconception_id in misconception_ids:
         misconception_id = graph.canonical(misconception_id)
         if conn.execute("SELECT 1 FROM content.misconception WHERE id = ? AND status != 'rejected'", (misconception_id,)).fetchone():
             conn.execute("INSERT OR REPLACE INTO student_misconception (student_id, misconception_id, active, last_seen) "
@@ -324,11 +417,33 @@ def review_gap_days(student_id: str, part_id: str, at: datetime) -> float:
     return share * days
 
 
-def apply_evidence(student_id: str, part_id: str, evidence_type: str, correct: bool, ts: str | None = None) -> None:
-    """BKT update, half-life change, prerequisite propagation, misconception clearing and review scheduling."""
-    conn = _conn()
-    with conn:
-        _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts or now_iso())
+def _recently_taught(conn: sqlite3.Connection, student_id: str, part_id: str, ts: str) -> bool:
+    """True if an exchange on the part with a worked example or hint happened within
+    evidence.immediate_window_minutes before ts (inclusive; a tag on a concept counts for its parts)."""
+    since = _event_ts(parse_ts(ts) - timedelta(minutes=_settings().evidence.immediate_window_minutes))
+    rows = conn.execute(
+        """SELECT node_ids FROM exchange_log WHERE student_id = ? AND ts >= ? AND ts <= ?
+           AND support_given IN ('worked_example', 'hint')""",
+        (student_id, since, ts))
+    return any(part_id in _tagged_parts(split(r["node_ids"])) for r in rows)
+
+
+def apply_evidence_event(event: dict) -> None:
+    """Apply one evidence event: score -> correct, the immediate-recall discount for chat evidence,
+    misconception activation on wrong evidence, then the BKT update (_apply_evidence)."""
+    s, conn = _settings(), _conn()
+    student_id, ts = event["student_id"], event["ts"]
+    node = graph.get_node(event["part_id"])
+    if node is None or node["level"] != "part":
+        return
+    part_id = node["id"]
+    correct = event["score"] >= s.bkt.correct_share
+    evidence_type = event["evidence_type"]
+    if event["origin"] == "chat" and _recently_taught(conn, student_id, part_id, ts):
+        evidence_type = "immediate"
+    if not correct:
+        _activate_misconceptions(conn, student_id, split(event.get("misconception_ids")), ts)
+    _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts)
 
 
 def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, evidence_type: str, correct: bool, ts: str) -> None:
@@ -489,8 +604,8 @@ def approaches(student_id: str, part_id: str) -> list[dict]:
 def misconception_link_signal(from_id: str, to_id: str) -> float:
     """Cross-student strength (0–1) of a link: how often a misconception about one end makes students fail the other.
 
-    Combined with edge_weight.weight at read time using link_weight.w_misconception. Returns 0 until
-    checks record failures with misconception ids (see steps/later.md).
+    Combined with edge_weight.weight at read time using link_weight.w_misconception. Returns 0 until there is
+    enough wrong evidence with misconception ids across students (see steps/later.md).
     """
     return 0.0
 
@@ -521,16 +636,16 @@ def rebuild_all() -> dict[str, int]:
 
 # --- background worker -----------------------------------------------------
 
-_queue: queue.Queue[int] = queue.Queue()
+_queue: queue.Queue[tuple[int | None, list[int]]] = queue.Queue()
 _worker: threading.Thread | None = None
 _worker_lock = threading.Lock()
 
 
 def _work() -> None:
     while True:
-        event_id = _queue.get()
+        job = _queue.get()
         try:
-            apply_event(event_id)
+            apply_job(job)
         except Exception:
             traceback.print_exc()
         finally:
@@ -547,5 +662,5 @@ def start_worker() -> None:
 
 
 def wait_for_worker() -> None:
-    """Block until every queued event has been applied."""
+    """Block until every queued job has been applied."""
     _queue.join()
