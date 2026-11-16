@@ -21,6 +21,30 @@ The MCP server over Streamable HTTP at `/mcp`, with student keys, the four base 
 - Fill in the `text/` files with real wording, including `chatbot_setup.md` (the paste-in instructions for students).
 - `python -m edux.cli serve`.
 
+## Choosing what goes into each block
+Graph lookups (step 03) return full lists with the numbers needed to rank them. Each block chooses what reaches the chatbot **for this turn**, not by a fixed top N. Most blocks combine three ingredients:
+1. **Content weights:** node importance, link weight (`edge_weight`), source authority, marks.
+2. **The student's state:** `p_now`, active misconceptions, recent activity (step 04).
+3. **Relevance to the message:** `graph.relevance` / `graph.node_relevance`.
+
+| block | what decides what's shown |
+|---|---|
+| focus | how well each part matches the message (`graph.resolve`). Ties go to parts the student touched recently, then importance |
+| support | the student's `p_now` on the focus part. Nothing to rank |
+| weak_prerequisites | how weak the student is on it × link weight × importance |
+| anchor | the student is secure on the analogous part × link weight |
+| confusables | past mix-ups by this student, or the message mentions the other part × link weight |
+| causal (new) | the message asks about effects or causes and mentions the other end × link weight. Uses `graph.causal_out` / `causal_in` |
+| active_misconceptions | ones the student holds first, then relevance to the message, then how recently seen |
+| notes | relevance to the message first, then source authority (a calculation question gets the formula note) |
+| exam_relevance | marks at stake, closeness of the exam, and command word matching the request ("calculate", "explain") |
+| reviews_due | due-ness × importance, boosted when the due part is linked to the current focus |
+| teaching_note | built from the other blocks. Nothing to rank |
+
+- Every coefficient in these scores goes in `settings.toml`, under a section per block if they differ. The limits stay in `context.toml`.
+- Add `causal` to `BLOCKS`, to the `full` profile in `context.toml`, and to the block table in `reference/tools-and-context.md`.
+- The cross-student misconception signal (`learner.misconception_link_signal`) is added to link weight when it is read, with share `link_weight.w_misconception`. It's 0 until checks exist.
+
 ## Commits
 1. `feat(context): add context blocks and profile assembly`
 2. `feat(service): add learning context, exchange logging, progress and profile`
