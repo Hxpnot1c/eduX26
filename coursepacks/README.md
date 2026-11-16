@@ -62,6 +62,7 @@ The knowledge tree.
 | description | text | yes |  |  | one or two sentences in our own words |
 | source_ids | list |  |  |  | ids from sources.csv |
 | extraction_confidence | real |  |  | `1.0` | 0–1 |
+| difficulty | real |  |  |  | optional, 0 (easy) to 1 (hard); blank inherits from the nearest ancestor, else average |
 | status | text |  | `draft` / `approved` / `rejected` | `draft` | draft / approved / rejected |
 | flag | text |  |  |  | blank, or a short reason extraction thinks the row may be wrong |
 | updated_by | text |  |  | `extraction` | `extraction`, or a teacher's name |
