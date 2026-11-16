@@ -75,3 +75,7 @@ w_material = 0.3           # share from teaching materials that cover both ends 
 w_misconception = 0.0      # cross-student misconception signal, read from learner.db (off until checks exist)
 material_source_types = ["textbook", "teacher"]
 suggest_min_questions = 2  # questions co-testing two unlinked parts before a link is suggested
+
+[resolve]                  # turning a student's message into the parts it is about
+name_boost = 2.0           # a match on a node's name or alias counts this many times a match in a note
+candidate_ratio = 0.8      # other results scoring at least this share of the top one are "close": ask which
