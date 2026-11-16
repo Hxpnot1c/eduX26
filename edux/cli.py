@@ -1,4 +1,4 @@
-"""Command line: python -m edux.cli load | add-student | log | state | rebuild | serve | seed-demo."""
+"""Command line: python -m edux.cli load | add-student | log | evidence | state | rebuild | serve | seed-demo."""
 
 from __future__ import annotations
 
@@ -45,15 +45,27 @@ def cmd_add_student(name: str, course: str, profile: str | None = None) -> int:
 
 def cmd_log(student: str, nodes: list[str], depth: str, engagement: str, offloading: bool = False,
             support: str | None = None, choice: str | None = None, misconceptions: list[str] | None = None,
-            ts: str | None = None) -> int:
-    """Record one exchange by hand and apply it straight away."""
+            ts: str | None = None, evidence: list[dict] | None = None) -> int:
+    """Record one exchange (and any evidence with it) by hand and apply it straight away."""
     try:
         event_id = learner.record_exchange(student, nodes, depth, engagement, offloading, support, choice,
-                                           misconceptions, ts=ts, client="cli", apply="now")
+                                           misconceptions, ts=ts, client="cli", evidence=evidence, apply="now")
     except ValueError as e:
         print(e, file=sys.stderr)
         return 1
-    print(f"logged exchange {event_id}")
+    print(f"logged exchange {event_id}" + (f" with {len(evidence)} evidence item(s)" if evidence else ""))
+    return 0
+
+
+def cmd_evidence(student: str, part: str, evidence_type: str, score: float, ts: str | None = None,
+                 misconceptions: list[str] | None = None) -> int:
+    """Record evidence with no exchange by hand and apply it straight away."""
+    try:
+        ids = learner.record_evidence(student, part, evidence_type, score, misconceptions, ts=ts, apply="now")
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(f"logged evidence {', '.join(map(str, ids))}")
     return 0
 
 
@@ -101,6 +113,15 @@ def _list(value: str) -> list[str]:
     return [v.strip() for v in value.split(",") if v.strip()]
 
 
+def _evidence(value: str) -> dict:
+    """part_id:type:score -> an evidence item."""
+    try:
+        part_id, evidence_type, score = value.split(":")
+        return {"part_id": part_id, "type": evidence_type, "score": float(score)}
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"expected part_id:type:score, got {value!r}") from None
+
+
 def main(argv: list[str] | None = None) -> None:
     """Parse arguments and run a command."""
     parser = argparse.ArgumentParser(prog="python -m edux.cli")
@@ -121,6 +142,15 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--choice", help="try_first / hint / just_show_me / none")
     p.add_argument("--misconceptions", type=_list, help="comma-separated misconception ids")
     p.add_argument("--ts", help="ISO timestamp (default: now)")
+    p.add_argument("--evidence", type=_evidence, action="append",
+                   help="part_id:type:score, what the student produced this turn (repeatable)")
+    p = sub.add_parser("evidence", help="record evidence by hand, with no exchange")
+    p.add_argument("--student", required=True)
+    p.add_argument("--part", required=True, help="part or concept id")
+    p.add_argument("--type", required=True, help="a key of [bkt.evidence], e.g. explain_back")
+    p.add_argument("--score", required=True, type=float, help="0–1")
+    p.add_argument("--ts", help="ISO timestamp (default: now)")
+    p.add_argument("--misconceptions", type=_list, help="comma-separated misconception ids")
     p = sub.add_parser("state", help="show a student's parts")
     p.add_argument("--student", required=True)
     p.add_argument("--node", help="only parts under this node")
@@ -135,7 +165,9 @@ def main(argv: list[str] | None = None) -> None:
         code = cmd_add_student(args.name, args.course, args.profile)
     elif args.command == "log":
         code = cmd_log(args.student, args.nodes, args.depth, args.engagement, args.offloading, args.support,
-                       args.choice, args.misconceptions, args.ts)
+                       args.choice, args.misconceptions, args.ts, args.evidence)
+    elif args.command == "evidence":
+        code = cmd_evidence(args.student, args.part, args.type, args.score, args.ts, args.misconceptions)
     elif args.command == "state":
         code = cmd_state(args.student, args.node, args.at)
     else:
