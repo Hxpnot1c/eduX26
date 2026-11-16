@@ -1,4 +1,4 @@
-"""Command line: python -m edux.cli load | add-student | log | evidence | state | rebuild | serve | seed-demo."""
+"""Command line: python -m edux.cli load | add-student | log | evidence | state | sessions | rebuild | serve | seed-demo."""
 
 from __future__ import annotations
 
@@ -82,6 +82,7 @@ def cmd_state(student: str, node: str | None = None, at: str | None = None) -> i
     reviews = {r["part_id"]: r for r in conn.execute("SELECT * FROM review_queue WHERE student_id = ?", (student,))}
     roots = [graph.get_node(node)] if node else graph.topics()
 
+    print(_session_line(learner.session_state(student, at)))
     print(f"{'part':24} {'level':10} {'p_now':>5} {'p_known':>7} {'half-life':>9} {'checks':>6} {'chats':>5}  "
           f"{'last correct':12} review due")
     for root in roots:
@@ -96,6 +97,37 @@ def cmd_state(student: str, node: str | None = None, at: str | None = None) -> i
                 numbers = f"{'-':>7} {'-':>9} {'-':>6} {'-':>5}  {'-':12}"
             due = f"{review['due'][:16].replace('T', ' ')} ({review['reason']})" if review else "-"
             print(f"  {part:22} {learner.level(p):10} {p:5.2f} {numbers} {due}")
+    return 0
+
+
+def _share(value: float | None) -> str:
+    return "-" if value is None else f"{value:.0%}"
+
+
+def _session_line(session: dict | None) -> str:
+    if session is None:
+        return "session: none in progress"
+    parts = [f"session: started {session['session_id'][:16].replace('T', ' ')}, {session['minutes']:.0f} min",
+             f"{session['n_evidence']} evidence"]
+    if session["rolling_surprise"] is not None:
+        parts.append(f"rolling surprise {session['rolling_surprise']:+.2f}")
+    if session["fatigued"]:
+        parts.append(f"FATIGUED since minute {session['fatigued_since_minute']:.0f}")
+    if session["stuck_parts"]:
+        parts.append("stuck on " + ", ".join(p["part_id"] for p in session["stuck_parts"]))
+    parts.append(f"just-show-me {_share(session['just_show_me_share'])}, surface {_share(session['surface_share'])}")
+    return " | ".join(parts)
+
+
+def cmd_sessions(student: str) -> int:
+    """List a student's sessions with their length, evidence and fatigue onset."""
+    if learner.get_student(student) is None:
+        print(f"unknown student {student!r}", file=sys.stderr)
+        return 1
+    print(f"{'started':17} {'minutes':>7} {'exchanges':>9} {'evidence':>8}  fatigue from")
+    for s in learner.sessions(student):
+        onset = "-" if s["fatigue_onset_minute"] is None else f"minute {s['fatigue_onset_minute']:.0f}"
+        print(f"{s['session_id'][:16].replace('T', ' '):17} {s['minutes']:7.0f} {s['n_exchanges']:9d} {s['n_evidence']:8d}  {onset}")
     return 0
 
 
@@ -155,6 +187,8 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--student", required=True)
     p.add_argument("--node", help="only parts under this node")
     p.add_argument("--at", help="ISO timestamp to read decay at (default: now)")
+    p = sub.add_parser("sessions", help="list a student's sessions")
+    p.add_argument("--student", required=True)
     p = sub.add_parser("rebuild", help="replay events into derived state")
     p.add_argument("--student")
     args = parser.parse_args(argv)
@@ -170,6 +204,8 @@ def main(argv: list[str] | None = None) -> None:
         code = cmd_evidence(args.student, args.part, args.type, args.score, args.ts, args.misconceptions)
     elif args.command == "state":
         code = cmd_state(args.student, args.node, args.at)
+    elif args.command == "sessions":
+        code = cmd_sessions(args.student)
     else:
         code = cmd_rebuild(args.student)
     sys.exit(code)
