@@ -86,9 +86,11 @@ def value_error(col: registry.Column, value: str) -> str | None:
     if col.type in parsers:
         parse, what = parsers[col.type]
         try:
-            parse(value)
+            parsed = parse(value)
         except ValueError:
             return f"{col.name} must be {what}, got {value!r}"
+        if col.bounds and not col.bounds[0] <= parsed <= col.bounds[1]:
+            return f"{col.name} must be between {col.bounds[0]} and {col.bounds[1]}, got {parsed}"
     if col.enum and value not in col.enum:
         return f"{col.name} {value!r} is not one of {', '.join(col.enum)}"
     return None
@@ -251,16 +253,13 @@ class _Checker:
             self.error("edges.csv", None, "prerequisite cycle: " + " -> ".join(cycle))
 
     def check_values(self) -> None:
-        for name, column in (("nodes.csv", "extraction_confidence"), ("edges.csv", "confidence")):
-            for r in self.rows(name):
-                try:
-                    value = float(r.get(column) or "nan")
-                except ValueError:
-                    continue
-                if value == value and not 0 <= value <= 1:
-                    self.error(name, r, f"{column} must be between 0 and 1, got {value}")
-                elif name == "nodes.csv" and value < LOW_CONFIDENCE:
-                    self.warn(name, r, f"extraction_confidence {value} is below {LOW_CONFIDENCE}")
+        for r in self.rows("nodes.csv"):
+            try:
+                value = float(r.get("extraction_confidence") or "nan")
+            except ValueError:
+                continue
+            if 0 <= value < LOW_CONFIDENCE:
+                self.warn("nodes.csv", r, f"extraction_confidence {value} is below {LOW_CONFIDENCE}")
         for r in self.rows("notes.csv"):
             n = _words(r.get("summary", ""))
             if n > MAX_SUMMARY_WORDS:

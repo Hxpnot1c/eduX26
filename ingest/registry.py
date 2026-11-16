@@ -36,6 +36,7 @@ class Column:
     enum: tuple[str, ...] = ()
     default: str | None = None
     doc: str = ""
+    bounds: tuple[float, float] | None = None
 
 
 @dataclass(frozen=True)
@@ -59,8 +60,9 @@ class FileSpec:
         return next((c for c in self.columns if c.name == name), None)
 
 
-def C(name: str, type: str = "text", required: bool = False, enum: tuple[str, ...] = (), default: str | None = None, doc: str = "") -> Column:
-    return Column(name, type, required, enum, default, doc)
+def C(name: str, type: str = "text", required: bool = False, enum: tuple[str, ...] = (), default: str | None = None,
+      doc: str = "", bounds: tuple[float, float] | None = None) -> Column:
+    return Column(name, type, required, enum, default, doc, bounds)
 
 
 CONTENT_COLUMNS = (
@@ -107,14 +109,15 @@ _FILES = (
         C("part_type", enum=PART_TYPES, doc="parts only"),
         C("description", required=True, doc="one or two sentences in our own words"),
         C("source_ids", "list", default="", doc="ids from sources.csv"),
-        C("extraction_confidence", "real", default="1.0", doc="0–1"),
+        C("extraction_confidence", "real", default="1.0", doc="0–1", bounds=(0, 1)),
+        C("difficulty", "real", doc="optional, 0 (easy) to 1 (hard); blank inherits from the nearest ancestor, else average", bounds=(0, 1)),
     ), content_row=True, required_file=True, course_scoped=True, doc="The knowledge tree."),
     FileSpec("edges.csv", "edge", _content(
         C("from_id", required=True, doc="node id"),
         C("to_id", required=True, doc="node id"),
         C("type", required=True, enum=EDGE_TYPES, doc="prerequisite / analogous / confusable / causal"),
         C("note", default="", doc="required for analogous and causal: what maps onto what, or how A affects B"),
-        C("confidence", "real", default="0.8", doc="0–1"),
+        C("confidence", "real", default="0.8", doc="0–1", bounds=(0, 1)),
         C("source_ids", "list", default="", doc="where the link is evidenced"),
     ), key=("from_id", "to_id", "type"), content_row=True, required_file=True,
         doc="Typed links between nodes. An edge on a concept applies to all its parts."),

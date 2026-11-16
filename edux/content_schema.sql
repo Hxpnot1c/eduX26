@@ -5,7 +5,7 @@ CREATE TABLE source (id TEXT PRIMARY KEY, course_id TEXT, type TEXT NOT NULL, ti
 -- every content table below also has: status, flag, updated_by, updated_at, extra
 CREATE TABLE node (id TEXT PRIMARY KEY, course_id TEXT NOT NULL, parent_id TEXT, level TEXT NOT NULL, name TEXT NOT NULL,
   aliases TEXT DEFAULT '', spec_ref TEXT DEFAULT '', part_type TEXT, description TEXT NOT NULL, source_ids TEXT DEFAULT '',
-  extraction_confidence REAL DEFAULT 1.0,
+  extraction_confidence REAL DEFAULT 1.0, difficulty REAL,
   status TEXT DEFAULT 'draft', flag TEXT DEFAULT '', updated_by TEXT DEFAULT 'extraction', updated_at TEXT, extra TEXT);
 CREATE TABLE edge (from_id TEXT NOT NULL, to_id TEXT NOT NULL, type TEXT NOT NULL, note TEXT DEFAULT '', confidence REAL DEFAULT 0.8,
   source_ids TEXT DEFAULT '',

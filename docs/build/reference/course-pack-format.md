@@ -61,6 +61,7 @@ A source's **authority** comes from its type, ranked in `settings.toml` (mark sc
 | description | one or two sentences in our own words |
 | source_ids | ids from sources.csv |
 | extraction_confidence | 0–1 |
+| difficulty | optional, 0 (easy) to 1 (hard). Blank inherits from the nearest ancestor that has one, else average (`difficulty.default`). Teachers can set it with a feedback `edit`. Sets a part's starting estimate and forgetting speed (see `learner-model.md`) |
 
 **Tree rules:**
 - A part's parent is a concept.

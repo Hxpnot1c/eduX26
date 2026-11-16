@@ -440,6 +440,14 @@ def resolve(message: str, node_ids: list[str] | None = None, limit: int | None =
     return {"parts": parts_of(top["id"]), "candidates": [], "matched": top, "unknown": unknown}
 
 
+def difficulty(node_id: str) -> float | None:
+    """The node's teacher-set difficulty (0–1), inherited from the nearest ancestor that has one, or None."""
+    for node in [get_node(node_id), *ancestors(node_id)]:
+        if node and node.get("difficulty") is not None:
+            return node["difficulty"]
+    return None
+
+
 def weight(node_id: str) -> dict:
     """exam_weight, dependents and importance for a node (zeros if it has none)."""
     row = _conn().execute("SELECT exam_weight, dependents, importance FROM node_weight WHERE node_id = ?",
