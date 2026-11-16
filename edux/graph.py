@@ -107,34 +107,94 @@ def concept_of(part_id: str) -> str | None:
     return parent["id"] if parent and parent["level"] == "concept" else None
 
 
+def _own_ids(node_id: str) -> list[str]:
+    """The node plus, for a part, its concept: the ids whose edges apply to it."""
+    concept = concept_of(node_id)
+    return [node_id] + ([concept] if concept else [])
+
+
+def _edges(node_id: str, edge_type: str, direction: str) -> list[dict]:
+    """Non-rejected edges of one type touching the node (or its concept), with both ends visible.
+
+    direction is "out" (node is from_id), "in" (node is to_id) or "both". Each result has
+    other (the node at the far end), via (the concept it was inherited from, or None),
+    note, confidence and weight.
+    """
+    node_id = canonical(node_id)
+    if get_node(node_id) is None:
+        return []
+    own = _own_ids(node_id)
+    visible = _visible_ids()
+    rows = _conn().execute(
+        f"""SELECT e.from_id, e.to_id, e.type, e.note, e.confidence, w.weight
+            FROM edge e LEFT JOIN edge_weight w ON w.from_id = e.from_id AND w.to_id = e.to_id AND w.type = e.type
+            WHERE e.type = ? AND e.status != 'rejected'
+            AND (e.from_id IN ({','.join('?' * len(own))}) OR e.to_id IN ({','.join('?' * len(own))}))
+            ORDER BY e.rowid""",
+        [edge_type, *own, *own],
+    ).fetchall()
+    results, seen = [], set()
+    for r in rows:
+        if r["from_id"] not in visible or r["to_id"] not in visible:
+            continue
+        for end, other, wanted in ((r["from_id"], r["to_id"], "out"), (r["to_id"], r["from_id"], "in")):
+            if end in own and direction in (wanted, "both") and other not in own and (other, r["type"]) not in seen:
+                seen.add((other, r["type"]))
+                results.append({
+                    "other": other,
+                    "other_name": get_node(other)["name"],
+                    "type": r["type"],
+                    "direction": wanted,
+                    "via": None if end == node_id else end,
+                    "note": r["note"] or "",
+                    "confidence": r["confidence"],
+                    "weight": r["weight"],
+                })
+    return results
+
+
+def _walk(node_id: str, direction: str, depth: int) -> list[dict]:
+    found: dict[str, dict] = {}
+    frontier = [canonical(node_id)]
+    for hop in range(1, depth + 1):
+        next_frontier = []
+        for current in frontier:
+            for edge in _edges(current, "prerequisite", direction):
+                if edge["other"] not in found and edge["other"] != canonical(node_id):
+                    found[edge["other"]] = {**edge, "depth": hop, "from_node": current}
+                    next_frontier.append(edge["other"])
+        frontier = next_frontier
+    return list(found.values())
+
+
 def prerequisites(node_id: str, depth: int = 1) -> list[dict]:
-    """Prerequisites of a node up to depth hops."""
-    raise NotImplementedError
+    """What must be learnt before this node, up to depth hops, each with its depth."""
+    return _walk(node_id, "in", depth)
 
 
 def dependents(node_id: str, depth: int = 1) -> list[dict]:
-    """Nodes that have this node as a prerequisite, up to depth hops."""
-    raise NotImplementedError
+    """What builds on this node, up to depth hops, each with its depth."""
+    return _walk(node_id, "out", depth)
 
 
 def analogous(node_id: str) -> list[dict]:
-    """Analogous nodes, with the edge note."""
-    raise NotImplementedError
+    """Analogous nodes (either direction), with the edge note and weight."""
+    return _edges(node_id, "analogous", "both")
 
 
 def confusables(node_id: str) -> list[dict]:
-    """Confusable nodes, with the edge note."""
-    raise NotImplementedError
+    """Confusable nodes (either direction), with the edge note and weight."""
+    return _edges(node_id, "confusable", "both")
 
 
 def causal_out(node_id: str) -> list[dict]:
-    """Nodes this node affects, with the edge note."""
-    raise NotImplementedError
+    """Nodes this node affects, with the edge note and weight."""
+    return _edges(node_id, "causal", "out")
 
 
 def causal_in(node_id: str) -> list[dict]:
-    """Nodes that affect this node, with the edge note."""
-    raise NotImplementedError
+    """Nodes that affect this node, with the edge note and weight."""
+    return _edges(node_id, "causal", "in")
 
 
 def notes_for(part_ids: list[str], limit: int) -> list[dict]:
