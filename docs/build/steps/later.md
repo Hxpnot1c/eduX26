@@ -13,6 +13,7 @@ Build these once the base (steps 01–06) works end to end. Each one is its own 
 - `submit_check(check_id, score, misconception_ids?)`: writes the event and calls `apply_evidence`.
 - Approach records get `next_check_correct` filled.
 - Add the `[checks]` section to settings.toml.
+- Fill in `learner.misconception_link_signal`: when students fail a check on X with a misconception that belongs to Y, strengthen the X–Y link. Set `link_weight.w_misconception` above 0 once there is enough data.
 
 ### 08 Tests (`build/08-tests`)
 pytest for:

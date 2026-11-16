@@ -28,6 +28,10 @@ CREATE TABLE mark_scheme_item (id TEXT PRIMARY KEY, question_id TEXT NOT NULL, k
   status TEXT DEFAULT 'draft', flag TEXT DEFAULT '', updated_by TEXT DEFAULT 'extraction', updated_at TEXT, extra TEXT);
 CREATE TABLE question_node (question_id TEXT, node_id TEXT, PRIMARY KEY (question_id, node_id));  -- filled from node_ids for joins
 CREATE TABLE node_weight (node_id TEXT PRIMARY KEY, exam_weight REAL, dependents INTEGER, importance REAL);
+CREATE TABLE edge_weight (from_id TEXT NOT NULL, to_id TEXT NOT NULL, type TEXT NOT NULL,
+  exam_questions INTEGER NOT NULL DEFAULT 0, exam_marks REAL NOT NULL DEFAULT 0, material_count INTEGER NOT NULL DEFAULT 0,
+  computed REAL, teacher_weight REAL, weight REAL,   -- weight = teacher_weight if set, else computed
+  PRIMARY KEY (from_id, to_id, type));
 CREATE TABLE id_map (old_id TEXT PRIMARY KEY, new_id TEXT NOT NULL);
 CREATE TABLE teacher_feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, teacher TEXT, tbl TEXT, target_id TEXT, action TEXT,
   field TEXT, value TEXT, note TEXT, applied INTEGER, message TEXT);

@@ -76,6 +76,15 @@ def approaches(student_id: str, part_id: str) -> list[dict]:
     raise NotImplementedError
 
 
+def misconception_link_signal(from_id: str, to_id: str) -> float:
+    """Cross-student strength (0–1) of a link: how often a misconception about one end makes students fail the other.
+
+    Combined with edge_weight.weight at read time using link_weight.w_misconception. Returns 0 until
+    checks record failures with misconception ids (see steps/later.md).
+    """
+    return 0.0
+
+
 def rebuild_state(student_id: str) -> None:
     """Delete the student's derived rows and replay their events in ts order."""
     raise NotImplementedError

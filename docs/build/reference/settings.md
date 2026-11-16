@@ -76,6 +76,14 @@ hint_below = 0.75          # at or above: ask them to explain it back
 max_words = 200
 exam_close_days = 14
 approach_min_records = 2   # past approaches needed before "what worked before" is shown
+
+[link_weight]              # how strongly two linked nodes are related, computed on load
+base = 0.3                 # weight of a link with no evidence; evidence raises it towards 1
+w_exam = 0.7               # share from past-paper questions that test both ends
+w_material = 0.3           # share from teaching materials that cover both ends in one section
+w_misconception = 0.0      # cross-student misconception signal, read from learner.db (off until checks exist)
+material_source_types = ["textbook", "teacher"]
+suggest_min_questions = 2  # questions co-testing two unlinked parts before a link is suggested
 ```
 
 ## context.toml
