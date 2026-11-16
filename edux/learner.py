@@ -462,6 +462,33 @@ def prequestion_weight(conn: sqlite3.Connection, student_id: str, part_id: str, 
     return min(1.0, (exchanges * s.exchange_weight + state["n_evidence"]) / s.full_weight_at)
 
 
+def _fatigued(conn: sqlite3.Connection, event: dict, part_id: str, session_id: str, surprise: float, weight: float) -> bool:
+    """Whether this piece of evidence falls in the session's fatigued state.
+
+    Once fatigued, a session stays fatigued. Otherwise fatigue starts here when the session is at least
+    session.fatigue_min_minutes old, the last session.fatigue_window weighted pieces of evidence (this one
+    included) have a mean surprise at or below session.fatigue_threshold, and they span at least
+    session.fatigue_min_parts parts. Untaught pre-questions (weight 0) never start it.
+    """
+    s = _settings().session
+    student_id, ts = event["student_id"], event["ts"]
+    if conn.execute("SELECT 1 FROM evidence_derived WHERE student_id = ? AND session_id = ? AND fatigued = 1",
+                    (student_id, session_id)).fetchone():
+        return True
+    if weight == 0 or (parse_ts(ts) - parse_ts(session_id)).total_seconds() / 60 < s.fatigue_min_minutes:
+        return False
+    earlier = conn.execute(
+        """SELECT l.part_id, d.surprise FROM evidence_derived d JOIN evidence_log l ON l.id = d.evidence_id
+           WHERE d.student_id = ? AND d.session_id = ? AND d.weight > 0 AND l.id != ? AND l.ts <= ?
+           ORDER BY l.ts DESC, l.id DESC LIMIT ?""",
+        (student_id, session_id, event["id"], ts, s.fatigue_window - 1)).fetchall()
+    window = [(part_id, surprise)] + [(r["part_id"], r["surprise"]) for r in earlier]
+    if len(window) < s.fatigue_window:
+        return False
+    mean = sum(x for _, x in window) / len(window)
+    return mean <= s.fatigue_threshold and len({p for p, _ in window}) >= s.fatigue_min_parts
+
+
 def apply_evidence_event(event: dict) -> None:
     """Apply one evidence event: score -> correct, the immediate-recall discount for chat evidence,
     surprise against the model's expectation (stored in evidence_derived), misconception activation
@@ -482,19 +509,23 @@ def apply_evidence_event(event: dict) -> None:
             evidence_type = "immediate"
     p_before = _p_at(_load_state(conn, student_id, part_id, ts), ts)
     surprise = weight * (event["score"] - p_before)
+    session_id = session_start(conn, student_id, ts)
+    fatigued = _fatigued(conn, event, part_id, session_id, surprise, weight)
     conn.execute(
         """INSERT OR REPLACE INTO evidence_derived (evidence_id, student_id, session_id, p_before, surprise, weight, fatigued)
-           VALUES (?, ?, ?, ?, ?, ?, 0)""",
-        (event["id"], student_id, session_start(conn, student_id, ts), p_before, surprise, weight))
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (event["id"], student_id, session_id, p_before, surprise, weight, int(fatigued)))
     if not correct:
         _activate_misconceptions(conn, student_id, split(event.get("misconception_ids")), ts)
     if weight > 0:  # an untaught pre-question is diagnostic only
-        _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts, weight=weight)
+        slip_add = _settings().session.fatigue_slip_add if fatigued else 0.0
+        _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts, weight=weight, slip_add=slip_add)
 
 
 def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, evidence_type: str, correct: bool, ts: str,
-                    weight: float = 1.0) -> None:
-    """The BKT update on one part; weight (0–1) scales how far p_known moves towards the BKT result."""
+                    weight: float = 1.0, slip_add: float = 0.0) -> None:
+    """The BKT update on one part; weight (0–1) scales how far p_known moves towards the BKT result.
+    slip_add raises slip (capped at session.slip_cap) while the session is fatigued."""
     s = _settings()
     if evidence_type not in s.bkt.evidence:
         raise ValueError(f"evidence_type must be one of {', '.join(s.bkt.evidence)}")
@@ -507,6 +538,8 @@ def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, evi
     state = _load_state(conn, student_id, part_id, ts)
     before = _p_at(state, ts)
     slip, guess = s.bkt.evidence[evidence_type].slip, s.bkt.evidence[evidence_type].guess
+    if slip_add:
+        slip = max(slip, min(s.session.slip_cap, slip + slip_add))
     if state["offload_left"] > 0:
         guess = s.offloading.guess_after
         state["offload_left"] -= 1
