@@ -1,0 +1,17 @@
+default_profile = "full"
+
+[profiles.full]
+blocks = ["focus", "support", "weak_prerequisites", "anchor", "confusables",
+          "active_misconceptions", "notes", "exam_relevance", "reviews_due", "teaching_note"]
+
+[profiles.minimal]         # for comparison: notes only
+blocks = ["focus", "notes"]
+
+[limits]
+notes = 3                  # notes per focus part
+key_wording = 4
+weak_prerequisites = 2
+confusables = 2
+misconceptions = 2
+reviews_due = 3
+candidates = 3             # candidate parts when the message is ambiguous
