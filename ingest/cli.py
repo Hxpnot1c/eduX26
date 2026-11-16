@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from ingest import registry, validate
+from ingest import load, registry, validate
 
 ROOT = Path(__file__).resolve().parent.parent
 README_PATH = ROOT / "coursepacks" / "README.md"
@@ -21,7 +21,9 @@ def cmd_validate(pack: Path) -> int:
 
 def cmd_load(pack: Path, db: Path | None = None, feedback_dir: Path | None = None) -> int:
     """Load a pack into content.db."""
-    raise NotImplementedError
+    report = load.load_pack(pack, db, feedback_dir)
+    load.print_report(report)
+    return 0 if report.ok else 1
 
 
 def cmd_templates(out_dir: Path) -> int:

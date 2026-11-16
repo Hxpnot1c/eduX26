@@ -6,6 +6,7 @@ attaches content.db as "content" so queries can join across both.
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from pathlib import Path
 
@@ -15,23 +16,28 @@ CONTENT_SCHEMA = Path(__file__).resolve().parent / "content_schema.sql"
 
 
 def data_dir() -> Path:
-    """Folder holding both databases, from EDUX_DATA_DIR."""
-    raise NotImplementedError
+    """Folder holding both databases, from EDUX_DATA_DIR (default ./data); created if missing."""
+    path = Path(os.environ.get("EDUX_DATA_DIR") or ROOT / "data")
+    path.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def content_db_path() -> Path:
     """Path to content.db inside the data folder."""
-    raise NotImplementedError
+    return data_dir() / "content.db"
 
 
 def learner_db_path() -> Path:
     """Path to learner.db inside the data folder."""
-    raise NotImplementedError
+    return data_dir() / "learner.db"
 
 
 def connect_content(path: Path | None = None) -> sqlite3.Connection:
     """Open content.db in WAL mode with row access by column name."""
-    raise NotImplementedError
+    conn = sqlite3.connect(path or content_db_path())
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    return conn
 
 
 def connect_learner(path: Path | None = None, attach_content: bool = True) -> sqlite3.Connection:
