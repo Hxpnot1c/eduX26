@@ -82,6 +82,13 @@ def get_node(node_id: str) -> dict | None:
     return _node_dict(row) if row else None
 
 
+def topics() -> list[dict]:
+    """Top-level topics, in pack order."""
+    rows = _conn().execute(f"{VISIBLE} SELECT n.* FROM node n JOIN visible v ON v.id = n.id "
+                           "WHERE coalesce(n.parent_id, '') = '' ORDER BY n.rowid")
+    return [_node_dict(r) for r in rows]
+
+
 def children(node_id: str) -> list[dict]:
     """Direct children of a node, in pack order."""
     rows = _conn().execute(f"{VISIBLE} SELECT n.* FROM node n JOIN visible v ON v.id = n.id "
