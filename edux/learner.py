@@ -388,39 +388,102 @@ def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, evi
     _queue_review(conn, student_id, part_id, t + timedelta(days=gap), "scheduled", replace=True)
 
 
+# --- reading state ---------------------------------------------------------
+
+
+def part_p(student_id: str, part_id: str, at: datetime | str | None = None) -> float:
+    """The student's current p_now on a part; a part they haven't met is at its starting estimate."""
+    part_id = graph.canonical(part_id)
+    row = _conn().execute("SELECT * FROM part_state WHERE student_id = ? AND part_id = ?", (student_id, part_id)).fetchone()
+    if row is None:
+        return initial_state(part_id)[0]
+    return p_now(row["p_known"], row["half_life_days"], row["clock_start"], at)
+
+
 def level(p: float) -> str:
     """new, developing or secure from the thresholds in settings.toml."""
-    raise NotImplementedError
+    levels = _settings().levels
+    return "new" if p < levels.new else "secure" if p >= levels.secure else "developing"
 
 
-def rollup(student_id: str, node_id: str) -> float:
-    """Importance-weighted mean p_now of the parts under a node."""
-    raise NotImplementedError
+def rollup(student_id: str, node_id: str, at: datetime | str | None = None) -> float:
+    """Importance-weighted mean p_now of the parts under a node (a plain mean if no part has importance)."""
+    parts = graph.parts_of(node_id)
+    if not parts:
+        return 0.0
+    weights = [graph.weight(p)["importance"] for p in parts]
+    values = [part_p(student_id, p, at) for p in parts]
+    if sum(weights) <= 0:
+        return sum(values) / len(values)
+    return sum(w * v for w, v in zip(weights, values)) / sum(weights)
 
 
-def due_reviews(student_id: str, limit: int) -> list[dict]:
-    """Parts due for review, ordered by importance."""
-    raise NotImplementedError
+def due_reviews(student_id: str, limit: int, at: datetime | str | None = None) -> list[dict]:
+    """Parts due for review by at (default now), most important first, then the most overdue."""
+    at_dt = parse_ts(at or now_iso())
+    due = []
+    for row in _conn().execute("SELECT part_id, due, reason FROM review_queue WHERE student_id = ?", (student_id,)):
+        node = graph.get_node(row["part_id"])
+        if node and parse_ts(row["due"]) <= at_dt:
+            due.append({"part_id": node["id"], "name": node["name"], "due": row["due"], "reason": row["reason"],
+                        "p_now": part_p(student_id, node["id"], at), "importance": graph.weight(node["id"])["importance"]})
+    due.sort(key=lambda r: (-r["importance"], r["due"]))
+    return due[:limit]
 
 
-def candidates(student_id: str, limit: int) -> list[dict]:
-    """Parts to teach next: p_now in the queue band and prerequisites at least developing."""
-    raise NotImplementedError
+def all_parts() -> list[str]:
+    return [part for topic in graph.topics() for part in graph.parts_of(topic["id"])]
+
+
+def candidates(student_id: str, limit: int, at: datetime | str | None = None) -> list[dict]:
+    """Parts to teach next: p_now inside propagation.queue_band with every prerequisite at least developing,
+    ordered by importance x (1 - p_now)."""
+    low, high = _settings().propagation.queue_band
+    found = []
+    for part in all_parts():
+        p = part_p(student_id, part, at)
+        if not low <= p <= high:
+            continue
+        prereqs = [pp for edge in graph.prerequisites(part, 1) for pp in graph.parts_of(edge["other"])]
+        if any(level(part_p(student_id, pp, at)) == "new" for pp in prereqs):
+            continue
+        importance = graph.weight(part)["importance"]
+        found.append({"part_id": part, "name": graph.get_node(part)["name"], "p_now": p, "importance": importance,
+                      "score": importance * (1 - p)})
+    found.sort(key=lambda c: -c["score"])
+    return found[:limit]
 
 
 def support_level(p: float) -> str:
     """worked_example, hint or explain_back from p_now."""
-    raise NotImplementedError
+    support = _settings().support
+    return "worked_example" if p < support.worked_example_below else "hint" if p < support.hint_below else "explain_back"
 
 
-def anchor(student_id: str, part_id: str) -> dict | None:
-    """A secure analogous part with its edge note."""
-    raise NotImplementedError
+def anchor(student_id: str, part_id: str, at: datetime | str | None = None) -> dict | None:
+    """The best secure analogous part to teach through, with the edge note: highest link weight, then the
+    same part type (a calculation anchors a calculation), then the highest p_now."""
+    target = graph.get_node(part_id)
+    best, best_key = None, None
+    for edge in graph.analogous(part_id):
+        for other in graph.parts_of(edge["other"]):
+            p = part_p(student_id, other, at)
+            if level(p) != "secure":
+                continue
+            node = graph.get_node(other)
+            key = (edge["weight"] or 0, bool(target) and node["part_type"] == target["part_type"], p)
+            if best_key is None or key > best_key:
+                best_key = key
+                best = {"part_id": other, "name": node["name"], "p_now": p, "note": edge["note"],
+                        "weight": edge["weight"], "via": edge["other"] if other != edge["other"] else None}
+    return best
 
 
 def approaches(student_id: str, part_id: str) -> list[dict]:
-    """Past support approaches on the part and whether the next check went well."""
-    raise NotImplementedError
+    """Past support approaches on the part, newest first, and whether the next check went well (None: no check yet)."""
+    rows = _conn().execute("SELECT approach, ts, next_check_correct FROM approach_record WHERE student_id = ? AND part_id = ? "
+                           "ORDER BY ts DESC, id DESC", (student_id, graph.canonical(part_id)))
+    return [dict(r) for r in rows]
 
 
 def misconception_link_signal(from_id: str, to_id: str) -> float:
