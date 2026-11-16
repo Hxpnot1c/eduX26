@@ -15,10 +15,11 @@ import secrets
 import sqlite3
 import threading
 import traceback
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from edux import db, graph
+from ingest.registry import split_list as split
 from edux.settings import ContextConfig, Settings, load_context, load_settings, protocol_label, settings_hash
 
 SUPPORT_GIVEN = ("worked_example", "hint", "explain_back", "none")
@@ -173,18 +174,135 @@ def apply_event(event_id: int) -> None:
         apply_exchange(get_event(event_id))
 
 
+# --- state -----------------------------------------------------------------
+
+
+def difficulty_signal(part_id: str) -> float | None:
+    """Cross-student difficulty (0–1) of a part, e.g. from first-attempt failure rates. None until checks exist."""
+    return None
+
+
+def difficulty(part_id: str) -> float:
+    """A part's difficulty: the teacher's value (inherited from its concept or topic) or the default,
+    blended with the cross-student estimate at share difficulty.w_cross once there is one."""
+    d = _settings().difficulty
+    base = graph.difficulty(part_id)
+    base = d.default if base is None else base
+    cross = difficulty_signal(part_id)
+    return base if cross is None else (1 - d.w_cross) * base + d.w_cross * cross
+
+
+def initial_state(part_id: str) -> tuple[float, float]:
+    """Starting (p_known, half_life_days) for a part the student hasn't met, shifted by its difficulty."""
+    s = _settings()
+    shift = max(-1.0, min(1.0, (difficulty(part_id) - s.difficulty.default) / 0.5))
+    prior = min(0.99, max(0.01, s.bkt.prior - s.difficulty.prior_shift * shift))
+    half_life = max(s.decay.min_half_life_days, s.decay.base_half_life_days * (1 - s.difficulty.half_life_shift * shift))
+    return prior, half_life
+
+
+def p_now(p_known: float, half_life_days: float, since: datetime | str | None, now: datetime | str | None = None) -> float:
+    """p_known decayed by the time from since (the forgetting clock's start) to now.
+
+    since is None until the student first gets the part right: with nothing learnt yet there is nothing to forget.
+    """
+    if since is None:
+        return p_known
+    days = max(0.0, (parse_ts(now or now_iso()) - parse_ts(since)).total_seconds() / 86400)
+    return p_known * 0.5 ** (days / half_life_days)
+
+
+def _load_state(conn: sqlite3.Connection, student_id: str, part_id: str, ts: str) -> dict:
+    row = conn.execute("SELECT * FROM part_state WHERE student_id = ? AND part_id = ?", (student_id, part_id)).fetchone()
+    if row:
+        return dict(row)
+    prior, half_life = initial_state(part_id)
+    return {"student_id": student_id, "part_id": part_id, "p_known": prior, "half_life_days": half_life,
+            "last_seen": ts, "n_evidence": 0, "offload_left": 0, "was_secure": 0,
+            "clock_start": None, "last_correct": None, "exchanges_since_evidence": 0}
+
+
+def _save_state(conn: sqlite3.Connection, state: dict) -> None:
+    state["was_secure"] = int(state["was_secure"] or _p_at(state, state["last_seen"]) >= _settings().levels.secure)
+    columns = list(state)
+    conn.execute(f"INSERT OR REPLACE INTO part_state ({', '.join(columns)}) VALUES ({', '.join('?' * len(columns))})",
+                 [state[c] for c in columns])
+
+
+def _p_at(state: dict, ts: str) -> float:
+    return p_now(state["p_known"], state["half_life_days"], state["clock_start"], ts)
+
+
+def _queue_review(conn: sqlite3.Connection, student_id: str, part_id: str, due: datetime, reason: str,
+                  replace: bool = False) -> None:
+    """Queue a review; unless replace, an existing earlier due date is kept."""
+    due_iso = due.isoformat(timespec="seconds")
+    row = conn.execute("SELECT due FROM review_queue WHERE student_id = ? AND part_id = ?", (student_id, part_id)).fetchone()
+    if row and not replace and parse_ts(row["due"]) <= due:
+        return
+    conn.execute("INSERT OR REPLACE INTO review_queue (student_id, part_id, due, reason) VALUES (?, ?, ?, ?)",
+                 (student_id, part_id, due_iso, reason))
+
+
+def _tagged_parts(node_ids: list[str]) -> dict[str, float]:
+    """Parts an event is about, each with its strength: 1 for a part, concept_tag_strength for a concept or topic tag."""
+    strength = _settings().nudges.concept_tag_strength
+    parts: dict[str, float] = {}
+    for node_id in node_ids:
+        node = graph.get_node(node_id)
+        if node is None:
+            continue
+        if node["level"] == "part":
+            parts[node["id"]] = 1.0
+        else:
+            for part in graph.parts_of(node["id"]):
+                parts[part] = max(parts.get(part, 0.0), strength)
+    return parts
+
+
 def apply_exchange(event: dict) -> None:
-    """Apply one exchange event: nudges, offloading, misconception activation, untested reviews, last_seen."""
-    raise NotImplementedError
+    """Apply one exchange event: nudges, offloading, misconception activation, untested reviews, last_seen.
+
+    An exchange is not evidence: it nudges p_known a little by its labels and moves the forgetting
+    clock only decay.seen_refresh of the way to now. Old ids are resolved through id_map.
+    """
+    s, conn = _settings(), _conn()
+    student_id, ts = event["student_id"], event["ts"]
+    t = parse_ts(ts)
+    multiplier = s.nudges.depth[event["question_depth"]] * s.nudges.engagement[event["engagement"]]
+    offloaded = bool(event["offloading"]) or event.get("choice_taken") == "just_show_me"
+    support = event.get("support_given")
+
+    for part, strength in _tagged_parts(split(event["node_ids"])).items():
+        state = _load_state(conn, student_id, part, ts)
+        odds = state["p_known"] / (1 - state["p_known"])
+        odds *= 1 + (multiplier - 1) * strength
+        state["p_known"] = odds / (1 + odds)
+        if state["clock_start"]:
+            clock = parse_ts(state["clock_start"])
+            clock += (t - clock) * s.decay.seen_refresh * strength
+            state["clock_start"] = clock.isoformat(timespec="seconds")
+        state["last_seen"] = ts
+        state["exchanges_since_evidence"] += 1
+        if offloaded:
+            state["offload_left"] = s.offloading.checks_discounted
+            _queue_review(conn, student_id, part, t + timedelta(days=s.scheduling.just_show_me_gap_days), "just_show_me")
+        if support and support != "none":
+            conn.execute("INSERT INTO approach_record (student_id, part_id, approach, ts) VALUES (?, ?, ?, ?)",
+                         (student_id, part, support, ts))
+        if state["exchanges_since_evidence"] >= s.scheduling.untested_after and _p_at(state, ts) < s.scheduling.untested_below:
+            _queue_review(conn, student_id, part, t, "untested")
+        _save_state(conn, state)
+
+    for misconception_id in split(event.get("misconception_ids")):
+        misconception_id = graph.canonical(misconception_id)
+        if conn.execute("SELECT 1 FROM content.misconception WHERE id = ? AND status != 'rejected'", (misconception_id,)).fetchone():
+            conn.execute("INSERT OR REPLACE INTO student_misconception (student_id, misconception_id, active, last_seen) "
+                         "VALUES (?, ?, 1, ?)", (student_id, misconception_id, ts))
 
 
 def apply_evidence(student_id: str, part_id: str, evidence_type: str, correct: bool, ts: datetime | None = None) -> None:
     """BKT update, half-life change, prerequisite propagation, misconception clearing and review scheduling."""
-    raise NotImplementedError
-
-
-def p_now(p_known: float, half_life_days: float, last_seen: datetime, now: datetime | None = None) -> float:
-    """Decayed p_known at read time."""
     raise NotImplementedError
 
 
