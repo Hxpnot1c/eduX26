@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edux"
+version = "0.1.0"
+description = "MCP learning service: course knowledge graph, learner model and teaching context for school chatbots"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp[cli]>=1.30,<2",
+    "uvicorn",
+]
+
+[tool.setuptools]
+packages = ["edux", "ingest"]
