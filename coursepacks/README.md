@@ -199,6 +199,6 @@ Teacher feedback overlay, applied in `ts` order after every load.
 | table | text | yes | `nodes` / `edges` / `notes` / `misconceptions` / `mark_points` / `questions` / `mark_scheme_items` |  | the pack file the target is in, without `.csv` |
 | target_id | text | yes |  |  | id; for an edge, `from_id|to_id|type` |
 | action | text | yes | `approve` / `reject` / `edit` / `add` |  | approve / reject / edit / add |
-| field | text |  |  |  | for edit: column to change |
+| field | text |  |  |  | for edit: column to change; on edges, `weight` sets the link weight (0–1) |
 | value | text |  |  |  | for edit: new value; for add: `col=value;col=value` |
 | note | text |  |  |  | free text |

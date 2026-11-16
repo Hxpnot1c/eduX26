@@ -22,6 +22,9 @@ MARK_SCHEME_KINDS = ("point", "level", "indicative")
 FEEDBACK_TABLES = ("nodes", "edges", "notes", "misconceptions", "mark_points", "questions", "mark_scheme_items")
 FEEDBACK_ACTIONS = ("approve", "reject", "edit", "add")
 
+# Teacher-feedback edit field on edges that sets the link weight rather than an edge column.
+EDGE_WEIGHT_FIELD = "weight"
+
 
 @dataclass(frozen=True)
 class Column:
@@ -180,7 +183,7 @@ FEEDBACK = FileSpec("teacher_feedback/<course_id>.csv", "teacher_feedback", (
     C("table", required=True, enum=FEEDBACK_TABLES, doc="the pack file the target is in, without `.csv`"),
     C("target_id", required=True, doc="id; for an edge, `from_id|to_id|type`"),
     C("action", required=True, enum=FEEDBACK_ACTIONS, doc="approve / reject / edit / add"),
-    C("field", doc="for edit: column to change"),
+    C("field", doc="for edit: column to change; on edges, `weight` sets the link weight (0–1)"),
     C("value", doc="for edit: new value; for add: `col=value;col=value`"),
     C("note", doc="free text"),
 ), key=(), doc="Teacher feedback overlay, applied in `ts` order after every load.")
