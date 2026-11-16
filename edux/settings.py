@@ -112,6 +112,12 @@ class LinkWeight:
 
 
 @dataclass(frozen=True)
+class Resolve:
+    name_boost: float
+    candidate_ratio: float
+
+
+@dataclass(frozen=True)
 class Settings:
     """Typed view of settings.toml."""
 
@@ -128,6 +134,7 @@ class Settings:
     support: Support
     teaching_note: TeachingNote
     link_weight: LinkWeight
+    resolve: Resolve
 
 
 @dataclass(frozen=True)
