@@ -7,6 +7,7 @@ teacher feedback overlay and prints a load report.
 
 from __future__ import annotations
 
+import csv
 import json
 import sqlite3
 from collections import defaultdict
@@ -18,7 +19,10 @@ from edux import db
 from edux.settings import Settings, load_settings
 from ingest import registry
 from ingest.registry import FileSpec, split_list
-from ingest.validate import Issue, Table, read_pack, validate_tables
+from ingest.validate import Issue, Table, read_pack, validate_tables, value_error
+
+ROOT = Path(__file__).resolve().parent.parent
+FEEDBACK_DIR = ROOT / "teacher_feedback"
 
 
 @dataclass
@@ -62,6 +66,8 @@ def load_pack(
     conn = create_database(db_path)
     try:
         insert_rows(conn, tables, report.course_id)
+        feedback_csv = (feedback_dir or FEEDBACK_DIR) / f"{report.course_id}.csv"
+        report.feedback_not_applied = apply_feedback(conn, feedback_csv, report.course_id)
         fill_question_node(conn)
         build_note_index(conn)
         compute_weights(conn, settings)
@@ -140,6 +146,111 @@ def build_note_index(conn: sqlite3.Connection) -> None:
     for nid, summary, points, wording in conn.execute("SELECT id, summary, key_points, key_wording FROM note").fetchall():
         body = "\n".join([summary or "", *split_list(points), *split_list(wording)])
         conn.execute("INSERT INTO note_fts (id, body) VALUES (?, ?)", (nid, body))
+
+
+class FeedbackError(Exception):
+    """A feedback row that cannot be applied; the message is recorded."""
+
+
+def _feedback_target(spec: FileSpec, target_id: str) -> dict[str, str]:
+    parts = target_id.split("|")
+    if len(parts) != len(spec.key) or not all(parts):
+        raise FeedbackError(f"target_id must be {'|'.join(spec.key)}")
+    return dict(zip(spec.key, parts))
+
+
+def _where(target: dict[str, str]) -> tuple[str, list[str]]:
+    return " AND ".join(f"{k} = ?" for k in target), list(target.values())
+
+
+def _apply_feedback_row(conn: sqlite3.Connection, fb: dict[str, str], course_id: str) -> str:
+    """Apply one feedback row; return a message, or raise FeedbackError."""
+    for col in registry.FEEDBACK.columns:
+        problem = value_error(col, fb.get(col.name, ""))
+        if problem:
+            raise FeedbackError(problem)
+    spec = registry.FILES[registry.FEEDBACK_TABLE_FILES[fb["table"]]]
+    target = _feedback_target(spec, fb["target_id"])
+    where, args = _where(target)
+    stamp = {"updated_by": fb["teacher"], "updated_at": fb["ts"]}
+    action = fb["action"]
+
+    if action in ("approve", "reject"):
+        status = "approved" if action == "approve" else "rejected"
+        cur = conn.execute(f"UPDATE {spec.table} SET status = ?, updated_by = ?, updated_at = ? WHERE {where}",
+                           [status, stamp["updated_by"], stamp["updated_at"], *args])
+        if not cur.rowcount:
+            raise FeedbackError("target not found")
+        return f"status set to {status}"
+
+    if action == "edit":
+        field_name, value = fb.get("field", ""), fb.get("value", "")
+        if spec.table == "edge" and field_name == registry.EDGE_WEIGHT_FIELD:
+            try:
+                weight = float(value)
+            except ValueError:
+                raise FeedbackError(f"weight must be a number, got {value!r}") from None
+            if not 0 <= weight <= 1:
+                raise FeedbackError(f"weight must be between 0 and 1, got {weight}")
+            if not conn.execute(f"SELECT 1 FROM edge WHERE {where}", args).fetchone():
+                raise FeedbackError("target not found")
+            conn.execute(
+                """INSERT INTO edge_weight (from_id, to_id, type, teacher_weight) VALUES (?, ?, ?, ?)
+                   ON CONFLICT (from_id, to_id, type) DO UPDATE SET teacher_weight = excluded.teacher_weight""",
+                [*args, weight],
+            )
+            return f"link weight set to {weight}"
+        column = spec.column(field_name)
+        if column is None or field_name in spec.key or field_name in stamp:
+            raise FeedbackError(f"cannot edit field {field_name!r}")
+        problem = value_error(column, value)
+        if problem:
+            raise FeedbackError(problem)
+        cur = conn.execute(f"UPDATE {spec.table} SET {field_name} = ?, updated_by = ?, updated_at = ? WHERE {where}",
+                           [_convert(value, column), stamp["updated_by"], stamp["updated_at"], *args])
+        if not cur.rowcount:
+            raise FeedbackError("target not found")
+        return f"{field_name} edited"
+
+    # add
+    row = dict(target)
+    for pair in split_list(fb.get("value", "")):
+        name, sep, value = pair.partition("=")
+        if not sep or spec.column(name.strip()) is None:
+            raise FeedbackError(f"bad add value {pair!r}: expected col=value with a known column")
+        row[name.strip()] = value.strip()
+    row.setdefault("status", "approved")
+    row.update(stamp)
+    for col in spec.columns:
+        problem = value_error(col, row.get(col.name, ""))
+        if problem:
+            raise FeedbackError(problem)
+    if conn.execute(f"SELECT 1 FROM {spec.table} WHERE {where}", args).fetchone():
+        raise FeedbackError("a row with this id already exists")
+    insert_file(conn, spec, [row], list(row), course_id)
+    return "row added"
+
+
+def apply_feedback(conn: sqlite3.Connection, feedback_csv: Path, course_id: str = "") -> list[str]:
+    """Apply teacher feedback in ts order and record each action; return messages for those not applied."""
+    if not feedback_csv.exists():
+        return []
+    with feedback_csv.open(newline="", encoding="utf-8-sig") as f:
+        rows = [{(k or "").strip(): (v or "").strip() for k, v in r.items()} for r in csv.DictReader(f)]
+    not_applied = []
+    for line, fb in sorted(enumerate(rows, start=2), key=lambda lr: lr[1].get("ts", "")):
+        try:
+            message, applied = _apply_feedback_row(conn, fb, course_id), 1
+        except FeedbackError as e:
+            message, applied = str(e), 0
+            not_applied.append(f"{feedback_csv.name}:{line}: {fb.get('action', '')} {fb.get('table', '')} "
+                               f"{fb.get('target_id', '')!r}: {message}")
+        conn.execute(
+            """INSERT INTO teacher_feedback (ts, teacher, tbl, target_id, action, field, value, note, applied, message)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            [fb.get(k, "") for k in ("ts", "teacher", "table", "target_id", "action", "field", "value", "note")] + [applied, message],
+        )
+    return not_applied
 
 
 class Tree:
@@ -340,7 +451,7 @@ def suggest_links(conn: sqlite3.Connection, tree: Tree, questions: dict[str, tup
 
 def count_rows(conn: sqlite3.Connection) -> dict[str, int]:
     """Row counts for every table loaded from the pack plus derived tables."""
-    tables = [s.table for s in registry.FILES.values()] + ["question_node", "node_weight", "edge_weight"]
+    tables = [s.table for s in registry.FILES.values()] + ["question_node", "node_weight", "edge_weight", "teacher_feedback"]
     return {t: conn.execute(f"SELECT count(*) FROM {t}").fetchone()[0] for t in tables}
 
 
@@ -364,5 +475,7 @@ def print_report(report: LoadReport) -> None:
         print(f"  {table:18} {n}")
     for w in report.warnings:
         print(f"warning {w}")
+    for f in report.feedback_not_applied:
+        print(f"feedback not applied: {f}")
     for s in report.suggested_links:
         print(f"suggested link: {s}")

@@ -211,6 +211,7 @@ The load report also lists **suggested links**: pairs of parts in different conc
 - `approve` sets status to approved.
 - `reject` sets status to rejected.
 - `edit` changes one field and sets `updated_by`.
+- `edit` on an edge with field `weight` sets the link's `teacher_weight` (0–1), which replaces its computed weight. `reject` turns a link off and `approve` turns it back on.
 - `add` inserts a row.
 
 Each action is also recorded in the `teacher_feedback` table along with whether it applied. A missing target is reported, not fatal.

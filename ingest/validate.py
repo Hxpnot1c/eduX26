@@ -78,6 +78,22 @@ def row_key(spec: FileSpec, row: dict[str, str]) -> str:
     return "|".join(row.get(k, "") for k in spec.key)
 
 
+def value_error(col: registry.Column, value: str) -> str | None:
+    """Why a cell value is invalid for its column (required, type, enum), or None if it is fine."""
+    if not value or (col.type == "list" and not split_list(value)):
+        return f"{col.name} is required" if col.required else None
+    parsers = {"int": (int, "an integer"), "real": (float, "a number"), "date": (date.fromisoformat, "an ISO date")}
+    if col.type in parsers:
+        parse, what = parsers[col.type]
+        try:
+            parse(value)
+        except ValueError:
+            return f"{col.name} must be {what}, got {value!r}"
+    if col.enum and value not in col.enum:
+        return f"{col.name} {value!r} is not one of {', '.join(col.enum)}"
+    return None
+
+
 def _words(text: str) -> int:
     return len(text.split())
 
@@ -123,28 +139,9 @@ class _Checker:
 
     def check_row(self, spec: FileSpec, row: dict[str, str]) -> None:
         for col in spec.columns:
-            value = row.get(col.name, "")
-            if not value or (col.type == "list" and not split_list(value)):
-                if col.required:
-                    self.error(spec.name, row, f"{col.name} is required")
-                continue
-            if col.type == "int":
-                try:
-                    int(value)
-                except ValueError:
-                    self.error(spec.name, row, f"{col.name} must be an integer, got {value!r}")
-            elif col.type == "real":
-                try:
-                    float(value)
-                except ValueError:
-                    self.error(spec.name, row, f"{col.name} must be a number, got {value!r}")
-            elif col.type == "date":
-                try:
-                    date.fromisoformat(value)
-                except ValueError:
-                    self.error(spec.name, row, f"{col.name} must be an ISO date, got {value!r}")
-            if col.enum and value not in col.enum:
-                self.error(spec.name, row, f"{col.name} {value!r} is not one of {', '.join(col.enum)}")
+            problem = value_error(col, row.get(col.name, ""))
+            if problem:
+                self.error(spec.name, row, problem)
 
     # --- references -----------------------------------------------------
 
