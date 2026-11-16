@@ -34,6 +34,7 @@ class LoadReport:
     flagged: list[str] = field(default_factory=list)
     low_confidence: list[str] = field(default_factory=list)
     feedback_not_applied: list[str] = field(default_factory=list)
+    suggested_links: list[str] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -64,6 +65,7 @@ def load_pack(
         fill_question_node(conn)
         build_note_index(conn)
         compute_weights(conn, settings)
+        report.suggested_links = compute_link_weights(conn, settings)
         report.counts = count_rows(conn)
         write_load_info(conn, report)
         conn.commit()
@@ -257,9 +259,88 @@ def compute_weights(conn: sqlite3.Connection, settings: Settings) -> None:
                      [(i, exam_weight[i], dependents[i], importance[i]) for i in tree.level])
 
 
+def question_tags(conn: sqlite3.Connection, tree: Tree) -> dict[str, tuple[int, set[str]]]:
+    """For each non-rejected question: its marks and the parts it touches, from its own tags and its mark-scheme items'."""
+    tags: dict[str, tuple[int, set[str]]] = {}
+    for qid, marks, node_ids in conn.execute("SELECT id, marks, node_ids FROM question WHERE status != 'rejected'"):
+        tags[qid] = (marks, {p for n in split_list(node_ids) if n in tree for p in tree.targets(n)})
+    for qid, node_ids in conn.execute("SELECT question_id, node_ids FROM mark_scheme_item WHERE status != 'rejected'"):
+        if qid in tags:
+            tags[qid][1].update(p for n in split_list(node_ids) if n in tree for p in tree.targets(n))
+    return tags
+
+
+def material_sections(conn: sqlite3.Connection, tree: Tree, source_types: list[str]) -> list[set[str]]:
+    """Parts covered by each section (source + location) of the teaching materials."""
+    sections: dict[tuple[str, str], set[str]] = defaultdict(set)
+    rows = conn.execute(
+        f"""SELECT n.source_id, n.location, n.node_id FROM note n JOIN source s ON s.id = n.source_id
+            WHERE n.status != 'rejected' AND coalesce(n.location, '') != ''
+            AND s.type IN ({', '.join('?' * len(source_types))})""",
+        source_types,
+    )
+    for source_id, location, node_id in rows:
+        if node_id in tree:
+            sections[(source_id, location)].update(tree.targets(node_id))
+    return list(sections.values())
+
+
+def compute_link_weights(conn: sqlite3.Connection, settings: Settings) -> list[str]:
+    """Fill edge_weight from exam and teaching-material co-occurrence; return suggested links.
+
+    computed = base + (1 - base) x (w_exam x exam_marks / max + w_material x material_count / max).
+    weight = teacher_weight when a teacher set one, else computed.
+    """
+    lw = settings.link_weight
+    tree = Tree(conn)
+    questions = question_tags(conn, tree)
+    sections = material_sections(conn, tree, lw.material_source_types)
+
+    stats = []
+    for from_id, to_id, etype in conn.execute("SELECT from_id, to_id, type FROM edge").fetchall():
+        a, b = set(tree.targets(from_id)), set(tree.targets(to_id))
+        linked = [m for m, parts in questions.values() if parts & a and parts & b]
+        material = sum(1 for parts in sections if parts & a and parts & b)
+        stats.append((from_id, to_id, etype, len(linked), float(sum(linked)), material))
+
+    max_marks = max((s[4] for s in stats), default=0) or 1
+    max_material = max((s[5] for s in stats), default=0) or 1
+    rows = []
+    for from_id, to_id, etype, n_questions, marks, material in stats:
+        evidence = lw.w_exam * marks / max_marks + lw.w_material * material / max_material
+        rows.append((from_id, to_id, etype, n_questions, marks, material, lw.base + (1 - lw.base) * evidence))
+    conn.executemany(
+        """INSERT INTO edge_weight (from_id, to_id, type, exam_questions, exam_marks, material_count, computed, weight)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?7)
+           ON CONFLICT (from_id, to_id, type) DO UPDATE SET exam_questions = excluded.exam_questions,
+             exam_marks = excluded.exam_marks, material_count = excluded.material_count, computed = excluded.computed,
+             weight = coalesce(edge_weight.teacher_weight, excluded.computed)""",
+        rows,
+    )
+    return suggest_links(conn, tree, questions, lw.suggest_min_questions)
+
+
+def suggest_links(conn: sqlite3.Connection, tree: Tree, questions: dict[str, tuple[int, set[str]]], min_questions: int) -> list[str]:
+    """Pairs of parts in different concepts that enough questions test together but no edge connects."""
+    together: dict[tuple[str, str], int] = defaultdict(int)
+    for _, parts in questions.values():
+        for p in parts:
+            for q in parts:
+                if p < q and tree.parent.get(p) != tree.parent.get(q):
+                    together[(p, q)] += 1
+    linked = set()
+    for from_id, to_id in conn.execute("SELECT from_id, to_id FROM edge WHERE status != 'rejected'"):
+        if from_id in tree and to_id in tree:
+            for p in tree.targets(from_id):
+                for q in tree.targets(to_id):
+                    linked.update({(p, q), (q, p)})
+    return [f"{p} <-> {q}: tested together in {n} questions"
+            for (p, q), n in sorted(together.items(), key=lambda kv: -kv[1]) if n >= min_questions and (p, q) not in linked]
+
+
 def count_rows(conn: sqlite3.Connection) -> dict[str, int]:
     """Row counts for every table loaded from the pack plus derived tables."""
-    tables = [s.table for s in registry.FILES.values()] + ["question_node", "node_weight"]
+    tables = [s.table for s in registry.FILES.values()] + ["question_node", "node_weight", "edge_weight"]
     return {t: conn.execute(f"SELECT count(*) FROM {t}").fetchone()[0] for t in tables}
 
 
@@ -283,3 +364,5 @@ def print_report(report: LoadReport) -> None:
         print(f"  {table:18} {n}")
     for w in report.warnings:
         print(f"warning {w}")
+    for s in report.suggested_links:
+        print(f"suggested link: {s}")

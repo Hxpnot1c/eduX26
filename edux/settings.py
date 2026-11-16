@@ -102,6 +102,16 @@ class TeachingNote:
 
 
 @dataclass(frozen=True)
+class LinkWeight:
+    base: float
+    w_exam: float
+    w_material: float
+    w_misconception: float
+    material_source_types: list[str]
+    suggest_min_questions: int
+
+
+@dataclass(frozen=True)
 class Settings:
     """Typed view of settings.toml."""
 
@@ -117,6 +127,7 @@ class Settings:
     scheduling: Scheduling
     support: Support
     teaching_note: TeachingNote
+    link_weight: LinkWeight
 
 
 @dataclass(frozen=True)

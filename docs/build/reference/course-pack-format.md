@@ -163,6 +163,15 @@ Stored in the `node_weight` table:
 - **dependents:** the number of nodes reachable through `prerequisite` edges.
 - **importance:** `w_exam × percentile(exam_weight) + w_dependents × percentile(dependents)`, with the weights in `settings.toml`.
 
+Stored in the `edge_weight` table, one row per edge: how strongly the two ends are related. It's used to choose which links reach the chatbot when there are more than a context limit allows.
+- **exam_questions / exam_marks:** past-paper questions (and their marks) whose tags, including their mark-scheme items' tags, touch both ends. Tags on a concept count for its parts.
+- **material_count:** sections of teaching materials (notes from a `material_source_types` source sharing a `location`) that cover both ends.
+- **computed:** `base + (1 − base) × (w_exam × exam_marks / max + w_material × material_count / max)`, where each max is over all edges, with the settings in `[link_weight]`. A link with no evidence gets `base`.
+- **weight:** `teacher_weight` when a teacher has set one through the feedback overlay, otherwise `computed`.
+- The cross-student misconception signal (students failing X because of a misconception about Y) comes from learner events, so it is added when the weight is read, not stored here. Its share is `w_misconception`, 0 until checks exist.
+
+The load report also lists **suggested links**: pairs of parts in different concepts that at least `suggest_min_questions` questions test together but that have no edge. Nothing is added automatically.
+
 ## Validation
 **Errors** block loading:
 - unknown references or duplicate ids
