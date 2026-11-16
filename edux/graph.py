@@ -8,11 +8,13 @@ reaches the chatbot is left to the context blocks.
 
 from __future__ import annotations
 
+import functools
 import sqlite3
 import threading
 from pathlib import Path
 
 from edux import db
+from edux.settings import Settings, load_settings
 from ingest.registry import split_list
 
 # Nodes that are not rejected and have no rejected ancestor.
@@ -38,6 +40,11 @@ def _conn() -> sqlite3.Connection:
         _local.conn = db.connect_content(path)
         _local.path = path
     return _local.conn
+
+
+@functools.cache
+def _settings() -> Settings:
+    return load_settings()
 
 
 def _node_dict(row: sqlite3.Row) -> dict:
@@ -197,19 +204,108 @@ def causal_in(node_id: str) -> list[dict]:
     return _edges(node_id, "causal", "in")
 
 
-def notes_for(part_ids: list[str], limit: int) -> list[dict]:
-    """Notes for the parts, ordered by source authority, then confidence."""
-    raise NotImplementedError
+def _expand_parts(node_ids: list[str]) -> list[str]:
+    """Canonical, visible parts for a list of part or concept ids, in order, without repeats."""
+    parts: list[str] = []
+    for node_id in node_ids:
+        for part in parts_of(node_id):
+            if part not in parts:
+                parts.append(part)
+    return parts
+
+
+def _placeholders(values: list) -> str:
+    return ",".join("?" * len(values))
+
+
+def notes_for(part_ids: list[str], limit: int | None = None) -> list[dict]:
+    """Notes on the parts and on their concepts, ordered by source authority, then approved, then unflagged.
+
+    Each note has its source title and type, authority and via (the concept it came from, or None).
+    limit, when given, caps the notes per part.
+    """
+    authority = _settings().authority
+    results, seen = [], set()
+    for part in _expand_parts(part_ids):
+        own = _own_ids(part)
+        rows = _conn().execute(
+            f"""SELECT n.*, s.title AS source_title, s.type AS source_type FROM note n
+                LEFT JOIN source s ON s.id = n.source_id
+                WHERE n.node_id IN ({_placeholders(own)}) AND n.status != 'rejected'""",
+            own,
+        ).fetchall()
+        notes = []
+        for r in rows:
+            note = dict(r)
+            note["key_points"] = split_list(note["key_points"])
+            note["key_wording"] = split_list(note["key_wording"])
+            note["authority"] = authority.get(note["source_type"] or "", 0)
+            note["part_id"] = part
+            note["via"] = None if note["node_id"] == part else note["node_id"]
+            notes.append(note)
+        notes.sort(key=lambda n: (-n["authority"], n["status"] != "approved", bool(n["flag"]), n["via"] is not None))
+        for note in notes[:limit] if limit is not None else notes:
+            if note["id"] not in seen:
+                seen.add(note["id"])
+                results.append(note)
+    return results
 
 
 def misconceptions_for(part_ids: list[str]) -> list[dict]:
-    """Misconceptions attached to the parts."""
-    raise NotImplementedError
+    """Misconceptions attached to the parts (concept ids expand to their parts)."""
+    parts = _expand_parts(part_ids)
+    if not parts:
+        return []
+    rows = _conn().execute(
+        f"""SELECT * FROM misconception WHERE node_id IN ({_placeholders(parts)}) AND status != 'rejected'
+            ORDER BY rowid""",
+        parts,
+    )
+    return [{**dict(r), "source_ids": split_list(r["source_ids"])} for r in rows]
 
 
 def questions_for(part_ids: list[str]) -> list[dict]:
-    """Past-paper questions testing the parts, with marks, paper and series."""
-    raise NotImplementedError
+    """Past-paper questions testing the parts, with marks, paper and series.
+
+    A question tagged to a concept or topic counts for the parts under it; via names that tag.
+    parts lists which of the requested parts each question tests.
+    """
+    found: dict[str, dict] = {}
+    for part in _expand_parts(part_ids):
+        lineage = [part] + [a["id"] for a in ancestors(part)]
+        rows = _conn().execute(
+            f"""SELECT q.*, qn.node_id AS tag, pp.series, pp.exam_paper_id AS paper_id, ep.name AS paper_name
+                FROM question_node qn JOIN question q ON q.id = qn.question_id
+                LEFT JOIN past_paper pp ON pp.id = q.past_paper_id
+                LEFT JOIN exam_paper ep ON ep.id = pp.exam_paper_id
+                WHERE qn.node_id IN ({_placeholders(lineage)}) AND q.status != 'rejected'
+                ORDER BY q.rowid""",
+            lineage,
+        ).fetchall()
+        for r in rows:
+            question = found.get(r["id"])
+            if question is None:
+                question = {k: r[k] for k in r.keys() if k != "tag"}
+                question["node_ids"] = split_list(r["node_ids"])
+                question["assessment_objectives"] = split_list(r["assessment_objectives"])
+                question["parts"] = []
+                question["via"] = None if r["tag"] == part else r["tag"]
+                found[r["id"]] = question
+            if part not in question["parts"]:
+                question["parts"].append(part)
+    return list(found.values())
+
+
+def exam_papers_for(part_id: str) -> list[dict]:
+    """Exam papers whose topics include the part (directly or through an ancestor)."""
+    part_id = canonical(part_id)
+    lineage = {part_id} | {a["id"] for a in ancestors(part_id)}
+    papers = []
+    for r in _conn().execute("SELECT id, name, date, node_ids FROM exam_paper ORDER BY date, rowid"):
+        hits = [n for n in split_list(r["node_ids"]) if canonical(n) in lineage]
+        if hits:
+            papers.append({"id": r["id"], "name": r["name"], "date": r["date"], "via": hits[0]})
+    return papers
 
 
 def search_notes(text: str, limit: int) -> list[tuple[str, float]]:
@@ -228,7 +324,3 @@ def weight(node_id: str) -> dict:
                           (canonical(node_id),)).fetchone()
     return dict(row) if row else {"exam_weight": 0.0, "dependents": 0, "importance": 0.0}
 
-
-def exam_papers_for(part_id: str) -> list[dict]:
-    """Exam papers whose topics include the part."""
-    raise NotImplementedError
