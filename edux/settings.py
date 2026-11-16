@@ -51,6 +51,11 @@ class Nudges:
 
 
 @dataclass(frozen=True)
+class Evidence:
+    immediate_window_minutes: float
+
+
+@dataclass(frozen=True)
 class Offloading:
     guess_after: float
     checks_discounted: int
@@ -134,6 +139,7 @@ class Settings:
     levels: Levels
     bkt: Bkt
     nudges: Nudges
+    evidence: Evidence
     offloading: Offloading
     decay: Decay
     propagation: Propagation
