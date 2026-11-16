@@ -1,1 +1,3 @@
 id,node_id,point,exemplar,source_ids,status,flag,updated_by,updated_at
+pes_definition_p1,pes_definition,States that PES is the responsiveness of quantity supplied to a change in price.,PES shows how much quantity supplied responds to a price change.,spec,draft,,extraction,
+externality_tax_eval_p1,externality_tax_eval,Notes that the external cost is difficult to measure in money.,It is hard to put a money value on pollution damage.,spec;tb_main,draft,,extraction,
