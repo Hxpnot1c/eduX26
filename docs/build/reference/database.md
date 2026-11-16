@@ -84,3 +84,8 @@ CREATE TABLE review_queue (student_id TEXT NOT NULL, part_id TEXT NOT NULL, due 
 
 CREATE INDEX idx_exchange_student ON exchange_log(student_id, ts);
 ```
+
+`migrations/002_part_state_clock.sql` adds to `part_state`:
+- `clock_start`: when the current decay began (see `learner-model.md`)
+- `last_correct`: the last correct evidence on the part
+- `exchanges_since_evidence`: exchanges since its last evidence, for the `untested` review rule
