@@ -32,15 +32,17 @@ Returns the blocks named in the student's context profile (see `settings.md`):
 
 Unknown blocks in a profile are skipped with a warning.
 
-### log_exchange(node_ids, question_depth, engagement, offloading, support_given?, choice_taken?, misconception_ids?, conflict_flagged?, prompt_text?)
+### log_exchange(node_ids, question_depth, engagement, offloading, support_given?, choice_taken?, misconception_ids?, conflict_flagged?, prompt_text?, evidence?)
 Called after answering. The labels are `Literal` enums:
 - `question_depth`: `surface` / `mechanism` / `transfer`
 - `engagement`: `passive` / `active` / `constructive`
 - `support_given`: `worked_example` / `hint` / `explain_back` / `none`
 - `choice_taken`: `try_first` / `hint` / `just_show_me` / `none`
 
+`evidence` (optional) is a list of `{part_id, type, score, misconception_ids?}`, sent only when the student produced an answer or explanation in this turn. `score` is 0–1, judged against the notes and mark points from `get_learning_context`. Never sent for the chatbot's own explanation. It is written to `evidence_log` with origin `chat` (see `learner-model.md`).
+
 The tool:
-1. Writes the event with `protocol` and `settings_hash`.
+1. Writes the exchange event, and any evidence events, with `protocol` and `settings_hash`.
 2. Returns `{"ok": true}` immediately.
 3. Applies the update on a background worker.
 
@@ -77,6 +79,6 @@ Updates `student_profile`.
 
 ## Later (not in the base)
 - `start_check` / `submit_check`: past-question, find-the-error and link checks.
-- `check_log` migration.
+- A `check` table for issued checks; results go to `evidence_log` with origin `check`.
 
 See `steps/later.md`.

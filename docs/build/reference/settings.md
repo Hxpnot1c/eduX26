@@ -26,11 +26,15 @@ review = { slip = 0.10, guess = 0.15 }
 find_error = { slip = 0.15, guess = 0.25 }
 prequestion = { slip = 0.20, guess = 0.20 }
 mcq = { slip = 0.10, guess = 0.25 }
+immediate = { slip = 0.10, guess = 0.30 }   # chat evidence straight after a worked example or hint
 
 [nudges]                   # small odds multipliers from an ordinary exchange
-depth = { surface = 0.9, mechanism = 1.0, transfer = 1.1 }
+depth = { surface = 1.0, mechanism = 1.0, transfer = 1.1 }   # a basic question doesn't lower the estimate; evidence does that
 engagement = { passive = 1.0, active = 1.0, constructive = 1.05 }
 concept_tag_strength = 0.5 # a nudge on a concept tag reaches its parts at this strength
+
+[evidence]
+immediate_window_minutes = 30   # evidence this soon after a worked example or hint on the part counts as `immediate`
 
 [offloading]
 guess_after = 0.40         # guess used for the next checks after "just show me"
@@ -88,7 +92,7 @@ w_cross = 0.0              # share of the cross-student difficulty estimate (off
 base = 0.3                 # weight of a link with no evidence; evidence raises it towards 1
 w_exam = 0.7               # share from past-paper questions that test both ends
 w_material = 0.3           # share from teaching materials that cover both ends in one section
-w_misconception = 0.0      # cross-student misconception signal, read from learner.db (off until checks exist)
+w_misconception = 0.0      # cross-student misconception signal, read from learner.db (off until there is enough data)
 material_source_types = ["textbook", "teacher"]
 suggest_min_questions = 2  # questions co-testing two unlinked parts before a link is suggested
 
