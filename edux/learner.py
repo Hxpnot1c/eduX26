@@ -301,9 +301,27 @@ def apply_exchange(event: dict) -> None:
                          "VALUES (?, ?, 1, ?)", (student_id, misconception_id, ts))
 
 
+def days_to_exam(student_id: str, part_id: str, at: datetime) -> float | None:
+    """Days from at to the student's next exam on this part: their exam_date_override if set and ahead,
+    otherwise the soonest exam paper covering the part. None if there is no exam ahead."""
+    row = _conn().execute("SELECT exam_date_override FROM student_profile WHERE student_id = ?", (student_id,)).fetchone()
+    dates = [row["exam_date_override"]] if row and row["exam_date_override"] else []
+    if not dates or parse_ts(dates[0]) <= at:
+        dates = [paper["date"] for paper in graph.exam_papers_for(part_id) if paper["date"]]
+    ahead = [(parse_ts(d) - at).total_seconds() / 86400 for d in dates]
+    ahead = [d for d in ahead if d > 0]
+    return min(ahead) if ahead else None
+
+
 def review_gap_days(student_id: str, part_id: str, at: datetime) -> float:
-    """Days until the next review after evidence on a part."""
-    return _settings().decay.base_half_life_days
+    """Days until the next review after evidence: a share of the days left to the exam (Cepeda et al., 2008),
+    a smaller share as the exam gets closer. With no exam ahead, decay.base_half_life_days."""
+    s = _settings().scheduling
+    days = days_to_exam(student_id, part_id, at)
+    if days is None:
+        return _settings().decay.base_half_life_days
+    share = s.share_far if days > 60 else s.share_mid if days >= 14 else s.share_near
+    return share * days
 
 
 def apply_evidence(student_id: str, part_id: str, evidence_type: str, correct: bool, ts: str | None = None) -> None:
