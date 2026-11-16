@@ -62,6 +62,7 @@ class Decay:
     on_success: float
     on_failure: float
     min_half_life_days: float
+    seen_refresh: float
 
 
 @dataclass(frozen=True)
@@ -84,8 +85,8 @@ class Scheduling:
     min_gap_days: float
     just_show_me_gap_days: float
     max_reviews_per_reply: int
-    overconfident_after: int
-    overconfident_below: float
+    untested_after: int
+    untested_below: float
 
 
 @dataclass(frozen=True)
@@ -99,6 +100,14 @@ class TeachingNote:
     max_words: int
     exam_close_days: int
     approach_min_records: int
+
+
+@dataclass(frozen=True)
+class Difficulty:
+    default: float
+    prior_shift: float
+    half_life_shift: float
+    w_cross: float
 
 
 @dataclass(frozen=True)
@@ -133,6 +142,7 @@ class Settings:
     scheduling: Scheduling
     support: Support
     teaching_note: TeachingNote
+    difficulty: Difficulty
     link_weight: LinkWeight
     resolve: Resolve
 

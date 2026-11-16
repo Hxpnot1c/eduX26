@@ -41,6 +41,7 @@ base_half_life_days = 2.0
 on_success = 2.0           # half-life multiplier after correct evidence
 on_failure = 0.5           # multiplier after incorrect evidence
 min_half_life_days = 1.0
+seen_refresh = 0.2         # an exchange moves the forgetting clock this share of the way to now; a correct answer resets it
 
 [propagation]
 prereq_boost = 0.20        # share of a gain passed one hop to prerequisites
@@ -65,8 +66,8 @@ share_near = 0.08          # < 14 days
 min_gap_days = 1
 just_show_me_gap_days = 1.5
 max_reviews_per_reply = 3
-overconfident_after = 4    # this many exchanges on a part with no check
-overconfident_below = 0.5  # and p_known below this → queue a review
+untested_after = 4         # this many exchanges on a part with no check
+untested_below = 0.5       # and p_now below this → queue an "untested" review
 
 [support]                  # which support level to suggest, by p_now
 worked_example_below = 0.40
@@ -76,6 +77,12 @@ hint_below = 0.75          # at or above: ask them to explain it back
 max_words = 200
 exam_close_days = 14
 approach_min_records = 2   # past approaches needed before "what worked before" is shown
+
+[difficulty]               # optional teacher-set difficulty per node (0 easy – 1 hard), inherited by parts
+default = 0.5              # used when no node above the part has one
+prior_shift = 0.15         # starting p_known moves down (hard) or up (easy) by up to this much
+half_life_shift = 0.5      # starting half-life shrinks (hard) or grows (easy) by up to this share
+w_cross = 0.0              # share of the cross-student difficulty estimate (off until there is data)
 
 [link_weight]              # how strongly two linked nodes are related, computed on load
 base = 0.3                 # weight of a link with no evidence; evidence raises it towards 1
