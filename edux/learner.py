@@ -495,14 +495,28 @@ def misconception_link_signal(from_id: str, to_id: str) -> float:
     return 0.0
 
 
-def rebuild_state(student_id: str) -> None:
-    """Delete the student's derived rows and replay their events in ts order."""
-    raise NotImplementedError
+DERIVED_TABLES = ("part_state", "student_misconception", "approach_record", "review_queue")
 
 
-def rebuild_all() -> None:
-    """rebuild_state for every student."""
-    raise NotImplementedError
+def rebuild_state(student_id: str) -> int:
+    """Delete the student's derived rows and replay their events in ts order with the current settings.
+
+    Returns the number of events replayed. Old ids in events resolve through id_map as they replay.
+    Evidence has no event log until checks exist (check_log, step 07), so only exchanges are replayed.
+    """
+    conn = _conn()
+    with conn:
+        for table in DERIVED_TABLES:
+            conn.execute(f"DELETE FROM {table} WHERE student_id = ?", (student_id,))
+        events = conn.execute("SELECT * FROM exchange_log WHERE student_id = ? ORDER BY ts, id", (student_id,)).fetchall()
+        for event in events:
+            apply_exchange(dict(event))
+    return len(events)
+
+
+def rebuild_all() -> dict[str, int]:
+    """rebuild_state for every student; returns events replayed per student."""
+    return {r["id"]: rebuild_state(r["id"]) for r in _conn().execute("SELECT id FROM student ORDER BY id").fetchall()}
 
 
 # --- background worker -----------------------------------------------------
