@@ -108,6 +108,20 @@ class TeachingNote:
 
 
 @dataclass(frozen=True)
+class Session:
+    gap_minutes: float
+    fatigue_min_minutes: float
+    fatigue_window: int
+    fatigue_threshold: float
+    fatigue_min_parts: int
+    fatigue_slip_add: float
+    slip_cap: float
+    signal_window: int
+    stuck_attempts: int
+    stuck_below: float
+
+
+@dataclass(frozen=True)
 class Difficulty:
     default: float
     prior_shift: float
@@ -148,6 +162,7 @@ class Settings:
     scheduling: Scheduling
     support: Support
     teaching_note: TeachingNote
+    session: Session
     difficulty: Difficulty
     link_weight: LinkWeight
     resolve: Resolve
