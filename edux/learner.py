@@ -683,6 +683,93 @@ def approaches(student_id: str, part_id: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+# --- reading sessions ------------------------------------------------------
+
+
+def _session_evidence(conn: sqlite3.Connection, student_id: str, start: str, until: str) -> list[sqlite3.Row]:
+    return conn.execute(
+        """SELECT l.id, l.ts, l.part_id, l.score, d.surprise, d.weight, d.fatigued FROM evidence_log l
+           JOIN evidence_derived d ON d.evidence_id = l.id
+           WHERE l.student_id = ? AND l.ts >= ? AND l.ts <= ? ORDER BY l.ts, l.id""",
+        (student_id, start, until)).fetchall()
+
+
+def stuck_parts(rows: list) -> list[dict]:
+    """Parts with at least session.stuck_attempts pieces of evidence in the session, a mean score below
+    session.stuck_below, and a latest score no better than the first: repeated failure, not tiredness."""
+    s = _settings().session
+    by_part: dict[str, list[float]] = {}
+    for r in rows:
+        if r["weight"] > 0:
+            by_part.setdefault(r["part_id"], []).append(r["score"])
+    stuck = []
+    for part, scores in by_part.items():
+        if len(scores) >= s.stuck_attempts and sum(scores) / len(scores) < s.stuck_below and scores[-1] <= scores[0]:
+            node = graph.get_node(part)
+            stuck.append({"part_id": part, "name": node["name"] if node else part, "attempts": len(scores),
+                          "mean_score": sum(scores) / len(scores)})
+    return stuck
+
+
+def session_state(student_id: str, at: str | datetime | None = None) -> dict | None:
+    """The student's current session as of at (default now), or None if the last event is more than
+    session.gap_minutes ago. Fatigue and surprise come from evidence_derived; stuck parts and the supporting
+    signals ("just show me" and surface shares over the last session.signal_window exchanges) are read here."""
+    s, conn = _settings().session, _conn()
+    at_ts = _event_ts(at)
+    times = _event_times(conn, student_id, at_ts)
+    if not times or (parse_ts(at_ts) - parse_ts(times[0])).total_seconds() / 60 > s.gap_minutes:
+        return None
+    start = session_start(conn, student_id, times[0])
+    rows = _session_evidence(conn, student_id, start, at_ts)
+    weighted = [r for r in rows if r["weight"] > 0][-s.fatigue_window:]
+    onset = next((r for r in rows if r["fatigued"]), None)
+    exchanges = conn.execute(
+        """SELECT question_depth, offloading, choice_taken FROM exchange_log WHERE student_id = ? AND ts >= ? AND ts <= ?
+           ORDER BY ts DESC, id DESC LIMIT ?""", (student_id, start, at_ts, s.signal_window)).fetchall()
+
+    def minutes(ts: str) -> float:
+        return (parse_ts(ts) - parse_ts(start)).total_seconds() / 60
+
+    return {
+        "session_id": start,
+        "minutes": minutes(at_ts),
+        "n_evidence": len(rows),
+        "rolling_surprise": sum(r["surprise"] for r in weighted) / len(weighted) if weighted else None,
+        "fatigued": onset is not None,
+        "fatigued_since_minute": minutes(onset["ts"]) if onset else None,
+        "stuck_parts": stuck_parts(rows),
+        "just_show_me_share": (sum(1 for e in exchanges if e["offloading"] or e["choice_taken"] == "just_show_me")
+                               / len(exchanges)) if exchanges else None,
+        "surface_share": sum(1 for e in exchanges if e["question_depth"] == "surface") / len(exchanges) if exchanges else None,
+    }
+
+
+def sessions(student_id: str) -> list[dict]:
+    """The student's sessions, oldest first: start, minutes, exchange and evidence counts, and the minute fatigue began."""
+    s, conn = _settings().session, _conn()
+    events = conn.execute(
+        """SELECT ts, 0 AS kind FROM exchange_log WHERE student_id = ?
+           UNION ALL SELECT ts, 1 AS kind FROM evidence_log WHERE student_id = ? ORDER BY ts, kind""",
+        (student_id, student_id)).fetchall()
+    found: list[dict] = []
+    for e in events:
+        t = parse_ts(e["ts"])
+        if not found or (t - parse_ts(found[-1]["end"])).total_seconds() / 60 > s.gap_minutes:
+            found.append({"session_id": e["ts"], "end": e["ts"], "n_exchanges": 0, "n_evidence": 0})
+        found[-1]["end"] = e["ts"]
+        found[-1]["n_exchanges" if e["kind"] == 0 else "n_evidence"] += 1
+    for session in found:
+        start = parse_ts(session["session_id"])
+        session["minutes"] = (parse_ts(session["end"]) - start).total_seconds() / 60
+        onset = conn.execute(
+            """SELECT min(l.ts) FROM evidence_derived d JOIN evidence_log l ON l.id = d.evidence_id
+               WHERE d.student_id = ? AND d.session_id = ? AND d.fatigued = 1""",
+            (student_id, session["session_id"])).fetchone()[0]
+        session["fatigue_onset_minute"] = (parse_ts(onset) - start).total_seconds() / 60 if onset else None
+    return found
+
+
 def misconception_link_signal(from_id: str, to_id: str) -> float:
     """Cross-student strength (0–1) of a link: how often a misconception about one end makes students fail the other.
 
