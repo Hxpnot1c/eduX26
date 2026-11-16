@@ -66,6 +66,19 @@ The update starts from `p_now`, the decayed value. Then:
 
 If `offload_left > 0`, guess is replaced by `offloading.guess_after` and `offload_left -= 1`.
 
+While the session is fatigued (see Sessions), slip is raised by `session.fatigue_slip_add`, capped at `session.slip_cap`.
+
+**Pre-questions.** A pre-question is asked before teaching, so a wrong answer on untaught material reveals little, and so does a lucky right one. Its effect is weighted by how much the part has been covered:
+
+```
+coverage = exchanges on the part × prequestion.exchange_weight + n_evidence
+w = min(1, coverage / prequestion.full_weight_at)
+p = p_before + w × (p_bkt − p_before)     # p_bkt: the normal update with the prequestion slip and guess
+```
+
+- With `w = 0` (never taught), it is diagnostic only. The chosen misconception is activated, and nothing else changes.
+- With `w > 0`, half-life, `n_evidence`, the clock and propagation update as for other evidence, with the gain scaled by `w`.
+
 ### 2. Ordinary exchange (no check)
 A small odds nudge from the labels the chatbot sent:
 
@@ -125,10 +138,31 @@ When a focus part has `confusable` edges, those parts are returned (limit in con
 
 ## Support level
 - `p_now < support.worked_example_below` → `worked_example`
-- `< support.hint_below` → `hint`
-- otherwise → `explain_back`
+- `< support.hint_below` → `hint`: `hint_procedural` for `calculation` and `diagram` parts (a completion problem), and `hint_conceptual` for the other part types (a short example, then one guiding question)
+- otherwise → `explain_back` (re-teach only the missing points)
+- **extend** is added on when `p_now ≥ support.extend_from` and the student's latest evidence on the part was correct: one higher-order question (an unseen case, a breaking assumption, or a causal link)
 
-The text sent with each level is in `text/support/`.
+The text sent with each level is in `text/support/`. A **pre-question** (`text/support/prequestion.md`) comes before any of these on an untaught part; see `tools-and-context.md`.
+
+## Review modes
+Each due review has a mode:
+- **`recall`:** when `p_now < levels.new`. Straight recall of the part.
+- **`transfer`:** otherwise. The same idea in a new context: a causal or analogous link, then an unseen past-paper question, then an unseen case.
+
+## Sessions
+Derived from both event logs at read and rebuild time. There are no session events.
+- **Session:** a student's exchanges and evidence in time order, until a gap longer than `session.gap_minutes`. `session_id` is the start timestamp.
+- **Surprise:** `score − p_before` for each piece of evidence, where `p_before` is the part's `p_now` just before applying it (scaled by `w` for pre-questions). It is stored with `fatigued` in the derived table `evidence_derived`. Comparing with the model's expectation, not with "correct or not", stops hard material from looking like fatigue.
+- **Fatigue:** from the first piece of evidence where:
+  - the session is at least `session.fatigue_min_minutes` old
+  - the mean surprise of the last `session.fatigue_window` pieces is ≤ `session.fatigue_threshold`
+  - those pieces span at least `session.fatigue_min_parts` parts
+
+  It lasts until the session ends. Evidence while fatigued uses the raised slip above, so errors count for less and correct answers still count fully. The "just show me" share and the `surface` share over the last `session.signal_window` exchanges are reported but never trigger fatigue.
+- **Stuck:** a part with at least `session.stuck_attempts` pieces of evidence in the session, mean score below `session.stuck_below`, and a latest score no better than the first. This calls for a different approach, not a break.
+- **API:**
+  - `learner.session_state(student_id, at)` returns the current session (minutes, rolling surprise, fatigued and since when, stuck parts, supporting signals), or `None`.
+  - `learner.sessions(student_id)` lists past sessions with fatigue onset minutes.
 
 ## Teaching note
 A short paragraph built from `text/teaching_note.md` with:
@@ -144,7 +178,7 @@ Personalisation never uses learning styles.
 
 ## Rebuild
 `learner.rebuild_state(student_id)`:
-1. Deletes the student's derived rows.
+1. Deletes the student's derived rows, including `evidence_derived`.
 2. Replays their events from `exchange_log` and `evidence_log`, merged in order of (`ts`, exchanges before evidence, `id`), through the rules above with the current settings. This is the same order they are applied live, so a rebuild gives exactly the live state.
 
 `rebuild_all()` does every student. Events keep the `protocol` and `settings_hash` they were recorded under, for analysis.

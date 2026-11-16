@@ -76,6 +76,28 @@ untested_below = 0.5       # and p_now below this → queue an "untested" review
 [support]                  # which support level to suggest, by p_now
 worked_example_below = 0.40
 hint_below = 0.75          # at or above: ask them to explain it back
+extend_from = 0.40         # developing and above get higher-order questions mixed in (step 05)
+
+[prequestion]              # step 05
+enabled = true
+max_options = 4
+min_distractors = 2
+exchange_weight = 0.5      # an exchange on the part counts this much towards coverage
+full_weight_at = 3.0       # coverage at which a pre-question counts as full evidence
+
+[session]                  # step 04c (quick_parts and pattern_min_sessions: step 05)
+gap_minutes = 30           # a longer gap starts a new session
+fatigue_min_minutes = 25   # no fatigue call before this
+fatigue_window = 4         # pieces of evidence in the rolling mean
+fatigue_threshold = -0.25  # mean surprise at or below this = doing worse than expected
+fatigue_min_parts = 2      # the drop must span at least this many parts
+fatigue_slip_add = 0.15    # extra slip while fatigued
+slip_cap = 0.40
+signal_window = 6          # exchanges used for the supporting signals
+stuck_attempts = 3
+stuck_below = 0.5
+quick_parts = 3            # parts offered for a short burst when fatigued
+pattern_min_sessions = 3   # sessions with a fatigue onset before study_pattern is shown
 
 [teaching_note]
 max_words = 200
@@ -133,6 +155,8 @@ Plain markdown files read at startup. Changing wording never touches code.
 |---|---|
 | `server_instructions.md` | the MCP server instructions |
 | `tools/<tool>.md` | each tool's description |
-| `support/<level>.md` | the support instruction sent with each support level |
+| `support/<level>.md` | the support instruction for each level: `worked_example`, `hint_procedural`, `hint_conceptual`, `explain_back`, `extend`, and `prequestion` |
+| `session/<state>.md` | what to do when the session is `fatigued` or a part is `stuck` |
+| `checks/<kind>.md` | marking instructions for `points` and `level` checks (step 07) |
 | `teaching_note.md` | the teaching-note template with `{placeholders}` |
 | `chatbot_setup.md` | the text students paste into their chatbot's custom instructions |
