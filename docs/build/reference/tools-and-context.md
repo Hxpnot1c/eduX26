@@ -20,14 +20,17 @@ Returns the blocks named in the student's context profile (see `settings.md`):
 | block | contents |
 |---|---|
 | focus | resolved parts with name, level and type; or `candidates` when ambiguous |
-| support | support level and its text |
+| prequestion | on an untaught, weak part: a multiple-choice question to ask before teaching (target, correct idea, misconception distractors, text) |
+| support | support level (`worked_example` / `hint` / `explain_back`), `extend: true` when earned, and the text for the part type |
+| session | only when fatigued (offer stopping first, or a few quick questions) or stuck (step back or switch approach) |
 | weak_prerequisites | prerequisites below secure |
 | anchor | a secure analogous part with the edge note |
 | confusables | parts to contrast |
+| causal | what this part affects, and what affects it, with the edge notes |
 | active_misconceptions | wrong idea and correction |
 | notes | summaries, key points and key wording, in source-authority order, with source titles |
 | exam_relevance | papers and marks that test these parts |
-| reviews_due | up to N due parts |
+| reviews_due | up to N due parts, each with a `mode`: `recall` (weak) or `transfer` (a new context) |
 | teaching_note | short paragraph (see `learner-model.md`) |
 
 Unknown blocks in a profile are skipped with a warning.
@@ -51,10 +54,11 @@ The tool:
 ### get_my_progress()
 For students.
 - Tree with levels: topic → subtopic → concept, with parts on request.
-- Five biggest levers: lowest `p_now × importance`.
+- Five biggest levers: highest `importance × (1 − p_now)`, i.e. important and weak.
 - Weak links: confusable or causal pairs where one side is weak.
 - Reviews due.
 - AI-literacy trends, as directions over the last 14 days vs before: share of mechanism/transfer questions, share of constructive engagement, "just show me" rate.
+- `study_pattern`: "your answers tend to drop after about N minutes" (median fatigue onset), when at least `session.pattern_min_sessions` sessions had one; otherwise `null`.
 
 ### update_my_profile(interests?, exam_date_override?, answer_length?)
 Updates `student_profile`.
@@ -71,7 +75,12 @@ Updates `student_profile`.
 5. Correct active misconceptions explicitly.
 6. Weave in at most one review when due.
 7. Call `log_exchange` after answering, with honest labels.
-8. Never claim to be a teacher; flag safeguarding concerns as instructed.
+8. Never claim to be a teacher. If a student says something suggesting they or someone else is at risk, stop tutoring, encourage them to speak to a trusted adult or the school's safeguarding lead, and give emergency contacts if urgent. (No automatic reporting yet.)
+9. Pre-questions: ask before explaining, wait for the answer, and correct the misconception the student picked.
+10. Explain-back: re-teach only the missing points.
+11. Reviews: feedback explains why, not just right or wrong.
+12. Fatigue: offer stopping first; never push the student to continue.
+13. Never give a numeric mark for a level-marked question.
 
 ## Changes
 - Adding a field to a tool's output is fine.

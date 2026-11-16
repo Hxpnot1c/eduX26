@@ -104,3 +104,13 @@ CREATE TABLE evidence_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT
   protocol TEXT NOT NULL, settings_hash TEXT NOT NULL);
 CREATE INDEX idx_evidence_student ON evidence_log(student_id, ts);
 ```
+
+`migrations/004_session_signals.sql` (step 04c) adds a **derived** table, cleared and refilled by `rebuild_state`:
+
+```sql
+CREATE TABLE evidence_derived (evidence_id INTEGER PRIMARY KEY, student_id TEXT NOT NULL, session_id TEXT NOT NULL,
+  p_before REAL NOT NULL,            -- the part's p_now just before this evidence
+  surprise REAL NOT NULL,            -- score − p_before (scaled by the coverage weight for pre-questions)
+  fatigued INTEGER NOT NULL DEFAULT 0);
+CREATE INDEX idx_evidence_derived_session ON evidence_derived(student_id, session_id);
+```
