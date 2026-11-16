@@ -301,9 +301,73 @@ def apply_exchange(event: dict) -> None:
                          "VALUES (?, ?, 1, ?)", (student_id, misconception_id, ts))
 
 
-def apply_evidence(student_id: str, part_id: str, evidence_type: str, correct: bool, ts: datetime | None = None) -> None:
+def review_gap_days(student_id: str, part_id: str, at: datetime) -> float:
+    """Days until the next review after evidence on a part."""
+    return _settings().decay.base_half_life_days
+
+
+def apply_evidence(student_id: str, part_id: str, evidence_type: str, correct: bool, ts: str | None = None) -> None:
     """BKT update, half-life change, prerequisite propagation, misconception clearing and review scheduling."""
-    raise NotImplementedError
+    conn = _conn()
+    with conn:
+        _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts or now_iso())
+
+
+def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, evidence_type: str, correct: bool, ts: str) -> None:
+    s = _settings()
+    if evidence_type not in s.bkt.evidence:
+        raise ValueError(f"evidence_type must be one of {', '.join(s.bkt.evidence)}")
+    node = graph.get_node(part_id)
+    if node is None or node["level"] != "part":
+        raise ValueError(f"{part_id!r} is not a part")
+    part_id, t = node["id"], parse_ts(ts)
+    ts = t.isoformat(timespec="seconds")
+
+    state = _load_state(conn, student_id, part_id, ts)
+    before = _p_at(state, ts)
+    slip, guess = s.bkt.evidence[evidence_type].slip, s.bkt.evidence[evidence_type].guess
+    if state["offload_left"] > 0:
+        guess = s.offloading.guess_after
+        state["offload_left"] -= 1
+    if correct:
+        p = before * (1 - slip) / (before * (1 - slip) + (1 - before) * guess)
+    else:
+        p = before * slip / (before * slip + (1 - before) * (1 - guess))
+    p += (1 - p) * s.bkt.learn_rate
+
+    factor = s.decay.on_success if correct else s.decay.on_failure
+    state["half_life_days"] = max(s.decay.min_half_life_days, state["half_life_days"] * factor)
+    state["p_known"] = p
+    if correct:
+        state["clock_start"] = state["last_correct"] = ts
+    elif state["clock_start"]:
+        state["clock_start"] = ts  # decay continues from the new, lower estimate
+    state["n_evidence"] += 1
+    state["exchanges_since_evidence"] = 0
+    state["last_seen"] = ts
+    _save_state(conn, state)
+
+    gain = p - before
+    if gain > 0:
+        for edge in graph.prerequisites(part_id, 1):
+            for prereq in graph.parts_of(edge["other"]):
+                other = _load_state(conn, student_id, prereq, ts)
+                other["p_known"] = min(0.99, _p_at(other, ts) + s.propagation.prereq_boost * gain)
+                if other["clock_start"]:
+                    other["clock_start"] = ts
+                _save_state(conn, other)
+
+    if correct:
+        conn.execute(
+            """UPDATE student_misconception SET active = 0, last_seen = ? WHERE student_id = ? AND active = 1
+               AND misconception_id IN (SELECT id FROM content.misconception WHERE node_id = ?)""",
+            (ts, student_id, part_id))
+    conn.execute(
+        """UPDATE approach_record SET next_check_correct = ? WHERE id = (SELECT id FROM approach_record
+           WHERE student_id = ? AND part_id = ? AND next_check_correct IS NULL ORDER BY ts DESC, id DESC LIMIT 1)""",
+        (int(correct), student_id, part_id))
+    gap = max(s.scheduling.min_gap_days, review_gap_days(student_id, part_id, t))
+    _queue_review(conn, student_id, part_id, t + timedelta(days=gap), "scheduled", replace=True)
 
 
 def level(p: float) -> str:
