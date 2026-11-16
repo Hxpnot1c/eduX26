@@ -69,7 +69,7 @@ CREATE TABLE exchange_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT
   protocol TEXT NOT NULL,            -- e.g. v0.1/full
   settings_hash TEXT NOT NULL,
   prompt_text TEXT);                 -- only when STORE_PROMPTS=1
--- check_log is added in a later migration together with checks (see steps/later.md)
+-- evidence_log is added by migration 003 (below)
 
 -- derived (rebuilt from events by learner.rebuild_state)
 CREATE TABLE part_state (student_id TEXT NOT NULL, part_id TEXT NOT NULL, p_known REAL NOT NULL, half_life_days REAL NOT NULL,
@@ -89,3 +89,18 @@ CREATE INDEX idx_exchange_student ON exchange_log(student_id, ts);
 - `clock_start`: when the current decay began (see `learner-model.md`)
 - `last_correct`: the last correct evidence on the part
 - `exchanges_since_evidence`: exchanges since its last evidence, for the `untested` review rule
+
+`migrations/003_evidence_log.sql` adds the second event log:
+
+```sql
+CREATE TABLE evidence_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT NOT NULL, ts TEXT NOT NULL,
+  part_id TEXT NOT NULL,             -- one row per part
+  evidence_type TEXT NOT NULL,       -- a key of [bkt.evidence], as sent
+  score REAL NOT NULL,               -- 0–1; correct when score >= bkt.correct_share
+  origin TEXT NOT NULL,              -- chat / check
+  exchange_id INTEGER,               -- the exchange_log row it came with, if any
+  check_id TEXT,                     -- the issued check, if any (step 07)
+  misconception_ids TEXT DEFAULT '',
+  protocol TEXT NOT NULL, settings_hash TEXT NOT NULL);
+CREATE INDEX idx_evidence_student ON evidence_log(student_id, ts);
+```

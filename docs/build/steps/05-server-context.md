@@ -19,6 +19,7 @@ The MCP server over Streamable HTTP at `/mcp`, with student keys, the four base 
   - Transport security with `ALLOWED_HOSTS` from the environment, so a tunnel host works.
 - Prompts: `review_due` and `check_me`.
 - Fill in the `text/` files with real wording, including `chatbot_setup.md` (the paste-in instructions for students).
+- `text/tools/log_exchange.md` must say: send `evidence` only when the student actually produced an answer or explanation in this turn, scored 0–1 against the notes and mark points from `get_learning_context`. Never send it for the chatbot's own explanation.
 - `python -m edux.cli serve`.
 
 ## Choosing what goes into each block
@@ -43,7 +44,7 @@ Graph lookups (step 03) return full lists with the numbers needed to rank them. 
 
 - Every coefficient in these scores goes in `settings.toml`, under a section per block if they differ. The limits stay in `context.toml`.
 - Add `causal` to `BLOCKS`, to the `full` profile in `context.toml`, and to the block table in `reference/tools-and-context.md`.
-- The cross-student misconception signal (`learner.misconception_link_signal`) is added to link weight when it is read, with share `link_weight.w_misconception`. It's 0 until checks exist.
+- The cross-student misconception signal (`learner.misconception_link_signal`) is added to link weight when it is read, with share `link_weight.w_misconception`. It's 0 until there is enough evidence across students.
 
 ## Commits
 1. `feat(context): add context blocks and profile assembly`

@@ -20,7 +20,7 @@ A part the student hasn't met starts at `bkt.prior` with `decay.base_half_life_d
 - The starting half-life is `base_half_life_days × (1 − half_life_shift × shift)`.
 - So hard parts start lower and are forgotten faster.
 
-Later, a cross-student estimate (`learner.difficulty_signal`, e.g. first-attempt failure rates) is blended in at share `difficulty.w_cross`. It's 0 until checks exist.
+Later, a cross-student estimate (`learner.difficulty_signal`, e.g. first-attempt failure rates) is blended in at share `difficulty.w_cross`. It's 0 until there is enough evidence across students.
 
 ## Current p_known (decay)
 Read time only, never written back:
@@ -42,8 +42,16 @@ Forgetting runs from the last time the student **got the part right**, not from 
 
 ## Updates
 
-### 1. Evidence (checks, explain-back, links)
-Standard BKT with the slip and guess for that evidence type. For a check scored 0–1, the result counts as correct if `score ≥ bkt.correct_share`.
+### 1. Evidence (chat and checks)
+Evidence is an event in `evidence_log`, one row per part, with a score from 0 to 1. It comes from two places:
+- **chat:** the chatbot sends it with `log_exchange` when the student produced an answer or explanation in that turn, scored against the notes and mark points it was given. Never for the chatbot's own explanation.
+- **check:** results of issued checks (step 07).
+
+The result counts as correct if `score ≥ bkt.correct_share`. Wrong evidence that carries misconception ids activates them.
+
+**Immediate recall.** Performance straight after teaching overstates learning. Evidence on a part within `evidence.immediate_window_minutes` of an exchange on that part with `support_given` = `worked_example` or `hint` (including the exchange it was sent with) is applied as type `immediate`, which has a higher guess. Evidence later in the session, or in a later session, uses its own type. The type is stored as sent and the rule applied when replaying, so changing the window re-scores old evidence.
+
+Standard BKT with the slip and guess for the evidence type:
 
 ```
 if correct: p = p(1-slip) / (p(1-slip) + (1-p)guess)
@@ -137,10 +145,8 @@ Personalisation never uses learning styles.
 ## Rebuild
 `learner.rebuild_state(student_id)`:
 1. Deletes the student's derived rows.
-2. Replays their events in `ts` order through the rules above, with the current settings.
+2. Replays their events from `exchange_log` and `evidence_log`, merged in order of (`ts`, exchanges before evidence, `id`), through the rules above with the current settings. This is the same order they are applied live, so a rebuild gives exactly the live state.
 
 `rebuild_all()` does every student. Events keep the `protocol` and `settings_hash` they were recorded under, for analysis.
-
-Evidence has no event log until checks add `check_log` (step 07). Until then, `apply_evidence` effects are not replayed by a rebuild.
 
 A rebuild uses the student's current `exam_date_override`, not the value it had when each event happened.

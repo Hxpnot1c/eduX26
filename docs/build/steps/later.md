@@ -5,15 +5,15 @@ Build these once the base (steps 01–06) works end to end. Each one is its own 
 ## Next, in order
 
 ### 07 Checks (`build/07-checks`)
-- Migration `002_check_log.sql`: `check_log(id, student_id, ts, check_type, part_ids, question_id, score, max_score, result, protocol, settings_hash)`.
+- A migration adding a `check` table for issued checks: `check(id, student_id, ts, check_type, part_ids, question_id, max_score, protocol, settings_hash)`. There is no separate check log: results are evidence.
 - `start_check(node_ids?, type?)`:
   - Picks a past question for the part when one exists and its marks are within `checks.max_question_marks_in_chat`; otherwise uses our mark points.
   - Types: `past_question`, `explain_back`, `link` (score 0–5 with a knowledge-integration rubric) and `find_error`, at most at the `find_error_free_rate`.
   - Returns the question and the rubric for the chatbot to mark against.
-- `submit_check(check_id, score, misconception_ids?)`: writes the event and calls `apply_evidence`.
+- `submit_check(check_id, score, misconception_ids?)`: writes the result to `evidence_log` with origin `check` and that `check_id` (one row per part, through `learner.record_evidence`), which applies it.
 - Approach records get `next_check_correct` filled.
 - Add the `[checks]` section to settings.toml.
-- Fill in `learner.misconception_link_signal`: when students fail a check on X with a misconception that belongs to Y, strengthen the X–Y link. Set `link_weight.w_misconception` above 0 once there is enough data.
+- Fill in `learner.misconception_link_signal`: when students give wrong evidence on X with a misconception that belongs to Y, strengthen the X–Y link. Set `link_weight.w_misconception` above 0 once there is enough data.
 
 ### 08 Tests (`build/08-tests`)
 pytest for:

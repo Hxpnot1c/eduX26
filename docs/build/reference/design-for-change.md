@@ -8,8 +8,8 @@ The teaching protocol, the course-pack columns, the tools and the context given 
 - The server opens `learner.db` and attaches `content.db` (`ATTACH DATABASE ... AS content`), so queries can join across both.
 
 ## 2. Events first, state rebuilt from them
-- `exchange_log` (and later `check_log`) are append-only event logs. They hold everything needed to recompute a student's state.
-- `part_state`, `student_misconception`, `approach_record` and `review_queue` are **derived**. `learner.rebuild_state(student_id)` replays that student's events, in order, through the current scoring functions. `rebuild_all()` does every student.
+- `exchange_log` and `evidence_log` are append-only event logs. They hold everything needed to recompute a student's state. Evidence comes from chat (with an exchange) now and from checks later; both go in `evidence_log`.
+- `part_state`, `student_misconception`, `approach_record` and `review_queue` are **derived**. `learner.rebuild_state(student_id)` replays that student's events from both logs, in order, through the current scoring functions. `rebuild_all()` does every student.
 - Every event row records `protocol` (the `protocol` version from `settings.toml` plus the student's context profile, e.g. `v0.1/full`) and `settings_hash` (the first 8 hex characters of the SHA-256 of `settings.toml` plus `context.toml`). This lets the team see which version of the protocol produced which data.
 - After any change to scoring settings, or to which parts exist, run `python -m edux.cli rebuild`.
 
