@@ -73,6 +73,7 @@ def load_pack(
         compute_weights(conn, settings)
         report.suggested_links = compute_link_weights(conn, settings)
         report.counts = count_rows(conn)
+        report.flagged, report.low_confidence = flagged_rows(conn)
         write_load_info(conn, report)
         conn.commit()
     finally:
@@ -455,12 +456,39 @@ def count_rows(conn: sqlite3.Connection) -> dict[str, int]:
     return {t: conn.execute(f"SELECT count(*) FROM {t}").fetchone()[0] for t in tables}
 
 
+def flagged_rows(conn: sqlite3.Connection) -> tuple[list[str], list[str]]:
+    """Served rows that extraction flagged, and nodes with extraction_confidence below 0.5."""
+    flagged = []
+    for spec in registry.FILES.values():
+        if not spec.content_row:
+            continue
+        key = " || '|' || ".join(spec.key)
+        rows = conn.execute(f"SELECT {key}, flag FROM {spec.table} WHERE flag != '' AND status != 'rejected'")
+        flagged += [f"{spec.name} {k}: {flag}" for k, flag in rows]
+    low = [f"nodes.csv {i}: {c}" for i, c in conn.execute(
+        "SELECT id, extraction_confidence FROM node WHERE extraction_confidence < 0.5 AND status != 'rejected'")]
+    return flagged, low
+
+
 def write_load_info(conn: sqlite3.Connection, report: LoadReport) -> None:
     """Record when and what was loaded."""
-    summary = json.dumps({"counts": report.counts, "warnings": len(report.warnings)})
+    summary = json.dumps({
+        "counts": report.counts,
+        "warnings": len(report.warnings),
+        "flagged": len(report.flagged),
+        "low_confidence": len(report.low_confidence),
+        "feedback_not_applied": len(report.feedback_not_applied),
+        "suggested_links": len(report.suggested_links),
+    })
     conn.execute("DELETE FROM load_info")
     conn.execute("INSERT INTO load_info VALUES (?, ?, ?, ?)",
                  (datetime.now(timezone.utc).isoformat(timespec="seconds"), report.course_id, report.pack_path, summary))
+
+
+def _section(title: str, lines: list[str]) -> None:
+    print(f"\n{title} ({len(lines)})")
+    for line in lines:
+        print(f"  {line}")
 
 
 def print_report(report: LoadReport) -> None:
@@ -468,14 +496,15 @@ def print_report(report: LoadReport) -> None:
     if report.errors:
         for issue in report.errors:
             print(f"ERROR   {issue}")
-        print(f"Not loaded: {len(report.errors)} error(s).")
+        print(f"\nNot loaded: {len(report.errors)} error(s). content.db was not changed.")
         return
-    print(f"Loaded {report.course_id} from {report.pack_path} into {report.db_path}")
+    print(f"Loaded {report.course_id} from {report.pack_path}")
+    print(f"into {report.db_path}")
+    print("\nRows")
     for table, n in report.counts.items():
         print(f"  {table:18} {n}")
-    for w in report.warnings:
-        print(f"warning {w}")
-    for f in report.feedback_not_applied:
-        print(f"feedback not applied: {f}")
-    for s in report.suggested_links:
-        print(f"suggested link: {s}")
+    _section("Warnings", report.warnings)
+    _section("Flagged rows", report.flagged)
+    _section("Extraction confidence below 0.5", report.low_confidence)
+    _section("Teacher feedback not applied", report.feedback_not_applied)
+    _section("Suggested links", report.suggested_links)
