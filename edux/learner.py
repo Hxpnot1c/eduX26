@@ -1,7 +1,7 @@
 """Learner model: append-only events, scoring rules and state rebuilt from events.
 
 part_state, student_misconception, approach_record and review_queue are derived:
-rebuild_state replays a student's events through the current rules in settings.toml.
+rebuild_state replays a student's events (exchange_log and evidence_log) through the current rules in settings.toml.
 Every rule runs at the event's own timestamp, so replaying gives the same state.
 """
 
@@ -614,18 +614,25 @@ DERIVED_TABLES = ("part_state", "student_misconception", "approach_record", "rev
 
 
 def rebuild_state(student_id: str) -> int:
-    """Delete the student's derived rows and replay their events in ts order with the current settings.
+    """Delete the student's derived rows and replay their events with the current settings.
 
-    Returns the number of events replayed. Old ids in events resolve through id_map as they replay.
-    Evidence has no event log until checks exist (check_log, step 07), so only exchanges are replayed.
+    exchange_log and evidence_log are merged in order of (ts, exchanges before evidence, id), the order in which
+    they are applied live. Returns the number of events replayed. Old ids resolve through id_map as they replay.
     """
     conn = _conn()
     with conn:
         for table in DERIVED_TABLES:
             conn.execute(f"DELETE FROM {table} WHERE student_id = ?", (student_id,))
-        events = conn.execute("SELECT * FROM exchange_log WHERE student_id = ? ORDER BY ts, id", (student_id,)).fetchall()
+        events = conn.execute(
+            """SELECT ts, 0 AS kind, id FROM exchange_log WHERE student_id = ?
+               UNION ALL SELECT ts, 1 AS kind, id FROM evidence_log WHERE student_id = ?
+               ORDER BY ts, kind, id""",
+            (student_id, student_id)).fetchall()
         for event in events:
-            apply_exchange(dict(event))
+            if event["kind"] == 0:
+                apply_exchange(get_event(event["id"]))
+            else:
+                apply_evidence_event(get_evidence(event["id"]))
     return len(events)
 
 
