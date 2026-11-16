@@ -15,6 +15,31 @@ Build these once the base (steps 01–06) works end to end. Each one is its own 
 - Add the `[checks]` section to settings.toml.
 - Fill in `learner.misconception_link_signal`: when students give wrong evidence on X with a misconception that belongs to Y, strengthen the X–Y link. Set `link_weight.w_misconception` above 0 once there is enough data.
 
+#### Point-marked questions (e.g. 2–4 mark define, calculate, explain)
+- Say which mark points were met and which were missed.
+- The score for evidence is the share of mark points met.
+
+#### Level-marked questions (9, 15 and 25 marks)
+1. The chatbot places the answer in a **level** using the level descriptors in `mark_scheme_items` (`kind = level`).
+2. **It never gives a numeric mark.** A specific mark within a level needs examiner judgement.
+3. **Every level comes with the one specific step to reach the next level,** taken from the next level's descriptor. Example: "Level 3. To reach Level 4, your evaluation needs a supported judgement."
+
+   **Why:** grades alone lead to lower achievement and motivation than comments (Koenka et al., 2021, meta-analysis, school students). Grades with comments gave the best motivational effects in a randomised study of 12–15 year olds (Koenka, 2020).
+4. It also returns a **readiness checklist**, each item met or not, with one line of why:
+   - command word followed (did "evaluate" actually evaluate?)
+   - indicative content covered
+   - chain of reasoning complete
+   - evaluation with a supported judgement
+   - conclusion follows
+5. **Evidence:**
+   - Each checklist item scores as evidence on the parts it touches, via `mark_scheme_items.node_ids`.
+   - The level as a whole scores `level / max_level` on the question's parts.
+6. **Evaluation task:** a teacher (or the team) levels 10–20 answers independently, and the results are compared with the chatbot's. Report exact agreement and within-one-level agreement, labelled as a small sample, in the evaluation section of the README.
+
+#### Text
+- `text/checks/level.md`
+- `text/checks/points.md`
+
 ### 08 Tests (`build/08-tests`)
 pytest for:
 - validation errors
