@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from ingest import registry
+from ingest import registry, validate
 
 ROOT = Path(__file__).resolve().parent.parent
 README_PATH = ROOT / "coursepacks" / "README.md"
@@ -14,7 +14,9 @@ README_PATH = ROOT / "coursepacks" / "README.md"
 
 def cmd_validate(pack: Path) -> int:
     """Validate a pack; return a non-zero exit code on errors."""
-    raise NotImplementedError
+    result = validate.validate_pack(pack)
+    validate.print_result(result)
+    return 0 if result.ok else 1
 
 
 def cmd_load(pack: Path, db: Path | None = None, feedback_dir: Path | None = None) -> int:
