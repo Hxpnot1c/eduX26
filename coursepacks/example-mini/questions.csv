@@ -1,1 +1,3 @@
 id,past_paper_id,number,marks,command_word,format,assessment_objectives,node_ids,summary,status,flag,updated_by,updated_at
+synth_2024_p1_q01,synth_2024_p1,01,4,Calculate,short,AO2,ped_formula;ped_values,"Synthetic: calculate PED from a price and quantity change, then say whether demand is elastic.",approved,,extraction,
+synth_2024_p1_q02,synth_2024_p1,02,9,Explain,data_response,AO2;AO3,ped_values;tax_incidence_split,Synthetic: explain why consumers bear most of a tax on a good with inelastic demand.,approved,,extraction,

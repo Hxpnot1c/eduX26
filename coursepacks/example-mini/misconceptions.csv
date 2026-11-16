@@ -1,1 +1,10 @@
 id,node_id,wrong_idea,correction,source_ids,status,flag,updated_by,updated_at
+ped_definition_m1,ped_definition,PED is the slope of the demand curve.,"Slope uses absolute changes; PED uses percentage changes, so it varies along a straight-line demand curve.",tb_main,draft,,extraction,
+ped_formula_m1,ped_formula,Divide the change in price by the change in quantity.,Quantity goes on top: % change in quantity demanded divided by % change in price.,tb_main,draft,,extraction,
+ped_values_m1,ped_values,An elastic good has a PED below 1.,"Ignoring the sign, elastic means greater than 1: quantity changes proportionally more than price.",tb_main,draft,,extraction,
+pes_definition_m1,pes_definition,Supply is equally elastic in the short and long run.,Supply is usually more elastic in the long run because firms can change all their inputs.,tb_main,draft,,extraction,
+pes_formula_m1,pes_formula,PES is usually negative like PED.,PES is usually positive because a higher price leads firms to supply more.,tb_main,draft,,extraction,
+yed_definition_m1,yed_definition,YED uses the change in price.,YED uses the change in income; the good's own price is held constant.,tb_main,draft,,extraction,
+tax_supply_shift_m1,tax_supply_shift,An indirect tax shifts the demand curve.,"The tax is paid by firms, so it raises their costs and shifts supply, not demand.",tb_main,draft,,extraction,
+tax_incidence_split_m1,tax_incidence_split,Producers always pay the whole tax because they hand it to the government.,"Who hands the money over does not decide who bears it; the split depends on elasticities.",tb_main,draft,,extraction,
+externality_tax_eval_m1,externality_tax_eval,A tax always removes the externality completely.,"It reduces output towards the optimum, but only fully if the tax equals the marginal external cost.",tb_main,draft,,extraction,

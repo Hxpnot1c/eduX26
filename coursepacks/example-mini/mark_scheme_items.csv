@@ -1,1 +1,6 @@
 id,question_id,kind,marks,level,text,node_ids,status,flag,updated_by,updated_at
+synth_2024_p1_q01_i1,synth_2024_p1_q01,point,2,,Correct percentage changes in quantity and price.,ped_formula,approved,,extraction,
+synth_2024_p1_q01_i2,synth_2024_p1_q01,point,2,,Correct PED value and correctly classed as elastic or inelastic.,ped_formula;ped_values,approved,,extraction,
+synth_2024_p1_q02_i1,synth_2024_p1_q02,point,3,,Identifies demand as price inelastic using the data.,ped_values,approved,,extraction,
+synth_2024_p1_q02_i2,synth_2024_p1_q02,point,3,,Explains that firms can pass most of the tax on as a higher price.,tax_incidence_split,approved,,extraction,
+synth_2024_p1_q02_i3,synth_2024_p1_q02,point,3,,Links the small fall in quantity to inelastic demand.,ped_values;tax_incidence_split,approved,,extraction,
