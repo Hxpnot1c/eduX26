@@ -56,12 +56,6 @@ class Evidence:
 
 
 @dataclass(frozen=True)
-class Offloading:
-    guess_after: float
-    checks_discounted: int
-
-
-@dataclass(frozen=True)
 class Decay:
     base_half_life_days: float
     on_success: float
@@ -219,7 +213,6 @@ class Settings:
     bkt: Bkt
     nudges: Nudges
     evidence: Evidence
-    offloading: Offloading
     decay: Decay
     propagation: Propagation
     importance: Importance

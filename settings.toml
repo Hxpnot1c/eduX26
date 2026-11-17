@@ -28,10 +28,6 @@ concept_tag_strength = 0.5 # a nudge on a concept tag reaches its parts at this 
 [evidence]
 immediate_window_minutes = 30   # evidence this soon after a worked example or hint on the part counts as `immediate`
 
-[offloading]
-guess_after = 0.40         # guess used for the next checks after "just show me"
-checks_discounted = 2
-
 [decay]
 base_half_life_days = 2.0
 on_success = 2.0           # half-life multiplier after correct evidence

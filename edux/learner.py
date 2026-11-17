@@ -406,10 +406,13 @@ def _tagged_parts(node_ids: list[str]) -> dict[str, float]:
 
 
 def apply_exchange(event: dict) -> None:
-    """Apply one exchange event: nudges, offloading, misconception activation, untested reviews, last_seen.
+    """Apply one exchange event: nudges, the "just show me" review, misconception activation, untested reviews,
+    last_seen.
 
     An exchange is not evidence: it nudges p_known a little by its labels and moves the forgetting
-    clock only decay.seen_refresh of the way to now. Old ids are resolved through id_map.
+    clock only decay.seen_refresh of the way to now. Being shown doesn't change understanding (step 05d): a
+    "just show me" exchange gets no nudge and doesn't discount later evidence (the immediate-recall rule
+    already lowers credit straight after being shown); it still queues a review. Old ids are resolved through id_map.
     """
     s, conn = _settings(), _conn()
     student_id, ts = event["student_id"], event["ts"]
@@ -420,9 +423,10 @@ def apply_exchange(event: dict) -> None:
 
     for part, strength in _tagged_parts(split(event["node_ids"])).items():
         state = _load_state(conn, student_id, part, ts)
-        odds = state["p_known"] / (1 - state["p_known"])
-        odds *= 1 + (multiplier - 1) * strength
-        state["p_known"] = odds / (1 + odds)
+        if not offloaded:
+            odds = state["p_known"] / (1 - state["p_known"])
+            odds *= 1 + (multiplier - 1) * strength
+            state["p_known"] = odds / (1 + odds)
         if state["clock_start"]:
             clock = parse_ts(state["clock_start"])
             clock += (t - clock) * s.decay.seen_refresh * strength
@@ -430,7 +434,6 @@ def apply_exchange(event: dict) -> None:
         state["last_seen"] = ts
         state["exchanges_since_evidence"] += 1
         if offloaded:
-            state["offload_left"] = s.offloading.checks_discounted
             _queue_review(conn, student_id, part, t + timedelta(days=s.scheduling.just_show_me_gap_days), "just_show_me")
         if support and support != "none":
             conn.execute("INSERT INTO approach_record (student_id, part_id, approach, ts) VALUES (?, ?, ?, ?)",
@@ -597,9 +600,6 @@ def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, evi
     slip, guess = s.bkt.evidence[evidence_type].slip, s.bkt.evidence[evidence_type].guess
     if slip_add:
         slip = max(slip, min(s.session.slip_cap, slip + slip_add))
-    if state["offload_left"] > 0:
-        guess = s.offloading.guess_after
-        state["offload_left"] -= 1
     if correct:
         p = before * (1 - slip) / (before * (1 - slip) + (1 - before) * guess)
     else:
