@@ -62,13 +62,13 @@ def _this_session(student_id: str, last: dict, at: str) -> tuple[set[str], bool]
 
 
 def _save_plan(student_id: str, at: str, steps: list[dict], focus: list[str], corrected: set[str],
-               offered_stop: bool, style_sent: dict | None, pending: dict | None) -> None:
+               offered_stop: bool, style_sent: dict | None, pending: dict | None, mcq: dict | None) -> None:
     conn = learner._conn()
     with conn:
         conn.execute("INSERT OR REPLACE INTO issued_plan (student_id, ts, plan_json) VALUES (?, ?, ?)",
                      (student_id, at, json.dumps({"plan": steps, "focus": focus, "corrected": sorted(corrected),
                                                   "offered_stop": offered_stop, "style_sent": style_sent,
-                                                  "pending": pending})))
+                                                  "pending": pending, "mcq": mcq})))
 
 
 def _open_question(last: dict, parts: list[str], answer: dict | None, choice: str, at: str) -> dict | None:
@@ -90,7 +90,16 @@ def _pending_after(steps: list[dict], pending: dict | None) -> dict | None:
     if steps and steps[-1]["move"] == "reask":
         return pending
     step = plan.asking_step(steps)
-    return {k: step[k] for k in ("move", "key", "part_id", "data")} if step else None
+    return {k: step[k] for k in ("move", "key", "part_id", "data", "question") if k in step} if step else None
+
+
+def _mcq_after(steps: list[dict], last: dict) -> dict | None:
+    """The letter -> option map to score the next answer by (step 05d): the plan's ask_mcq, or the last map
+    when the same question is asked again; otherwise none."""
+    if steps and steps[-1]["move"] == "reask":
+        return last.get("mcq")
+    step = plan.asking_step(steps)
+    return step["mcq"] if step and step["move"] == "ask_mcq" else None
 
 
 def result_size(result: object) -> int:
@@ -138,8 +147,9 @@ def _support_given(steps: list[dict]) -> str:
 
 
 def public_steps(steps: list[dict]) -> list[dict]:
-    """The plan as the chatbot sees it: {move, part_id, cue, data} per step, levels only."""
-    return levels_only([{k: v for k, v in step.items() if k != "key"} for step in steps])
+    """The plan as the chatbot sees it: {move, part_id, cue, data} per step, levels only (the cue key, an MCQ's
+    question and its letter map stay on the server)."""
+    return levels_only([{k: step[k] for k in ("move", "part_id", "cue", "data")} for step in steps])
 
 
 def levels_only(value: object) -> object:
@@ -200,7 +210,9 @@ def tutor_turn(
     """One call at the start of each reply: score and record the student's message (and answer, if any) now,
     then return the plan for this reply, the points to score their next answer against, and reference.
 
-    A bad label, part, point or misconception returns {"ok": False, "error": ...} and records nothing.
+    A bad label, part, point, letter or misconception returns {"ok": False, "error": ...} and records nothing.
+    A multiple-choice answer whose letter map is gone records nothing either, and the question is asked again
+    with new letters (step 05d).
     The focus is node_ids if given; else, with an answer, the previous turn's focus (or the answer's part);
     else the message; a message that names nothing keeps the previous turn's focus.
     """
@@ -214,19 +226,22 @@ def tutor_turn(
         return {"ok": False, "error": f"this_message.engagement must be one of {', '.join(s.nudges.engagement)}"}
     if choice not in learner.CHOICE_TAKEN:
         return {"ok": False, "error": f"this_message.choice must be one of {', '.join(learner.CHOICE_TAKEN)}"}
+    last = _last_plan(student["id"])
+    lost = False
     try:
-        evidence = learner.score_answer(answer) if answer else None
+        evidence = learner.score_answer(answer, last.get("mcq")) if answer else None
+    except learner.LostQuestion:
+        evidence, lost = None, True
     except ValueError as e:
         return {"ok": False, "error": str(e)}
 
-    last = _last_plan(student["id"])
-    if not node_ids and evidence:   # an answer continues the last turn's topic (after a prereq check or review too)
-        node_ids = last["focus"] or [evidence["part_id"]]
+    if not node_ids and (evidence or lost):   # an answer continues the last turn's topic (after a prereq check or review too)
+        node_ids = last["focus"] or [answer["part_id"]]
     resolution = graph.resolve(message or "", node_ids)
     if not resolution["parts"] and not resolution["candidates"] and last["focus"]:
         resolution = {**graph.resolve("", last["focus"]), "unknown": resolution["unknown"]}
     tagged = list(dict.fromkeys(([evidence["part_id"]] if evidence else []) + resolution["parts"]))
-    if tagged:
+    if tagged and not lost:
         try:
             learner.record_exchange(student["id"], tagged, depth, engagement, choice == "just_show_me",
                                     _support_given(last["plan"]), choice,
@@ -244,14 +259,21 @@ def tutor_turn(
     config = _context().profiles.get(profile, _context().profiles[_context().default_profile])
     corrected, offered_stop = _this_session(student["id"], last, at)
     pending = _open_question(last, parts, answer, choice, at)
-    steps = (plan.add_terms(turn, plan.choose(turn, blocks, s, choice, answer, evidence, last["plan"], corrected,
-                                              offered_stop, pending))
-             if config.plan else [])
+    again = last.get("pending") if lost else None
+    if again and not (again["move"] == "ask_mcq" and again["part_id"] == answer["part_id"] and again.get("question")):
+        again = None
+    if not config.plan:
+        steps = []
+    elif again:   # the letter can't be scored: the same question, freshly shuffled
+        steps = plan.add_terms(turn, [plan.ask_again(turn, again)])
+    else:
+        steps = plan.add_terms(turn, plan.choose(turn, blocks, s, choice, None if lost else answer, evidence,
+                                                 last["plan"], corrected, offered_stop, pending))
     current_style = style(student, client)
     send_style = _style_due(last, current_style, at)
     _save_plan(student["id"], at, steps, parts, corrected | plan.corrected_in(steps),
                offered_stop or any(step["move"] == "offer_stop" for step in steps), current_style,
-               _pending_after(steps, pending))
+               _pending_after(steps, pending), _mcq_after(steps, last))
     # with no plan (a comparison profile), answers on the focus parts can still be scored
     next_points = plan.score_next(steps) if config.plan else {
         p: points for p in parts if (points := plan.lettered(p))}

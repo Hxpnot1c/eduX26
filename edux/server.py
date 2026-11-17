@@ -44,7 +44,8 @@ class Answer(BaseModel):
     """The student's answer to what you asked last turn. The server works out the score."""
 
     part_id: str = Field(description="the part the question was on (the step's part_id)")
-    type: AnswerType = Field(description="what was asked: prequestion, explain_back, review, extend or past_question")
+    type: AnswerType = Field(description="the asking step's data.answer_type: mcq, explain_back, review, extend, ...")
+    choice: str | None = Field(None, description="mcq only: the letter they picked, e.g. B")
     correct: bool | None = Field(None, description="prequestion only: did they pick the correct option")
     picked_misconception_id: str | None = Field(None, description="prequestion only: the option id they picked, if it was a misconception")
     points_met: list[str] = Field(default_factory=list, description="the letters from score_next (a, b, ...) of the points the student actually produced")

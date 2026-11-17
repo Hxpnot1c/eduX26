@@ -1,0 +1,1 @@
+Ask one multiple-choice question for data.purpose: show data.options exactly as given, in letter order, writing one plausible wrong option yourself at data.extra_option if there is one. Give no hints and wait for a letter; for an intuition question, lead in from data.target and say guessing is fine.
