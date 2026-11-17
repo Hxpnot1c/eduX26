@@ -97,6 +97,17 @@ def student_by_key(key: str) -> dict | None:
     return dict(row) if row else None
 
 
+def set_profile(student_id: str, profile: str | None) -> None:
+    """Switch a student's context profile (None: back to the default in context.toml)."""
+    if get_student(student_id) is None:
+        raise ValueError(f"unknown student {student_id!r}")
+    if profile is not None and profile not in _context().profiles:
+        raise ValueError(f"unknown context profile {profile!r}; one of {', '.join(_context().profiles)}")
+    conn = _conn()
+    with conn:
+        conn.execute("UPDATE student SET profile = ? WHERE id = ?", (profile, student_id))
+
+
 def profile_of(student: dict) -> str:
     """The student's context profile, or the default from context.toml."""
     return student.get("profile") or _context().default_profile

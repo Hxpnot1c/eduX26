@@ -5,7 +5,7 @@ The MCP server is a thin layer. `edux/server.py` registers tools and prompts and
 **Principle: the chatbot labels, the server scores.** The server never calls an LLM. The chatbot sends structured labels; the server applies fixed rules from `settings.toml`.
 
 ## Identity
-Each student has a key. The connector URL is `https://<host>/mcp?key=<key>`. The server reads the key from the request, looks up the student, and rejects unknown keys. The key is never passed as a tool argument.
+Each student has a key. The connector URL is `https://<host>/mcp?key=<key>`. The server reads the key from the request, looks up the student, and rejects unknown keys. The key is never passed as a tool argument. A request without a known key is refused with 401 before the MCP handshake, and each tool checks the key again.
 
 ## Tools in the base
 
@@ -35,7 +35,7 @@ Returns the blocks named in the student's context profile (see `settings.md`):
 
 Unknown blocks in a profile are skipped with a warning.
 
-### log_exchange(node_ids, question_depth, engagement, offloading, support_given?, choice_taken?, misconception_ids?, conflict_flagged?, prompt_text?, evidence?)
+### log_exchange(node_ids, question_depth, engagement, offloading, support_given?, choice_taken?, misconception_ids?, conflict_flagged?, prompt_text?, evidence?, client?)
 Called after answering. The labels are `Literal` enums:
 - `question_depth`: `surface` / `mechanism` / `transfer`
 - `engagement`: `passive` / `active` / `constructive`
@@ -46,14 +46,14 @@ Called after answering. The labels are `Literal` enums:
 
 The tool:
 1. Writes the exchange event, and any evidence events, with `protocol` and `settings_hash`.
-2. Returns `{"ok": true}` immediately.
+2. Returns `{"ok": true}` immediately, or `{"ok": false, "error": ...}` (and records nothing) when a label or evidence item doesn't fit.
 3. Applies the update on a background worker.
 
 `prompt_text` is stored only when `STORE_PROMPTS=1`.
 
-### get_my_progress()
+### get_my_progress(include_parts?)
 For students.
-- Tree with levels: topic → subtopic → concept, with parts on request.
+- Tree with levels: topic → subtopic → concept, with parts when `include_parts` is true.
 - Five biggest levers: highest `importance × (1 − p_now)`, i.e. important and weak.
 - Weak links: confusable or causal pairs where one side is weak.
 - Reviews due.

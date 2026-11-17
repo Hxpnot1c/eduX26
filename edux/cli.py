@@ -1,8 +1,9 @@
-"""Command line: python -m edux.cli load | add-student | log | evidence | state | sessions | rebuild | serve | seed-demo."""
+"""Command line: python -m edux.cli load | add-student | set-profile | log | evidence | state | sessions | rebuild | serve | seed-demo."""
 
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -131,9 +132,26 @@ def cmd_sessions(student: str) -> int:
     return 0
 
 
+def cmd_set_profile(student: str, profile: str) -> int:
+    """Switch a student's context profile ("default" goes back to the default in context.toml)."""
+    try:
+        learner.set_profile(student, None if profile == "default" else profile)
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(f"{student}: profile {learner.profile_of(learner.get_student(student))}")
+    return 0
+
+
 def cmd_serve(host: str | None = None, port: int | None = None) -> int:
-    """Start the MCP server."""
-    raise NotImplementedError
+    """Start the MCP server at http://<host>:<port>/mcp (HOST and PORT from the environment by default)."""
+    from edux import server
+
+    host = host or os.environ.get("HOST", "127.0.0.1")
+    port = port or int(os.environ.get("PORT", "8000"))
+    print(f"serving MCP at http://{host}:{port}/mcp?key=<student key>")
+    server.serve(host, port)
+    return 0
 
 
 def cmd_seed_demo() -> int:
@@ -164,6 +182,9 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--name", required=True)
     p.add_argument("--course", required=True)
     p.add_argument("--profile", help="context profile (default from context.toml)")
+    p = sub.add_parser("set-profile", help="switch a student's context profile")
+    p.add_argument("--student", required=True)
+    p.add_argument("--profile", required=True, help="a profile in context.toml, or 'default'")
     p = sub.add_parser("log", help="record an exchange by hand")
     p.add_argument("--student", required=True)
     p.add_argument("--nodes", required=True, type=_list, help="comma-separated part or concept ids")
@@ -191,12 +212,17 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--student", required=True)
     p = sub.add_parser("rebuild", help="replay events into derived state")
     p.add_argument("--student")
+    p = sub.add_parser("serve", help="start the MCP server")
+    p.add_argument("--host", help="default: HOST from the environment, else 127.0.0.1")
+    p.add_argument("--port", type=int, help="default: PORT from the environment, else 8000")
     args = parser.parse_args(argv)
 
     if args.command == "load":
         code = cmd_load(args.pack)
     elif args.command == "add-student":
         code = cmd_add_student(args.name, args.course, args.profile)
+    elif args.command == "set-profile":
+        code = cmd_set_profile(args.student, args.profile)
     elif args.command == "log":
         code = cmd_log(args.student, args.nodes, args.depth, args.engagement, args.offloading, args.support,
                        args.choice, args.misconceptions, args.ts, args.evidence)
@@ -206,6 +232,8 @@ def main(argv: list[str] | None = None) -> None:
         code = cmd_state(args.student, args.node, args.at)
     elif args.command == "sessions":
         code = cmd_sessions(args.student)
+    elif args.command == "serve":
+        code = cmd_serve(args.host, args.port)
     else:
         code = cmd_rebuild(args.student)
     sys.exit(code)
