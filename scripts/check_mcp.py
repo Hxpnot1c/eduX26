@@ -126,7 +126,7 @@ async def conversation(keyed: str, student: str) -> None:
     points = graph.score_points(PART)
     third = await turn({"message": "You divide the change by the original value and times by 100 for each percentage.",
                         "this_message": {"question_depth": "mechanism", "engagement": "constructive"},
-                        "answer": {"part_id": PART, "type": "explain_back", "points_met": [points[0]["id"]]}})
+                        "answer": {"part_id": PART, "type": "explain_back", "points_met": ["a"]}})
     missing = ((third.get("plan") or [{}, {}])[-1].get("data") or {}).get("missing")
     check(moves(third) == ["feedback", "reteach"] and missing == [p["point"] for p in points[1:]],
           "3. an explanation missing a point gets feedback, then reteach with only that point",
@@ -149,6 +149,31 @@ async def conversation(keyed: str, student: str) -> None:
         print(f"     turn {i}: {len(json.dumps(t))} chars")
     leaked = [i + 1 for i, t in enumerate(turns) if "p_now" in json.dumps(t)]
     check(not leaked, "no p_now in tutor_turn output", f"found in turn(s) {leaked}" if leaked else "")
+
+
+async def point_ids(keyed: str, student: str) -> None:
+    """points_met scores the same as letters, full ids, a mix, or with no saved plan; another part's id is refused."""
+    points = graph.score_points(PART)
+    labels = {"question_depth": "mechanism", "engagement": "constructive"}
+    cases = [("letters", ["a"], 1 / len(points)), ("full ids", [points[0]["id"]], 1 / len(points)),
+             ("a mix", ["a", points[1]["id"]], 1.0), ("no saved plan", ["a"], 1 / len(points))]
+    for label, met, expected in cases:
+        if label == "no saved plan":
+            with learner._conn() as conn:
+                conn.execute("DELETE FROM issued_plan WHERE student_id = ?", (student,))
+        time.sleep(1.1)
+        before = max_evidence_id()
+        got = await call(keyed, "tutor_turn", {"message": "my answer", "client": "check_mcp", "this_message": labels,
+                                               "answer": {"part_id": PART, "type": "explain_back", "points_met": met}})
+        scores = [e["score"] for e in evidence(student, before)]
+        check(got.get("ok") is True and scores == [expected], f"points_met as {label} scores {expected}",
+              got.get("error") or json.dumps(scores))
+    other = graph.score_points("ped_definition")[0]["id"]
+    before = max_evidence_id()
+    got = await call(keyed, "tutor_turn", {"message": "my answer", "this_message": labels,
+                                           "answer": {"part_id": PART, "type": "explain_back", "points_met": [other]}})
+    check(got.get("ok") is False and max_evidence_id() == before, "a point id from another part is refused",
+          got.get("error", ""))
 
 
 async def main(url: str, key: str, student: str) -> None:
@@ -178,6 +203,8 @@ async def main(url: str, key: str, student: str) -> None:
                                            "answer": {"part_id": PART, "type": "explain_back", "points_met": ["no_such_point"]}})
     check(bad.get("ok") is False and max_evidence_id() == before, "an unknown point id is refused and records nothing",
           bad.get("error", ""))
+
+    await point_ids(keyed, student)
 
     progress = await call(keyed, "get_my_progress", {})
     check({"tree", "levers", "reviews_due", "trends"} <= set(progress) and "p_now" not in json.dumps(progress),

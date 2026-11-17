@@ -203,7 +203,7 @@ def tutor_turn(
                offered_stop or any(step["move"] == "offer_stop" for step in steps), current_style)
     # with no plan (a comparison profile), answers on the focus parts can still be scored
     next_points = plan.score_next(steps) if config.plan else {
-        p: points for p in parts if (points := graph.score_points(p))}
+        p: points for p in parts if (points := plan.lettered(p))}
 
     focus = blocks.get("focus") or {}
     out = {

@@ -152,7 +152,8 @@ def score_answer(answer: dict) -> dict:
 
     The chatbot ticks; the server scores. A prequestion scores 1 if correct, else 0, and its picked
     misconception goes into misconception_ids. Every other type scores len(points_met) / len(points), against
-    graph.score_points for the part. Raises ValueError on an unknown part, type, point or misconception.
+    graph.score_points for the part; points_met may be letters from score_next, full point ids or a mix, and
+    the resolved point ids are returned as points_met. Raises ValueError on an unknown part, type, point or misconception.
     """
     node = graph.get_node(answer.get("part_id") or "")
     if node is None or node["level"] != "part":
@@ -176,15 +177,16 @@ def score_answer(answer: dict) -> dict:
             misconception_ids = [picked] + [m for m in misconception_ids if m != picked]
         score = 1.0 if answer["correct"] else 0.0
     else:
-        points = {p["id"] for p in graph.score_points(part_id)}
+        points = graph.score_points(part_id)
         if not points:
             raise ValueError(f"{part_id} has no mark points or note key points to score against")
-        met = set(answer.get("points_met") or [])
-        unknown = sorted(met - points)
+        met, unknown = graph.resolve_points(part_id, answer.get("points_met") or [])
         if unknown:
-            raise ValueError(f"answer.points_met: unknown point id(s) {', '.join(unknown)} for {part_id}; "
-                             f"use the ids from score_next")
+            raise ValueError(f"answer.points_met: {', '.join(unknown)} is not a point on {part_id}; "
+                             f"use the letters from score_next")
         score = len(met) / len(points)
+        return {"part_id": part_id, "type": kind, "score": score, "misconception_ids": misconception_ids,
+                "points_met": met}
     return {"part_id": part_id, "type": kind, "score": score, "misconception_ids": misconception_ids}
 
 
