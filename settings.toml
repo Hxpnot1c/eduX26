@@ -110,6 +110,12 @@ suggest_min_questions = 2  # questions co-testing two unlinked parts before a li
 name_boost = 2.0           # a match on a node's name or alias counts this many times a match in a note
 candidate_ratio = 0.8      # other results scoring at least this share of the top one are "close": ask which
 
+[progress]                 # get_my_progress (step 05)
+levers = 5                 # parts listed as the biggest levers: highest importance x (1 - p_now)
+weak_links = 5             # confusable or causal pairs with one side weak
+trend_days = 14            # AI-literacy trends compare this many recent days with everything before
+trend_min_change = 0.05    # a share must move at least this much to count as up or down
+
 [blocks]                   # how get_learning_context ranks what goes into each block, per turn (step 05)
 review_link_boost = 0.5    # a due review linked to the current focus counts this much more
 review_importance_floor = 0.1   # added to importance so unweighted parts still rank by how overdue they are

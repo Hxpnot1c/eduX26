@@ -217,6 +217,18 @@ def causal_in(node_id: str) -> list[dict]:
     return _edges(node_id, "causal", "in")
 
 
+def links(edge_type: str) -> list[dict]:
+    """Every non-rejected edge of one type with both ends visible: from_id, to_id, note, weight."""
+    visible = _visible_ids()
+    rows = _conn().execute(
+        """SELECT e.from_id, e.to_id, e.note, w.weight FROM edge e
+           LEFT JOIN edge_weight w ON w.from_id = e.from_id AND w.to_id = e.to_id AND w.type = e.type
+           WHERE e.type = ? AND e.status != 'rejected' ORDER BY e.rowid""",
+        (edge_type,))
+    return [dict(r) | {"type": edge_type, "note": r["note"] or ""} for r in rows
+            if r["from_id"] in visible and r["to_id"] in visible]
+
+
 def _expand_parts(node_ids: list[str]) -> list[str]:
     """Canonical, visible parts for a list of part or concept ids, in order, without repeats."""
     parts: list[str] = []
