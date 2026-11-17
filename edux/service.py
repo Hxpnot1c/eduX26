@@ -126,31 +126,49 @@ def _literacy_followup(student_id: str, last: dict, steps: list[dict], evidence:
     """Follow up the literacy task set last turn (step 05e); returns (steps, the task still pending).
 
     The task is done when a verify task is answered (ail_task) or, for an ask task, when this message is a research
-    question (its ail_question is the score). Not done: when the plan doesn't already end in a question, reask
-    re-asks it in one line, at most literacy.max_followups times; not done after that, it is recorded as ail_task
-    with score 0 on its skill's part and dropped. A plan that ends in a question, or sets a new task, leaves it
-    waiting (not counted). A new session drops it unscored. A new task in this plan becomes the pending one."""
+    question (its ail_question is the score). Not done:
+    - re-asked already (literacy.max_followups times) and still not done: recorded as ail_task with score 0 on its
+      skill's part, and dropped;
+    - the plan doesn't end in a question: reask re-asks it in one line;
+    - the plan ends in a question: it waits; after literacy.max_waits replies waiting, it takes the next reply's
+      question slot in place of the course question (never a how-AI-works check's), and the course resumes after.
+    A new session drops it unscored (a task never re-asked is never scored). A new task replaces it."""
+    s = _settings().literacy
     task = last.get("literacy")
     if task and last["ts"] is not None:
+        task = {"waited": 0, **task}
         gap = (learner.parse_ts(at) - learner.parse_ts(last["ts"])).total_seconds() / 60
         done = ((task["skill"] == "verify" and evidence is not None and evidence["type"] == "ail_task")
                 or (task["skill"] == "ask" and request == "research"))
+        how_parts = set(graph.parts_of(learner.AIL_HOW))
+        has_room = not any(plan.is_stop(step) for step in steps) and len(steps) < plan.MAX_STEPS
         if done or gap > _settings().session.gap_minutes:
             task = None
-        elif any(plan.is_stop(step) for step in steps) or len(steps) >= plan.MAX_STEPS:
-            pass   # waits for a turn with room
-        elif task["followups"] >= _settings().literacy.max_followups:
+        elif task["followups"] >= s.max_followups:
             learner.record_evidence(student_id, task["part_id"], "ail_task", 0.0, ts=at, apply="now")
             task = None
-        else:
+        elif has_room:
             steps = steps + [plan.literacy_reask(task)]
             task = {**task, "followups": task["followups"] + 1}
+        elif task["waited"] >= s.max_waits and not any(step["part_id"] in how_parts for step in steps):
+            steps = plan.with_check(steps, plan.literacy_reask(task))
+            task = {**task, "followups": task["followups"] + 1}
+        else:
+            task = {**task, "waited": task["waited"] + 1}
     else:
         task = None
     new = next((step for step in steps if step["move"] == "literacy_task" and step["data"].get("task")), None)
     if new:
-        task = {"skill": new["data"]["skill"], "part_id": new["part_id"], "followups": 0}
+        task = {"skill": new["data"]["skill"], "part_id": new["part_id"], "followups": 0, "waited": 0}
     return steps, task
+
+
+def _unchecked(before: list[dict], after: list[dict], points: dict) -> None:
+    """A course check dropped from the plan (a how-AI-works check or a literacy re-ask took its slot): the point
+    stays unchecked, and its check comes in the next reply (plan.teach reads check_due)."""
+    for step in before:
+        if step["move"] == "ask_mcq" and step["data"].get("purpose") == "check" and not any(x is step for x in after):
+            plan._progress(points, step["part_id"])["check_due"] = True
 
 
 def _open_question(last: dict, parts: list[str], answer: dict | None, choice: str, at: str) -> dict | None:
@@ -179,8 +197,8 @@ def _pending_after(steps: list[dict], pending: dict | None) -> dict | None:
 def _mcq_after(steps: list[dict], last: dict) -> dict | None:
     """The letter -> option map to score the next answer by (step 05d): the plan's ask_mcq, or the last map
     when the same question is asked again; otherwise none."""
-    if steps and steps[-1]["move"] == "reask":
-        return last.get("mcq")
+    if steps and steps[-1]["move"] == "reask":   # a multiple-choice question asked again keeps its map
+        return last.get("mcq") if steps[-1]["data"].get("asked") in ("ask_mcq", "prequestion") else None
     step = plan.asking_step(steps)
     return step["mcq"] if step and step["move"] == "ask_mcq" else None
 
@@ -375,10 +393,11 @@ def tutor_turn(
                                                  last.get("mcq")))
     if config.plan and this_message.get("source_conflict"):
         steps = plan.with_source_conflict(steps)
-    how = None
+    how, literacy, course_steps = None, None, steps
     if config.plan:
         steps, how = _how_ai_works(turn, blocks, last, steps, evidence, this_message)
-    steps, literacy = _literacy_followup(student["id"], last, steps, evidence, request, at) if config.plan else (steps, None)
+        steps, literacy = _literacy_followup(student["id"], last, steps, evidence, request, at)
+        _unchecked(course_steps, steps, points)
     current_style = style(student, client)
     send_style = _style_due(last, current_style, at)
     _save_plan(student["id"], at, steps, parts, corrected | plan.corrected_in(steps),

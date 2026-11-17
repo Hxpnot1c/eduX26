@@ -402,10 +402,14 @@ def check(turn: Turn, part_id: str, index: int, settings: Settings, avoid: list[
 def teach(turn: Turn, part_id: str, settings: Settings, progress: dict) -> list[dict]:
     """Teaching on a part. At worked_example or hint: the point it has reached, as teach_point and an ask_mcq
     check on it. After the last point, or for a part already at explain_back level (secure), explain_back of
-    the whole part, which joins the points together, is scored on all of them and ends the part's progress."""
+    the whole part, which joins the points together, is scored on all of them and ends the part's progress.
+    A point whose check was left out last reply (check_due: a how-AI-works check or a literacy re-ask took its
+    slot) gets its check only."""
     level = learner.support_level(turn.p(part_id))
     points = _points(part_id)
     state = _progress(progress, part_id)
+    if state.pop("check_due", False) and state["index"] <= len(points):   # taught, but its check was replaced
+        return [check(turn, part_id, state["index"], settings)]
     if level == "explain_back" or state["index"] > len(points):
         progress.pop(part_id, None)
         return [_step("explain_back", part_id)]

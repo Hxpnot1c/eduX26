@@ -129,6 +129,7 @@ class Literacy:
     importance: float
     secure_every: int
     max_followups: int
+    max_waits: int
     ask_min_features: int
     how_secure_every: int
 
