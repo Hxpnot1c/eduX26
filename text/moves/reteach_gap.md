@@ -1,1 +1,1 @@
-Their answer missed the points in `missing`. Re-teach only those points, briefly, without repeating what they got right or going over the whole topic. Then ask them to try again in their own words, and wait.
+Their answer missed the points in `missing`; if `shown_misconceptions` is set, first name each wrong idea and say why it is wrong using its correction. Re-teach only the missing points, briefly, without repeating what they got right or going over the whole topic. Then ask them to try again in their own words, and wait.

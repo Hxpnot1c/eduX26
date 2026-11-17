@@ -47,23 +47,27 @@ def _last_plan(student_id: str) -> dict:
     ids corrected so far in that session]}, empty if none."""
     row = learner._conn().execute("SELECT ts, plan_json FROM issued_plan WHERE student_id = ?", (student_id,)).fetchone()
     if row is None:
-        return {"ts": None, "plan": [], "focus": [], "corrected": []}
-    return {"ts": row["ts"], "corrected": [], **json.loads(row["plan_json"])}
+        return {"ts": None, "plan": [], "focus": [], "corrected": [], "offered_stop": False}
+    return {"ts": row["ts"], "corrected": [], "offered_stop": False, **json.loads(row["plan_json"])}
 
 
-def _corrected_this_session(student_id: str, last: dict, at: str) -> set[str]:
-    """Misconceptions already corrected this session: carried in issued_plan while the session lasts."""
+def _this_session(student_id: str, last: dict, at: str) -> tuple[set[str], bool]:
+    """(misconceptions already corrected, stopping already offered) this session, carried in issued_plan
+    while the session lasts."""
     session = learner.session_state(student_id, at)
     if last["ts"] is None or session is None or last["ts"] < session["session_id"]:
-        return set()
-    return set(last["corrected"]) | plan.corrected_in(last["plan"])
+        return set(), False
+    offered = last["offered_stop"] or any(step["move"] == "offer_stop" for step in last["plan"])
+    return set(last["corrected"]) | plan.corrected_in(last["plan"]), offered
 
 
-def _save_plan(student_id: str, at: str, steps: list[dict], focus: list[str], corrected: set[str]) -> None:
+def _save_plan(student_id: str, at: str, steps: list[dict], focus: list[str], corrected: set[str],
+               offered_stop: bool) -> None:
     conn = learner._conn()
     with conn:
         conn.execute("INSERT OR REPLACE INTO issued_plan (student_id, ts, plan_json) VALUES (?, ?, ?)",
-                     (student_id, at, json.dumps({"plan": steps, "focus": focus, "corrected": sorted(corrected)})))
+                     (student_id, at, json.dumps({"plan": steps, "focus": focus, "corrected": sorted(corrected),
+                                                  "offered_stop": offered_stop})))
 
 
 def _support_given(steps: list[dict]) -> str:
@@ -164,15 +168,20 @@ def tutor_turn(
     profile = learner.profile_of(student)
     blocks = context_blocks.assemble(profile, turn, s, _context())
     config = _context().profiles.get(profile, _context().profiles[_context().default_profile])
-    corrected = _corrected_this_session(student["id"], last, at)
-    steps = plan.choose(turn, blocks, s, choice, answer, evidence, last["plan"], corrected) if config.plan else []
-    _save_plan(student["id"], at, steps, parts, corrected | plan.corrected_in(steps))
+    corrected, offered_stop = _this_session(student["id"], last, at)
+    steps = (plan.choose(turn, blocks, s, choice, answer, evidence, last["plan"], corrected, offered_stop)
+             if config.plan else [])
+    _save_plan(student["id"], at, steps, parts, corrected | plan.corrected_in(steps),
+               offered_stop or any(step["move"] == "offer_stop" for step in steps))
+    # with no plan (a comparison profile), answers on the focus parts can still be scored
+    next_points = plan.score_next(steps) if config.plan else {
+        p: points for p in parts if (points := graph.score_points(p))}
 
     focus = blocks.get("focus") or {}
     out = {
         "ok": True,
         "plan": levels_only(steps),
-        "score_next": plan.score_next(steps),
+        "score_next": next_points,
         "style": style(student, client),
         "reference": _reference(blocks),
         "focus": [{"id": p["id"], "name": p["name"], "level": p["level"]} for p in focus.get("parts", [])],
