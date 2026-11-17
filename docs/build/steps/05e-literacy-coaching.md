@@ -41,7 +41,7 @@ A committed mini pack, `ingest/ai_literacy/`, in course-pack format (`nodes.csv`
 
 | part | taught when | point (correct option) |
 |---|---|---|
-| `ail_how_fabrication` | a link or source fails, or doesn't say what was claimed (`source_conflict`) | Chatbots write likely-looking text, including realistic but invented citations |
+| `ail_how_fabrication` | a link or source fails, or doesn't say what was claimed (`source_conflict`) | It predicts likely text, so it can make up real-looking links |
 | `ail_how_confidence` | the chatbot corrects itself (`conflict_flagged`) | Sounding confident doesn't show whether an answer is correct |
 | `ail_how_cutoff` | a research question about recent data or events (`asks_recent`) when the chatbot has no web access (`web_access = false`) | Without searching, a chatbot's knowledge stops at its training date |
 | `ail_how_agreement` | the chatbot changes its answer after the student pushes back (`pushback_changed`) | Chatbots can shift answers to agree with you, so check against the notes |
