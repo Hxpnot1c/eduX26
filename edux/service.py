@@ -70,6 +70,30 @@ def _save_plan(student_id: str, at: str, steps: list[dict], focus: list[str], co
                                                   "offered_stop": offered_stop, "style_sent": style_sent})))
 
 
+def result_size(result: object) -> int:
+    """Characters in a tool result's JSON, as the call log counts them."""
+    return len(json.dumps(result, default=str))
+
+
+def fit_budget(out: dict) -> dict:
+    """Keep a tutor_turn result within results.max_chars: drop reference blocks one at a time from the end of
+    the priority order, the watch-for misconceptions last of all. plan, score_next, focus and style are never
+    cut; a result still over with no reference left is sent as it is (the call log marks it over budget)."""
+    limit = _settings().results.max_chars
+    reference = out.get("reference") or {}
+    while reference and result_size(out) > limit:
+        droppable = [n for n in reference if n != "misconceptions" or set(reference[n]) - {"watch_for"}]
+        if not droppable:                 # only the watch-for misconceptions are left
+            del reference["misconceptions"]
+            continue
+        name = droppable[-1]
+        if name == "misconceptions" and "watch_for" in reference[name]:
+            reference[name] = {"watch_for": reference[name]["watch_for"]}   # held ones go now, watch-for last
+        else:
+            del reference[name]
+    return out
+
+
 def _style_due(last: dict, current: dict, at: str) -> bool:
     """Send style on the first tutor_turn of a session (no call within session.gap_minutes) or when it differs
     from the style last sent (client, interests or max_words changed)."""
@@ -219,7 +243,7 @@ def tutor_turn(
         out["candidates"] = [{"id": c["id"], "name": c["name"]} for c in focus["candidates"]]
     if resolution["unknown"]:
         out["unknown_ids"] = resolution["unknown"]
-    return out
+    return fit_budget(out)
 
 
 # --- progress ------------------------------------------------------------------
@@ -380,13 +404,19 @@ def update_profile(
 
 
 def log_call(student_id: str | None, tool: str, started: datetime, ms: float, result_chars: int, ok: bool,
-             error: str | None = None) -> None:
+             error: str | None = None, over_budget: bool = False) -> None:
     """Write one call_log row (operational: rebuild ignores it)."""
     conn = learner._conn()
     with conn:
-        conn.execute("INSERT INTO call_log (ts, student_id, tool, ms, result_chars, ok, error) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        conn.execute("INSERT INTO call_log (ts, student_id, tool, ms, result_chars, ok, error, over_budget) "
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                      (started.astimezone(timezone.utc).isoformat(timespec="milliseconds"), student_id, tool, ms,
-                      result_chars, int(ok), error))
+                      result_chars, int(ok), error, int(over_budget)))
+
+
+def over_budget(tool: str, result_chars: int) -> bool:
+    """A tutor_turn result over results.max_chars, after fit_budget dropped what it could."""
+    return tool == "tutor_turn" and result_chars > _settings().results.max_chars
 
 
 def _percentile(values: list[float], share: float) -> float:
@@ -396,13 +426,14 @@ def _percentile(values: list[float], share: float) -> float:
 
 
 def call_stats(student_id: str | None = None, last: int = 20) -> dict:
-    """Recent calls, median and 90th-percentile ms per tool, and the median gap between a student's
-    consecutive calls (roughly the chatbot's time per turn)."""
+    """Recent calls; per tool the median and 90th-percentile ms, the median and largest result size and how many
+    calls were over budget; and the median gap between a student's consecutive calls (roughly the chatbot's
+    time per turn)."""
     where, args = ("WHERE student_id = ?", (student_id,)) if student_id else ("", ())
     rows = [dict(r) for r in learner._conn().execute(f"SELECT * FROM call_log {where} ORDER BY ts, id", args)]
-    per_tool: dict[str, list[float]] = {}
+    per_tool: dict[str, list[dict]] = {}
     for r in rows:
-        per_tool.setdefault(r["tool"], []).append(r["ms"])
+        per_tool.setdefault(r["tool"], []).append(r)
     times: dict[str, list[datetime]] = {}
     for r in rows:
         if r["student_id"]:
@@ -411,7 +442,11 @@ def call_stats(student_id: str | None = None, last: int = 20) -> dict:
             for sid, ts in times.items() if len(ts) > 1}
     return {
         "recent": rows[-last:] if last > 0 else [],
-        "tools": {tool: {"calls": len(ms), "median_ms": statistics.median(ms), "p90_ms": _percentile(ms, 0.9)}
-                  for tool, ms in sorted(per_tool.items())},
+        "tools": {tool: {"calls": len(rs), "median_ms": statistics.median([r["ms"] for r in rs]),
+                         "p90_ms": _percentile([r["ms"] for r in rs], 0.9),
+                         "median_chars": statistics.median([r["result_chars"] for r in rs]),
+                         "max_chars": max(r["result_chars"] for r in rs),
+                         "over_budget": sum(r["over_budget"] for r in rs)}
+                  for tool, rs in sorted(per_tool.items())},
         "gaps": gaps,
     }

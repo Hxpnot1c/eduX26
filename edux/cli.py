@@ -147,8 +147,8 @@ def cmd_context(student: str, message: str, nodes: list[str] | None = None) -> i
 
 
 def cmd_calls(student: str | None = None, last: int = 20) -> int:
-    """Recent tool calls, median and 90th-percentile server time per tool, and the median gap between a
-    student's consecutive calls (roughly the chatbot's time per turn)."""
+    """Recent tool calls; per tool the median and 90th-percentile server time, the median and largest result
+    size and the over-budget count; and the median gap between a student's consecutive calls."""
     from edux import service
 
     if student and learner.get_student(student) is None:
@@ -157,13 +157,14 @@ def cmd_calls(student: str | None = None, last: int = 20) -> int:
     stats = service.call_stats(student, last)
     print(f"{'time':23} {'student':12} {'tool':18} {'ms':>7} {'chars':>7}  result")
     for r in stats["recent"]:
-        result = "ok" if r["ok"] else f"error: {r['error']}"
+        result = ("ok" if r["ok"] else f"error: {r['error']}") + (" OVER BUDGET" if r["over_budget"] else "")
         print(f"{r['ts'][:23].replace('T', ' '):23} {r['student_id'] or '-':12} {r['tool']:18} {r['ms']:7.1f} "
               f"{r['result_chars']:7d}  {result}")
     print()
-    print(f"{'tool':18} {'calls':>5} {'median ms':>9} {'p90 ms':>7}")
+    print(f"{'tool':18} {'calls':>5} {'median ms':>9} {'p90 ms':>7} {'median chars':>12} {'max chars':>9} {'over budget':>11}")
     for tool, t in stats["tools"].items():
-        print(f"{tool:18} {t['calls']:5d} {t['median_ms']:9.1f} {t['p90_ms']:7.1f}")
+        print(f"{tool:18} {t['calls']:5d} {t['median_ms']:9.1f} {t['p90_ms']:7.1f} {t['median_chars']:12.0f} "
+              f"{t['max_chars']:9d} {t['over_budget']:11d}")
     if stats["gaps"]:
         print()
         print(f"{'student':12} median gap between calls")

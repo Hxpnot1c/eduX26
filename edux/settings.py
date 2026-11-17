@@ -187,6 +187,11 @@ class Style:
 
 
 @dataclass(frozen=True)
+class Results:
+    max_chars: int
+
+
+@dataclass(frozen=True)
 class Instructions:
     max_words: int
     max_sentences: int
@@ -218,6 +223,7 @@ class Settings:
     progress: Progress
     blocks: Blocks
     style: Style
+    results: Results
     instructions: Instructions
 
 
