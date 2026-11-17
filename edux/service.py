@@ -435,21 +435,42 @@ def _trends(student_id: str, at: str) -> dict:
         "SELECT ts, question_depth, engagement, offloading, choice_taken FROM exchange_log WHERE student_id = ? AND ts <= ?",
         (student_id, at)).fetchall()
     recent, before = _shares([r for r in rows if r["ts"] > cut]), _shares([r for r in rows if r["ts"] <= cut])
-    trends = {}
-    for name in ("deep_questions", "constructive", "just_show_me"):
-        now = recent[name] if recent else None
-        then = before[name] if before else None
-        if now is None or then is None:
-            direction = None
-        elif now - then >= s.trend_min_change:
-            direction = "up"
-        elif then - now >= s.trend_min_change:
-            direction = "down"
-        else:
-            direction = "steady"
-        trends[name] = {"recent": None if now is None else round(now, 2),
-                        "before": None if then is None else round(then, 2), "direction": direction}
-    return trends
+    return {name: _trend(recent and recent[name], before and before[name])
+            for name in ("deep_questions", "constructive", "just_show_me")}
+
+
+def _trend(now: float | None, then: float | None) -> dict:
+    """A share now against before, as up, down or steady (progress.trend_min_change), or None without both."""
+    s = _settings().progress
+    if now is None or then is None:
+        direction = None
+    elif now - then >= s.trend_min_change:
+        direction = "up"
+    elif then - now >= s.trend_min_change:
+        direction = "down"
+    else:
+        direction = "steady"
+    return {"recent": None if now is None else round(now, 2), "before": None if then is None else round(then, 2),
+            "direction": direction}
+
+
+def _ai_literacy(student_id: str, at: str) -> dict:
+    """AI-literacy skills (step 05e): the level of Ask and Verify, and the share of research questions showing
+    each question feature over the last progress.trend_days against before."""
+    cut = learner._event_ts(learner.parse_ts(at) - timedelta(days=_settings().progress.trend_days))
+    rows = learner._conn().execute(
+        "SELECT ts, question_features FROM exchange_log WHERE student_id = ? AND request_type = 'research' AND ts <= ?",
+        (student_id, at)).fetchall()
+
+    def share(feature: str, chosen: list) -> float | None:
+        return sum(feature in r["question_features"].split(";") for r in chosen) / len(chosen) if chosen else None
+
+    recent, before = [r for r in rows if r["ts"] > cut], [r for r in rows if r["ts"] <= cut]
+    return {
+        "ask": {"level": learner.level(learner.part_p(student_id, learner.AIL_ASK, at))},
+        "verify": {"level": learner.level(learner.part_p(student_id, learner.AIL_VERIFY, at))},
+        "question_features": {f: _trend(share(f, recent), share(f, before)) for f in learner.QUESTION_FEATURES},
+    }
 
 
 def _study_pattern(student_id: str) -> dict | None:
@@ -464,7 +485,8 @@ def _study_pattern(student_id: str) -> dict | None:
 
 
 def my_progress(student: dict, include_parts: bool = False, at: str | None = None) -> dict:
-    """Tree with levels, the biggest levers, weak links, reviews due, AI-literacy trends and study pattern."""
+    """Tree with levels, the biggest levers, weak links, reviews due, AI-literacy trends, AI-literacy skills (step
+    05e) and study pattern. AI-literacy parts are left out of the tree, levers and reviews."""
     at = at or learner.now_iso()
     s, student_id = _settings(), student["id"]
     reviews = learner.due_reviews(student_id, _context().limits.get("reviews_due", 3), at)
@@ -475,6 +497,7 @@ def my_progress(student: dict, include_parts: bool = False, at: str | None = Non
         "reviews_due": [{"part_id": r["part_id"], "name": r["name"], "level": learner.level(r["p_now"]),
                          "due": r["due"], "reason": r["reason"]} for r in reviews],
         "trends": _trends(student_id, at),
+        "ai_literacy": _ai_literacy(student_id, at),
         "study_pattern": _study_pattern(student_id),
     }
 
