@@ -36,7 +36,7 @@ log = logging.getLogger(__name__)
 
 STOP = {"reteach", "offer_stop", "step_back", "ask_which", "ask_mcq", "check_prereq", "reask"}
 ASKS = {"reteach", "step_back", "ask_mcq", "check_prereq", "teach", "extend", "review", "reask"}
-MAX_STEPS = 2
+MAX_STEPS = 3
 # The answer.type the chatbot sends back for a step that asks something.
 ANSWER_TYPE = {"ask_mcq": "mcq", "check_prereq": "review", "step_back": "review", "review": "review",
                "extend": "extend", "teach": "explain_back"}
@@ -50,20 +50,19 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "answer_brief": (set(), set()),
     "ask_which": ({"candidates"}, set()),
     "ask_mcq_intuition": ({"purpose", "options", "answer_type"}, {"note", "via", "extra_option"}),
+    "ask_mcq_check": ({"purpose", "options", "index", "answer_type"}, {"extra_option"}),
     "check_prereq": ({"name", "for", "note", "answer_type"}, set()),
     "extend": ({"answer_type"}, set()),
     "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "correct_option", "purpose", "points_met", "missing"}),
     "offer_stop": ({"minutes", "quick_parts"}, set()),
     "reask": ({"asked", "answer_type"}, set()),
-    "reteach": ({"answer_type"}, {"missing", "anchor"}),
+    "reteach": (set(), {"missing", "anchor", "point", "level", "answer_type"}),
     "review_recall": ({"name", "mode", "answer_type"}, set()),
     "review_transfer": ({"name", "mode", "new_context", "answer_type"}, set()),
     "show": ({"part_type"}, set()),
     "step_back": ({"to", "for", "answer_type"}, set()),
     "teach_explain_back": ({"level", "part_type", "answer_type"}, set()),
-    "teach_hint_conceptual": ({"level", "part_type", "answer_type"}, set()),
-    "teach_hint_procedural": ({"level", "part_type", "answer_type"}, set()),
-    "teach_worked_example": ({"level", "part_type", "answer_type"}, set()),
+    "teach_point": ({"index", "total", "point", "exemplar", "level", "max_words"}, set()),
 }
 PLACEHOLDER = re.compile(r"\{([a-z_]+)\}")
 
@@ -317,66 +316,111 @@ def corrected_in(steps: list[dict]) -> set[str]:
 
 
 def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_plan: list[dict],
-              handled: set[str], answered_prequestion: str | None, offered_stop: bool = False) -> dict | None:
-    """The first rule that matches, or None when there is nothing to plan. Stopping is offered once a session:
-    if the student carries on, teaching goes on."""
+              handled: set[str], answered_prequestion: str | None, offered_stop: bool = False,
+              progress: dict | None = None) -> list[dict]:
+    """The steps of the first rule that matches, or [] when there is nothing to plan. Stopping is offered once
+    a session: if the student carries on, teaching goes on. progress is the point-by-point progress per part
+    (step 05d), updated in place."""
+    progress = {} if progress is None else progress
     session = blocks.get("session")
     focus = turn.parts[0] if turn.parts else None
 
     if session and session["state"] == "fatigued" and not offered_stop:
         quick = [{"id": p["id"], "name": p["name"], "level": p["level"]} for p in session["quick_parts"]]
-        return _step("offer_stop", None, {"minutes": session["minutes"], "quick_parts": quick})
+        return [_step("offer_stop", None, {"minutes": session["minutes"], "quick_parts": quick})]
 
     if session and session["state"] == "stuck" and focus:
         stuck = next((p for p in session["parts"] if p["part_id"] == focus), None)
         if stuck:
             back = stuck["step_back_to"]
             if back:
-                return _step("step_back", back["id"], {"to": {k: back[k] for k in ("id", "name", "level")}, "for": focus})
+                return [_step("step_back", back["id"], {"to": {k: back[k] for k in ("id", "name", "level")}, "for": focus})]
             anchor = blocks.get("anchor")
-            return _step("reteach", focus, {
+            return [_step("reteach", focus, {
                 "anchor": {"id": anchor["part_id"], "name": anchor["name"], "note": anchor["note"]} if anchor else None,
-                "answer_type": "explain_back"})
+                "answer_type": "explain_back"})]
 
     if focus is None:
         candidates = (blocks.get("focus") or {}).get("candidates")
         if candidates:
-            return _step("ask_which", None, {"candidates": [{k: c[k] for k in ("id", "name")} for c in candidates]})
-        return _second_step(turn, blocks, reviews_only=True)   # e.g. "quiz me on what's due"
+            return [_step("ask_which", None, {"candidates": [{k: c[k] for k in ("id", "name")} for c in candidates]})]
+        review = _second_step(turn, blocks, reviews_only=True)   # e.g. "quiz me on what's due"
+        return [review] if review else []
 
     if choice == "just_show_me":
-        return _step("show", focus, {"part_type": graph.get_node(focus)["part_type"]})
+        return [_step("show", focus, {"part_type": graph.get_node(focus)["part_type"]})]
 
     pq = blocks.get("prequestion")
-    asked_before = any(s["move"] == "ask_mcq" and s["data"].get("purpose") == "intuition" and s["part_id"] == focus
-                       for s in last_plan)
+    asked_before = (progress.get(focus) or {}).get("intuition_asked") or any(
+        s["move"] == "ask_mcq" and s["data"].get("purpose") == "intuition" and s["part_id"] == focus for s in last_plan)
     if pq and pq["part_id"] != answered_prequestion and not asked_before:
-        return ask_mcq(turn, question(pq["part_id"], "intuition", pq["correct"], settings), pq.get("source") or {})
+        return [ask_mcq(turn, question(pq["part_id"], "intuition", pq["correct"], settings), pq.get("source") or {})]
 
     for item in (blocks.get("weak_prerequisites") or {}).get("items", []):
         if item["level"] == "new" and not _checked_this_session(turn, item["part_id"], last_plan):
-            return _step("check_prereq", item["part_id"], {"name": item["name"], "for": item["for"], "note": item["note"]})
+            return [_step("check_prereq", item["part_id"], {"name": item["name"], "for": item["for"], "note": item["note"]})]
 
+    teaching = teach(turn, focus, settings, progress)
     held = [m for m in held_misconceptions(turn.student_id, turn.parts) if m["id"] not in handled]
-    if held:
+    if held:   # correct it, then carry on teaching
         m = held[0]
-        return _step("feedback", m["node_id"], {"type": "held", "misconceptions": [_misconception(m)]})
+        return [_step("feedback", m["node_id"], {"type": "held", "misconceptions": [_misconception(m)]})] + teaching
+    return teaching
 
-    return teach(blocks, settings)
+
+# --- point by point (step 05d) ----------------------------------------------------
 
 
-def teach(blocks: dict, settings: Settings) -> dict | None:
-    """Teaching on the main focus part at its support level, or None with no focus."""
-    support = blocks.get("support")
-    if support:
-        part_type = graph.get_node(support["part_id"])["part_type"]
-        level = support["level"]
-        if level == "hint":
-            text = "teach_hint_procedural" if part_type in settings.support.procedural_types else "teach_hint_conceptual"
-        else:
-            text = f"teach_{level}"
-        return _step("teach", support["part_id"], {"level": level, "part_type": part_type}, key=text)
-    return None
+def _points(part_id: str) -> list[dict]:
+    """The points a part is taught in: its score points, or its description as one point when it has none."""
+    return graph.score_points(part_id) or [{"id": None, "point": graph.get_node(part_id)["description"], "exemplar": ""}]
+
+
+def _progress(progress: dict, part_id: str) -> dict:
+    return progress.setdefault(part_id, {"index": 1, "reteaches": 0, "intuition_asked": False})
+
+
+def check(turn: Turn, part_id: str, index: int, settings: Settings, avoid: list[str] | None = None) -> dict:
+    """ask_mcq (check) on one point of a part: the point's wording is the correct option."""
+    point = _points(part_id)[index - 1]
+    return ask_mcq(turn, question(part_id, "check", point["point"], settings, point_id=point["id"]),
+                   {"index": index}, avoid)
+
+
+def teach(turn: Turn, part_id: str, settings: Settings, progress: dict) -> list[dict]:
+    """Teaching on a part. At worked_example or hint: the point it has reached, as teach_point and an ask_mcq
+    check on it; after the last point, or for a part already at explain_back level (secure), the explain-back
+    of the whole part, which ends the part's progress."""
+    level = learner.support_level(turn.p(part_id))
+    points = _points(part_id)
+    state = _progress(progress, part_id)
+    if level == "explain_back" or state["index"] > len(points):
+        progress.pop(part_id, None)
+        part_type = graph.get_node(part_id)["part_type"]
+        return [_step("teach", part_id, {"level": "explain_back", "part_type": part_type}, key="teach_explain_back")]
+    point = points[state["index"] - 1]
+    return [_step("teach_point", part_id, {"index": state["index"], "total": len(points), "point": point["point"],
+                                           "exemplar": point["exemplar"], "level": level,
+                                           "max_words": settings.points.max_words}),
+            check(turn, part_id, state["index"], settings)]
+
+
+def after_check(turn: Turn, evidence: dict, settings: Settings, progress: dict, last_mcq: dict | None) -> list[dict]:
+    """What follows an answered check: right, the next point (or the explain-back after the last); wrong, a
+    re-teach of the same point a different way in and the check again, freshly shuffled, at most
+    points.reteach_limit times before moving on."""
+    part = evidence["part_id"]
+    state = _progress(progress, part)
+    points = _points(part)
+    if not evidence["correct"] and state["reteaches"] < settings.points.reteach_limit:
+        state["reteaches"] += 1
+        point = points[min(state["index"], len(points)) - 1]
+        avoid = [o["id"] for _, o in sorted((last_mcq or {}).get("options", {}).items())] or None
+        return [_step("reteach", part, {"point": point["point"], "level": learner.support_level(turn.p(part))}),
+                check(turn, part, min(state["index"], len(points)), settings, avoid)]
+    state["index"] += 1
+    state["reteaches"] = 0
+    return teach(turn, part, settings, progress)
 
 
 def _second_step(turn: Turn, blocks: dict, reviews_only: bool = False) -> dict | None:
@@ -422,22 +466,32 @@ def reask(pending: dict) -> list[dict]:
     return [_step("answer_brief", pending["part_id"]), {**_step("reask", pending["part_id"], data)}]
 
 
+URGENT = ("offer_stop", "step_back", "reteach")   # reteach here is the whole part, when stuck
+
+
 def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", answer: dict | None = None,
            evidence: dict | None = None, last_plan: list[dict] | None = None,
-           corrected: set[str] | None = None, offered_stop: bool = False, pending: dict | None = None) -> list[dict]:
+           corrected: set[str] | None = None, offered_stop: bool = False, pending: dict | None = None,
+           progress: dict | None = None, last_mcq: dict | None = None) -> list[dict]:
     """The plan for this turn (see the module docstring). answer is what the chatbot sent about the student's
     answer and evidence its scored item; last_plan is the plan issued on the previous turn; corrected holds the
     misconceptions already corrected this session, which aren't corrected again; offered_stop is true once
     stopping has been offered this session; pending is the question still waiting for an answer, when this
-    message asked something instead (on the same part, or with no new focus)."""
+    message asked something instead (on the same part, or with no new focus). progress is the point-by-point
+    progress per part, updated in place; last_mcq the last question's letter map, so a repeat is reshuffled."""
     last_plan = last_plan or []
+    progress = {} if progress is None else progress
     steps: list[dict] = []
     handled: set[str] = set(corrected or ()) | corrected_in(last_plan)
     answered_prequestion = None
+
+    def main() -> list[dict]:
+        return main_step(turn, blocks, settings, choice, last_plan, handled, answered_prequestion, offered_stop, progress)
+
     if pending and not answer:
-        urgent = main_step(turn, blocks, settings, choice, last_plan, handled, None, offered_stop)
-        if urgent and urgent["move"] in ("offer_stop", "step_back", "reteach"):
-            return [urgent]
+        urgent = main()
+        if urgent and urgent[0]["move"] in URGENT:
+            return urgent
         return reask(pending)
     if answer and evidence:
         first, retry = feedback(answer, evidence)
@@ -445,23 +499,26 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
         handled |= set(evidence["misconception_ids"])
         if answer["type"] == "prequestion" or evidence.get("purpose") == "intuition":
             answered_prequestion = evidence["part_id"]
+            _progress(progress, evidence["part_id"])["intuition_asked"] = True
         if retry:   # reteach ends the plan, unless they're tired or stuck: then say what's missing and do that instead
-            urgent = main_step(turn, blocks, settings, choice, last_plan, handled, answered_prequestion, offered_stop)
-            if urgent and urgent["move"] in ("offer_stop", "step_back", "reteach"):
-                return [_refill({**first, "data": {**first["data"], "missing": retry["data"]["missing"]}}), urgent]
+            urgent = main()
+            if urgent and urgent[0]["move"] in URGENT:
+                return [_refill({**first, "data": {**first["data"], "missing": retry["data"]["missing"]}}), urgent[0]]
             return [first, retry]
-    main = main_step(turn, blocks, settings, choice, last_plan, handled, answered_prequestion, offered_stop)
-    if evidence and evidence.get("purpose") == "intuition" and main and main["move"] not in ("offer_stop", "step_back", "reteach"):
-        main = teach(blocks, settings)   # whatever the intuition answer, teaching starts (fatigue and stuck aside)
-    if main and main["move"] == "feedback" and steps:   # a held misconception joins the answer's feedback
-        known = {m["id"] for m in steps[0]["data"]["misconceptions"]}
-        extra = [m for m in main["data"]["misconceptions"] if m["id"] not in known]
-        steps[0] = _refill({**steps[0], "data": {**steps[0]["data"],
-                                                 "misconceptions": steps[0]["data"]["misconceptions"] + extra}})
-        main = None
-    if main:
-        steps.append(main)
-    if len(steps) == 1 and main and not is_stop(main) and main["move"] not in ("show", "review"):
+    rest = main()
+    if not (rest and rest[0]["move"] in URGENT):
+        if rest and rest[0]["move"] == "feedback" and steps:   # a held misconception joins the answer's feedback
+            known = {m["id"] for m in steps[0]["data"]["misconceptions"]}
+            extra = [m for m in rest[0]["data"]["misconceptions"] if m["id"] not in known]
+            steps[0] = _refill({**steps[0], "data": {**steps[0]["data"],
+                                                     "misconceptions": steps[0]["data"]["misconceptions"] + extra}})
+            rest = rest[1:]
+        if evidence and evidence.get("purpose") == "intuition":   # whatever the answer, teaching starts
+            rest = teach(turn, evidence["part_id"], settings, progress)
+        elif evidence and evidence.get("purpose") == "check":
+            rest = after_check(turn, evidence, settings, progress, last_mcq)
+    steps += rest
+    if not answer and steps and not any(is_stop(s) for s in steps) and steps[-1]["move"] not in ("show", "review"):
         second = _second_step(turn, blocks)
         if second:
             steps.append(second)
