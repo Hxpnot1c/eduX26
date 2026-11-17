@@ -174,18 +174,18 @@ def _session_offloaded(turn: Turn) -> bool:
     return row is not None
 
 
-def core_idea(part_id: str) -> tuple[str, str]:
-    """(target, correct): the part's core idea from its first mark point, else its main key wording, else its
-    note's first key point, else its description; correct is the mark point's exemplar when there is one."""
+def core_idea(part_id: str) -> str:
+    """The part's core idea, the correct option of its intuition question: its first mark point, else its main
+    key wording, else its note's first key point, else its description. Never an exemplar: every MCQ's correct
+    option is a point (exemplars are used only in teach_point)."""
     points = graph.mark_points_for([part_id])
     if points:
-        return points[0]["point"], points[0]["exemplar"] or points[0]["point"]
+        return points[0]["point"]
     for note in graph.notes_for([part_id], limit=1):
         idea = (note["key_wording"] or note["key_points"] or [None])[0]
         if idea:
-            return idea, idea
-    description = graph.get_node(part_id)["description"]
-    return description, description
+            return idea
+    return graph.get_node(part_id)["description"]
 
 
 def intuition_source(turn: Turn, part_id: str) -> dict | None:
@@ -220,8 +220,7 @@ def prequestion(turn: Turn, settings: Settings) -> dict | None:
     if len(found) < settings.mcq.min_distractors or _session_offloaded(turn):
         return None
     found.sort(key=lambda m: "examiner_report" not in graph.source_types(m["source_ids"]))
-    target, correct = core_idea(part)
-    return {"part_id": part, "target": target, "correct": correct, "source": intuition_source(turn, part),
+    return {"part_id": part, "correct": core_idea(part), "source": intuition_source(turn, part),
             "distractors": [{"id": m["id"], "wrong_idea": m["wrong_idea"], "correction": m["correction"]}
                             for m in found[:settings.mcq.max_options - 1]]}
 

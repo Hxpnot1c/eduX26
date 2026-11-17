@@ -274,7 +274,7 @@ def feedback(answer: dict, evidence: dict) -> tuple[dict, dict | None]:
                                         "correct_option": evidence["correct_option"], "misconceptions": shown}), None
     if answer["type"] == "prequestion":   # the picked option comes first in misconception_ids
         return _step("feedback", part, {"type": "prequestion", "correct": evidence["score"] == 1.0,
-                                        "correct_idea": core_idea(part)[1], "misconceptions": shown}), None
+                                        "correct_idea": core_idea(part), "misconceptions": shown}), None
     points = graph.score_points(part)
     met = set(evidence.get("points_met") or [])
     first = _step("feedback", part, {"type": answer["type"], "points_met": [p["point"] for p in points if p["id"] in met],
