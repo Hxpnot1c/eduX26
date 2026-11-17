@@ -37,7 +37,7 @@ Sources are in `reference/research.md`.
 
 ## B. Multiple-choice questions
 Every MCQ is built by the server and asked by one move, **`ask_mcq`** **(stop)**, whose `data.purpose` says what it is for (C and G). Its one section in the server instructions covers all purposes, and each purpose has its own cue (`ask_mcq_<purpose>.cue.md`, 05c keys).
-- **Options:** the correct option plus up to `mcq.max_options − 1` of the part's misconceptions (their `wrong_idea`), shuffled by the server, lettered `A`, `B`, `C`….
+- **Options:** the correct option (always a point's wording, never its exemplar, which is used only in `teach_point`) plus up to `mcq.max_options − 1` of the part's misconceptions (their `wrong_idea`), shuffled by the server, lettered `A`, `B`, `C`….
 - **The letter → option map is stored in `issued_plan.plan_json`** (`mcq`). The chatbot shows the options as given.
 - **The student answers with a letter.** The chatbot sends `answer.type = mcq` and `answer.choice` (e.g. `"B"`); the purpose is read from the stored map. The server scores it (1 or 0) and activates the picked misconception.
 - **Few misconceptions:** when the part has fewer than `mcq.min_distractors`, `data.extra_option` names a free letter, and the move text lets the chatbot write one more distractor for it, using only `data.terms` (05c). Picking it scores 0 and activates nothing.
