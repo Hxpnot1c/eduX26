@@ -18,6 +18,9 @@
 5. Score points get short letter ids per turn.
 6. A result budget, with overruns logged.
 7. A shorter `tutor_turn` description.
+8. A question asked instead of an answer is answered briefly, then the pending question is asked again.
+9. The chatbot corrects its own mistakes in one line and flags them.
+10. Each step lists the course terms the student knows, and the chatbot doesn't introduce others.
 
 Every number goes in `settings.toml` and all wording goes in `text/`.
 
@@ -81,7 +84,7 @@ reference = ["notes"]
 - **Watch-for misconceptions** go with every move that asks the student something, so the chatbot can tag a misconception the answer shows. They are sent as `id` and `wrong_idea` only, with no correction, for the step's part. The moves are listed in `context.toml`:
   ```toml
   [watch_for]                # moves that ask the student something also get the part's watch-for misconceptions (step 05c)
-  moves = ["prequestion", "check_prereq", "teach_point", "check_point", "teach_explain_back", "review", "extend"]
+  moves = ["prequestion", "check_prereq", "teach_explain_back", "review", "extend"]
   ```
   A bare move (`review`) covers its variants, as with the reference tables.
 - `notes` is limited to the step's part.
@@ -110,9 +113,27 @@ max_chars = 2400   # about 600 tokens
 ## G. Tool description
 `text/tools/tutor_turn.md` is cut to at most 8 lines. The detail it held moves to the server instructions, which are sent once.
 
+## H. Questions aren't answers
+- When the student asks something instead of answering what they were asked, the chatbot doesn't send `answer`.
+- The question last asked is kept in `issued_plan.plan_json` as `pending` (the asking step: move, part and data) until it is answered.
+- **A message with no `answer` while a question is pending,** on the same part or with no new focus → `answer_brief` (answer their question in a few lines), then `reask` **(stop)**: the same pending question, word for word, with the same `score_next`.
+- A message about a different part, or a research question, drops `pending` and is planned as usual.
+- Fatigue and stuck rules still come first.
+
+## I. Self-correction
+- When the chatbot finds a mistake in something it said earlier, it says so in one line, gives the correction, and carries on.
+- It sets `this_message.conflict_flagged = true`, a new label stored on the exchange's existing `conflict_flagged` column.
+- One line in `text/server_instructions.md` says this.
+
+## J. Known terms
+- Every step that teaches or asks gets `data.terms`: the names and aliases of the focus part, and of parts the student has at developing or above.
+  - Order: the focus part, then known parts linked to it by an edge, then other known parts by importance, up to `limits.terms` in `context.toml`.
+- `text/server_instructions.md`: don't introduce course terms that aren't in `terms`; when one is needed, explain it in plain words instead.
+
 ## Docs and scripts
 - `reference/tools-and-context.md`: cues, style only when needed, reference per move, letter ids and the budget.
-- `reference/settings.md`: `[results]`, `[instructions]`, `blocks.exam_cues`, the `[moves.<key>]` tables and `[watch_for]`.
+- `reference/settings.md`: `[results]`, `[instructions]`, `blocks.exam_cues`, the `[moves.<key>]` tables, `[watch_for]` and `limits.terms`.
+- `text/moves/answer_brief.md` and `reask.md`, each with a `.cue.md`.
 - `reference/database.md`: migration 007.
 - `scripts/check_mcp.py`: the three-message run sends letters, and prints each result's size.
 
@@ -123,6 +144,9 @@ max_chars = 2400   # about 600 tokens
 4. `feat(context): include reference blocks per move`
 5. `feat(server): label score points with short letters`
 6. `feat(server): enforce a result budget and log overruns`
+7. `feat(context): answer a question asked instead of an answer, then re-ask`
+8. `feat(server): flag the chatbot's own corrections`
+9. `feat(context): list the course terms the student knows`
 
 ## Done when (by hand, no tests yet)
 - The three-message run from 05b still behaves the same: pre-question, then feedback naming m1 and a teach step, then `reteach_gap` with only the missing point and a recorded score of 0.5.
@@ -132,5 +156,8 @@ max_chars = 2400   # about 600 tokens
 - Every step that asks the student something carries the part's watch-for misconceptions as `id` and `wrong_idea` only.
 - An answer with full point ids, with letters, or with no saved plan scores the same; an id from another part is rejected.
 - The server instructions are at most 600 words.
+- A question asked instead of an answer gets `answer_brief` then `reask` with the same question, and nothing is scored.
+- `conflict_flagged = true` is stored on the exchange.
+- `data.terms` on a teaching step for a new student holds only the focus part's names.
 - `calls` shows result sizes and the over-budget count.
 - `rebuild` gives identical state.

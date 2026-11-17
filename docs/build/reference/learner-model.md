@@ -48,8 +48,8 @@ Evidence is an event in `evidence_log`, one row per part, with a score from 0 to
 - **check:** results of issued checks (step 07).
 
 Evidence types from chat, each with its own slip and guess in `[bkt.evidence]`:
-- `prequestion`, `explain_back`, `review`, `extend`, `past_question`: as asked by the plan.
-- `point_check` (step 05d): a quick check on one point while a part is taught point by point. Score 1 or 0. Its guess is higher than `explain_back`'s, so one point counts for less than an explanation of the whole part. Progress through a part's points is kept in `issued_plan`, not in state, so rebuild is unaffected.
+- `prequestion`, `explain_back`, `review`, `extend`, `past_question`: as asked by the plan. From step 05d the intuition MCQ records `prequestion`.
+- `mcq_check` (step 05d): a server-built multiple-choice check on one point while a part is taught point by point. Score 1 or 0 from the letter picked; a wrong pick activates its misconception. Its guess is about 1 in 4, so one point counts for less than an explanation of the whole part. Progress through a part's points is kept in `issued_plan`, not in state, so rebuild is unaffected.
 - `ail_question`, `ail_task`, `ail_unprompted` (step 05e): AI-literacy evidence (see below).
 
 The result counts as correct if `score ≥ bkt.correct_share`. Wrong evidence that carries misconception ids activates them.
@@ -69,7 +69,7 @@ The update starts from `p_now`, the decayed value. Then:
 - `n_evidence += 1`, `exchanges_since_evidence = 0`
 - `last_seen = now`, and the clock as described under decay
 
-If `offload_left > 0`, guess is replaced by `offloading.guess_after` and `offload_left -= 1`.
+If `offload_left > 0`, guess is replaced by `offloading.guess_after` and `offload_left -= 1`. (Removed in step 05d: see Offloading.)
 
 While the session is fatigued (see Sessions), slip is raised by `session.fatigue_slip_add`, capped at `session.slip_cap`.
 
@@ -102,6 +102,8 @@ Triggered by the `offloading` label or by `choice_taken = just_show_me`.
 - `offload_left = checks_discounted`
 - A review is queued after `just_show_me_gap_days`.
 - `p_known` itself is unchanged.
+
+**From step 05d, being shown doesn't change understanding:** the exchange gets no depth or engagement nudge, and `offload_left` is no longer set (it stays 0, and `offloading.guess_after` and `checks_discounted` are removed). The immediate-recall rule already lowers the credit for an answer straight after being shown. The exchange still records `offloading = 1`, for the AI-literacy trends, and the review is still queued.
 
 ### 4. Prerequisite propagation
 When evidence raises a part, each direct prerequisite gets `prereq_boost × gain`, added to its `p_now`. One hop only, never downward. A prerequisite on a concept boosts each of its parts.
