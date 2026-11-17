@@ -181,6 +181,22 @@ Our fallback points, for parts past papers don't test.
 | updated_by | text |  |  | `extraction` | `extraction`, or a teacher's name |
 | updated_at | text |  |  |  | ISO datetime |
 
+### trusted_sources.csv
+
+Optional. Sources research answers point to first, per topic (step 05e).
+
+| column | type | required | allowed values | default | meaning |
+|---|---|---|---|---|---|
+| id | text | yes |  |  | e.g. `ons_inflation`, so teacher feedback can target the row |
+| node_id | text | yes |  |  | a topic or concept the source is good for (its descendants included) |
+| name | text | yes |  |  | e.g. `ONS` |
+| url | text | yes |  |  | the landing page for this kind of data (http or https) |
+| what_for | text | yes |  |  | one line, e.g. `UK inflation and price indices` |
+| status | text |  | `draft` / `approved` / `rejected` | `draft` | draft / approved / rejected |
+| flag | text |  |  |  | blank, or a short reason extraction thinks the row may be wrong |
+| updated_by | text |  |  | `extraction` | `extraction`, or a teacher's name |
+| updated_at | text |  |  |  | ISO datetime |
+
 ### id_map.csv
 
 Optional. Renamed ids.

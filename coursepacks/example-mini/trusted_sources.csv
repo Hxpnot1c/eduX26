@@ -1,0 +1,5 @@
+id,node_id,name,url,what_for,status,flag,updated_by,updated_at
+ons_inflation,elasticities,ONS,https://www.ons.gov.uk/economy/inflationandpriceindices,UK prices and inflation for elasticity examples,approved,,extraction,
+ons_household_spending,elasticities,ONS,https://www.ons.gov.uk/peoplepopulationandcommunity/personalandhouseholdfinances/expenditure,UK household spending by category,approved,,extraction,
+obr_tax_receipts,indirect_taxes,OBR,https://obr.uk/data/,Tax receipts and forecasts for indirect taxes,approved,,extraction,
+ifs_taxes,indirect_taxes,IFS,https://ifs.org.uk/,Independent analysis of taxes and who bears them,approved,,extraction,

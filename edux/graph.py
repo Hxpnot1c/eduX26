@@ -16,7 +16,7 @@ from pathlib import Path
 
 from edux import db
 from edux.settings import ContextConfig, Settings, load_context, load_settings
-from ingest.registry import split_list
+from ingest.registry import AI_LITERACY_TOPIC, split_list
 
 # Nodes that are not rejected and have no rejected ancestor.
 VISIBLE = """WITH RECURSIVE visible(id) AS (
@@ -83,10 +83,16 @@ def get_node(node_id: str) -> dict | None:
 
 
 def topics() -> list[dict]:
-    """Top-level topics, in pack order."""
+    """The course's top-level topics, in pack order. The AI-literacy topic (step 05e) is not one of them: it
+    stays out of the course tree, levers, candidates and reviews."""
     rows = _conn().execute(f"{VISIBLE} SELECT n.* FROM node n JOIN visible v ON v.id = n.id "
-                           "WHERE coalesce(n.parent_id, '') = '' ORDER BY n.rowid")
+                           "WHERE coalesce(n.parent_id, '') = '' AND n.id != ? ORDER BY n.rowid", (AI_LITERACY_TOPIC,))
     return [_node_dict(r) for r in rows]
+
+
+def is_literacy(node_id: str) -> bool:
+    """True for the AI-literacy topic and everything under it."""
+    return node_id == AI_LITERACY_TOPIC or any(n["id"] == AI_LITERACY_TOPIC for n in ancestors(node_id))
 
 
 def children(node_id: str) -> list[dict]:
@@ -443,7 +449,8 @@ def search_nodes(text: str, limit: int) -> list[tuple[str, float]]:
 
 
 def search(text: str, limit: int) -> list[dict]:
-    """Nodes matching free text: name/alias matches (weighted by resolve.name_boost) plus note matches."""
+    """Course nodes matching free text: name/alias matches (weighted by resolve.name_boost) plus note matches.
+    AI-literacy nodes are never matched: a message about the course resolves to the course."""
     boost = _settings().resolve.name_boost
     combined: dict[str, float] = {}
     for node_id, score in _search("node_fts", "node_fts.id", "", text).items():
@@ -452,7 +459,7 @@ def search(text: str, limit: int) -> list[dict]:
     for node_id, score in _search("note_fts", "n.node_id", note_join, text).items():
         combined[node_id] = combined.get(node_id, 0.0) + score
     results = []
-    for node_id, score in _top(combined, limit):
+    for node_id, score in _top({k: v for k, v in combined.items() if not is_literacy(k)}, limit):
         node = get_node(node_id)
         results.append({"id": node_id, "name": node["name"], "level": node["level"], "score": score})
     return results

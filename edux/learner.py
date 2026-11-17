@@ -703,12 +703,13 @@ def rollup(student_id: str, node_id: str, at: datetime | str | None = None) -> f
 
 
 def due_reviews(student_id: str, limit: int, at: datetime | str | None = None) -> list[dict]:
-    """Parts due for review by at (default now), most important first, then the most overdue."""
+    """Course parts due for review by at (default now), most important first, then the most overdue. AI-literacy
+    parts are practised through their tasks and checks (step 05e), never as course reviews."""
     at_dt = parse_ts(at or now_iso())
     due = []
     for row in _conn().execute("SELECT part_id, due, reason FROM review_queue WHERE student_id = ?", (student_id,)):
         node = graph.get_node(row["part_id"])
-        if node and parse_ts(row["due"]) <= at_dt:
+        if node and parse_ts(row["due"]) <= at_dt and not graph.is_literacy(node["id"]):
             due.append({"part_id": node["id"], "name": node["name"], "due": row["due"], "reason": row["reason"],
                         "p_now": part_p(student_id, node["id"], at), "importance": graph.weight(node["id"])["importance"]})
     due.sort(key=lambda r: (-r["importance"], r["due"]))

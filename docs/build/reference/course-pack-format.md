@@ -183,12 +183,12 @@ Plus the standard status columns. Research answers prefer the trusted sources li
 | new_id | what it became |
 
 ## AI-literacy skills (loaded with every pack)
-`ingest/ai_literacy/` is a committed mini pack in this format (`nodes.csv`, `mark_points.csv`), loaded alongside every course pack (step 05e):
+`ingest/ai_literacy/` is a committed mini pack in this format (`sources.csv`, `nodes.csv`, `mark_points.csv`), read in with every course pack and validated with it (step 05e). An issue on one of its rows gives the line in the mini pack's file:
 - topic `ai_literacy` → concept `ai_literacy_skills` → parts `ail_ask` (phrasing a precise, answerable question) and `ail_verify` (checking a claim against an independent source);
 - `ail_ask`'s mark points are the four question features: `concept`, `context`, `asks_sources`, `asks_reasoning`;
 - `ail_verify`'s mark points are the four verify ticks, in order: opened the source, named the publisher and date, compared the claim, said whether it matched.
 
-They have no exam weight and a fixed importance (`literacy.importance`), and are left out of course levers and candidates.
+They have no exam weight and a fixed importance (`literacy.importance`). They are left out of the course tree, levers, candidates, search and course reviews, and out of the coverage warnings.
 
 ## Calculated on load (not in files)
 Stored in the `node_weight` table:

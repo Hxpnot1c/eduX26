@@ -26,6 +26,10 @@ FEEDBACK_ACTIONS = ("approve", "reject", "edit", "add")
 # Teacher-feedback edit field on edges that sets the link weight rather than an edge column.
 EDGE_WEIGHT_FIELD = "weight"
 
+# The AI-literacy mini pack (step 05e): committed, and read in with every pack. Its nodes sit under this topic.
+AI_LITERACY_DIR = Path(__file__).resolve().parent / "ai_literacy"
+AI_LITERACY_TOPIC = "ai_literacy"
+
 
 @dataclass(frozen=True)
 class Column:
@@ -177,6 +181,13 @@ _FILES = (
         C("text", required=True, doc="our paraphrase plus any short key wording (< 15 words)"),
         C("node_ids", "list", default="", doc="parts this item relates to"),
     ), content_row=True),
+    FileSpec("trusted_sources.csv", "trusted_source", _content(
+        C("id", required=True, doc="e.g. `ons_inflation`, so teacher feedback can target the row"),
+        C("node_id", required=True, doc="a topic or concept the source is good for (its descendants included)"),
+        C("name", required=True, doc="e.g. `ONS`"),
+        C("url", required=True, doc="the landing page for this kind of data (http or https)"),
+        C("what_for", required=True, doc="one line, e.g. `UK inflation and price indices`"),
+    ), content_row=True, doc="Optional. Sources research answers point to first, per topic (step 05e)."),
     FileSpec("id_map.csv", "id_map", (
         C("old_id", required=True, doc="an id that was renamed"),
         C("new_id", required=True, doc="what it became"),

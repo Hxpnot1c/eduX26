@@ -87,6 +87,9 @@ warn_max = 4               # and above this many
 max_options = 4            # the correct option plus up to this many minus one misconceptions
 min_distractors = 2        # fewer misconceptions than this: the chatbot may write one more option
 
+[literacy]                 # AI-literacy coaching (step 05e)
+importance = 0.5           # fixed importance of the AI-literacy parts (they have no exam weight)
+
 [session]                  # sessions, fatigue and getting stuck, derived from events
 gap_minutes = 30           # a longer gap starts a new session
 fatigue_min_minutes = 25   # no fatigue call before this

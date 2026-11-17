@@ -96,6 +96,9 @@ min_distractors = 2        # moves to mcq.min_distractors in step 05d
 exchange_weight = 0.5      # an exchange on the part counts this much towards coverage
 full_weight_at = 3.0       # coverage at which a pre-question counts as full evidence
 
+[literacy]                 # AI-literacy coaching (step 05e)
+importance = 0.5           # fixed importance of the AI-literacy parts (they have no exam weight)
+
 [session]                  # sessions, fatigue and getting stuck, derived from events
 gap_minutes = 30           # a longer gap starts a new session
 fatigue_min_minutes = 25   # no fatigue call before this

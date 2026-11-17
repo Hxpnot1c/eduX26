@@ -341,7 +341,8 @@ def compute_weights(conn: sqlite3.Connection, settings: Settings) -> None:
 
     exam_weight: share of all question marks tagged to the node or its descendants (the course sums to 1).
     dependents: parts reachable from the node's parts through prerequisite edges.
-    importance: w_exam x percentile(exam_weight) + w_dependents x percentile(dependents), ranked within each level.
+    importance: w_exam x percentile(exam_weight) + w_dependents x percentile(dependents), ranked within each level;
+    AI-literacy nodes are left out of the ranking and get literacy.importance.
     """
     tree = Tree(conn)
     part_marks = question_marks_by_part(conn, tree)
@@ -359,9 +360,10 @@ def compute_weights(conn: sqlite3.Connection, settings: Settings) -> None:
         reached = set().union(*(reach.get(p, set()) for p in own))
         dependents[node_id] = len(reached - own)
 
-    importance = {}
+    literacy = {i for i in tree.level if registry.AI_LITERACY_TOPIC in tree.ancestors_and_self(i)}
+    importance = {i: settings.literacy.importance for i in literacy}   # no exam weight: a fixed importance
     for level in set(tree.level.values()):
-        ids = [i for i, lv in tree.level.items() if lv == level]
+        ids = [i for i, lv in tree.level.items() if lv == level and i not in literacy]
         pe = percentile_ranks({i: exam_weight[i] for i in ids})
         pd = percentile_ranks({i: float(dependents[i]) for i in ids})
         for i in ids:
