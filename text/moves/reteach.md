@@ -1,0 +1,1 @@
+Re-teach only data.missing, briefly and a different way in, without repeating what they got right or naming misconceptions again; with no data.missing (they're stuck), say you're trying a different way in and teach the part through data.anchor if given, otherwise a different example. Then ask them to try again in their own words, and wait.
