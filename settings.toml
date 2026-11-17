@@ -73,7 +73,7 @@ max_words = 200
 exam_close_days = 14
 approach_min_records = 2   # past approaches needed before "what worked before" is shown
 
-[prequestion]              # a question asked before teaching (the block itself comes in step 05)
+[prequestion]              # a question asked before teaching an untaught part
 enabled = true
 max_options = 4
 min_distractors = 2

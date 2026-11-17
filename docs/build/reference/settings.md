@@ -78,7 +78,7 @@ worked_example_below = 0.40
 hint_below = 0.75          # at or above: ask them to explain it back
 extend_from = 0.40         # developing and above get higher-order questions mixed in (step 05)
 
-[prequestion]              # step 05
+[prequestion]              # a question asked before teaching an untaught part
 enabled = true
 max_options = 4
 min_distractors = 2
@@ -149,7 +149,7 @@ Decides which blocks `get_learning_context` returns, in what order, and how long
 default_profile = "full"
 
 [profiles.full]
-blocks = ["focus", "support", "weak_prerequisites", "anchor", "confusables", "causal",
+blocks = ["focus", "prequestion", "support", "weak_prerequisites", "anchor", "confusables", "causal",
           "active_misconceptions", "notes", "exam_relevance", "reviews_due", "teaching_note"]
 
 [profiles.minimal]         # for comparison: notes only
