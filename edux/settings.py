@@ -130,6 +130,7 @@ class Session:
     signal_window: int
     stuck_attempts: int
     stuck_below: float
+    quick_parts: int
 
 
 @dataclass(frozen=True)

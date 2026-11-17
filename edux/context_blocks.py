@@ -213,6 +213,46 @@ def prequestion(turn: Turn, settings: Settings) -> dict | None:
             "text": read_text("support/prequestion.md")}
 
 
+def _quick_parts(turn: Turn, settings: Settings, stuck: set[str]) -> list[dict]:
+    """Up to session.quick_parts developing parts (between levels.new and levels.secure), most important first,
+    leaving out parts the student is stuck on."""
+    found = []
+    for part in learner.all_parts():
+        p = turn.p(part)
+        if settings.levels.new <= p < settings.levels.secure and part not in stuck:
+            found.append((graph.weight(part)["importance"], part))
+    found.sort(key=lambda f: -f[0])
+    return [_part_summary(turn, part) for _, part in found[:settings.session.quick_parts]]
+
+
+def _step_back_to(turn: Turn, part_id: str) -> dict | None:
+    """The weakest prerequisite part of a part, or None if it has none."""
+    pres = {pre for edge in graph.prerequisites(part_id, 1) for pre in graph.parts_of(edge["other"])}
+    if not pres:
+        return None
+    return _part_summary(turn, min(pres, key=turn.p))
+
+
+def session(turn: Turn, settings: Settings) -> dict | None:
+    """Only when there is something to say about this session: fatigued (offer stopping first, or a few quick
+    questions on quick_parts) or stuck on a part (step back to its weakest prerequisite, or switch approach)."""
+    state = learner.session_state(turn.student_id, turn.at)
+    if state is None:
+        return None
+    if state["fatigued"]:
+        out = {"state": "fatigued", "minutes": round(state["minutes"]), "quick_parts": _quick_parts(turn, settings, {p["part_id"] for p in state["stuck_parts"]}),
+               "text": read_text("session/fatigued.md")}
+        if state["stuck_parts"]:
+            out["also_stuck_on"] = [p["part_id"] for p in state["stuck_parts"]]
+        return out
+    if state["stuck_parts"]:
+        parts = [{"part_id": p["part_id"], "name": p["name"], "attempts": p["attempts"], "mean_score": _r(p["mean_score"]),
+                  "step_back_to": _step_back_to(turn, p["part_id"])} for p in state["stuck_parts"]]
+        return {"state": "stuck", "parts": parts, "step_back_to": parts[0]["step_back_to"],
+                "text": read_text("session/stuck.md")}
+    return None
+
+
 def weak_prerequisites(turn: Turn, settings: Settings) -> dict | None:
     """Prerequisites below secure, ranked by how weak the student is x link weight x importance."""
     found: dict[str, dict] = {}
@@ -503,6 +543,7 @@ BLOCKS: dict[str, Block] = {
     "focus": focus,
     "prequestion": prequestion,
     "support": support,
+    "session": session,
     "weak_prerequisites": weak_prerequisites,
     "anchor": anchor,
     "confusables": confusables,
