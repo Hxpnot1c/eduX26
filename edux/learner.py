@@ -130,8 +130,9 @@ def _event_ts(ts: str | datetime | None) -> str:
     return parse_ts(ts).astimezone(timezone.utc).isoformat(timespec="seconds") if ts else now_iso()
 
 
-def _evidence_rows(evidence: list[dict]) -> list[tuple[str, str, float, list[str]]]:
-    """Validate evidence items and expand concept ids to their parts: (part_id, type, score, misconception_ids)."""
+def _evidence_rows(evidence: list[dict]) -> list[tuple[str, str, float, list[str], str | None]]:
+    """Validate evidence items and expand concept ids to their parts: (part_id, type, score, misconception_ids,
+    point_id). point_id is the one point a multiple-choice question asked; it is kept only on a part's own item."""
     s = _settings()
     rows = []
     for item in evidence:
@@ -149,7 +150,8 @@ def _evidence_rows(evidence: list[dict]) -> list[tuple[str, str, float, list[str
         parts = [node["id"]] if node["level"] == "part" else graph.parts_of(node["id"])
         if not parts:
             raise ValueError(f"evidence: {node['id']!r} has no parts")
-        rows += [(part, item["type"], score, list(item.get("misconception_ids") or [])) for part in parts]
+        point_id = item.get("point_id") if node["level"] == "part" else None
+        rows += [(part, item["type"], score, list(item.get("misconception_ids") or []), point_id) for part in parts]
     return rows
 
 
@@ -222,12 +224,12 @@ def _write_evidence(conn: sqlite3.Connection, student: dict, ts: str, rows: list
                     exchange_id: int | None = None, check_id: str | None = None) -> list[int]:
     s = _settings()
     ids = []
-    for part_id, evidence_type, score, misconception_ids in rows:
+    for part_id, evidence_type, score, misconception_ids, point_id in rows:
         cur = conn.execute(
             """INSERT INTO evidence_log (student_id, ts, part_id, evidence_type, score, origin, exchange_id, check_id,
-                 misconception_ids, protocol, settings_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                 misconception_ids, point_id, protocol, settings_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (student["id"], ts, part_id, evidence_type, score, origin, exchange_id, check_id, ";".join(misconception_ids),
-             protocol_label(s, profile_of(student)), settings_hash()))
+             point_id, protocol_label(s, profile_of(student)), settings_hash()))
         ids.append(cur.lastrowid)
     return ids
 
