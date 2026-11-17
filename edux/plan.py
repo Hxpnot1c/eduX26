@@ -7,6 +7,7 @@ Steps in STOP end the plan, because the student needs to reply.
 
 Order (first match wins for the main step):
   answer given    -> feedback, then reteach when points are missing (which ends the plan)
+  question instead of the pending answer -> answer_brief, then reask the same question (fatigue and stuck first)
   fatigued        -> offer_stop (once a session; also replaces reteach's re-ask, as do stuck moves)
   stuck on focus  -> step_back (weakest prerequisite) / reteach of the whole part (through the anchor)
   ambiguous focus -> ask_which (no focus at all: the top due review, if any)
@@ -33,8 +34,8 @@ from edux.settings import TEXT_DIR, Settings, SettingsError, read_text
 
 log = logging.getLogger(__name__)
 
-STOP = {"reteach", "offer_stop", "step_back", "ask_which", "prequestion", "check_prereq"}
-ASKS = {"reteach", "step_back", "prequestion", "check_prereq", "teach", "extend", "review"}
+STOP = {"reteach", "offer_stop", "step_back", "ask_which", "prequestion", "check_prereq", "reask"}
+ASKS = {"reteach", "step_back", "prequestion", "check_prereq", "teach", "extend", "review", "reask"}
 MAX_STEPS = 2
 # The answer.type the chatbot sends back for a step that asks something.
 ANSWER_TYPE = {"prequestion": "prequestion", "check_prereq": "review", "step_back": "review", "review": "review",
@@ -45,12 +46,14 @@ ANSWER_TYPE = {"prequestion": "prequestion", "check_prereq": "review", "step_bac
 # A placeholder outside both is a startup error; one that is only sometimes present is a warning. Sections
 # (text/moves/<key>.md) are sent once with no data, so they name fields as data.<field> and have no placeholders.
 TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
+    "answer_brief": (set(), set()),
     "ask_which": ({"candidates"}, set()),
     "check_prereq": ({"name", "for", "note", "answer_type"}, set()),
     "extend": ({"answer_type"}, set()),
     "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "points_met", "missing"}),
     "offer_stop": ({"minutes", "quick_parts"}, set()),
     "prequestion": ({"target", "options", "answer_type"}, set()),
+    "reask": ({"asked", "answer_type"}, set()),
     "reteach": ({"answer_type"}, {"missing", "anchor"}),
     "review_recall": ({"name", "mode", "answer_type"}, set()),
     "review_transfer": ({"name", "mode", "new_context", "answer_type"}, set()),
@@ -312,17 +315,34 @@ def _second_step(turn: Turn, blocks: dict, reviews_only: bool = False) -> dict |
 # --- the plan -----------------------------------------------------------------------
 
 
+def asking_step(steps: list[dict]) -> dict | None:
+    """The step in a plan that asks the student something they should answer (it carries data.answer_type)."""
+    return next((s for s in reversed(steps) if "answer_type" in s["data"]), None)
+
+
+def reask(pending: dict) -> list[dict]:
+    """answer_brief, then the pending question again with the same data (so the same answer_type and score_next)."""
+    data = {"asked": pending["move"], **pending["data"]}
+    return [_step("answer_brief", pending["part_id"]), {**_step("reask", pending["part_id"], data)}]
+
+
 def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", answer: dict | None = None,
            evidence: dict | None = None, last_plan: list[dict] | None = None,
-           corrected: set[str] | None = None, offered_stop: bool = False) -> list[dict]:
+           corrected: set[str] | None = None, offered_stop: bool = False, pending: dict | None = None) -> list[dict]:
     """The plan for this turn (see the module docstring). answer is what the chatbot sent about the student's
     answer and evidence its scored item; last_plan is the plan issued on the previous turn; corrected holds the
     misconceptions already corrected this session, which aren't corrected again; offered_stop is true once
-    stopping has been offered this session."""
+    stopping has been offered this session; pending is the question still waiting for an answer, when this
+    message asked something instead (on the same part, or with no new focus)."""
     last_plan = last_plan or []
     steps: list[dict] = []
     handled: set[str] = set(corrected or ()) | corrected_in(last_plan)
     answered_prequestion = None
+    if pending and not answer:
+        urgent = main_step(turn, blocks, settings, choice, last_plan, handled, None, offered_stop)
+        if urgent and urgent["move"] in ("offer_stop", "step_back", "reteach"):
+            return [urgent]
+        return reask(pending)
     if answer and evidence:
         first, retry = feedback(answer, evidence)
         steps.append(first)
@@ -366,7 +386,8 @@ def score_next(plan: list[dict]) -> dict[str, list[dict]]:
                 points = lettered(part["id"])
                 if points:
                     out.setdefault(part["id"], points)
-        if step["move"] in ASKS and step["move"] != "prequestion" and step["part_id"] and step["part_id"] not in out:
+        by_option = step["move"] == "prequestion" or step["data"].get("asked") == "prequestion"
+        if step["move"] in ASKS and not by_option and step["part_id"] and step["part_id"] not in out:
             points = lettered(step["part_id"])
             if points:
                 out[step["part_id"]] = points

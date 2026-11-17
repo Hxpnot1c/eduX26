@@ -62,12 +62,35 @@ def _this_session(student_id: str, last: dict, at: str) -> tuple[set[str], bool]
 
 
 def _save_plan(student_id: str, at: str, steps: list[dict], focus: list[str], corrected: set[str],
-               offered_stop: bool, style_sent: dict | None) -> None:
+               offered_stop: bool, style_sent: dict | None, pending: dict | None) -> None:
     conn = learner._conn()
     with conn:
         conn.execute("INSERT OR REPLACE INTO issued_plan (student_id, ts, plan_json) VALUES (?, ?, ?)",
                      (student_id, at, json.dumps({"plan": steps, "focus": focus, "corrected": sorted(corrected),
-                                                  "offered_stop": offered_stop, "style_sent": style_sent})))
+                                                  "offered_stop": offered_stop, "style_sent": style_sent,
+                                                  "pending": pending})))
+
+
+def _open_question(last: dict, parts: list[str], answer: dict | None, choice: str, at: str) -> dict | None:
+    """The question last asked, if this message asked something instead of answering it: no answer, the same
+    session, not "just show me", and on the same part or with no new focus. A message about another part
+    drops it."""
+    pending = last.get("pending")
+    if not pending or answer or choice == "just_show_me" or last["ts"] is None:
+        return None
+    gap = (learner.parse_ts(at) - learner.parse_ts(last["ts"])).total_seconds() / 60
+    if gap > _settings().session.gap_minutes:
+        return None
+    same = set(last["focus"]) | {pending["part_id"]}
+    return pending if not parts or set(parts) <= same else None
+
+
+def _pending_after(steps: list[dict], pending: dict | None) -> dict | None:
+    """The question waiting for an answer after this plan: the same one after a reask, else the plan's asking step."""
+    if steps and steps[-1]["move"] == "reask":
+        return pending
+    step = plan.asking_step(steps)
+    return {k: step[k] for k in ("move", "key", "part_id", "data")} if step else None
 
 
 def result_size(result: object) -> int:
@@ -219,12 +242,14 @@ def tutor_turn(
     blocks = context_blocks.assemble(profile, turn, s, _context())
     config = _context().profiles.get(profile, _context().profiles[_context().default_profile])
     corrected, offered_stop = _this_session(student["id"], last, at)
-    steps = (plan.choose(turn, blocks, s, choice, answer, evidence, last["plan"], corrected, offered_stop)
+    pending = _open_question(last, parts, answer, choice, at)
+    steps = (plan.choose(turn, blocks, s, choice, answer, evidence, last["plan"], corrected, offered_stop, pending)
              if config.plan else [])
     current_style = style(student, client)
     send_style = _style_due(last, current_style, at)
     _save_plan(student["id"], at, steps, parts, corrected | plan.corrected_in(steps),
-               offered_stop or any(step["move"] == "offer_stop" for step in steps), current_style)
+               offered_stop or any(step["move"] == "offer_stop" for step in steps), current_style,
+               _pending_after(steps, pending))
     # with no plan (a comparison profile), answers on the focus parts can still be scored
     next_points = plan.score_next(steps) if config.plan else {
         p: points for p in parts if (points := plan.lettered(p))}

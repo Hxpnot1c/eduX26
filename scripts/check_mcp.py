@@ -135,6 +135,16 @@ async def conversation(keyed: str, student: str) -> None:
     check(len(recorded) == 2 and recorded[-1]["score"] == 1 / len(points),
           f"3. the recorded score is {1 / len(points)}", json.dumps([e["score"] for e in recorded]))
 
+    before = max_evidence_id()
+    fourth = await turn({"message": "Wait, why do you use the original value and not the new one?", "node_ids": [PART],
+                         "this_message": {"question_depth": "mechanism", "engagement": "active"}})
+    asked = ((fourth.get("plan") or [{}, {}])[-1].get("data") or {})
+    check(moves(fourth) == ["answer_brief", "reask"] and asked.get("asked") == "reteach"
+          and asked.get("missing") == missing and fourth.get("score_next") == third.get("score_next")
+          and max_evidence_id() == before,
+          "4. a question instead of an answer gets answer_brief, then the same question again, and scores nothing",
+          ", ".join(moves(fourth)) or fourth.get("error", ""))
+
     shapes = {tuple(sorted(step)) for t in turns for step in t.get("plan", [])}
     check(shapes == {("cue", "data", "move", "part_id")}, "each step carries only move, part_id, cue and data",
           json.dumps(sorted(shapes)))
