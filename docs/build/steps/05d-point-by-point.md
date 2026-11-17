@@ -73,7 +73,7 @@ Every MCQ is built by the server and asked by one move, **`ask_mcq`** **(stop)**
 
 **Rules for every step in the loop:**
 - Linked parts the student doesn't know (below developing) are never mentioned, in the intuition or in teaching. Only edges to known parts are sent, and course terms are limited to `data.terms` (05c).
-- Fatigue and stuck rules still come first, as in 05b.
+- Fatigue and stuck rules still come first, as in 05b. On checks, a part is stuck only when the same point is missed again on the re-check after its reteach; intuition answers never count (05d follow-ups).
 - A plan can now have **three steps** (feedback, `teach_point`, `ask_mcq`). Nothing is added after a stop step.
 
 ## D. "Just show me" no longer changes understanding

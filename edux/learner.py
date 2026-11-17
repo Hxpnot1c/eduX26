@@ -775,23 +775,47 @@ def approaches(student_id: str, part_id: str) -> list[dict]:
 
 def _session_evidence(conn: sqlite3.Connection, student_id: str, start: str, until: str) -> list[sqlite3.Row]:
     return conn.execute(
-        """SELECT l.id, l.ts, l.part_id, l.score, d.surprise, d.weight, d.fatigued FROM evidence_log l
+        """SELECT l.id, l.ts, l.part_id, l.evidence_type, l.point_id, l.score, d.surprise, d.weight, d.fatigued
+           FROM evidence_log l
            JOIN evidence_derived d ON d.evidence_id = l.id
            WHERE l.student_id = ? AND l.ts >= ? AND l.ts <= ? ORDER BY l.ts, l.id""",
         (student_id, start, until)).fetchall()
 
 
 def stuck_parts(rows: list) -> list[dict]:
-    """Parts with at least session.stuck_attempts pieces of evidence in the session, a mean score below
-    session.stuck_below, and a latest score no better than the first: repeated failure, not tiredness."""
-    s = _settings().session
-    by_part: dict[str, list[float]] = {}
+    """Parts the student keeps failing in the session: repeated failure, not tiredness. Intuition and other
+    prequestion evidence never count. On 0/1 MCQ checks (mcq_check), a part is stuck when the same point is
+    missed on its check and again on the re-check after its reteach (a part with no score points has one point:
+    itself). On open answers, it is stuck after at least session.stuck_attempts of them, with a mean score below
+    session.stuck_below and a latest score no better than the first."""
+    s = _settings()
+    correct_share = s.bkt.correct_share
+    open_scores: dict[str, list[float]] = {}
+    last_on_point: dict[tuple[str, str], float] = {}
+    missed_twice: dict[str, list[float]] = {}
+    order: list[str] = []
     for r in rows:
-        if r["weight"] > 0:
-            by_part.setdefault(r["part_id"], []).append(r["score"])
+        if r["evidence_type"] == "prequestion" or r["weight"] <= 0:
+            continue
+        part = r["part_id"]
+        if r["evidence_type"] == "mcq_check":
+            key = (part, r["point_id"] or part)
+            if key in last_on_point and last_on_point[key] < correct_share and r["score"] < correct_share:
+                missed_twice.setdefault(part, [last_on_point[key], r["score"]])
+            last_on_point[key] = r["score"]
+        else:
+            open_scores.setdefault(part, []).append(r["score"])
+        if part not in order:
+            order.append(part)
     stuck = []
-    for part, scores in by_part.items():
-        if len(scores) >= s.stuck_attempts and sum(scores) / len(scores) < s.stuck_below and scores[-1] <= scores[0]:
+    for part in order:
+        scores = missed_twice.get(part)
+        if scores is None:
+            opened = open_scores.get(part, [])
+            if (len(opened) >= s.session.stuck_attempts and sum(opened) / len(opened) < s.session.stuck_below
+                    and opened[-1] <= opened[0]):
+                scores = opened
+        if scores:
             node = graph.get_node(part)
             stuck.append({"part_id": part, "name": node["name"] if node else part, "attempts": len(scores),
                           "mean_score": sum(scores) / len(scores)})
