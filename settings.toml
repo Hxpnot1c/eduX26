@@ -93,6 +93,7 @@ slip_cap = 0.40
 signal_window = 6          # exchanges used for the supporting signals
 stuck_attempts = 3
 stuck_below = 0.5
+quick_parts = 3            # parts offered for a short burst when fatigued
 
 [difficulty]               # optional teacher-set difficulty per node (0 easy – 1 hard), inherited by parts
 default = 0.5              # used when no node above the part has one

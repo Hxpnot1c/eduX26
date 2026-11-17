@@ -150,7 +150,7 @@ Decides which blocks `get_learning_context` returns, in what order, and how long
 default_profile = "full"
 
 [profiles.full]
-blocks = ["focus", "prequestion", "support", "weak_prerequisites", "anchor", "confusables", "causal",
+blocks = ["focus", "prequestion", "support", "session", "weak_prerequisites", "anchor", "confusables", "causal",
           "active_misconceptions", "notes", "exam_relevance", "reviews_due", "teaching_note"]
 
 [profiles.minimal]         # for comparison: notes only
