@@ -6,9 +6,9 @@ Steps in STOP end the plan, because the student needs to reply.
 
 Order (first match wins for the main step):
   answer given    -> feedback (prequestion, or all points met) / reteach_gap (points missing; ends the plan)
-  fatigued        -> offer_stop
+  fatigued        -> offer_stop (once a session; also replaces reteach_gap's re-ask, as do stuck moves)
   stuck on focus  -> step_back (weakest prerequisite) / switch_approach
-  ambiguous focus -> ask_which
+  ambiguous focus -> ask_which (no focus at all: the top due review, if any)
   just_show_me    -> show (nothing else this turn)
   pre-question    -> prequestion
   weak prereq     -> check_prereq (level new, not checked this session)
@@ -116,12 +116,13 @@ def _options(turn: Turn, block: dict) -> list[dict]:
 
 
 def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_plan: list[dict],
-              handled: set[str], answered_prequestion: str | None) -> dict | None:
-    """The first rule that matches, or None when there is nothing to plan (no focus at all)."""
+              handled: set[str], answered_prequestion: str | None, offered_stop: bool = False) -> dict | None:
+    """The first rule that matches, or None when there is nothing to plan. Stopping is offered once a session:
+    if the student carries on, teaching goes on."""
     session = blocks.get("session")
     focus = turn.parts[0] if turn.parts else None
 
-    if session and session["state"] == "fatigued":
+    if session and session["state"] == "fatigued" and not offered_stop:
         quick = [{"id": p["id"], "name": p["name"], "level": p["level"]} for p in session["quick_parts"]]
         return _step("offer_stop", None, {"minutes": session["minutes"], "quick_parts": quick})
 
@@ -139,7 +140,7 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
         candidates = (blocks.get("focus") or {}).get("candidates")
         if candidates:
             return _step("ask_which", None, {"candidates": [{k: c[k] for k in ("id", "name")} for c in candidates]})
-        return None
+        return _second_step(turn, blocks, reviews_only=True)   # e.g. "quiz me on what's due"
 
     if choice == "just_show_me":
         return _step("show", focus, {"part_type": graph.get_node(focus)["part_type"]})
@@ -171,10 +172,10 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
     return None
 
 
-def _second_step(turn: Turn, blocks: dict) -> dict | None:
+def _second_step(turn: Turn, blocks: dict, reviews_only: bool = False) -> dict | None:
     """extend when earned, otherwise the top due review (not on a focus part) in its mode, otherwise nothing."""
     support = blocks.get("support")
-    if support and support.get("extend"):
+    if support and support.get("extend") and not reviews_only:
         return _step("extend", support["part_id"])
     reviews = [r for r in (blocks.get("reviews_due") or {}).get("items") or [] if r["part_id"] not in turn.parts]
     if reviews:
@@ -191,10 +192,11 @@ def _second_step(turn: Turn, blocks: dict) -> dict | None:
 
 def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", answer: dict | None = None,
            evidence: dict | None = None, last_plan: list[dict] | None = None,
-           corrected: set[str] | None = None) -> list[dict]:
+           corrected: set[str] | None = None, offered_stop: bool = False) -> list[dict]:
     """The plan for this turn (see the module docstring). answer is what the chatbot sent about the student's
     answer and evidence its scored item; last_plan is the plan issued on the previous turn; corrected holds the
-    misconceptions already corrected this session, which aren't corrected again."""
+    misconceptions already corrected this session, which aren't corrected again; offered_stop is true once
+    stopping has been offered this session."""
     last_plan = last_plan or []
     steps: list[dict] = []
     handled: set[str] = set(corrected or ()) | corrected_in(last_plan)
@@ -205,12 +207,15 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
         handled |= set(evidence["misconception_ids"])
         if answer["type"] == "prequestion":
             answered_prequestion = evidence["part_id"]
-        if is_stop(first):
+        if is_stop(first):   # reteach_gap, unless they're tired or stuck: then say what's missing and do that instead
+            urgent = main_step(turn, blocks, settings, choice, last_plan, handled, answered_prequestion, offered_stop)
+            if urgent and urgent["move"] in ("offer_stop", "step_back", "switch_approach"):
+                return [{**first, "move": "feedback", "text": _text("feedback")}, urgent]
             return steps
-    main = main_step(turn, blocks, settings, choice, last_plan, handled, answered_prequestion)
+    main = main_step(turn, blocks, settings, choice, last_plan, handled, answered_prequestion, offered_stop)
     if main:
         steps.append(main)
-    if len(steps) == 1 and main and not is_stop(main) and main["move"] != "show":
+    if len(steps) == 1 and main and not is_stop(main) and main["move"] not in ("show", "review"):
         second = _second_step(turn, blocks)
         if second:
             steps.append(second)
@@ -222,6 +227,11 @@ def score_next(plan: list[dict]) -> dict[str, list[dict]]:
     tick in the student's next answer."""
     out: dict[str, list[dict]] = {}
     for step in plan:
+        if step["move"] == "offer_stop":   # the short burst of quick questions, if they choose it
+            for part in step["data"]["quick_parts"]:
+                points = graph.score_points(part["id"])
+                if points:
+                    out.setdefault(part["id"], points)
         if step["move"] in ASKS and step["move"] != "prequestion" and step["part_id"] and step["part_id"] not in out:
             points = graph.score_points(step["part_id"])
             if points:

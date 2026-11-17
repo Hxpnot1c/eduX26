@@ -2,4 +2,4 @@
 -- asked and what support was given without the chatbot repeating it. rebuild_state ignores it.
 CREATE TABLE issued_plan (student_id TEXT PRIMARY KEY,
   ts TEXT NOT NULL,
-  plan_json TEXT NOT NULL);          -- {"plan": [steps], "focus": [part ids], "corrected": [misconception ids this session]}
+  plan_json TEXT NOT NULL);          -- {"plan", "focus", "corrected", "offered_stop"}: carried within a session
