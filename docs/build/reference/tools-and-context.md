@@ -71,7 +71,7 @@ Called once, at the start of every reply about the course. It replaces `get_lear
 #### Choosing the plan
 At most two steps (three from step 05d, for feedback, `teach_point` and `ask_mcq`). Each is `{move, part_id, cue, data}`. `cue` is one line from `text/moves/<key>.cue.md`, where the key is the move plus its variant (`teach_<level>` and `review_<mode>` until 05d, `ask_mcq_<purpose>` from 05d), falling back to the bare move; what the move means is in the server instructions, sent once (step 05c). The moves are listed in "The move set" below. Steps that ask something carry `data.answer_type`. Steps marked **(stop)** end the plan, because the student needs to reply.
 
-**A question instead of an answer (step 05c).** The question last asked is kept in `issued_plan` as `pending`. A message with no `answer` while one is pending, on the same part or with no new focus, gets `answer_brief` (a few lines), then `reask` **(stop)**: the same question, with the same `score_next`. A message about another part, or a research question, drops `pending`. Fatigue and stuck rules come first.
+**A question instead of an answer (step 05c).** The question last asked is kept in `issued_plan` as `pending`. A message with no `answer` while one is pending, on the same part or with no new focus, gets `answer_brief` (a few lines), then `reask` **(stop)**: the same question, with the same `score_next`. A message about another part, a research question, "just show me" or a new session drops `pending`. Fatigue and stuck rules come first.
 
 **With an answer,** the plan is a feedback step, then the main step:
 - prequestion → `feedback`: confirm, or name the picked misconception with its correction, plus the correct idea.
@@ -151,7 +151,7 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
 - **Sharing.** `feedback` is the only move that names a misconception (picked, shown or held) and corrects it, in one line each. `reteach` never repeats that: it re-teaches only what was missed, a different way in.
 - **Interim set (05c).** Step 05c builds the sections and cues for the moves that exist before server-built MCQs: `prequestion`, `check_prereq`, `step_back`, `review_recall`, `review_transfer`, `teach_worked_example`, `teach_hint_procedural`, `teach_hint_conceptual`, `teach_explain_back`, `show`, `feedback`, `reteach`, `extend`, `answer_brief`, `reask`, `offer_stop` and `ask_which` (17). It already merges `correct_misconception` into `feedback`, and `reteach_gap` and `switch_approach` into `reteach`.
 - **05d** replaces the asking moves with `ask_mcq`, the teach levels with `teach_point`, and renames `teach_explain_back` to `explain_back`, deleting the old texts. **05e** adds three moves and folds `literacy_followup` into `reask`.
-- **Word budget.** The sections above total about 510 words with their headings. With `server_instructions.md` (about 200) and `style.md` (about 90), the whole is about 800, under `instructions.max_words = 900`.
+- **Word budget.** The sections above total about 510 words with their headings. With `server_instructions.md` (about 200) and `style.md` (about 90), the whole is about 800, under `instructions.max_words = 900`. As built in 05c, the 17 interim sections with the 10 rules come to about 880 words, so 05d's cut to 11 moves must land before 05e adds three.
 
 #### Response
 ```json
@@ -166,7 +166,7 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
 }
 ```
 - `score_next`: for each part a step asks about (and an `offer_stop`'s quick parts), except a pre-question or `ask_mcq` (step 05d), which are answered by option: the points to tick in the student's next answer.
-- `data.terms` (step 05c), on every step that teaches or asks: names and aliases of the focus part, then of known parts (developing or above) linked to it, then of other known parts by importance, up to `limits.terms`. The chatbot doesn't introduce course terms outside it, and explains in plain words when one is needed.
+- `data.terms` (step 05c), once per plan, on its first step on a part: names and aliases of the steps' parts, then of known parts (developing or above) linked to them, then of other known parts by importance, up to `limits.terms`. The chatbot doesn't introduce course terms outside it, and explains in plain words when one is needed.
 - `score_next` ids are letters, `a`, `b`, `c`… per part in point order (step 05c). A research turn's `score_next` always includes `ail_verify`'s ticks (step 05e).
 - `style`, sent only on the first `tutor_turn` of a session or when `client`, `interests` or `max_words` changed since it was last sent (step 05c):
   - `max_words`: the profile's `answer_length`, else `style.max_words`. It limits the explanation only; MCQ options don't count.
