@@ -1,1 +1,1 @@
-They asked to be shown: give one short worked example, step by step, saying why each step is done. Add nothing else this turn.
+They asked to be shown: give data.note as a one-line intuition if given, then data.point (or its formula) with one short worked line, saying why. Nothing else, then the check.

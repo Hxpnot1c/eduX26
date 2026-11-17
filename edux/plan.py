@@ -29,7 +29,7 @@ import random
 import re
 
 from edux import graph, learner
-from edux.context_blocks import Turn, core_idea, held_misconceptions, known_parts, known_terms
+from edux.context_blocks import Turn, core_idea, held_misconceptions, intuition_source, known_parts, known_terms
 from edux.settings import TEXT_DIR, Settings, SettingsError, read_text
 
 log = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "reteach": (set(), {"missing", "anchor", "point", "level", "answer_type"}),
     "review_recall": ({"name", "mode", "answer_type"}, set()),
     "review_transfer": ({"name", "mode", "new_context", "answer_type"}, set()),
-    "show": ({"part_type"}, set()),
+    "show": ({"point"}, {"note"}),
     "step_back": ({"to", "for", "answer_type"}, set()),
     "teach_explain_back": ({"level", "part_type", "answer_type"}, set()),
     "teach_point": ({"index", "total", "point", "exemplar", "level", "max_words"}, set()),
@@ -347,8 +347,8 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
         review = _second_step(turn, blocks, reviews_only=True)   # e.g. "quiz me on what's due"
         return [review] if review else []
 
-    if choice == "just_show_me":
-        return [_step("show", focus, {"part_type": graph.get_node(focus)["part_type"]})]
+    if choice in ("just_show_me", "skip_point"):
+        return shown_or_skipped(turn, focus, settings, progress, choice)
 
     pq = blocks.get("prequestion")
     asked_before = (progress.get(focus) or {}).get("intuition_asked") or any(
@@ -403,6 +403,22 @@ def teach(turn: Turn, part_id: str, settings: Settings, progress: dict) -> list[
                                            "exemplar": point["exemplar"], "level": level,
                                            "max_words": settings.points.max_words}),
             check(turn, part_id, state["index"], settings)]
+
+
+def shown_or_skipped(turn: Turn, part_id: str, settings: Settings, progress: dict, choice: str) -> list[dict]:
+    """"I know this" (skip_point): the current point's check only, with no teaching. "Just show me": show, a
+    one-line intuition (from the same source as the intuition question) and the point, then its check."""
+    state = _progress(progress, part_id)
+    points = _points(part_id)
+    index = min(state["index"], len(points))
+    asked = check(turn, part_id, index, settings)
+    if choice == "skip_point":
+        return [asked]
+    data = {"point": points[index - 1]["point"]}
+    source = intuition_source(turn, part_id)
+    if source:
+        data["note"] = source["note"]
+    return [_step("show", part_id, data), asked]
 
 
 def after_check(turn: Turn, evidence: dict, settings: Settings, progress: dict, last_mcq: dict | None) -> list[dict]:
