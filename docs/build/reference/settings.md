@@ -101,6 +101,7 @@ full_weight_at = 3.0       # coverage at which a pre-question counts as full evi
 
 [literacy]                 # AI-literacy coaching (step 05e)
 secure_every = 3           # at secure, a task every this many research questions (others: the feedback line only)
+max_followups = 1          # re-asks of an ignored literacy task before it scores 0
 ask_min_features = 2       # fewer question features than this: coach the question (Ask), else Verify
 importance = 0.5           # fixed importance of the AI-literacy parts (they have no exam weight)
 
@@ -180,6 +181,7 @@ min_distractors = 2        # fewer misconceptions: the chatbot may write one ext
 [literacy]                 # AI-literacy coaching (step 05e)
 secure_every = 3           # at secure, a task every this many research turns
 max_followups = 1          # re-asks of an ignored task before it scores 0
+max_followups = 1          # re-asks of an ignored literacy task before it scores 0
 ask_min_features = 2       # fewer question features than this: coach the question (Ask), else Verify
 importance = 0.5           # fixed importance of the AI-literacy parts
 ```
