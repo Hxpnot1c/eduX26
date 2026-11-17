@@ -125,6 +125,11 @@ class Mcq:
 
 
 @dataclass(frozen=True)
+class Literacy:
+    importance: float
+
+
+@dataclass(frozen=True)
 class Session:
     gap_minutes: float
     fatigue_min_minutes: float
@@ -223,6 +228,7 @@ class Settings:
     prequestion: Prequestion
     points: Points
     mcq: Mcq
+    literacy: Literacy
     session: Session
     difficulty: Difficulty
     link_weight: LinkWeight

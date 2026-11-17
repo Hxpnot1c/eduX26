@@ -19,6 +19,7 @@ from ingest.registry import FileSpec, split_list
 MAX_KEY_WORDING_WORDS = 15  # a key wording must be shorter than this
 MAX_SUMMARY_WORDS = 120
 LOW_CONFIDENCE = 0.5
+URL = re.compile(r"https?://[A-Za-z0-9.-]+\.[A-Za-z]{2,}(:\d+)?(/\S*)?")
 
 
 @dataclass
@@ -54,8 +55,7 @@ class Table:
     rows: list[dict[str, str]] = field(default_factory=list)
 
 
-def read_pack(pack_dir: Path) -> dict[str, Table]:
-    """Read every registry file in the pack; a missing file gives an empty table."""
+def _read_dir(pack_dir: Path) -> dict[str, Table]:
     tables = {}
     for spec in registry.FILES.values():
         path = pack_dir / spec.name
@@ -71,6 +71,22 @@ def read_pack(pack_dir: Path) -> dict[str, Table]:
                 row["_line"] = str(line)
                 rows.append(row)
         tables[spec.name] = Table(spec, True, header, rows)
+    return tables
+
+
+def read_pack(pack_dir: Path, ai_literacy: bool = True) -> dict[str, Table]:
+    """Read every registry file in the pack; a missing file gives an empty table. The AI-literacy mini pack
+    (ingest/ai_literacy/) is read in with every pack: its rows are added to the pack's own (their line
+    numbers are the mini pack's, so an issue on one names a line there)."""
+    tables = _read_dir(pack_dir)
+    if not ai_literacy or pack_dir.resolve() == registry.AI_LITERACY_DIR:
+        return tables
+    for name, extra in _read_dir(registry.AI_LITERACY_DIR).items():
+        if not extra.present:
+            continue
+        table = tables[name]
+        header = table.header + [h for h in extra.header if h not in table.header]
+        tables[name] = Table(table.spec, True, header, table.rows + extra.rows)
     return tables
 
 
@@ -185,6 +201,10 @@ class _Checker:
         for r in self.rows("mark_scheme_items.csv"):
             ref("mark_scheme_items.csv", r, "question_id", questions, "question")
             ref("mark_scheme_items.csv", r, "node_ids", nodes, "node", True)
+        for r in self.rows("trusted_sources.csv"):
+            ref("trusted_sources.csv", r, "node_id", nodes, "node")
+            if r.get("url") and not URL.fullmatch(r["url"]):
+                self.error("trusted_sources.csv", r, f"url {r['url']!r} is not an http or https address")
         all_ids = set().union(*(self.ids(n) for n in registry.FILES if n not in ("id_map.csv", "course.csv")))
         for r in self.rows("id_map.csv"):
             if r.get("old_id") in all_ids:
@@ -324,6 +344,8 @@ class _Checker:
             children[r.get("parent_id", "")].append(i)
 
         for i, r in by_id.items():
+            if registry.AI_LITERACY_TOPIC in lineage(i):   # the mini pack is ours: no exam coverage or edges
+                continue
             level = r.get("level")
             if level == "part":
                 if not covered.intersection(lineage(i)):

@@ -36,6 +36,8 @@ CREATE TABLE question (id TEXT PRIMARY KEY, past_paper_id TEXT NOT NULL, number 
   status TEXT DEFAULT 'draft', flag TEXT DEFAULT '', updated_by TEXT DEFAULT 'extraction', updated_at TEXT, extra TEXT);
 CREATE TABLE mark_scheme_item (id TEXT PRIMARY KEY, question_id TEXT NOT NULL, kind TEXT, marks INTEGER, level INTEGER, text TEXT NOT NULL, node_ids TEXT DEFAULT '',
   status TEXT DEFAULT 'draft', flag TEXT DEFAULT '', updated_by TEXT DEFAULT 'extraction', updated_at TEXT, extra TEXT);
+CREATE TABLE trusted_source (id TEXT PRIMARY KEY, node_id TEXT NOT NULL, name TEXT NOT NULL, url TEXT NOT NULL, what_for TEXT NOT NULL,
+  status TEXT DEFAULT 'draft', flag TEXT DEFAULT '', updated_by TEXT DEFAULT 'extraction', updated_at TEXT, extra TEXT);  -- step 05e
 CREATE TABLE question_node (question_id TEXT, node_id TEXT, PRIMARY KEY (question_id, node_id));  -- filled from node_ids for joins
 CREATE TABLE node_weight (node_id TEXT PRIMARY KEY, exam_weight REAL, dependents INTEGER, importance REAL);
 CREATE TABLE edge_weight (from_id TEXT NOT NULL, to_id TEXT NOT NULL, type TEXT NOT NULL,
