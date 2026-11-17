@@ -128,6 +128,7 @@ confusable_mixup = 1.0     # a misconception this student has had on either side
 confusable_mention = 1.0   # the message mentions the other part: adds this x its relevance
 causal_mention = 1.0       # the message mentions the other end of a causal link: adds this x its relevance
 causal_cues = ["affect", "effect", "cause", "impact", "lead", "result", "consequence", "happen", "why", "because"]
+exam_cues = ["exam", "paper", "marks", "question"]   # exam_relevance goes only with a message that has one of these or a command word (step 05c)
 exam_w_marks = 0.5         # exam_relevance: share from marks at stake
 exam_w_closeness = 0.3     # share from how close the paper's exam is
 exam_w_command = 0.2       # share from the question's command word appearing in the message

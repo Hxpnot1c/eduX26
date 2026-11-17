@@ -174,6 +174,7 @@ class Blocks:
     confusable_mention: float
     causal_mention: float
     causal_cues: list[str]
+    exam_cues: list[str]
     exam_w_marks: float
     exam_w_closeness: float
     exam_w_command: float
@@ -227,12 +228,25 @@ class Profile:
 
 
 @dataclass(frozen=True)
+class MoveReference:
+    reference: list[str]       # reference blocks this move uses, in priority order (step 05c)
+
+
+@dataclass(frozen=True)
+class WatchFor:
+    moves: list[str]           # moves that ask something also get the part's watch-for misconceptions (step 05c)
+
+
+@dataclass(frozen=True)
 class ContextConfig:
-    """Typed view of context.toml: default profile, profiles and their blocks, limits."""
+    """Typed view of context.toml: default profile, profiles and their blocks, limits, the reference blocks
+    each move uses and the moves that get watch-for misconceptions."""
 
     default_profile: str
     profiles: dict[str, Profile]
     limits: dict[str, int]
+    moves: dict[str, MoveReference]
+    watch_for: WatchFor
 
 
 def _convert(value: object, tp: object, where: str) -> object:
@@ -311,6 +325,11 @@ def load_context(path: Path = CONTEXT_PATH) -> ContextConfig:
     context = _build(ContextConfig, _read_toml(path), "")
     if context.default_profile not in context.profiles:
         raise SettingsError(f"default_profile: no profile named {context.default_profile!r}")
+    known = set(context.profiles[context.default_profile].blocks) | {b for p in context.profiles.values() for b in p.blocks}
+    for key, move in context.moves.items():
+        unknown = [b for b in move.reference if b not in known]
+        if unknown:
+            raise SettingsError(f"moves.{key}.reference: no profile has block(s) {', '.join(unknown)}")
     return context
 
 
