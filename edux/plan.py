@@ -64,7 +64,7 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "explain_back": ({"answer_type"}, set()),
     "teach_point": ({"index", "total", "point", "exemplar", "level", "max_words"}, set()),
     "answer_with_sources": ({"trusted_sources"}, set()),
-    "literacy_task": ({"skill", "level", "task", "features"}, {"answer_type"}),
+    "literacy_task": ({"skill", "level", "task", "features", "pattern"}, {"answer_type"}),
     "source_conflict": (set(), set()),
 }
 PLACEHOLDER = re.compile(r"\{([a-z_]+)\}")
@@ -152,6 +152,10 @@ def check_texts(settings: Settings) -> list[str]:
                 warnings.append(f"text/moves/{key}.cue.md: {{{name}}} is only sometimes in the step's data")
             elif name not in always:
                 errors.append(f"text/moves/{key}.cue.md: {{{name}}} is never in the step's data")
+    for skill in LITERACY_SKILLS:
+        for level in ("new", "developing", "secure"):
+            if not (TEXT_DIR / "literacy" / f"{skill}_{level}.md").exists():
+                errors.append(f"text/literacy/{skill}_{level}.md is missing")
     if errors:
         raise SettingsError("; ".join(errors))
     for w in warnings:
@@ -570,6 +574,14 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
 # --- research questions (step 05e) ------------------------------------------------------
 
 
+LITERACY_SKILLS = ("ask", "verify")
+
+
+def literacy_pattern(skill: str, level: str) -> str:
+    """The feedback and task pattern for a skill at a level: text/literacy/<skill>_<level>.md."""
+    return read_text(f"literacy/{skill}_{level}.md").strip()
+
+
 def literacy_task(turn: Turn, blocks: dict, settings: Settings, features: list[str]) -> dict | None:
     """One feedback line on an AI-literacy skill and, usually, one task to do now. The skill is Ask when the
     question shows fewer than literacy.ask_min_features features, otherwise Verify; data.level is that skill's
@@ -581,7 +593,9 @@ def literacy_task(turn: Turn, blocks: dict, settings: Settings, features: list[s
     part = learner.AIL_ASK if ask else learner.AIL_VERIFY
     level = learner.level(turn.p(part))
     task = level != "secure" or learner.research_turns(turn.student_id, turn.at) % settings.literacy.secure_every == 0
-    data = {"skill": "ask" if ask else "verify", "level": level, "task": task, "features": sorted(set(features))}
+    skill = "ask" if ask else "verify"
+    data = {"skill": skill, "level": level, "task": task, "features": sorted(set(features)),
+            "pattern": literacy_pattern(skill, level)}
     if task and not ask:
         data["answer_type"] = "ail_task"
     return _step("literacy_task", part, data)
