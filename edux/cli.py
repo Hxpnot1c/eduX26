@@ -1,4 +1,4 @@
-"""Command line: python -m edux.cli load | add-student | set-profile | log | evidence | state | sessions | rebuild | serve | seed-demo."""
+"""Command line: python -m edux.cli load | add-student | set-profile | log | evidence | state | sessions | calls | rebuild | serve | seed-demo."""
 
 from __future__ import annotations
 
@@ -132,6 +132,32 @@ def cmd_sessions(student: str) -> int:
     return 0
 
 
+def cmd_calls(student: str | None = None, last: int = 20) -> int:
+    """Recent tool calls, median and 90th-percentile server time per tool, and the median gap between a
+    student's consecutive calls (roughly the chatbot's time per turn)."""
+    from edux import service
+
+    if student and learner.get_student(student) is None:
+        print(f"unknown student {student!r}", file=sys.stderr)
+        return 1
+    stats = service.call_stats(student, last)
+    print(f"{'time':23} {'student':12} {'tool':18} {'ms':>7} {'chars':>7}  result")
+    for r in stats["recent"]:
+        result = "ok" if r["ok"] else f"error: {r['error']}"
+        print(f"{r['ts'][:23].replace('T', ' '):23} {r['student_id'] or '-':12} {r['tool']:18} {r['ms']:7.1f} "
+              f"{r['result_chars']:7d}  {result}")
+    print()
+    print(f"{'tool':18} {'calls':>5} {'median ms':>9} {'p90 ms':>7}")
+    for tool, t in stats["tools"].items():
+        print(f"{tool:18} {t['calls']:5d} {t['median_ms']:9.1f} {t['p90_ms']:7.1f}")
+    if stats["gaps"]:
+        print()
+        print(f"{'student':12} median gap between calls")
+        for student_id, gap in sorted(stats["gaps"].items()):
+            print(f"{student_id:12} {gap:.1f}s")
+    return 0
+
+
 def cmd_set_profile(student: str, profile: str) -> int:
     """Switch a student's context profile ("default" goes back to the default in context.toml)."""
     try:
@@ -226,6 +252,9 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--at", help="ISO timestamp to read decay at (default: now)")
     p = sub.add_parser("sessions", help="list a student's sessions")
     p.add_argument("--student", required=True)
+    p = sub.add_parser("calls", help="tool call timing: recent calls, per-tool median and p90, gaps per student")
+    p.add_argument("--student")
+    p.add_argument("--last", type=int, default=20, help="recent calls to list (default 20)")
     p = sub.add_parser("rebuild", help="replay events into derived state")
     p.add_argument("--student")
     p = sub.add_parser("seed-demo", help="create the three demo students from scripted events")
@@ -253,6 +282,8 @@ def main(argv: list[str] | None = None) -> None:
         code = cmd_state(args.student, args.node, args.at)
     elif args.command == "sessions":
         code = cmd_sessions(args.student)
+    elif args.command == "calls":
+        code = cmd_calls(args.student, args.last)
     elif args.command == "seed-demo":
         code = cmd_seed_demo(args.course, args.reset, args.parts)
     elif args.command == "serve":

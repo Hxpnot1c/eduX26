@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import functools
 import statistics
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from edux import context_blocks, graph, learner
 from edux.settings import ContextConfig, Settings, load_context, load_settings, read_text
@@ -214,3 +214,44 @@ def update_profile(
     row = conn.execute("SELECT interests, exam_date_override, answer_length FROM student_profile WHERE student_id = ?",
                        (student["id"],)).fetchone()
     return {"ok": True, "profile": dict(row)}
+
+
+# --- call timing ---------------------------------------------------------------
+
+
+def log_call(student_id: str | None, tool: str, started: datetime, ms: float, result_chars: int, ok: bool,
+             error: str | None = None) -> None:
+    """Write one call_log row (operational: rebuild ignores it)."""
+    conn = learner._conn()
+    with conn:
+        conn.execute("INSERT INTO call_log (ts, student_id, tool, ms, result_chars, ok, error) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                     (started.astimezone(timezone.utc).isoformat(timespec="milliseconds"), student_id, tool, ms,
+                      result_chars, int(ok), error))
+
+
+def _percentile(values: list[float], share: float) -> float:
+    """Nearest-rank percentile of a non-empty list."""
+    ordered = sorted(values)
+    return ordered[min(len(ordered) - 1, max(0, round(share * len(ordered) + 0.5) - 1))]
+
+
+def call_stats(student_id: str | None = None, last: int = 20) -> dict:
+    """Recent calls, median and 90th-percentile ms per tool, and the median gap between a student's
+    consecutive calls (roughly the chatbot's time per turn)."""
+    where, args = ("WHERE student_id = ?", (student_id,)) if student_id else ("", ())
+    rows = [dict(r) for r in learner._conn().execute(f"SELECT * FROM call_log {where} ORDER BY ts, id", args)]
+    per_tool: dict[str, list[float]] = {}
+    for r in rows:
+        per_tool.setdefault(r["tool"], []).append(r["ms"])
+    times: dict[str, list[datetime]] = {}
+    for r in rows:
+        if r["student_id"]:
+            times.setdefault(r["student_id"], []).append(learner.parse_ts(r["ts"]))
+    gaps = {sid: statistics.median([(b - a).total_seconds() for a, b in zip(ts, ts[1:])])
+            for sid, ts in times.items() if len(ts) > 1}
+    return {
+        "recent": rows[-last:] if last > 0 else [],
+        "tools": {tool: {"calls": len(ms), "median_ms": statistics.median(ms), "p90_ms": _percentile(ms, 0.9)}
+                  for tool, ms in sorted(per_tool.items())},
+        "gaps": gaps,
+    }
