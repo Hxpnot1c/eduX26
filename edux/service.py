@@ -203,6 +203,9 @@ def style(student: dict, client: str | None) -> dict:
             "interests": (row and row["interests"]) or "", "format": _format_for(client)}
 
 
+REQUEST_LABELS = ("request_type", "question_features", "source_conflict", "web_access", "asks_recent", "pushback_changed")
+
+
 def tutor_turn(
     student: dict,
     message: str,
@@ -231,6 +234,10 @@ def tutor_turn(
         return {"ok": False, "error": f"this_message.engagement must be one of {', '.join(s.nudges.engagement)}"}
     if choice not in learner.CHOICE_TAKEN:
         return {"ok": False, "error": f"this_message.choice must be one of {', '.join(learner.CHOICE_TAKEN)}"}
+    try:
+        learner._request_labels({k: this_message.get(k) for k in REQUEST_LABELS})
+    except ValueError as e:
+        return {"ok": False, "error": f"this_message.{e}"}
     last = _last_plan(student["id"])
     lost = False
     try:
@@ -252,7 +259,8 @@ def tutor_turn(
                                     _support_given(last["plan"]), choice,
                                     evidence["misconception_ids"] if evidence else None,
                                     conflict_flagged=bool(this_message.get("conflict_flagged")), client=client, ts=at,
-                                    evidence=[evidence] if evidence else None, apply="now")
+                                    evidence=[evidence] if evidence else None, apply="now",
+                                    request={k: this_message.get(k) for k in REQUEST_LABELS})
         except ValueError as e:
             return {"ok": False, "error": str(e)}
 
