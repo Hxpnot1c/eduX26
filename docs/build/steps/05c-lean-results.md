@@ -35,6 +35,7 @@ Every number goes in `settings.toml` and all wording goes in `text/`.
   - one short section per move text: `## <key>`, then the text of `text/moves/<key>.md`
 - **Move keys.** A move's key is its text file's name: the move, plus `_<level>` for `teach` (e.g. `teach_worked_example`) and `_<mode>` for `review` (e.g. `review_transfer`). The cue files and the `[moves.<key>]` tables in D use the same keys. A table for the bare move (`[moves.teach]`) applies to all its variants unless a variant has its own.
 - Each `text/moves/<move>.md` is cut to **at most 2 sentences**. A test at startup warns when one is longer.
+- **The whole server instructions are capped at `instructions.max_words` (about 600 words),** counting `server_instructions.md`, `style.md` and every move section. Over the cap is a startup error that names the longest sections. With about 25 moves after 05e, that leaves roughly 15–20 words per move section.
 - **Each plan step** carries only `move`, `part_id`, `data` and `cue`.
   - `cue` is one line of at most 15 words from `text/moves/<key>.cue.md`, so the move is still clear in a long chat where the instructions are far back.
   - The full move text is no longer sent per step.
@@ -76,7 +77,13 @@ reference = ["notes"]
 # offer_stop, step_back, ask_which: none
 ```
 
-- `misconceptions` here means only the held misconceptions for the step's part. `watch_for` is no longer sent.
+- `misconceptions` here means the held misconceptions for the step's part, in full (wrong idea and correction).
+- **Watch-for misconceptions** go with every move that asks the student something, so the chatbot can tag a misconception the answer shows. They are sent as `id` and `wrong_idea` only, with no correction, for the step's part. The moves are listed in `context.toml`:
+  ```toml
+  [watch_for]                # moves that ask the student something also get the part's watch-for misconceptions (step 05c)
+  moves = ["prequestion", "check_prereq", "teach_point", "check_point", "teach_explain_back", "review", "extend"]
+  ```
+  A bare move (`review`) covers its variants, as with the reference tables.
 - `notes` is limited to the step's part.
 - **`exam_relevance`** is added only when the message mentions an exam, or a command word used in that part's questions. The cue words are a list in `settings.toml` (`blocks.exam_cues`), like `causal_cues`.
 - The reference sent is the union over the plan's steps, in step order and then list order. The profile still decides which blocks exist at all: a block missing from the profile is never sent.
@@ -84,9 +91,9 @@ reference = ["notes"]
 
 ## E. Short point ids
 - `score_next` labels each part's points `a`, `b`, `c`… in order (mark-point order, or note key-point order in the fallback).
-- The server keeps the mapping in `issued_plan.plan_json` (`point_ids: {part_id: {"a": "<full id>", …}}`).
-- `answer.points_met` takes the letters. The server translates them back to point ids before scoring, so scores are computed as before. An unknown letter is a validation error, as an unknown id was.
-- An answer arriving with no saved mapping (for example, after `seed-demo --reset`) is rejected with a clear error, and nothing is recorded.
+- A letter means the point at that position in the part's ordered points, so the server works it out from the course content. No mapping is saved, and an answer still scores after `issued_plan` is lost (for example, after `seed-demo --reset`).
+- `answer.points_met` accepts letters, full point ids, or a mix. Both are translated to point ids before scoring, so scores are computed as before.
+- Only an id or letter that doesn't belong to the answer's part is a validation error, and then nothing is recorded.
 
 ## F. Result budget
 ```toml
@@ -94,7 +101,7 @@ reference = ["notes"]
 max_chars = 2400   # about 600 tokens
 ```
 - `plan`, `score_next`, `focus` and `style` are never cut.
-- When the result is over budget, reference blocks are dropped one at a time, from the end of the priority order in D, until it fits.
+- When the result is over budget, reference blocks are dropped one at a time, from the end of the priority order in D, until it fits. Watch-for misconceptions are dropped last, after every other reference block.
 - If it is still over budget with no reference left, it is sent as is, with a warning:
   - migration `007_call_log_budget.sql` adds `over_budget INTEGER NOT NULL DEFAULT 0` to `call_log`;
   - the console line ends with `OVER BUDGET`, e.g. `tutor_turn demo-weak 18ms 2.9k chars ok OVER BUDGET`.
@@ -105,7 +112,7 @@ max_chars = 2400   # about 600 tokens
 
 ## Docs and scripts
 - `reference/tools-and-context.md`: cues, style only when needed, reference per move, letter ids and the budget.
-- `reference/settings.md`: `[results]`, `blocks.exam_cues` and the `[moves.<move>]` tables.
+- `reference/settings.md`: `[results]`, `[instructions]`, `blocks.exam_cues`, the `[moves.<key>]` tables and `[watch_for]`.
 - `reference/database.md`: migration 007.
 - `scripts/check_mcp.py`: the three-message run sends letters, and prints each result's size.
 
@@ -122,5 +129,8 @@ max_chars = 2400   # about 600 tokens
 - The median `tutor_turn` result on example-mini is at most 2,400 characters, and none in the run is over budget.
 - No placeholder text (`{…}` or `` `name` ``) appears in any result or in the server instructions.
 - The second call in a session has no `style`.
+- Every step that asks the student something carries the part's watch-for misconceptions as `id` and `wrong_idea` only.
+- An answer with full point ids, with letters, or with no saved plan scores the same; an id from another part is rejected.
+- The server instructions are at most 600 words.
 - `calls` shows result sizes and the over-budget count.
 - `rebuild` gives identical state.

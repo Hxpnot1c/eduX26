@@ -45,7 +45,7 @@ Called once, at the start of every reply about the course. It replaces `get_lear
 - `part_id` and `type`: the asking step's `part_id` and `data.answer_type`. Types are `prequestion`, `explain_back`, `review`, `extend`, `past_question`, `point_check` (step 05d), `ail_task` and `ail_unprompted` (step 05e; `ail_unprompted` is sent without being asked, when the student reports checking a claim).
 - `correct`: prequestion only.
 - `picked_misconception_id`: prequestion only, when they picked a wrong option.
-- `points_met`: the letters from `score_next` (step 05c). The server translates them back to point ids with the mapping saved in `issued_plan`.
+- `points_met`: the letters from `score_next`, or full point ids, or a mix (step 05c). A letter is the point at that position in the part's ordered points, so no saved mapping is needed. Only ids or letters that don't belong to the part are rejected.
 - `misconception_ids`: other misconceptions the answer showed.
 
 #### What the server does, in order
@@ -129,9 +129,9 @@ A profile with `plan = false` (`minimal`) gets no plan, but still gets `score_ne
   - `max_words`: the profile's `answer_length`, else `style.max_words`.
   - `interests`: from the profile.
   - `format`: `text/format/<client>.md`, the first of `claude`, `chatgpt` or `gemini` contained in `client`, else `default`.
-- `reference`: only the blocks the plan's moves use, from `[moves.<move>] reference` in `context.toml` (step 05c), and only those in the profile. Misconceptions are the held ones for the step's part only; `watch_for` is no longer sent. `exam_relevance` is added only when the message mentions an exam or a command word. Before 05c: the profile's blocks that are not plan inputs. Plan inputs are `focus`, `prequestion`, `support`, `session` and `reviews_due`; `teaching_note` is never sent. A block that is only `{"items": [...]}` is sent as the list. The move texts say to use reference only when it helps the current step.
+- `reference`: only the blocks the plan's moves use, from `[moves.<move>] reference` in `context.toml` (step 05c), and only those in the profile. `misconceptions.held` is the step part's held misconceptions, in full. `misconceptions.watch_for` goes only with moves that ask something (`[watch_for] moves`), as `id` and `wrong_idea` only, so the chatbot can tag a new one. `exam_relevance` is added only when the message mentions an exam or a command word. Before 05c: the profile's blocks that are not plan inputs. Plan inputs are `focus`, `prequestion`, `support`, `session` and `reviews_due`; `teaching_note` is never sent. A block that is only `{"items": [...]}` is sent as the list. The move texts say to use reference only when it helps the current step.
 - `candidates` appears when the focus is ambiguous, and `unknown_ids` when `node_ids` had unknown ids.
-- **Budget:** a result over `results.max_chars` drops reference blocks from the end of the moves' priority order until it fits. `plan`, `score_next`, `focus` and `style` are never cut. If it is still over, it is sent and the call is logged as over budget.
+- **Budget:** a result over `results.max_chars` drops reference blocks from the end of the moves' priority order until it fits, with watch-for misconceptions dropped last. `plan`, `score_next`, `focus` and `style` are never cut. If it is still over, it is sent and the call is logged as over budget.
 - Levels only: `p_now` never appears in chatbot-facing output (the CLI keeps the numbers).
 
 #### Blocks
@@ -177,7 +177,7 @@ Updates `student_profile`. `interests` and `answer_length` come back in every tu
 - `check_me`: "Check my understanding of ___."
 
 ## Server instructions
-`text/server_instructions.md`, with `text/style.md` appended, then one section per move (`## <move>` and `text/moves/<move>.md`, at most 2 sentences each; step 05c). The `tutor_turn` description is at most 8 lines. The numbered rules:
+`text/server_instructions.md`, with `text/style.md` appended, then one section per move (`## <key>` and `text/moves/<key>.md`, at most 2 sentences each; step 05c). The whole is at most `instructions.max_words` (about 600 words); over that is a startup error. The `tutor_turn` description is at most 8 lines. The numbered rules:
 1. Call `tutor_turn` at the start of every reply about the course.
 2. Do the plan's steps in order and nothing else.
 3. Label the student's message honestly.
