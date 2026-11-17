@@ -19,10 +19,11 @@ Build these once the base (steps 01–06) works end to end. Each one is its own 
 - Say which mark points were met and which were missed.
 - The score for evidence is the share of mark points met.
 
-#### Level-marked questions (9, 15 and 25 marks)
-1. The chatbot places the answer in a **level** using the level descriptors in `mark_scheme_items` (`kind = level`).
+#### Level-marked questions (Edexcel's longer data-response and essay questions)
+Edexcel 9EC0 mark schemes level these answers in two strands: **KAA** (knowledge, application and analysis) and **evaluation**, each with its own levels.
+1. The chatbot places the answer in a **level for each strand separately**, using the level descriptors in `mark_scheme_items` (`kind = level`). A level row gets a `strand` column: `kaa` or `evaluation`.
 2. **It never gives a numeric mark.** A specific mark within a level needs examiner judgement.
-3. **Every level comes with the one specific step to reach the next level,** taken from the next level's descriptor. Example: "Level 3. To reach Level 4, your evaluation needs a supported judgement."
+3. **Each strand's level comes with its own next step,** taken from that strand's next level descriptor. Example: "KAA: Level 3. To reach Level 4, take your chain of reasoning one more step, to the effect on the firm. Evaluation: Level 1. To reach Level 2, weigh up one factor that could change the outcome." A strand already at its top level gets no step.
 
    **Why:** grades alone lead to lower achievement and motivation than comments (Koenka et al., 2021, meta-analysis, school students). Grades with comments gave the best motivational effects in a randomised study of 12–15 year olds (Koenka, 2020).
 4. It also returns a **readiness checklist**, each item met or not, with one line of why:
@@ -33,8 +34,8 @@ Build these once the base (steps 01–06) works end to end. Each one is its own 
    - conclusion follows
 5. **Evidence:**
    - Each checklist item scores as evidence on the parts it touches, via `mark_scheme_items.node_ids`.
-   - The level as a whole scores `level / max_level` on the question's parts.
-6. **Evaluation task:** a teacher (or the team) levels 10–20 answers independently, and the results are compared with the chatbot's. Report exact agreement and within-one-level agreement, labelled as a small sample, in the evaluation section of the README.
+   - Each strand scores `level / max_level` for that strand on the question's parts, as two separate evidence rows.
+6. **Evaluation task:** a teacher (or the team) levels 10–20 answers independently, per strand, and the results are compared with the chatbot's. Report exact agreement and within-one-level agreement for each strand, labelled as a small sample, in the evaluation section of the README.
 
 #### Question templates
 `question_templates.csv` in the course pack, one row per template:
@@ -53,7 +54,8 @@ Plus the standard status columns.
 
 - **The server fills the slots,** seeded per student so questions don't repeat, and computes the answer key for calculations. The chatbot never invents a question or an answer when a template exists.
 - **Written questions** keep the command word, marks and level descriptors, and change only the context.
-- **Fallback:** free generation, labelled "AQA-style practice", limited to the part, command word and marks.
+- **Fallback:** free generation, labelled "Edexcel-style practice", limited to the part, command word and marks.
+- **Edexcel's 1-mark multiple-choice questions** (Section A of Papers 1 and 2) are question templates for `check_mcq` practice (`ask_mcq` with purpose `check` once step 05c's move set lands). Each becomes a template in our own words: a stem and a correct option, with the wrong options mapped to misconceptions where one fits. The server builds, shuffles and scores it as for any check (step 05d).
 - **Transfer-mode reviews** use templates when they exist.
 - **Templates start as drafts.** Not every template produces questions of equal difficulty (Fu & Choe, 2022: 9 of 23 worked without revision), so teacher approval matters.
 
