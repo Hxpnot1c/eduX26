@@ -96,8 +96,8 @@ fatigue_min_parts = 2      # the drop must span at least this many parts
 fatigue_slip_add = 0.15    # extra slip while fatigued
 slip_cap = 0.40
 signal_window = 6          # exchanges used for the supporting signals
-stuck_attempts = 3
-stuck_below = 0.5
+stuck_attempts = 3         # open answers on a part before it can count as stuck (MCQ checks: same point missed twice)
+stuck_below = 0.5          # and their mean score below this
 quick_parts = 3            # parts offered for a short burst when fatigued
 pattern_min_sessions = 3   # sessions with a fatigue onset before study_pattern is shown
 
