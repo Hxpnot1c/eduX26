@@ -1,1 +1,1 @@
-One line of feedback on the data.skill skill, pitched at data.level: their question (ask) or how to check this claim (verify). If data.task, add one task to do now and wait.
+Follow data.pattern for the data.skill skill: one feedback line on their question (ask) or on how to check this claim (verify). If data.task is true, add its one task to do now and wait.

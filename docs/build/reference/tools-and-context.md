@@ -121,7 +121,7 @@ At most two steps (three from step 05d, for feedback, `teach_point` and `ask_mcq
 
 **Research questions (step 05e).** `request_type == research` gets:
 1. `answer_with_sources`: a full answer, never withheld, with sources and links (`data.trusted_sources`: up to `limits.trusted_sources` from the focus parts, or the candidates, and their ancestors, nearest first), the claims that need checking marked, and a plain statement when the chatbot has no web access.
-2. `literacy_task`: line 1 is feedback on the skill, line 2 is one task to do now. The skill is Ask when the question shows fewer than `literacy.ask_min_features` features, otherwise Verify; the wording comes from `text/literacy/<skill>_<level>.md` for the skill's level. `data`: `skill` (`ask` / `verify`), `level`, `task` and the question's `features`; a verify task has `answer_type = ail_task`. At secure, the task appears only when the student's research-question count is a multiple of `literacy.secure_every` (counted from `exchange_log`, so it survives a restart), and other turns get the feedback line only. Skipped while fatigued. A literacy step is on its skill's part, but gets no course `terms`.
+2. `literacy_task`: line 1 is feedback on the skill, line 2 is one task to do now. The skill is Ask when the question shows fewer than `literacy.ask_min_features` features, otherwise Verify; the wording comes from `text/literacy/<skill>_<level>.md` for the skill's level. `data`: `skill` (`ask` / `verify`), `level`, `task`, the question's `features` and `pattern` (the feedback and task lines from `text/literacy/<skill>_<level>.md`; a missing file is a startup error); a verify task has `answer_type = ail_task`. At secure, the task appears only when the student's research-question count is a multiple of `literacy.secure_every` (counted from `exchange_log`, so it survives a restart), and other turns get the feedback line only. Skipped while fatigued. A literacy step is on its skill's part, but gets no course `terms`.
 - The task is saved as pending in `issued_plan` (`literacy`: `skill`, `part_id`, `followups`). It is done when a verify task is answered (`answer.type = ail_task`), or, for an ask task, when the next message is a research question (its `ail_question` is the score).
 - Not done: that message is answered as usual and, when the plan doesn't already end in a question, `reask` (`data.asked = literacy_task`) re-asks the task in one line. After `literacy.max_followups` re-asks, the next message that doesn't do it records `ail_task` with score 0 on the skill's part, and the task is dropped.
 - A plan that ends in a question, or sets a new task, leaves the task waiting without counting it (a new task replaces it). A new session drops it unscored.
@@ -148,7 +148,7 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
 | `offer_stop` | yes **(stop)** | 05b | | `quick_parts` | none | 35 |
 | `ask_which` | yes **(stop)** | 05b | | `candidates` | none | 20 |
 | `answer_with_sources` | no | 05e | | `trusted_sources` | notes | 40 |
-| `literacy_task` | yes **(stop)** when `data.task` | 05e | | `skill`, `level`, `task`, `features` | none | 35 |
+| `literacy_task` | yes **(stop)** when `data.task` | 05e | | `skill`, `level`, `task`, `features`, `pattern` | none | 35 |
 | `source_conflict` | no | 05e | | | none | 25 |
 
 - **Sharing.** `feedback` is the only move that names a misconception (picked, shown or held) and corrects it, in one line each. `reteach` never repeats that: it re-teaches only what was missed, a different way in.
