@@ -248,18 +248,24 @@ def tutor_turn(
         return {"ok": False, "error": str(e)}
 
     if not node_ids and (evidence or lost):   # an answer continues the last turn's topic (after a prereq check or review too)
-        node_ids = last["focus"] or [answer["part_id"]]
+        # an AI-literacy part never becomes the course focus
+        node_ids = last["focus"] or ([] if graph.is_literacy(answer["part_id"]) else [answer["part_id"]])
     resolution = graph.resolve(message or "", node_ids)
     if not resolution["parts"] and not resolution["candidates"] and last["focus"]:
         resolution = {**graph.resolve("", last["focus"]), "unknown": resolution["unknown"]}
-    tagged = list(dict.fromkeys(([evidence["part_id"]] if evidence else []) + resolution["parts"]))
+    # a research question is Ask evidence; a verify answer is AI-literacy evidence, not an answer on the course
+    recorded = ([evidence] if evidence else []) + (
+        [learner.question_evidence(this_message.get("question_features"))]
+        if this_message.get("request_type") == "research" else [])
+    literacy_answer = bool(evidence and evidence["type"] in learner.LITERACY_ANSWERS)
+    tagged = list(dict.fromkeys([e["part_id"] for e in recorded] + resolution["parts"]))
     if tagged and not lost:
         try:
             learner.record_exchange(student["id"], tagged, depth, engagement, choice == "just_show_me",
                                     _support_given(last["plan"]), choice,
                                     evidence["misconception_ids"] if evidence else None,
                                     conflict_flagged=bool(this_message.get("conflict_flagged")), client=client, ts=at,
-                                    evidence=[evidence] if evidence else None, apply="now",
+                                    evidence=recorded or None, apply="now",
                                     request={k: this_message.get(k) for k in REQUEST_LABELS})
         except ValueError as e:
             return {"ok": False, "error": str(e)}
@@ -281,7 +287,9 @@ def tutor_turn(
     elif again:   # the letter can't be scored: the same question, freshly shuffled
         steps = plan.add_terms(turn, [plan.ask_again(turn, again)])
     else:
-        steps = plan.add_terms(turn, plan.choose(turn, blocks, s, choice, None if lost else answer, evidence,
+        course_answer = None if lost or literacy_answer else answer
+        steps = plan.add_terms(turn, plan.choose(turn, blocks, s, choice, course_answer,
+                                                 evidence if course_answer else None,
                                                  last["plan"], corrected, offered_stop, pending, points,
                                                  last.get("mcq")))
     current_style = style(student, client)
