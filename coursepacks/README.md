@@ -78,7 +78,7 @@ Typed links between nodes. An edge on a concept applies to all its parts.
 | from_id | text | yes |  |  | node id |
 | to_id | text | yes |  |  | node id |
 | type | text | yes | `prerequisite` / `analogous` / `confusable` / `causal` |  | prerequisite / analogous / confusable / causal |
-| note | text |  |  |  | required: what the link means, e.g. what maps onto what, or how A affects B |
+| note | text |  |  |  | what the link means, e.g. what maps onto what, or how A affects B; required when `teach_use` is `intuition`, a warning if missing elsewhere |
 | confidence | real |  |  | `0.8` | 0–1 |
 | source_ids | list |  |  |  | where the link is evidenced |
 | teach_use | text |  | `intuition` / `contrast` / `none` | `none` | `intuition` (the `from` part can lead into the `to` part), `contrast` (use it to show the difference) or `none` |

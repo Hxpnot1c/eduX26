@@ -246,8 +246,11 @@ class _Checker:
             etype = r.get("type", "")
             if r.get("from_id") and r.get("from_id") == r.get("to_id"):
                 self.error("edges.csv", r, "an edge cannot link a node to itself")
-            if not r.get("note"):
-                self.error("edges.csv", r, f"{'an' if etype[:1] in 'aeiou' else 'a'} {etype or 'untyped'} edge needs a note")
+            if not r.get("note"):   # the intuition question is built from the note, so it can't be missing there
+                if r.get("teach_use") == "intuition":
+                    self.error("edges.csv", r, "an edge with teach_use = intuition needs a note")
+                else:
+                    self.warn("edges.csv", r, f"{'an' if etype[:1] in 'aeiou' else 'a'} {etype or 'untyped'} edge has no note")
             if etype == "prerequisite" and r.get("status") != "rejected":
                 graph[r.get("from_id", "")].append(r.get("to_id", ""))
         for cycle in _find_cycles(graph):

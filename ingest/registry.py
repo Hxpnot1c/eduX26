@@ -118,7 +118,7 @@ _FILES = (
         C("from_id", required=True, doc="node id"),
         C("to_id", required=True, doc="node id"),
         C("type", required=True, enum=EDGE_TYPES, doc="prerequisite / analogous / confusable / causal"),
-        C("note", default="", doc="required: what the link means, e.g. what maps onto what, or how A affects B"),
+        C("note", default="", doc="what the link means, e.g. what maps onto what, or how A affects B; required when `teach_use` is `intuition`, a warning if missing elsewhere"),
         C("confidence", "real", default="0.8", doc="0–1", bounds=(0, 1)),
         C("source_ids", "list", default="", doc="where the link is evidenced"),
         C("teach_use", enum=TEACH_USES, default="none",
