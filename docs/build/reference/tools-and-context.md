@@ -31,7 +31,7 @@ Every tool adapter is wrapped to time it. Each call:
 ## Tools
 
 ### tutor_turn(message, this_message, node_ids?, answer?, client?)
-Called once, at the start of every reply about the course. It replaces `get_learning_context` and `log_exchange` (protocol `v0.2`).
+Called once, at the start of every reply (from step 05e, research questions about the world too). It replaces `get_learning_context` and `log_exchange` (protocol `v0.2`).
 
 | arg | what it is |
 |---|---|
@@ -120,11 +120,11 @@ At most two steps (three from step 05d, for feedback, `teach_point` and `ask_mcq
 - Progress is kept per part in `issued_plan` (`points`). Moving to another part keeps that part's progress; coming back resumes where it stopped.
 
 **Research questions (step 05e).** `request_type == research` gets:
-1. `answer_with_sources`: a full answer, never withheld, with sources and links (`data.trusted_sources` for the message's topic first), the claims that need checking marked, and a plain statement when the chatbot has no web access.
-2. `literacy_task`: line 1 is feedback on the skill, line 2 is one task to do now. The skill is Ask when the question shows fewer than `literacy.ask_min_features` features, otherwise Verify; the wording comes from `text/literacy/<skill>_<level>.md` for the skill's level. At secure, the task appears only every `literacy.secure_every` research turns, and other turns get the feedback line only. Skipped while fatigued.
+1. `answer_with_sources`: a full answer, never withheld, with sources and links (`data.trusted_sources`: up to `limits.trusted_sources` from the focus parts, or the candidates, and their ancestors, nearest first), the claims that need checking marked, and a plain statement when the chatbot has no web access.
+2. `literacy_task`: line 1 is feedback on the skill, line 2 is one task to do now. The skill is Ask when the question shows fewer than `literacy.ask_min_features` features, otherwise Verify; the wording comes from `text/literacy/<skill>_<level>.md` for the skill's level. `data`: `skill` (`ask` / `verify`), `level`, `task` and the question's `features`; a verify task has `answer_type = ail_task`. At secure, the task appears only when the student's research-question count is a multiple of `literacy.secure_every` (counted from `exchange_log`, so it survives a restart), and other turns get the feedback line only. Skipped while fatigued. A literacy step is on its skill's part, but gets no course `terms`.
 - The task is saved as pending in `issued_plan` (`literacy`). If the next message doesn't do it, that message is answered as usual and `reask` re-asks the task in one line. After `literacy.max_followups`, the task is recorded as `ail_task` with score 0 and dropped.
-- `source_conflict` puts a `source_conflict` step first: that's exactly what checking is for, and the claim is corrected.
-- `concept` and `homework` follow the rules above and never get a literacy task. `other` gets an empty plan.
+- `source_conflict` (on any turn) puts a `source_conflict` step first: that's exactly what checking is for, and the claim is corrected. The plan keeps its last steps, where its question is, within the three-step limit.
+- `concept` and `homework` follow the rules above and never get a literacy task. `other` gets an empty plan. A research question that comes with an answer to a course question is planned as that answer.
 
 A profile with `plan = false` (`minimal`) gets no plan, but still gets `score_next` for its focus parts, so its answers are scored.
 
@@ -144,8 +144,8 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
 | `reask` | yes **(stop)** | 05c | `literacy_followup` (05e) | `pending` | none | 20 |
 | `offer_stop` | yes **(stop)** | 05b | | `quick_parts` | none | 35 |
 | `ask_which` | yes **(stop)** | 05b | | `candidates` | none | 20 |
-| `answer_with_sources` | no | 05e | | `trusted_sources` | none | 40 |
-| `literacy_task` | yes **(stop)** | 05e | | `skill`, `feedback`, `task` | none | 35 |
+| `answer_with_sources` | no | 05e | | `trusted_sources` | notes | 40 |
+| `literacy_task` | yes **(stop)** when `data.task` | 05e | | `skill`, `level`, `task`, `features` | none | 35 |
 | `source_conflict` | no | 05e | | | none | 25 |
 
 - **Sharing.** `feedback` is the only move that names a misconception (picked, shown or held) and corrects it, in one line each. `reteach` never repeats that: it re-teaches only what was missed, a different way in.
@@ -225,7 +225,7 @@ Updates `student_profile`. `interests` and `answer_length` come back in every tu
 `style.md` says that `style.max_words` limits the explanation only: MCQ options don't count towards it. The same holds for `points.max_words` on a `teach_point`.
 
 The numbered rules:
-1. Call `tutor_turn` at the start of every reply about the course.
+1. Call `tutor_turn` at the start of every reply, before writing anything (step 05e: not only about the course).
 2. Do the plan's steps in order and nothing else.
 3. Label the student's message honestly.
 4. Tick only the points the student actually produced.

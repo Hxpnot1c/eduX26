@@ -63,6 +63,9 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "show": ({"point"}, {"note"}),
     "explain_back": ({"answer_type"}, set()),
     "teach_point": ({"index", "total", "point", "exemplar", "level", "max_words"}, set()),
+    "answer_with_sources": ({"trusted_sources"}, set()),
+    "literacy_task": ({"skill", "level", "task", "features"}, {"answer_type"}),
+    "source_conflict": (set(), set()),
 }
 PLACEHOLDER = re.compile(r"\{([a-z_]+)\}")
 
@@ -248,7 +251,7 @@ def ask_again(turn: Turn, pending: dict) -> dict:
 
 
 def is_stop(step: dict) -> bool:
-    return step["move"] in STOP
+    return step["move"] in STOP or (step["move"] == "literacy_task" and bool(step["data"].get("task")))
 
 
 # --- feedback on the student's answer -----------------------------------------------
@@ -481,9 +484,9 @@ def add_terms(turn: Turn, steps: list[dict]) -> list[dict]:
     introduce others. The list is sent once per plan, which keeps the result within its budget."""
     for step in steps:
         step["data"].pop("terms", None)
-    parts = list(dict.fromkeys(s["part_id"] for s in steps if s["part_id"]))
+    parts = list(dict.fromkeys(s["part_id"] for s in steps if s["part_id"] and not graph.is_literacy(s["part_id"])))
     if parts:
-        first = next(s for s in steps if s["part_id"])
+        first = next(s for s in steps if s["part_id"] in parts)
         first["data"]["terms"] = known_terms(turn, parts, known_parts(turn))
     return steps
 
@@ -562,6 +565,41 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
         if second:
             steps.append(second)
     return steps[:MAX_STEPS]
+
+
+# --- research questions (step 05e) ------------------------------------------------------
+
+
+def literacy_task(turn: Turn, blocks: dict, settings: Settings, features: list[str]) -> dict | None:
+    """One feedback line on an AI-literacy skill and, usually, one task to do now. The skill is Ask when the
+    question shows fewer than literacy.ask_min_features features, otherwise Verify; data.level is that skill's
+    level. At secure there is a task only every literacy.secure_every research questions (the rest get the
+    feedback line only). None while the student is fatigued. A verify task is answered as ail_task."""
+    if (blocks.get("session") or {}).get("state") == "fatigued":
+        return None
+    ask = len(set(features)) < settings.literacy.ask_min_features
+    part = learner.AIL_ASK if ask else learner.AIL_VERIFY
+    level = learner.level(turn.p(part))
+    task = level != "secure" or learner.research_turns(turn.student_id, turn.at) % settings.literacy.secure_every == 0
+    data = {"skill": "ask" if ask else "verify", "level": level, "task": task, "features": sorted(set(features))}
+    if task and not ask:
+        data["answer_type"] = "ail_task"
+    return _step("literacy_task", part, data)
+
+
+def research(turn: Turn, blocks: dict, settings: Settings, features: list[str]) -> list[dict]:
+    """A research question (a factual or current question about the world): answer_with_sources, never withheld,
+    with the pack's trusted sources for the focus and its topic, then literacy_task."""
+    near = turn.parts or [c["id"] for c in turn.resolution.get("candidates") or []]
+    sources = graph.trusted_sources(near, turn.limits.get("trusted_sources", 3))
+    task = literacy_task(turn, blocks, settings, features)
+    return [_step("answer_with_sources", None, {"trusted_sources": sources})] + ([task] if task else [])
+
+
+def with_source_conflict(steps: list[dict]) -> list[dict]:
+    """source_conflict first (the student found a link that failed or didn't say what was claimed), keeping the
+    end of the plan, where its question is."""
+    return [_step("source_conflict", None)] + steps[-(MAX_STEPS - 1):]
 
 
 def lettered(part_id: str) -> list[dict]:

@@ -127,6 +127,8 @@ class Mcq:
 @dataclass(frozen=True)
 class Literacy:
     importance: float
+    secure_every: int
+    ask_min_features: int
 
 
 @dataclass(frozen=True)

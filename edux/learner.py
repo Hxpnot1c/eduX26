@@ -226,6 +226,12 @@ def score_answer(answer: dict, mcq: dict | None = None) -> dict:
     return {"part_id": part_id, "type": kind, "score": score, "misconception_ids": misconception_ids}
 
 
+def research_turns(student_id: str, at: str | datetime | None = None) -> int:
+    """How many research questions the student has asked up to at (default now), from exchange_log (step 05e)."""
+    return _conn().execute("SELECT COUNT(*) FROM exchange_log WHERE student_id = ? AND request_type = 'research' AND ts <= ?",
+                           (student_id, _event_ts(at))).fetchone()[0]
+
+
 def question_evidence(features: list[str] | None) -> dict:
     """Ask evidence for a research question (step 05e): ail_question on ail_ask, scored by the question features
     it shows out of the four."""

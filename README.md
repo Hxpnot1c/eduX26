@@ -100,7 +100,7 @@ The free plan allows one custom connector.
 2. Choose **Create**, give it a name and description, paste the URL, set authentication to **No authentication**, tick that you trust the provider and create it.
 3. In a chat, turn the connector on for the conversation.
 
-**Then**, paste the set-up text from [`text/chatbot_setup.md`](text/chatbot_setup.md) into the chatbot's custom instructions (or a project's instructions), so it calls `tutor_turn` at the start of every reply about the course.
+**Then**, paste the set-up text from [`text/chatbot_setup.md`](text/chatbot_setup.md) into the chatbot's custom instructions (or a project's instructions), so it calls `tutor_turn` at the start of every reply.
 
 ## Troubleshooting
 - **421 "Invalid Host header" (or 403 "Invalid Origin header"):** the tunnel host isn't in `ALLOWED_HOSTS`. Add it without `https://` and restart the server.
