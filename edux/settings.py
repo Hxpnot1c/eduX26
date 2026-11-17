@@ -155,6 +155,14 @@ class Resolve:
 
 
 @dataclass(frozen=True)
+class Progress:
+    levers: int
+    weak_links: int
+    trend_days: int
+    trend_min_change: float
+
+
+@dataclass(frozen=True)
 class Blocks:
     review_link_boost: float
     review_importance_floor: float
@@ -190,6 +198,7 @@ class Settings:
     difficulty: Difficulty
     link_weight: LinkWeight
     resolve: Resolve
+    progress: Progress
     blocks: Blocks
 
 
