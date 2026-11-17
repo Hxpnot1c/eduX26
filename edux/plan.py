@@ -49,7 +49,7 @@ LETTERS = "ABCDEFGHIJ"
 TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "answer_brief": (set(), set()),
     "ask_which": ({"candidates"}, set()),
-    "ask_mcq_intuition": ({"purpose", "options", "answer_type"}, {"target", "extra_option"}),
+    "ask_mcq_intuition": ({"purpose", "options", "answer_type"}, {"note", "via", "extra_option"}),
     "check_prereq": ({"name", "for", "note", "answer_type"}, set()),
     "extend": ({"answer_type"}, set()),
     "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "correct_option", "purpose", "points_met", "missing"}),
@@ -351,7 +351,7 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
     asked_before = any(s["move"] == "ask_mcq" and s["data"].get("purpose") == "intuition" and s["part_id"] == focus
                        for s in last_plan)
     if pq and pq["part_id"] != answered_prequestion and not asked_before:
-        return ask_mcq(turn, question(pq["part_id"], "intuition", pq["correct"], settings), {"target": pq["target"]})
+        return ask_mcq(turn, question(pq["part_id"], "intuition", pq["correct"], settings), pq.get("source") or {})
 
     for item in (blocks.get("weak_prerequisites") or {}).get("items", []):
         if item["level"] == "new" and not _checked_this_session(turn, item["part_id"], last_plan):
@@ -362,6 +362,11 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
         m = held[0]
         return _step("feedback", m["node_id"], {"type": "held", "misconceptions": [_misconception(m)]})
 
+    return teach(blocks, settings)
+
+
+def teach(blocks: dict, settings: Settings) -> dict | None:
+    """Teaching on the main focus part at its support level, or None with no focus."""
     support = blocks.get("support")
     if support:
         part_type = graph.get_node(support["part_id"])["part_type"]
@@ -446,6 +451,8 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
                 return [_refill({**first, "data": {**first["data"], "missing": retry["data"]["missing"]}}), urgent]
             return [first, retry]
     main = main_step(turn, blocks, settings, choice, last_plan, handled, answered_prequestion, offered_stop)
+    if evidence and evidence.get("purpose") == "intuition" and main and main["move"] not in ("offer_stop", "step_back", "reteach"):
+        main = teach(blocks, settings)   # whatever the intuition answer, teaching starts (fatigue and stuck aside)
     if main and main["move"] == "feedback" and steps:   # a held misconception joins the answer's feedback
         known = {m["id"] for m in steps[0]["data"]["misconceptions"]}
         extra = [m for m in main["data"]["misconceptions"] if m["id"] not in known]
