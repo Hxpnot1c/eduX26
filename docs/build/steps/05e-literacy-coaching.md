@@ -8,13 +8,21 @@
 - **Every research answer teaches a little.** Each one comes with one line of feedback and one task for the student to do. That's how the skill is built up over time.
 - **Checking claims can be taught.** Checking claims the way fact-checkers do ("lateral reading") can be taught to high-school students in a few lessons (Wineburg et al., 2022, randomised). We apply it to AI answers.
 
+## How this assesses AI literacy
+AI literacy is assessed by **stealth assessment** (Shute, 2011): evidence comes from what students do in their normal work, and the same moments are used to build the skill, rather than from a separate test. It's designed with **evidence-centred design** (Mislevy, Steinberg & Almond, 2003), which uses three models:
+
+- **Competency model (what we measure):** the AI-literacy parts `ail_ask`, `ail_verify` and the "how AI works" parts (A), alongside the course parts.
+- **Evidence model (what counts, how it's scored):** the chatbot's labels and ticks, plus multiple-choice letters, scored by the server's fixed rules into the existing Bayesian learner model.
+- **Task model (where evidence comes from):** moments in normal work. A research question leads to a literacy task. A failed link, a self-correction or a changed answer after pushback leads to a one-question "how AI works" check (G).
+
 ## What changes, in one line each
-1. Two AI-literacy skills, loaded with every pack, tracked by the existing learner model.
+1. Three AI-literacy skills (Ask, Verify, How AI works), loaded with every pack, tracked by the existing learner model.
 2. Each message is labelled with a request type and, for research questions, question features.
 3. A research question gets a full answer with sources, then one feedback line and one task.
 4. An ignored task is re-asked once, then recorded as 0.
 5. Trusted sources per topic in the course pack.
 6. AI-literacy levels and trends in `get_my_progress`.
+7. A failed link, a self-correction or a changed answer after pushback gets a one-question "how AI works" check.
 
 ---
 
@@ -29,16 +37,35 @@ A committed mini pack, `ingest/ai_literacy/`, in course-pack format (`nodes.csv`
   2. named the publisher and date;
   3. compared the claim;
   4. said whether it matched.
-- No exam weight. Importance is fixed at `literacy.importance`. Both parts are left out of course levers, candidates and the course tree in progress (they get their own section, F).
+- concept `ail_how_ai_works` → one part per AI failure type (G):
+
+| part | taught when | point (correct option) |
+|---|---|---|
+| `ail_how_fabrication` | a link or source fails, or doesn't say what was claimed (`source_conflict`) | Chatbots write likely-looking text, including realistic but invented citations |
+| `ail_how_confidence` | the chatbot corrects itself (`conflict_flagged`) | Sounding confident doesn't show whether an answer is correct |
+| `ail_how_cutoff` | a research question about recent data or events (`asks_recent`) when the chatbot has no web access (`web_access = false`) | Without searching, a chatbot's knowledge stops at its training date |
+| `ail_how_agreement` | the chatbot changes its answer after the student pushes back (`pushback_changed`) | Chatbots can shift answers to agree with you, so check against the notes |
+
+  Each part has:
+  - **the point** above, as its one mark point;
+  - **3 misconceptions** (`misconceptions.csv`), used as the wrong options. They are real beliefs about AI, kept **similar in length and detail to the correct option** so the answer doesn't stand out. For `ail_how_fabrication`:
+    - "It copied a page that was later deleted from the internet"
+    - "It searched a source database and picked the wrong entry"
+    - "It invents links on purpose when it can't find an answer"
+  - **a one-line `intuition`**, used in the feedback ("why").
+- No exam weight. Importance is fixed at `literacy.importance`. All AI-literacy parts are left out of course levers, candidates and the course tree in progress (they get their own section, F).
 - The existing learner model tracks them: decay, spacing and levels as for any part.
 
 ## B. Labels
 `this_message` gets:
 - `request_type`: `concept`, `research` (a factual or current question about the world), `homework` or `other`;
 - `question_features`, for `research` only: which of `concept`, `context`, `asks_sources` and `asks_reasoning` the question shows;
-- `source_conflict`, a boolean: the student reports that a link failed or didn't say what was claimed.
+- `source_conflict`, a boolean: the student reports that a link failed or didn't say what was claimed;
+- `web_access`, a boolean: whether the chatbot can search the web in this chat. The chatbot sets it on research turns;
+- `asks_recent`, a boolean, for `research` only: the question is about recent data or events;
+- `pushback_changed`, a boolean: the student challenged the previous answer and the chatbot changed it.
 
-Migration `008_exchange_request.sql` adds `request_type`, `question_features` and `source_conflict` columns to `exchange_log` (events, so they are replayed). `source_conflict` also sets the existing `conflict_flagged`.
+Migration `008_exchange_request.sql` adds `request_type`, `question_features`, `source_conflict`, `web_access`, `asks_recent` and `pushback_changed` columns to `exchange_log` (events, so they are replayed). `source_conflict` also sets the existing `conflict_flagged`.
 
 `concept` and `homework` follow the existing plan and never get literacy tasks. `other` gets an empty plan.
 
@@ -46,6 +73,7 @@ Migration `008_exchange_request.sql` adds `request_type`, `question_features` an
 - **Ask, on every research question:** type `ail_question` on `ail_ask`, score = features present / 4.
 - **Verify:** from the student's reply to a verify task, scored by the ticks they produced (`points_met`, letters from `score_next`). Type `ail_task` on `ail_verify`.
 - **Unprompted checking:** a student who reports checking a claim without being asked sends `answer.type = ail_unprompted` on `ail_verify`, ticked the same way. It has a lower slip, so it counts more. Every research turn's `score_next` includes `ail_verify`'s ticks, so this can be scored on the next turn.
+- **How AI works:** type `ail_how` on the `ail_how_*` part, scored 1 or 0 from the multiple-choice letter (G). A wrong pick activates that misconception.
 - **An ask task** (rewrite your question) is done when the next message is a research question. Its `ail_question` evidence is the score; nothing else is recorded.
 
 ## D. The plan for a research turn
@@ -75,6 +103,32 @@ The research-turn count since the last task comes from `exchange_log` and `evide
 - **Bad links:** when `source_conflict` is set, a `source_conflict` step comes first: tell the student that's exactly what checking is for, and correct the claim. If they reported the ticks, they are scored as for any verify task.
 - **Fatigue:** no task while the student is fatigued (04c). The answer still comes with sources.
 
+## G. How-AI-works checks
+A one-question check on how chatbots work, asked at the moment one has just failed.
+
+**Triggers**, each for one part:
+
+| trigger | part |
+|---|---|
+| `source_conflict` | `ail_how_fabrication` |
+| `conflict_flagged` (the chatbot corrects itself) | `ail_how_confidence` |
+| `request_type = research`, `asks_recent = true` and `web_access = false` | `ail_how_cutoff` |
+| `pushback_changed` | `ail_how_agreement` |
+
+**The plan:**
+- **First, the moment is handled as usual:** correct the claim (`source_conflict`), own the mistake (self-correction), or answer the question.
+- **Then `ask_mcq` with `purpose = how_ai_works`** **(stop)** is added as the last step, for the part matching the trigger. The server builds and shuffles it as in 05d: the point plus the part's 3 misconceptions, lettered `A`–`D`, with the map stored in `issued_plan.plan_json` (`mcq`). The student answers with a letter (`answer.type = mcq`, `answer.choice`) and the server scores it as `ail_how`.
+- **Limits:**
+  - at most one how-AI-works check per reply;
+  - at most one per part per session;
+  - none while fatigued;
+  - at `levels.secure`, only every `literacy.how_secure_every` triggers for that part.
+- **Priority:** when a turn would get both a literacy task and a how-AI-works check, the check wins, because the moment is rare and it's happening now. The literacy task waits for the next research turn.
+- **Not ignorable, as for literacy tasks:** the check is saved as pending, re-asked once in the next reply (`reask`), then recorded as `ail_how` with score 0.
+- **Feedback after the answer:** one line. Name the misconception if they picked one, then the part's `intuition` line. Then back to what they were doing.
+
+All trigger counts and per-session limits come from `exchange_log`, `evidence_log` and `issued_plan`, so they survive a restart and replay in a rebuild.
+
 ## E. Course pack: trusted sources
 `trusted_sources.csv`:
 
@@ -91,8 +145,9 @@ Plus the standard status columns. Examples: ONS, Bank of England, OBR, IFS and C
 **Validation (errors):** a malformed URL, or an unknown `node_id`.
 
 ## F. Progress
-`get_my_progress` adds an `ai_literacy` section:
-- the level of each skill;
+`get_my_progress` adds an `ai_literacy` section with three skills:
+- **Ask** and **Verify**: the level of each part;
+- **How AI works**: the rollup of its parts, with the misconceptions about AI the student still holds (active ones);
 - the trend in question features: the share of research questions showing each feature over the last `progress.trend_days`, against before, as up, down or steady.
 
 ## Settings
@@ -102,22 +157,26 @@ secure_every = 3           # at secure, a task every this many research turns
 max_followups = 1          # re-asks of an ignored task before it scores 0
 ask_min_features = 2       # fewer features than this: coach the question (Ask), else Verify
 importance = 0.5           # fixed importance of the AI-literacy parts
+how_secure_every = 3       # at secure, a how-AI-works check every this many triggers
 
 [bkt.evidence]
 ail_question = { slip = 0.15, guess = 0.20 }
 ail_task = { slip = 0.10, guess = 0.15 }
 ail_unprompted = { slip = 0.05, guess = 0.10 }
+ail_how = { slip = 0.10, guess = 0.25 }   # 4-option multiple choice
 ```
 
 ## Text
 - `text/moves/answer_with_sources.md`, `literacy_task.md` and `source_conflict.md`, each with a `.cue.md`. `reask.md` covers a pending literacy task too. The server instructions stay within `instructions.max_words` (the budget is in `reference/tools-and-context.md`, "The move set").
 - `text/literacy/<skill>_<level>.md` (`ask_new`, `ask_developing`, `ask_secure`, `verify_new`, `verify_developing`, `verify_secure`): the feedback and task patterns from the table above.
-- `text/tools/tutor_turn.md` lists the new labels.
+- `text/moves/ask_mcq.md` gets a `how_ai_works` purpose line: "After handling what just happened, ask this one question about how chatbots work, then return to the student's task." Plus `ask_mcq_how_ai_works.cue.md`.
+- No `text/literacy/how_*.md`: the wording lives in the mini pack's points, misconceptions and intuition lines.
+- `text/tools/tutor_turn.md` lists the new labels, including `web_access`, `asks_recent` and `pushback_changed`.
 
 ## Docs and scripts
-- `reference/course-pack-format.md`: `trusted_sources.csv`, the AI-literacy mini pack, validation.
-- `reference/tools-and-context.md`: the labels, the research plan, the new moves and the progress section.
-- `reference/learner-model.md`: the AI-literacy parts and evidence types.
+- `reference/course-pack-format.md`: `trusted_sources.csv`, the AI-literacy mini pack (including the how-AI-works parts and their misconceptions), validation.
+- `reference/tools-and-context.md`: the labels, the research plan, the how-AI-works checks and limits, the new moves and the progress section.
+- `reference/learner-model.md`: the AI-literacy parts and evidence types, including `ail_how`. (The "Assessment design" paragraph was written with this plan.)
 - `reference/settings.md`: `[literacy]` and the new evidence types.
 - `reference/database.md`: migration 008 and the `trusted_source` table.
 - `example-mini`: a few trusted sources.
@@ -131,7 +190,11 @@ ail_unprompted = { slip = 0.05, guess = 0.10 }
 5. `feat(context): follow up an unanswered literacy task`
 6. `feat(service): show AI-literacy skills in progress`
 7. `docs(text): write literacy feedback and task texts`
-8. `chore(scripts): add a research-question run to the MCP check`
+8. `feat(ingest): add how-AI-works parts with misconception options`
+9. `feat(context): add live how-AI-works checks on AI failure moments`
+10. `chore(scripts): add a research-question run to the MCP check`
+
+Commits 8 and 9 come after the research plan and follow-ups (4 and 5), which the `cutoff` trigger, the priority rule and the re-ask build on. Commit 9 also adds How AI works to the progress section and the `how_ai_works` text for `ask_mcq`.
 
 ## Done when (by hand, no tests yet)
 - **A research question from a new student** gets `answer_with_sources`, then a `literacy_task` with one feedback line and one task.
@@ -140,4 +203,10 @@ ail_unprompted = { slip = 0.05, guess = 0.10 }
 - **A well-phrased question** raises `ail_ask`.
 - **At secure level,** the task appears only every `secure_every` research turns.
 - **Course questions** (`request_type = concept`) never get literacy tasks.
+- **`source_conflict` set:** the reply corrects the claim, then gives an `ask_mcq` on `ail_how_fabrication` with 4 shuffled options. A correct letter raises the part. A wrong one activates the picked misconception.
+- **Ignored how-AI-works check:** one `reask`, then a recorded `ail_how` score of 0.
+- **Limits:** a second failure of the same type in the same session gets no second check.
+- **Fatigue:** a fatigued student gets the correction but no check.
+- **Cutoff:** fires only when `asks_recent = true` and `web_access = false`.
+- **Options:** all four options for each how-AI-works part are similar in length (check by eye in the pack).
 - `rebuild` gives identical state.
