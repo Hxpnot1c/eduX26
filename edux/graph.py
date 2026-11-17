@@ -277,6 +277,27 @@ def misconceptions_for(part_ids: list[str]) -> list[dict]:
     return [{**dict(r), "source_ids": split_list(r["source_ids"])} for r in rows]
 
 
+def mark_points_for(part_ids: list[str]) -> list[dict]:
+    """Mark points on the parts (concept ids expand to their parts), approved first."""
+    parts = _expand_parts(part_ids)
+    if not parts:
+        return []
+    rows = _conn().execute(
+        f"""SELECT * FROM mark_point WHERE node_id IN ({_placeholders(parts)}) AND status != 'rejected'
+            ORDER BY status != 'approved', rowid""",
+        parts,
+    )
+    return [{**dict(r), "source_ids": split_list(r["source_ids"])} for r in rows]
+
+
+def source_types(source_ids: list[str]) -> list[str]:
+    """The types (textbook, examiner_report, ...) of the given sources, skipping unknown ids."""
+    if not source_ids:
+        return []
+    rows = _conn().execute(f"SELECT type FROM source WHERE id IN ({_placeholders(source_ids)})", source_ids)
+    return [r["type"] for r in rows]
+
+
 def questions_for(part_ids: list[str]) -> list[dict]:
     """Past-paper questions testing the parts, with marks, paper and series.
 

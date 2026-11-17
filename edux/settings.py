@@ -155,6 +155,20 @@ class Resolve:
 
 
 @dataclass(frozen=True)
+class Blocks:
+    review_link_boost: float
+    review_importance_floor: float
+    confusable_mixup: float
+    confusable_mention: float
+    causal_mention: float
+    causal_cues: list[str]
+    exam_w_marks: float
+    exam_w_closeness: float
+    exam_w_command: float
+    exam_horizon_days: float
+
+
+@dataclass(frozen=True)
 class Settings:
     """Typed view of settings.toml."""
 
@@ -176,6 +190,7 @@ class Settings:
     difficulty: Difficulty
     link_weight: LinkWeight
     resolve: Resolve
+    blocks: Blocks
 
 
 @dataclass(frozen=True)
