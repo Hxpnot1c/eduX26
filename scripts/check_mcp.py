@@ -6,14 +6,15 @@ Run it from the repo root against a server started on the same data folder (EDUX
 example-mini pack loaded and the demo students seeded. It:
 - resets the demo students (seed-demo --reset keeps their keys), so the run starts from the seeded state;
 - lists the tools and prompts;
-- runs the point-by-point loop on ped_formula as the student through tutor_turn (intuition MCQ, each point and its
+- runs the point-by-point loop on ped_formula as the student through tutor_turn (intuition MCQ answered wrongly, each point and its
   check, a wrong letter and its re-teach, the explain-back), then an explain-back missing a point and a question
   asked instead of an answer, and checks each plan, the letters scored from the stored map, the misconception
   state, that every reply in the loop ends in one question, result sizes against the budget, style, known terms,
   watch-for misconceptions, and that no p_now reaches the chatbot;
 - checks "I know this", "just show me" (and no discount after it), a lost letter map, a wrong intuition answer
   followed by teaching (demo-weak), a prerequisite check and a
-  due review as MCQs (demo-weak, demo-showme), and that options are shuffled differently per student;
+  due review as MCQs (demo-weak, demo-showme), a step back when the same point is missed again after its
+  re-teach (demo-showme), and that options are shuffled differently per student;
 - checks the server instructions' length, that points_met scores the same as letters, full ids, a mix or with
   no saved plan, and that another part's point is refused;
 - checks a bad answer is refused and records nothing, get_my_progress, update_my_profile, that a wrong or
@@ -118,8 +119,9 @@ def ends_in_one_question(turn: dict) -> bool:
 
 
 async def conversation(keyed: str, student: str) -> None:
-    """The point-by-point run from the step 05d done-when list on PART: intuition MCQ, point 1 and its check, a
-    right letter, point 2, a wrong letter (named and active), one re-teach, a right letter, the explain-back; then
+    """The point-by-point run from the step 05d done-when list on PART: intuition MCQ answered wrongly, point 1 and
+    its check, a right letter, point 2, a wrong letter (named and active), one re-teach with no step back (a wrong
+    guess and one missed check are not stuck), a right letter, the explain-back; then
     an explain-back missing a point and a question asked instead of an answer (step 05c), with result sizes,
     style, terms and watch-for checks."""
     start = max_evidence_id()
@@ -153,17 +155,17 @@ async def conversation(keyed: str, student: str) -> None:
     check(bool(data.get("note")) and via_known, "1. the intuition leads in from a known link or the part's intuition line",
           json.dumps({k: data.get(k) for k in ("note", "via")}))
 
-    second, _ = await pick(True)
+    second, _ = await pick(False)
     step = (second.get("plan") or [{}, {}])[1:2] or [{}]
     check(purposes(second) == ["feedback", "teach_point", "ask_mcq:check"] and step[0].get("data", {}).get("index") == 1,
-          "2. the intuition answer gets feedback, then point 1 and its check", ", ".join(purposes(second)) or second.get("error", ""))
+          "2. a wrong intuition answer gets feedback, then point 1 and its check", ", ".join(purposes(second)) or second.get("error", ""))
     third, _ = await pick(True)
     check(purposes(third) == ["feedback", "teach_point", "ask_mcq:check"] and third["plan"][1]["data"]["index"] == 2,
           "3. a right letter moves to point 2", ", ".join(purposes(third)) or third.get("error", ""))
     fourth, picked = await pick(False)
     named = ((fourth.get("plan") or [{}])[0].get("data") or {}).get("misconceptions") or [{}]
     check(purposes(fourth) == ["feedback", "reteach", "ask_mcq:check"] and named[0].get("id") == picked,
-          "4. a wrong letter gets feedback naming it, one re-teach of the point and the check again",
+          "4. a wrong letter gets feedback naming it, one re-teach of the point and the check again (no step back)",
           ", ".join(purposes(fourth)) or fourth.get("error", ""))
     held = learner._conn().execute("SELECT active FROM student_misconception WHERE student_id = ? AND misconception_id = ?",
                                    (student, picked)).fetchone()
@@ -172,7 +174,7 @@ async def conversation(keyed: str, student: str) -> None:
     check(purposes(fifth) == ["feedback", "explain_back"] and len(points) == 2,
           "5. after the last point comes the explain-back of the whole part", ", ".join(purposes(fifth)) or fifth.get("error", ""))
     recorded = [(e["evidence_type"], e["score"]) for e in evidence(student, start)]
-    check(recorded == [("prequestion", 1.0), ("mcq_check", 1.0), ("mcq_check", 0.0), ("mcq_check", 1.0)],
+    check(recorded == [("prequestion", 0.0), ("mcq_check", 1.0), ("mcq_check", 0.0), ("mcq_check", 1.0)],
           "the server scored every letter from its stored map", json.dumps(recorded))
     loop = [first, second, third, fourth, fifth]
     check(all(ends_in_one_question(t) for t in loop), "every reply in the loop ends in exactly one question",
@@ -318,6 +320,34 @@ async def prerequisite_and_review(url: str) -> None:
         check(scored == [(step["part_id"], "mcq_check", 1.0)], f"{student}: the {purpose} letter is scored", json.dumps(scored))
 
 
+async def stuck_on_point(url: str) -> None:
+    """The same point missed on its check and again on the re-check after its reteach makes the part stuck: the
+    next plan steps back (demo-showme on PART, intuition answered right). The plan left by the review run is
+    cleared first, so the question here isn't taken as a detour from a pending one."""
+    student = "demo-showme"
+    keyed = f"{url}?key={learner.get_student(student)['key']}"
+    with learner._conn() as conn:
+        conn.execute("DELETE FROM issued_plan WHERE student_id = ?", (student,))
+    labels = {"question_depth": "surface", "engagement": "active"}
+    before = max_evidence_id()
+    got = await call(keyed, "tutor_turn", {"message": "How do I calculate PED?", "node_ids": [PART], "client": "check_mcp",
+                                           "this_message": labels})
+    for right in (True, False, False):
+        if (got.get("plan") or [{}])[-1].get("move") != "ask_mcq":
+            break
+        chosen, _ = letter(student, right)
+        time.sleep(1.1)
+        got = await call(keyed, "tutor_turn", {"message": chosen, "client": "check_mcp", "this_message": labels,
+                                               "answer": {"part_id": PART, "type": "mcq", "choice": chosen}})
+    steps = got.get("plan") or []
+    stepped_back = any(s["data"].get("stuck") or (s["move"] == "reteach" and s["data"].get("answer_type") == "explain_back")
+                       for s in steps)
+    missed = {e["point_id"] for e in evidence(student, before) if e["evidence_type"] == "mcq_check" and e["score"] == 0}
+    check(stepped_back and len(missed) == 1,
+          "the same point missed again after its reteach is stuck: the plan steps back",
+          ", ".join(s["move"] + (":stuck" if s["data"].get("stuck") else "") for s in steps) or got.get("error", ""))
+
+
 def shuffles() -> None:
     """MCQ options are shuffled differently for different students."""
     from edux import plan
@@ -382,6 +412,7 @@ async def main(url: str, key: str, student: str) -> None:
     await choices(keyed, student)
     await wrong_intuition(url)
     await prerequisite_and_review(url)
+    await stuck_on_point(url)
     shuffles()
 
     before = max_evidence_id()

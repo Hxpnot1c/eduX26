@@ -163,7 +163,7 @@ reference = ["notes", "misconceptions"]
 11. `chore(scripts): add a point-by-point run to the MCP check`
 
 ## Done when (by hand, no tests yet)
-- `scripts/check_mcp.py` runs `ped_formula` as demo-secure: intuition MCQ → feedback (one line, naming the misconception when wrong) and point 1 of N with a check MCQ → a correct letter → point 2 → a wrong letter (feedback names the misconception, and it is active) → one re-teach → … → explain-back.
+- `scripts/check_mcp.py` runs `ped_formula` as demo-secure: intuition MCQ answered wrongly → feedback (one line, naming the misconception when wrong) and point 1 of N with a check MCQ → a correct letter → point 2 → a wrong letter (feedback names the misconception, and it is active) → one re-teach → … → explain-back. No step back follows the one missed check. A separate run (demo-showme) misses the same point again after its re-teach, and the plan steps back.
 - Every `teach_point` asks for at most 80 words of explanation (options not counted), and every reply in the loop ends in exactly one question.
 - A wrong intuition answer is followed by teaching, never by another intuition question.
 - A prerequisite check and a due review come as `ask_mcq` and are scored from the letter.
