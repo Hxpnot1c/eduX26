@@ -15,11 +15,16 @@ example-mini pack loaded and the demo students seeded. It:
   followed by teaching (demo-weak), a prerequisite check and a
   due review as MCQs (demo-weak, demo-showme), a step back when the same point is missed again after its
   re-teach (demo-showme), and that options are shuffled differently per student;
+- runs research questions (demo-weak): answer_with_sources and a literacy task, an ignored task re-asked once then
+  scored 0, Ask and Verify raised, no task on a course question; a task only every literacy.secure_every research
+  questions at secure (demo-showme); and how-AI-works checks (demo-secure): cutoff only without web access, a bad
+  link's fabrication check with 4 options, one per part per session, an ignored check re-asked then scored 0, a
+  self-correction's check, and the AI-literacy section of get_my_progress;
 - checks the server instructions' length, that points_met scores the same as letters, full ids, a mix or with
   no saved plan, and that another part's point is refused;
 - checks a bad answer is refused and records nothing, get_my_progress, update_my_profile, that a wrong or
   missing key is refused with 401, and that the minimal profile returns no plan;
-- checks rebuild gives identical state and tutor_turn's median server time is under 100 ms;
+- checks rebuild gives identical state for every demo student and tutor_turn's median server time is under 100 ms;
 - resets the demo students again, so the demo is left as seeded (--keep leaves the run's events).
 Exits non-zero if any check fails. The key is read from the database when --key is not given.
 """
@@ -345,6 +350,171 @@ async def stuck_on_point(url: str) -> None:
           ", ".join(s["move"] + (":stuck" if s["data"].get("stuck") else "") for s in steps) or got.get("error", ""))
 
 
+async def research_questions(url: str) -> None:
+    """Research questions and the literacy task (step 05e, demo-weak): answer_with_sources then literacy_task, an
+    ignored task re-asked once then scored 0, Ask and Verify raised by a well-phrased question and an answered
+    verify task, and no literacy task on a course question."""
+    student = "demo-weak"
+    keyed = f"{url}?key={learner.get_student(student)['key']}"
+    labels = {"question_depth": "surface", "engagement": "active"}
+    with learner._conn() as conn:
+        conn.execute("DELETE FROM issued_plan WHERE student_id = ?", (student,))
+
+    async def turn(message: str, extra: dict, answer: dict | None = None) -> dict:
+        time.sleep(1.1)
+        args = {"message": message, "client": "check_mcp", "this_message": {**labels, **extra}}
+        if answer:
+            args["answer"] = answer
+        return await call(keyed, "tutor_turn", args)
+
+    def p(part: str) -> float:
+        return learner.part_p(student, part)
+
+    vague = {"request_type": "research", "question_features": ["concept"], "web_access": True}
+    before = max_evidence_id()
+    got = await turn("how much does petrol cost?", vague)
+    task = (got.get("plan") or [{}, {}])[-1]
+    check(moves(got) == ["answer_with_sources", "literacy_task"] and task.get("data", {}).get("skill") == "ask"
+          and task["data"].get("task") is True and bool(task["data"].get("pattern"))
+          and "ail_verify" in got.get("score_next", {}),
+          "a research question gets answer_with_sources, then a literacy task with a feedback pattern and a task",
+          json.dumps([(s["move"], s["data"].get("skill"), s["data"].get("task")) for s in got.get("plan", [])]))
+    asked = [(e["part_id"], e["evidence_type"], e["score"]) for e in evidence(student, before)]
+    check(asked == [("ail_ask", "ail_question", 0.25)], "the question is Ask evidence: features present / 4", json.dumps(asked))
+
+    got = await turn("ok thanks", {"request_type": "other"})
+    check(moves(got) == ["reask"] and got["plan"][0]["data"].get("asked") == "literacy_task",
+          "an ignored literacy task is re-asked once", json.dumps(moves(got)))
+    before = max_evidence_id()
+    got = await turn("nice", {"request_type": "other"})
+    zero = [(e["part_id"], e["evidence_type"], e["score"]) for e in evidence(student, before)]
+    check(moves(got) == [] and zero == [("ail_ask", "ail_task", 0.0)] and plan_json(student).get("literacy") is None,
+          "still ignored, it is recorded as ail_task 0 and dropped", f"{moves(got)} {json.dumps(zero)}")
+
+    ask_before = p("ail_ask")
+    sharp = {"request_type": "research", "question_features": ["concept", "context", "asks_sources", "asks_reasoning"],
+             "web_access": True}
+    got = await turn("How did UK petrol prices change in 2025, and why? Give sources.", sharp)
+    task = (got.get("plan") or [{}])[-1]
+    check(p("ail_ask") > ask_before and task.get("data", {}).get("skill") == "verify"
+          and task["data"].get("answer_type") == "ail_task",
+          "a well-phrased question raises ail_ask and gets a verify task", f"{ask_before:.2f} -> {p('ail_ask'):.2f}")
+    verify_before = p("ail_verify")
+    got = await turn("I opened the ONS page: March 2025, and the figure matched.", {"request_type": "other"},
+                     {"part_id": "ail_verify", "type": "ail_task", "points_met": ["a", "b", "c", "d"]})
+    check(p("ail_verify") > verify_before and plan_json(student).get("literacy") is None,
+          "answering the verify task raises ail_verify and clears it", f"{verify_before:.2f} -> {p('ail_verify'):.2f}")
+
+    got = await turn("How do I calculate PED?", {"request_type": "concept"})
+    check(not {"literacy_task", "answer_with_sources"} & set(moves(got)),
+          "a course question never gets a literacy task", json.dumps(moves(got)))
+
+
+async def secure_every(url: str) -> None:
+    """At secure, the literacy task comes only every literacy.secure_every research questions (demo-showme)."""
+    student = "demo-showme"
+    keyed = f"{url}?key={learner.get_student(student)['key']}"
+    with learner._conn() as conn:
+        conn.execute("DELETE FROM issued_plan WHERE student_id = ?", (student,))
+    for _ in range(8):   # unprompted checks until Verify is secure
+        if learner.level(learner.part_p(student, "ail_verify")) == "secure":
+            break
+        learner.record_evidence(student, "ail_verify", "ail_unprompted", 1.0, apply="now")
+    every = load_settings().literacy.secure_every
+    tasks = []
+    for _ in range(every):
+        time.sleep(1.1)
+        got = await call(keyed, "tutor_turn", {
+            "message": "What was UK inflation last year, and why? Sources please.", "client": "check_mcp",
+            "this_message": {"question_depth": "mechanism", "engagement": "active", "request_type": "research",
+                             "question_features": ["concept", "context", "asks_sources"], "web_access": True}})
+        step = next((s for s in got.get("plan", []) if s["move"] == "literacy_task"), {})
+        tasks.append(bool(step.get("data", {}).get("task")))
+    check(learner.level(learner.part_p(student, "ail_verify")) == "secure" and tasks.count(True) == 1,
+          f"at secure, a task comes once in {every} research questions (the rest get the feedback line only)",
+          json.dumps(tasks))
+
+
+async def how_ai_works(url: str) -> None:
+    """How-AI-works checks (step 05e, demo-secure): cutoff only with asks_recent and no web access; a bad link
+    gets the correction then a 4-option check on fabrication (a right letter raises it, a wrong one activates the
+    misconception); one check per part per session; an ignored check re-asked once then scored 0; a
+    self-correction gets a check on confidence and is stored."""
+    student = "demo-secure"
+    keyed = f"{url}?key={learner.get_student(student)['key']}"
+    labels = {"question_depth": "surface", "engagement": "active"}
+    with learner._conn() as conn:
+        conn.execute("DELETE FROM issued_plan WHERE student_id = ?", (student,))
+
+    async def turn(message: str, extra: dict, answer: dict | None = None) -> dict:
+        time.sleep(1.1)
+        args = {"message": message, "client": "check_mcp", "this_message": {**labels, **extra}}
+        if answer:
+            args["answer"] = answer
+        return await call(keyed, "tutor_turn", args)
+
+    def how(got: dict) -> dict:
+        return next((s for s in got.get("plan", []) if s["data"].get("purpose") == "how_ai_works"), {})
+
+    recent = {"request_type": "research", "question_features": ["concept", "context"], "asks_recent": True}
+    got = await turn("What did the Bank of England do with rates last week?", {**recent, "web_access": True})
+    check(not how(got), "cutoff: no check when the chatbot can search the web", json.dumps(moves(got)))
+    got = await turn("What is a price index?", {**recent, "asks_recent": False, "web_access": False})
+    check(not how(got), "cutoff: no check when the question isn't about recent events", json.dumps(moves(got)))
+    got = await turn("What did the Bank of England do with rates last week?", {**recent, "web_access": False})
+    step = how(got)
+    check(step.get("part_id") == "ail_how_cutoff" and moves(got)[-1] == "ask_mcq" and "literacy_task" not in moves(got),
+          "cutoff: asks_recent with no web access gets a check, which wins over the literacy task", json.dumps(moves(got)))
+    if step:
+        chosen, _ = letter(student, True)
+        before = learner.part_p(student, "ail_how_cutoff")
+        await turn(chosen, {"request_type": "other"}, {"part_id": "ail_how_cutoff", "type": "mcq", "choice": chosen})
+        check(learner.part_p(student, "ail_how_cutoff") > before, "a right letter raises the how-AI-works part")
+
+    got = await turn("That ONS link you gave me doesn't work.", {"request_type": "research", "source_conflict": True,
+                                                                   "question_features": ["context"]})
+    step = how(got)
+    check(moves(got)[0] == "source_conflict" and step.get("part_id") == "ail_how_fabrication"
+          and len(step["data"].get("options", [])) == 4,
+          "a bad link gets source_conflict first, then a 4-option check on fabrication", json.dumps(moves(got)))
+    if step:
+        chosen, picked = letter(student, False)
+        got = await turn(chosen, {"request_type": "other"}, {"part_id": "ail_how_fabrication", "type": "mcq", "choice": chosen})
+        held = learner._conn().execute("SELECT active FROM student_misconception WHERE student_id = ? AND misconception_id = ?",
+                                       (student, picked)).fetchone()
+        data = (got.get("plan") or [{}])[0].get("data", {})
+        check(bool(held and held["active"]) and bool(data.get("intuition")),
+              "a wrong letter activates the picked misconception; the feedback carries the intuition line", picked)
+    got = await turn("Another link is dead too.", {"request_type": "research", "source_conflict": True,
+                                                   "question_features": ["context"]})
+    check(not how(got), "a second failure of the same type in a session gets no second check", json.dumps(moves(got)))
+
+    got = await turn("No, I think you were right the first time.", {"request_type": "concept", "pushback_changed": True})
+    check(how(got).get("part_id") == "ail_how_agreement", "a changed answer after pushback gets a check on agreement",
+          json.dumps(moves(got)))
+    got = await turn("ok", {"request_type": "other"})
+    check(moves(got) == ["reask"], "an ignored check is re-asked once", json.dumps(moves(got)))
+    before = max_evidence_id()
+    await turn("fine", {"request_type": "other"})
+    zero = [(e["part_id"], e["evidence_type"], e["score"], e["point_id"]) for e in evidence(student, before)]
+    check(zero == [("ail_how_agreement", "ail_how", 0.0, "ail_how_agreement_p1")],
+          "still not answered, it is recorded as ail_how 0", json.dumps(zero))
+
+    got = await turn("Sorry, which formula was it?", {"request_type": "concept", "conflict_flagged": True})
+    flagged = learner._conn().execute("SELECT conflict_flagged FROM exchange_log WHERE student_id = ? ORDER BY id DESC LIMIT 1",
+                                      (student,)).fetchone()
+    check(how(got).get("part_id") == "ail_how_confidence" and bool(flagged and flagged[0] == 1),
+          "a self-correction is stored and gets a check on confidence", json.dumps(moves(got)))
+    if how(got):   # answer it, so the checks after this one start with nothing pending
+        chosen, _ = letter(student, True)
+        await turn(chosen, {"request_type": "other"}, {"part_id": "ail_how_confidence", "type": "mcq", "choice": chosen})
+    progress = await call(keyed, "get_my_progress", {})
+    lit = progress.get("ai_literacy") or {}
+    check({"ask", "verify", "how_ai_works", "question_features"} <= set(lit) and bool(lit["how_ai_works"].get("held")),
+          "get_my_progress shows AI-literacy skills, with the wrong ideas about AI still held",
+          json.dumps(lit.get("how_ai_works")))
+
+
 def shuffles() -> None:
     """MCQ options are shuffled differently for different students."""
     from edux import plan
@@ -412,6 +582,9 @@ async def main(url: str, key: str, student: str) -> None:
     await wrong_intuition(url)
     await prerequisite_and_review(url)
     await stuck_on_point(url)
+    await research_questions(url)
+    await secure_every(url)
+    await how_ai_works(url)
     shuffles()
 
     before = max_evidence_id()
@@ -445,14 +618,15 @@ async def main(url: str, key: str, student: str) -> None:
     check(minimal.get("plan") == [] and set(minimal.get("reference", {})) == {"notes"},
           "the minimal profile returns notes only and no plan", ", ".join(minimal.get("reference", {})))
 
-    before_rebuild = state(student)
-    cli("rebuild", "--student", student)
-    after_rebuild = state(student)
-    changed = [t for t in STATE_TABLES if after_rebuild[t] != before_rebuild[t]]
-    check(not changed, "rebuild gives identical state", f"differs in {', '.join(changed)}" if changed else "")
-    for t in changed:
-        print("     before only:", sorted(set(before_rebuild[t]) - set(after_rebuild[t]))[:3])
-        print("     after only: ", sorted(set(after_rebuild[t]) - set(before_rebuild[t]))[:3])
+    for who in sorted({student, "demo-secure", "demo-weak", "demo-showme"}):   # every student the run wrote events for
+        before_rebuild = state(who)
+        cli("rebuild", "--student", who)
+        after_rebuild = state(who)
+        changed = [t for t in STATE_TABLES if after_rebuild[t] != before_rebuild[t]]
+        check(not changed, f"rebuild gives identical state ({who})", f"differs in {', '.join(changed)}" if changed else "")
+        for t in changed:
+            print("     before only:", sorted(set(before_rebuild[t]) - set(after_rebuild[t]))[:3])
+            print("     after only: ", sorted(set(after_rebuild[t]) - set(before_rebuild[t]))[:3])
 
     ms = [r["ms"] for r in learner._conn().execute(
         "SELECT ms FROM call_log WHERE student_id = ? AND tool = 'tutor_turn' ORDER BY id DESC LIMIT 6", (student,))]
