@@ -23,7 +23,7 @@ from pydantic import BaseModel, Field
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from edux import learner, service
+from edux import learner, plan, service
 from edux.settings import load_settings, read_text
 
 QuestionDepth = Literal["surface", "mechanism", "transfer"]
@@ -173,7 +173,9 @@ TOOLS = {
 
 
 def build_server() -> FastMCP:
-    """Create the FastMCP server with instructions, tools, prompts and transport security from ALLOWED_HOSTS."""
+    """Create the FastMCP server with instructions, tools, prompts and transport security from ALLOWED_HOSTS.
+    Move texts are checked first: a placeholder a move never has data for stops the server starting."""
+    plan.check_texts()
     mcp = FastMCP(
         name="eduX",
         instructions=read_text("server_instructions.md").strip() + "\n\n" + read_text("style.md").strip(),
