@@ -82,6 +82,15 @@ def _held_misconceptions(turn: Turn, active_only: bool) -> dict[str, dict]:
     return {r["misconception_id"]: dict(r) for r in rows if r["active"] or not active_only}
 
 
+def held_misconceptions(student_id: str, parts: list[str]) -> list[dict]:
+    """Misconceptions on the parts that the student currently holds, most recently seen first."""
+    held = {r["misconception_id"]: r["last_seen"] for r in learner._conn().execute(
+        "SELECT misconception_id, last_seen FROM student_misconception WHERE student_id = ? AND active = 1", (student_id,))}
+    found = [m for m in graph.misconceptions_for(parts) if m["id"] in held]
+    found.sort(key=lambda m: -learner.parse_ts(held[m["id"]]).timestamp())
+    return found
+
+
 def _neighbour_parts(part_id: str) -> set[str]:
     """Parts linked to a part by any edge, plus the other parts of its concept."""
     found: set[str] = set()
@@ -177,7 +186,7 @@ def _session_offloaded(turn: Turn) -> bool:
     return row is not None
 
 
-def _core_idea(part_id: str) -> tuple[str, str]:
+def core_idea(part_id: str) -> tuple[str, str]:
     """(target, correct): the part's core idea from its first mark point, else its main key wording, else its
     note's first key point, else its description; correct is the mark point's exemplar when there is one."""
     points = graph.mark_points_for([part_id])
@@ -192,21 +201,22 @@ def _core_idea(part_id: str) -> tuple[str, str]:
 
 
 def prequestion(turn: Turn, settings: Settings) -> dict | None:
-    """A multiple-choice question to ask before teaching an untaught, weak part, with misconceptions as the
-    wrong options (examiner-report sources first). Left out once the student has said "just show me" this session."""
+    """A multiple-choice question to ask before teaching an untaught, weak part (no evidence on it yet, even an
+    untaught pre-question), with misconceptions as the wrong options (examiner-report sources first). Left out
+    once the student has said "just show me" this session."""
     pq = settings.prequestion
     if not pq.enabled or not turn.parts:
         return None
     part = turn.parts[0]
-    row = learner._conn().execute("SELECT n_evidence FROM part_state WHERE student_id = ? AND part_id = ?",
-                                  (turn.student_id, part)).fetchone()
-    if (row and row["n_evidence"]) or turn.p(part) >= settings.support.worked_example_below:
+    answered = learner._conn().execute("SELECT 1 FROM evidence_log WHERE student_id = ? AND part_id = ? AND ts <= ? LIMIT 1",
+                                       (turn.student_id, part, learner._event_ts(turn.at))).fetchone()
+    if answered or turn.p(part) >= settings.support.worked_example_below:
         return None
     found = graph.misconceptions_for([part])
     if len(found) < pq.min_distractors or _session_offloaded(turn):
         return None
     found.sort(key=lambda m: "examiner_report" not in graph.source_types(m["source_ids"]))
-    target, correct = _core_idea(part)
+    target, correct = core_idea(part)
     return {"part_id": part, "target": target, "correct": correct,
             "distractors": [{"id": m["id"], "wrong_idea": m["wrong_idea"], "correction": m["correction"]}
                             for m in found[:pq.max_options - 1]],
