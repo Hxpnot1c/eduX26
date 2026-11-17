@@ -1,0 +1,111 @@
+# PROPOSAL ONLY. This file does not replace settings.toml and nothing reads it.
+# It lists the values recommended by the evidence review in docs/research/personalisation.md,
+# using the section and key names in settings.toml so the two files diff cleanly.
+# Only changed keys are listed, plus a few kept keys for context (marked "keep").
+# Each line names the finding id(s) in docs/research/personalisation-findings.csv.
+# New keys are marked "# our choice: <name>". Keys that exist in docs/build/reference/settings.md
+# but not yet in settings.toml are marked "new to settings.toml".
+
+[levels]
+secure = 0.75              # keep: one reply can no longer reach it once open-answer guess is 0.20 (7a-04, 7a-15); tune on post-secure review failures (6-11)
+
+[bkt]
+prior = 0.30               # keep: prior barely changes mastery timing in simulation (7a-01)
+learn_rate = 0.10          # keep: fitted population rate ~0.09 (7a-02); per-student offset in [personalisation] (8-04)
+mcq_guess_from_options = true   # our choice: mcq_guess_from_options. Guess = 1 / options shown for mcq and mcq_check (7a-05, 7b-12)
+validate_degeneracy = true      # our choice: validate_degeneracy. Startup error unless G + S < 1 and learn rate < 1 - S/(1-G) for every type, slip at slip_cap (7a-03)
+
+[bkt.evidence]
+explain_back = { slip = 0.10, guess = 0.20 }    # change from 0.10: two correct replies needed for secure (7a-04, our choice)
+past_question = { slip = 0.10, guess = 0.20 }   # change from 0.10 (7a-04, our choice)
+link = { slip = 0.10, guess = 0.20 }            # change from 0.10 (7a-04, our choice)
+extend = { slip = 0.10, guess = 0.20 }          # change from 0.10 (7a-04, our choice)
+mcq = { slip = 0.10, guess = 0.25 }             # keep for 4 options; with mcq_guess_from_options it becomes 1/n shown (7a-05)
+immediate = { slip = 0.10, guess = 0.30 }       # keep (7a-08, 7b-14); new rule: apply max(this guess, the type's own guess) so a 3-option MCQ is never discounted less
+mcq_check = { slip = 0.10, guess = 0.25 }       # new to settings.toml (specified in settings.md, step 05d); keep values (7a-05, 7a-06)
+
+[evidence]
+immediate_window_minutes = 30   # keep: no source gives a window (7a-08)
+
+[offloading]
+# keep removed as planned in step 05d: no source gives a value for guess_after (7b-14, 7b-15)
+
+[decay]
+base_half_life_days = 2.0  # keep: FSRS-converted range 1.4-15 days; short is the cheaper error (7a-12)
+on_success = 2.0           # keep as a baseline; refit from logs (7a-10)
+on_failure = 0.5           # keep (7a-10, 7a-11)
+on_success_immediate = 1.0 # our choice: on_success_immediate. No half-life growth for immediate evidence (7a-09)
+on_success_scaled = false  # our choice: on_success_scaled. Scale growth by how much had decayed; enable only after log review (7a-11)
+
+[propagation]
+prereq_boost = 0.20        # keep: no source gives a weight (7a-17)
+
+[scheduling]
+share_far = 0.10           # change from 0.25: optimal gap is a smaller share when the exam is far (7a-14, Cepeda 2008)
+share_mid = 0.19           # change from 0.15 (7a-14)
+share_near = 0.30          # change from 0.08: larger share when the exam is near (7a-14)
+max_reviews_per_reply = 3  # keep: no source gives a per-reply cap (7b-16, 7b-17)
+review_when_below = 0.80   # our choice: review_when_below. Also queue a review when p_now drops below this (2-12, 7b-03; 0.70-0.94 did not differ)
+one_review_per_part_per_session = true   # our choice: one_review_per_part_per_session (7b-17)
+transfer_requires_correct = true         # our choice: transfer_requires_correct. Transfer mode only if latest evidence was correct (2-14)
+
+[support]
+worked_example_below = 0.40   # keep: no source gives a crossover (2-01, 7a-16); per-part-type table later (2-05)
+hint_below = 0.75             # keep (7a-15)
+extend_from = 0.40            # keep (2-14)
+min_evidence_for_fade = 2     # our choice: min_evidence_for_fade. Never below hint until this many pieces of evidence (2-01)
+fade_requires = ["explain_back", "extend", "past_question"]   # our choice: fade_requires. Explain-back-only support needs one correct non-immediate open answer (2-04)
+
+[session]
+gap_minutes = 30           # keep (7b-09)
+fatigue_min_minutes = 25   # keep: decline from ~28 min (7b-07)
+fatigue_window = 4         # keep for now; log calls and tune (7b-08)
+fatigue_threshold = -0.25  # keep; surprise drift of about +/-0.07 noted (7b-08)
+stuck_attempts = 3         # keep as an early change-of-approach trigger (7b-10, 7b-11, 4-02)
+
+[difficulty]
+w_cross = 0.0              # keep 0: a class prior needs a written school instruction, see [personalisation] (6-02, 8-03)
+target_low = 0.70          # our choice: target_low. Rolling observed check success below this steps support down (7b-01, 2-11, 7b-04)
+target_high = 0.90         # our choice: target_high. Above this, mix in extend (7b-01, 2-11)
+
+[prequestion]
+max_options = 4            # keep: option count untested for learning (7b-12, 7b-13); guess follows options shown
+
+[style]
+interests_enabled = true   # our choice: interests_enabled. Interests stay student-set and empty by default (1-13, 6-01)
+interest_depth_default = "surface"   # our choice: interest_depth_default. Deep only when the student says they handle the numbers (1-03)
+
+[feedback]                 # our choice: new section
+explain_on_error = true    # our choice: explain_on_error. Every wrong answer gets a one-line why (3-01, 3-02, 3-03)
+verify_only_from = 0.75    # our choice: verify_only_from. Short confirmation only for correct answers at or above this p_now and marked sure (3-04, 3-07)
+
+[confidence]               # our choice: new section, optional 1-tap rating on MCQ checks
+enabled = true             # our choice: enabled. Routing only, never changes p_known (3-09, 3-11)
+ask_every = 2              # our choice: ask_every. At most every second check, never when fatigued (3-13)
+recheck_gap_days = 2       # our choice: recheck_gap_days. Re-check after a confident error (3-08)
+
+[engagement]               # our choice: new section, engagement-only rules (no evidence effect)
+passive_run = 4            # our choice: passive_run. Passive labels in a row before offer_choice, once per session (4-01, 4-07)
+low_share = 0.5            # our choice: low_share. Passive plus just_show_me share that switches the next check to MCQ (5-03)
+
+[show]                     # our choice: new section
+max_per_part_session = 2   # our choice: max_per_part_session. After this, first step as a two-option MCQ before showing (5-04)
+
+[relevance]                # our choice: new section
+max_per_session = 1        # our choice: max_per_session. Optional relate_to_me step (1-05, 1-07, 1-08)
+
+[personalisation]          # our choice: new section (workstream 8). All k values and caps are our choice
+enabled = false            # our choice: enabled. Off by default; evidence is prediction-only (8-08, 8-02)
+offset_scope = "global"    # our choice: offset_scope. One student offset pooled across parts (8-12, 8-05)
+learn_rate_k = 20          # our choice: learn_rate_k. w = n/(n+k) on evidence pieces; anchor: step halves at n = 20 (8-05)
+min_observations = 10      # our choice: min_observations. Evidence pieces, across at least 3 parts, before any offset
+min_parts = 3              # our choice: min_parts
+learn_rate_weight_bounds = [0.5, 1.5]   # our choice: learn_rate_weight_bounds. Odds multiplier on learn_rate; conservative vs source spread ~0.5x-4x (8-07)
+max_change_per_session = 0.25   # our choice: max_change_per_session (alias max_step_per_session in ws-8). Log-odds units per derived session (8-06)
+half_life_k = 40           # our choice: half_life_k. Post-gap reviews; inactive until real review data (8-09)
+half_life_min_reviews = 8  # our choice: half_life_min_reviews (8-10, FSRS-6 stage)
+fatigue_onset_k = 3        # our choice: fatigue_onset_k. Sessions with an onset, mirrors pattern_min_sessions (8-11)
+class_prior_k = 10         # our choice: class_prior_k. Classmates with evidence on the part (8-03); needs school instruction (6-02)
+class_min_size = 5         # our choice: class_min_size. No class blend below this cell size (8-03, 6-01)
+class_prior_max_down = 0.075   # our choice: class_prior_max_down. Half of difficulty.prior_shift; protects strong students in setted classes (8-03)
+# slip and guess are not personalised: they stay per evidence type in [bkt.evidence] (8-02)
