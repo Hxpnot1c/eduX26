@@ -5,7 +5,7 @@ A course pack is the contract between extraction (turning the specification, pas
 ## General rules
 - **IDs** are stable `snake_case` strings and are never renumbered: teacher feedback and learner events refer to them. A rename goes through `id_map.csv`.
 - **Lists** inside a cell are separated by `;`, with `\;` for a literal semicolon.
-- **Every content row** (nodes, edges, notes, misconceptions, mark points, questions, mark-scheme items) also has these columns, so teachers can edit it later:
+- **Every content row** (nodes, edges, notes, misconceptions, mark points, questions, mark-scheme items, trusted sources) also has these columns, so teachers can edit it later:
 
 | column | meaning |
 |---|---|
@@ -117,6 +117,20 @@ Summaries and key wordings only, never long excerpts.
 | point | one sentence |
 | exemplar | short model answer fragment |
 | source_ids | **required**: the specification or textbook section the point is based on |
+| order | integer within the part: the order the points are taught and scored in (step 05d) |
+
+A part with no mark points uses its notes' key points, in file order.
+
+### trusted_sources.csv: where students can check claims (step 05e)
+| column | meaning |
+|---|---|
+| id | stable id, e.g. `ons_inflation` |
+| node_id | a topic or concept the source is good for |
+| name | e.g. `ONS` |
+| url | the landing page for this kind of data |
+| what_for | one line, e.g. `UK inflation and price indices` |
+
+Plus the standard status columns. Research answers prefer the trusted sources linked to the message's topic and its ancestors.
 
 ### past_papers.csv
 | column | meaning |
@@ -158,6 +172,14 @@ Summaries and key wordings only, never long excerpts.
 | old_id | an id that was renamed |
 | new_id | what it became |
 
+## AI-literacy skills (loaded with every pack)
+`ingest/ai_literacy/` is a committed mini pack in this format (`nodes.csv`, `mark_points.csv`), loaded alongside every course pack (step 05e):
+- topic `ai_literacy` → concept `ai_literacy_skills` → parts `ail_ask` (phrasing a precise, answerable question) and `ail_verify` (checking a claim against an independent source);
+- `ail_ask`'s mark points are the four question features: `concept`, `context`, `asks_sources`, `asks_reasoning`;
+- `ail_verify`'s mark points are the four verify ticks, in order: opened the source, named the publisher and date, compared the claim, said whether it matched.
+
+They have no exam weight and a fixed importance (`literacy.importance`), and are left out of course levers and candidates.
+
 ## Calculated on load (not in files)
 Stored in the `node_weight` table:
 - **exam_weight:** total marks of questions tagged to the node or its descendants. A question tagged to several nodes splits its marks equally. Normalised so the course sums to 1.
@@ -185,6 +207,8 @@ The load report also lists **suggested links**: pairs of parts in different conc
 - key wordings of 15 words or more
 - note summaries over 120 words
 - past papers from the wrong specification version
+- a duplicate mark-point `order` within a part
+- a malformed URL or an unknown `node_id` in `trusted_sources.csv`
 
 **Warnings** print:
 - a part with no question, mark point or note
@@ -193,6 +217,7 @@ The load report also lists **suggested links**: pairs of parts in different conc
 - a node with no edges
 - `extraction_confidence` below 0.5
 - mark-scheme marks that don't add up to the question's marks
+- a part with fewer than `points.warn_min` or more than `points.warn_max` mark points
 
 ## Teacher feedback (overlay)
 `teacher_feedback/<course_id>.csv`, applied in `ts` order after every load, so it survives re-extraction.
@@ -201,7 +226,7 @@ The load report also lists **suggested links**: pairs of parts in different conc
 |---|---|
 | ts | ISO datetime |
 | teacher | name |
-| table | `nodes` / `edges` / `notes` / `misconceptions` / `mark_points` / `questions` / `mark_scheme_items` |
+| table | `nodes` / `edges` / `notes` / `misconceptions` / `mark_points` / `questions` / `mark_scheme_items` / `trusted_sources` |
 | target_id | id; for an edge, `from_id|to_id|type` |
 | action | `approve` / `reject` / `edit` / `add` |
 | field | for edit: column to change |

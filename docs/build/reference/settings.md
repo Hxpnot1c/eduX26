@@ -28,6 +28,10 @@ prequestion = { slip = 0.20, guess = 0.20 }
 mcq = { slip = 0.10, guess = 0.25 }
 extend = { slip = 0.10, guess = 0.10 }      # an answer to a harder, extending question
 immediate = { slip = 0.10, guess = 0.30 }   # chat evidence straight after a worked example or hint
+point_check = { slip = 0.10, guess = 0.20 } # a quick check on one point (step 05d); counts less than explain_back
+ail_question = { slip = 0.15, guess = 0.20 }    # question features of a research question (step 05e)
+ail_task = { slip = 0.10, guess = 0.15 }        # a literacy task done when asked
+ail_unprompted = { slip = 0.05, guess = 0.10 }  # checking a claim without being asked: counts more
 
 [nudges]                   # small odds multipliers from an ordinary exchange
 depth = { surface = 1.0, mechanism = 1.0, transfer = 1.1 }   # a basic question doesn't lower the estimate; evidence does that
@@ -141,9 +145,25 @@ exam_w_marks = 0.5         # exam_relevance: share from marks at stake
 exam_w_closeness = 0.3     # share from how close the paper's exam is
 exam_w_command = 0.2       # share from the question's command word appearing in the message
 exam_horizon_days = 365    # an exam this far off or further adds nothing for closeness
+exam_cues = ["exam", "paper", "marks", "question"]   # exam_relevance is sent only when the message has one of these or a command word (step 05c)
 
 [style]                    # how tutor_turn asks the chatbot to write (step 05b)
 max_words = 120            # default reply length; the student's profile answer_length overrides
+
+[results]                  # size of a tutor_turn result (step 05c)
+max_chars = 2400           # about 600 tokens; over this, reference blocks are dropped, then the call is logged as over budget
+
+[points]                   # point-by-point teaching (step 05d)
+max_words = 80             # words per teach_point reply
+reteach_limit = 1          # re-teaches of a missed point before moving on
+warn_min = 2               # validation warning below this many points per part
+warn_max = 4               # and above this many
+
+[literacy]                 # AI-literacy coaching (step 05e)
+secure_every = 3           # at secure, a task every this many research turns
+max_followups = 1          # re-asks of an ignored task before it scores 0
+ask_min_features = 2       # fewer question features than this: coach the question (Ask), else Verify
+importance = 0.5           # fixed importance of the AI-literacy parts
 ```
 
 ## context.toml
@@ -172,7 +192,30 @@ causal = 2
 exam_questions = 2
 reviews_due = 3
 candidates = 3             # candidate parts when the message is ambiguous
+
+# Reference blocks each move uses, in priority order (step 05c). Keys are the move text names (teach_<level>,
+# review_<mode>); a bare move's table covers its variants. `misconceptions` means the step part's held ones only. The result carries the union over the plan's
+# steps; over the result budget, blocks are dropped from the end. A move with no table gets no reference.
+[moves.feedback]
+reference = ["misconceptions"]
+[moves.reteach_gap]
+reference = ["notes"]
+[moves.correct_misconception]
+reference = ["misconceptions"]
+[moves.switch_approach]
+reference = ["anchor", "confusables"]
+[moves.show]
+reference = ["notes", "misconceptions"]
+[moves.teach]              # all teach levels, unless a level has its own table
+reference = ["notes", "misconceptions"]
+[moves.extend]
+reference = ["causal"]
+[moves.review_transfer]
+reference = ["notes"]
+# prequestion, check_prereq, review_recall, offer_stop, step_back, ask_which: none
 ```
+
+`exam_relevance` is not listed per move: it is added when the message mentions an exam (`blocks.exam_cues`) or a command word from the part's questions.
 
 ## text/
 
@@ -181,9 +224,12 @@ Plain markdown files read at startup. Changing wording never touches code.
 | file | used for |
 |---|---|
 | `server_instructions.md` | the MCP server instructions |
-| `tools/<tool>.md` | each tool's description |
+| `tools/<tool>.md` | each tool's description (`tutor_turn`: at most 8 lines) |
 | `style.md` | reply length, interests and formatting rules, appended to the server instructions |
-| `moves/<move>.md` | each plan step's text, at most 3 sentences: `feedback`, `reteach_gap`, `offer_stop`, `step_back`, `switch_approach`, `ask_which`, `show`, `prequestion`, `check_prereq`, `correct_misconception`, `teach_<level>` (`worked_example`, `hint_procedural`, `hint_conceptual`, `explain_back`), `extend`, `review_<mode>` (`recall`, `transfer`) |
+| `moves/<move>.md` | what each move does, at most 2 sentences, with `{field}` placeholders filled from the step's `data`. Sent once, as a section of the server instructions (step 05c): `feedback`, `reteach_gap`, `offer_stop`, `step_back`, `switch_approach`, `ask_which`, `show`, `prequestion`, `check_prereq`, `correct_misconception`, `teach_<level>` (`worked_example`, `hint_procedural`, `hint_conceptual`, `explain_back`), `extend`, `review_<mode>` (`recall`, `transfer`), `teach_point`, `reteach_point`, `check_point` (step 05d), `answer_with_sources`, `literacy_task`, `literacy_followup`, `source_conflict` (step 05e) |
+| `moves/<key>.cue.md` | one line, at most 15 words, sent with every step of that move (step 05c) |
+| `points/check_<part_type>.md` | how to check one point of each part type, sent as `check_hint` (step 05d) |
+| `literacy/<skill>_<level>.md` | feedback and task patterns for `ask` and `verify` at `new`, `developing` and `secure` (step 05e) |
 | `format/<client>.md` | formatting for maths, money and diagrams per chatbot (`claude`, `chatgpt`, `gemini`, `default`), returned in `style.format` |
 | `progress/study_pattern.md` | the study-pattern line in `get_my_progress` (`{minutes}` is filled in) |
 | `checks/<kind>.md` | marking instructions for `points` and `level` checks (step 07) |
