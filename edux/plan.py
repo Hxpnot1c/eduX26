@@ -55,8 +55,10 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "ask_mcq_check": ({"purpose", "options", "index", "answer_type"}, {"extra_option"}),
     "ask_mcq_prereq": ({"purpose", "options", "name", "for", "answer_type"}, {"note", "stuck", "extra_option"}),
     "ask_mcq_review": ({"purpose", "options", "name", "mode", "answer_type"}, {"new_context", "extra_option"}),
+    "ask_mcq_how_ai_works": ({"purpose", "options", "answer_type"}, {"extra_option"}),
     "extend": ({"answer_type"}, set()),
-    "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "correct_option", "purpose", "points_met", "missing"}),
+    "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "correct_option", "purpose", "points_met", "missing",
+                                             "intuition"}),
     "offer_stop": ({"minutes", "quick_parts"}, set()),
     "reask": ({"asked"}, {"answer_type", "skill"}),
     "reteach": (set(), {"missing", "anchor", "point", "level", "answer_type"}),
@@ -277,8 +279,11 @@ def feedback(answer: dict, evidence: dict) -> tuple[dict, dict | None]:
     part = evidence["part_id"]
     shown = [_misconception(m) for m in map(graph.get_misconception, evidence["misconception_ids"]) if m]
     if answer["type"] == "mcq":   # the picked misconception comes first in misconception_ids
-        return _step("feedback", part, {"type": "mcq", "purpose": evidence["purpose"], "correct": evidence["correct"],
-                                        "correct_option": evidence["correct_option"], "misconceptions": shown}), None
+        data = {"type": "mcq", "purpose": evidence["purpose"], "correct": evidence["correct"],
+                "correct_option": evidence["correct_option"], "misconceptions": shown}
+        if evidence["purpose"] == "how_ai_works":   # why chatbots do this, in one everyday line
+            data["intuition"] = graph.get_node(part)["intuition"]
+        return _step("feedback", part, data), None
     if answer["type"] == "prequestion":   # the picked option comes first in misconception_ids
         return _step("feedback", part, {"type": "prequestion", "correct": evidence["score"] == 1.0,
                                         "correct_idea": core_idea(part), "misconceptions": shown}), None
@@ -559,6 +564,8 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
             rest = rest[1:]
         if evidence and evidence.get("purpose") == "intuition":   # whatever the answer, teaching starts
             rest = teach(turn, evidence["part_id"], settings, progress)
+        elif evidence and evidence.get("purpose") == "how_ai_works" and not turn.parts:
+            rest = []   # back to what they were doing: with no course focus, nothing more
         elif evidence and evidence.get("purpose") == "check":
             rest = after_check(turn, evidence, settings, progress, last_mcq)
         elif finished:   # the part is done for now: extend or a due review instead of teaching it again
@@ -622,6 +629,32 @@ def with_source_conflict(steps: list[dict]) -> list[dict]:
     """source_conflict first (the student found a link that failed or didn't say what was claimed), keeping the
     end of the plan, where its question is."""
     return [_step("source_conflict", None)] + steps[-(MAX_STEPS - 1):]
+
+
+# --- how-AI-works checks (step 05e) -----------------------------------------------------
+
+# (part, does this turn's labels trigger it, the same trigger as a condition on exchange_log), in priority order
+HOW_TRIGGERS = (
+    ("ail_how_fabrication", lambda m: bool(m.get("source_conflict")), "source_conflict = 1"),
+    ("ail_how_agreement", lambda m: bool(m.get("pushback_changed")), "pushback_changed = 1"),
+    ("ail_how_confidence", lambda m: bool(m.get("conflict_flagged")) and not m.get("source_conflict"),
+     "conflict_flagged = 1 AND source_conflict = 0"),
+    ("ail_how_cutoff", lambda m: m.get("request_type") == "research" and bool(m.get("asks_recent"))
+     and m.get("web_access") is False, "request_type = 'research' AND asks_recent = 1 AND web_access = 0"),
+)
+
+
+def how_check(turn: Turn, part_id: str, settings: Settings) -> dict:
+    """ask_mcq (how_ai_works) on a how-AI-works part: its point and its misconceptions, shuffled and lettered."""
+    point = _points(part_id)[0]
+    return ask_mcq(turn, question(part_id, "how_ai_works", point["point"], settings, point_id=point["id"]))
+
+
+def with_check(steps: list[dict], check: dict) -> list[dict]:
+    """The plan with a how-AI-works check (or its re-ask) as the last step. The check wins: the plan's own question
+    and any literacy task are left out, and the steps handling the moment are kept, within the step limit."""
+    keep = [s for s in steps if not is_stop(s) and s["move"] != "literacy_task"]
+    return keep[:MAX_STEPS - 1] + [check]
 
 
 def lettered(part_id: str) -> list[dict]:

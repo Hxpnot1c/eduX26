@@ -130,6 +130,7 @@ class Literacy:
     secure_every: int
     max_followups: int
     ask_min_features: int
+    how_secure_every: int
 
 
 @dataclass(frozen=True)

@@ -29,6 +29,7 @@ CHOICE_TAKEN = ("try_first", "hint", "just_show_me", "skip_point", "none")   # s
 ANSWER_TYPES = ("prequestion", "mcq", "explain_back", "review", "extend", "past_question", "ail_task", "ail_unprompted")
 LITERACY_ANSWERS = ("ail_task", "ail_unprompted")   # a verify task's answer, or checking a claim unprompted (step 05e)
 AIL_ASK, AIL_VERIFY = "ail_ask", "ail_verify"       # the AI-literacy skills Ask and Verify (ingest/ai_literacy/)
+AIL_HOW = "ail_how_ai_works"                        # the concept holding the how-AI-works parts
 REQUEST_TYPES = ("concept", "research", "homework", "other")   # step 05e
 QUESTION_FEATURES = ("concept", "context", "asks_sources", "asks_reasoning")   # research questions only (step 05e)
 
@@ -165,7 +166,7 @@ def score_answer(answer: dict, mcq: dict | None = None) -> dict:
     The chatbot ticks; the server scores. An mcq answer is scored from answer.choice against mcq, the letter ->
     option map stored with the last plan (step 05d): 1 for the correct option, else 0, with the picked
     misconception first in misconception_ids (a chatbot-written extra option activates nothing). Its evidence
-    type is prequestion for an intuition question, otherwise mcq_check, and the item also carries purpose,
+    type is prequestion for an intuition question, ail_how for a how-AI-works check (step 05e), otherwise mcq_check, and the item also carries purpose,
     correct, picked, point_id and correct_option (its text). A prequestion scores 1 if correct, else 0, and its picked misconception goes
     into misconception_ids. Every other type scores len(points_met) / len(points), against graph.score_points
     for the part; points_met may be letters from score_next, full point ids or a mix, and the resolved point
@@ -196,7 +197,8 @@ def score_answer(answer: dict, mcq: dict | None = None) -> dict:
         correct = picked == "correct"
         if not correct and picked != "extra":
             misconception_ids = [picked] + [m for m in misconception_ids if m != picked]
-        return {"part_id": part_id, "type": "prequestion" if mcq["purpose"] == "intuition" else "mcq_check",
+        kind = {"intuition": "prequestion", "how_ai_works": "ail_how"}.get(mcq["purpose"], "mcq_check")
+        return {"part_id": part_id, "type": kind,
                 "score": 1.0 if correct else 0.0, "misconception_ids": misconception_ids, "purpose": mcq["purpose"],
                 "correct": correct, "picked": picked, "point_id": mcq.get("point_id"),
                 "correct_option": next((o["text"] for o in mcq["options"].values() if o["id"] == "correct"), "")}
@@ -352,14 +354,17 @@ def record_evidence(
     origin: str = "chat",
     check_id: str | None = None,
     apply: str = "background",
+    point_id: str | None = None,
 ) -> list[int]:
-    """Write evidence with no exchange (demo seeding, checks), then apply it; return the evidence ids (one per part)."""
+    """Write evidence with no exchange (demo seeding, checks, an ignored task or check), then apply it; return the
+    evidence ids (one per part). point_id is the one point a question asked, if it asked one."""
     student = get_student(student_id)
     if student is None:
         raise ValueError(f"unknown student {student_id!r}")
     if origin not in ("chat", "check"):
         raise ValueError("origin must be chat or check")
-    rows = _evidence_rows([{"part_id": part_id, "type": evidence_type, "score": score, "misconception_ids": misconception_ids}])
+    rows = _evidence_rows([{"part_id": part_id, "type": evidence_type, "score": score, "misconception_ids": misconception_ids,
+                            "point_id": point_id}])
     conn = _conn()
     with conn:
         ids = _write_evidence(conn, student, _event_ts(ts), rows, origin, check_id=check_id)
@@ -829,7 +834,7 @@ def _session_evidence(conn: sqlite3.Connection, student_id: str, start: str, unt
 
 def stuck_parts(rows: list) -> list[dict]:
     """Parts the student keeps failing in the session: repeated failure, not tiredness. Intuition and other
-    prequestion evidence never count. On 0/1 MCQ checks (mcq_check), a part is stuck when the same point is
+    prequestion evidence never count. On 0/1 MCQ checks (mcq_check, ail_how), a part is stuck when the same point is
     missed on its check and again on the re-check after its reteach (a part with no score points has one point:
     itself). On open answers, it is stuck after at least session.stuck_attempts of them, with a mean score below
     session.stuck_below and a latest score no better than the first."""
@@ -843,7 +848,7 @@ def stuck_parts(rows: list) -> list[dict]:
         if r["evidence_type"] == "prequestion" or r["weight"] <= 0:
             continue
         part = r["part_id"]
-        if r["evidence_type"] == "mcq_check":
+        if r["evidence_type"] in ("mcq_check", "ail_how"):
             key = (part, r["point_id"] or part)
             if key in last_on_point and last_on_point[key] < correct_share and r["score"] < correct_share:
                 missed_twice.setdefault(part, [last_on_point[key], r["score"]])
