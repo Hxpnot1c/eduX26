@@ -7,7 +7,12 @@ Requests without a known key are refused with 401 before they reach MCP.
 
 from __future__ import annotations
 
+import functools
+import json
 import os
+import time
+from collections.abc import Callable
+from datetime import datetime, timezone
 from typing import Literal
 from urllib.parse import parse_qs
 
@@ -128,6 +133,42 @@ def check_me(topic: str) -> str:
     return read_text("prompts/check_me.md").strip().format(topic=topic.strip())
 
 
+def _student_id(ctx: Context | None) -> str | None:
+    """The student id for the request, for the call log; None if the key doesn't resolve."""
+    try:
+        return student_from_request(ctx)["id"] if ctx is not None else None
+    except (ToolError, AttributeError, ValueError):
+        return None
+
+
+def timed(name: str, fn: Callable[..., dict]) -> Callable[..., dict]:
+    """Wrap a tool adapter: time it, write a call_log row and print one console line such as
+    "tutor_turn demo-weak 18ms 3.1k chars ok". The key is never printed or stored."""
+
+    @functools.wraps(fn)
+    def wrapper(*args: object, **kwargs: object) -> dict:
+        started, t0 = datetime.now(timezone.utc), time.perf_counter()
+        result, error = None, None
+        try:
+            result = fn(*args, **kwargs)
+            return result
+        except Exception as e:
+            error = str(e) or type(e).__name__
+            raise
+        finally:
+            ms = (time.perf_counter() - t0) * 1000
+            if error is None and isinstance(result, dict) and result.get("ok") is False:
+                error = str(result.get("error") or "ok: false")
+            chars = len(json.dumps(result, default=str)) if result is not None else 0
+            ctx = kwargs.get("ctx") or next((a for a in args if isinstance(a, Context)), None)
+            student_id = _student_id(ctx)
+            service.log_call(student_id, name, started, ms, chars, error is None, error)
+            print(f"{name} {student_id or '-'} {ms:.0f}ms {chars / 1000:.1f}k chars "
+                  f"{'ok' if error is None else 'error: ' + error}", flush=True)
+
+    return wrapper
+
+
 TOOLS = {
     "get_learning_context": get_learning_context,
     "log_exchange": log_exchange,
@@ -147,7 +188,7 @@ def build_server() -> FastMCP:
         transport_security=_security(),
     )
     for name, fn in TOOLS.items():
-        mcp.add_tool(fn, name=name, description=read_text(f"tools/{name}.md"))
+        mcp.add_tool(timed(name, fn), name=name, description=read_text(f"tools/{name}.md"))
     mcp.prompt(name="review_due", description="Quiz me on what's due.")(review_due)
     mcp.prompt(name="check_me", description="Check my understanding of a topic.")(check_me)
     return mcp
@@ -159,8 +200,8 @@ def http_app() -> ASGIApp:
 
 
 def serve(host: str, port: int) -> None:
-    """Run the server with uvicorn; the learner worker applies logged exchanges in the background."""
+    """Run the server with uvicorn. The access log is off: request URLs carry student keys."""
     import uvicorn
 
     learner.start_worker()
-    uvicorn.run(http_app(), host=host, port=port)
+    uvicorn.run(http_app(), host=host, port=port, access_log=False)
