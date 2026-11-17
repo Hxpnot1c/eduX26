@@ -36,6 +36,27 @@ Build these once the base (steps 01–06) works end to end. Each one is its own 
    - The level as a whole scores `level / max_level` on the question's parts.
 6. **Evaluation task:** a teacher (or the team) levels 10–20 answers independently, and the results are compared with the chatbot's. Report exact agreement and within-one-level agreement, labelled as a small sample, in the evaluation section of the README.
 
+#### Question templates
+`question_templates.csv` in the course pack, one row per template:
+
+| column | meaning |
+|---|---|
+| source_question_id | the past question it is modelled on |
+| node_ids | parts it tests |
+| command_word, marks, format | as in `questions.csv` |
+| stem | the question in our own words, with `{slots}` |
+| slots | allowed values or ranges per slot |
+| answer_rule | for calculations, a formula over the slots |
+| mark_item_ids | mark-scheme items reused from the source question |
+
+Plus the standard status columns.
+
+- **The server fills the slots,** seeded per student so questions don't repeat, and computes the answer key for calculations. The chatbot never invents a question or an answer when a template exists.
+- **Written questions** keep the command word, marks and level descriptors, and change only the context.
+- **Fallback:** free generation, labelled "AQA-style practice", limited to the part, command word and marks.
+- **Transfer-mode reviews** use templates when they exist.
+- **Templates start as drafts.** Not every template produces questions of equal difficulty (Fu & Choe, 2022: 9 of 23 worked without revision), so teacher approval matters.
+
 #### Text
 - `text/checks/level.md`
 - `text/checks/points.md`
@@ -64,6 +85,7 @@ A simple read-only page at `/me?key=` showing:
 - Content review: list flagged and draft rows with approve, reject and edit, writing to the teacher feedback CSV.
 
 ## Extras (only if time allows)
+- **Investigate activity.** An optional guided research task: ask → predict → AI answer with tagged claims → verify two claims → apply in a paragraph → reflect. It scores the AI-literacy skills from 05e (`ail_ask`, `ail_verify`), plus `think_first`, `apply` and `reflect`.
 - Automated extraction from the specification, papers and textbook into a draft pack.
 - Other exam boards and subjects.
 - Embeddings alongside FTS for note search.
