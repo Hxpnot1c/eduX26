@@ -3,26 +3,25 @@
 <!--
 One "## piece" heading per sentence. A sentence is used only when the block it comes from was produced
 this turn, so a smaller context profile gives a shorter note. {placeholders} are filled by the server.
-Wording is refined in a later commit of step 05.
 -->
 
 ## focus
 This turn is about {parts}.
 
 ## support
-Suggested support: {level}.
+Start at the {level} level.
 
 ## weak_prerequisites
-Check these first, they are not secure yet: {items}.
+These earlier ideas are not secure yet, so check them before building on them: {items}.
 
 ## anchor
-Teach through {name}, which they know well. {note}
+They know {name} well, so teach through it. {note}
 
 ## active_misconceptions
-They currently hold: {items}. Correct this explicitly.
+They currently believe: {items}. Correct this explicitly.
 
 ## exam_close
-Their exam is in {days} days.
+Their exam is in {days} days, so link the explanation to how it is examined.
 
 ## worked_before
-What has worked before for them: {approach}.
+What has worked for them on this before: {approach}.
