@@ -24,6 +24,8 @@ from edux.settings import ContextConfig, Settings, load_context, load_settings, 
 
 SUPPORT_GIVEN = ("worked_example", "hint", "explain_back", "none")
 CHOICE_TAKEN = ("try_first", "hint", "just_show_me", "none")
+# What a student's answer can be to, as sent by the chatbot; each is also a key of [bkt.evidence].
+ANSWER_TYPES = ("prequestion", "explain_back", "review", "extend", "past_question")
 
 _local = threading.local()
 _paths: dict[str, Path | None] = {"learner": None, "content": None}
@@ -143,6 +145,47 @@ def _evidence_rows(evidence: list[dict]) -> list[tuple[str, str, float, list[str
             raise ValueError(f"evidence: {node['id']!r} has no parts")
         rows += [(part, item["type"], score, list(item.get("misconception_ids") or [])) for part in parts]
     return rows
+
+
+def score_answer(answer: dict) -> dict:
+    """Turn a chatbot's answer report into an evidence item {part_id, type, score, misconception_ids}.
+
+    The chatbot ticks; the server scores. A prequestion scores 1 if correct, else 0, and its picked
+    misconception goes into misconception_ids. Every other type scores len(points_met) / len(points), against
+    graph.score_points for the part. Raises ValueError on an unknown part, type, point or misconception.
+    """
+    node = graph.get_node(answer.get("part_id") or "")
+    if node is None or node["level"] != "part":
+        raise ValueError(f"answer.part_id: {answer.get('part_id')!r} is not a part")
+    part_id, kind = node["id"], answer.get("type")
+    if kind not in ANSWER_TYPES:
+        raise ValueError(f"answer.type must be one of {', '.join(ANSWER_TYPES)}")
+    known = {m["id"] for m in graph.misconceptions_for([part_id])}
+    misconception_ids = [graph.canonical(m) for m in answer.get("misconception_ids") or []]
+    for m in misconception_ids:
+        if graph.get_misconception(m) is None:
+            raise ValueError(f"answer.misconception_ids: unknown misconception {m!r}")
+    if kind == "prequestion":
+        if not isinstance(answer.get("correct"), bool):
+            raise ValueError("answer.correct (true or false) is required for a prequestion")
+        picked = answer.get("picked_misconception_id")
+        if picked:
+            picked = graph.canonical(picked)
+            if picked not in known:
+                raise ValueError(f"answer.picked_misconception_id: {picked!r} is not a misconception on {part_id}")
+            misconception_ids = [picked] + [m for m in misconception_ids if m != picked]
+        score = 1.0 if answer["correct"] else 0.0
+    else:
+        points = {p["id"] for p in graph.score_points(part_id)}
+        if not points:
+            raise ValueError(f"{part_id} has no mark points or note key points to score against")
+        met = set(answer.get("points_met") or [])
+        unknown = sorted(met - points)
+        if unknown:
+            raise ValueError(f"answer.points_met: unknown point id(s) {', '.join(unknown)} for {part_id}; "
+                             f"use the ids from score_next")
+        score = len(met) / len(points)
+    return {"part_id": part_id, "type": kind, "score": score, "misconception_ids": misconception_ids}
 
 
 def _write_evidence(conn: sqlite3.Connection, student: dict, ts: str, rows: list, origin: str,

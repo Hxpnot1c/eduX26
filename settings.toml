@@ -17,6 +17,7 @@ review = { slip = 0.10, guess = 0.15 }
 find_error = { slip = 0.15, guess = 0.25 }
 prequestion = { slip = 0.20, guess = 0.20 }
 mcq = { slip = 0.10, guess = 0.25 }
+extend = { slip = 0.10, guess = 0.10 }      # an answer to a harder, extending question
 immediate = { slip = 0.10, guess = 0.30 }   # chat evidence straight after a worked example or hint
 
 [nudges]                   # small odds multipliers from an ordinary exchange
