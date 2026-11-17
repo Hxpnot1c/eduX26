@@ -320,6 +320,28 @@ def score_points(part_id: str) -> list[dict]:
     return points
 
 
+def point_letter(index: int) -> str:
+    """The short id of the point at index in a part's ordered points: a, b, c, ... (p27, p28, ... past z)."""
+    return chr(ord("a") + index) if index < 26 else f"p{index + 1}"
+
+
+def resolve_points(part_id: str, given: list[str]) -> tuple[list[str], list[str]]:
+    """Translate points_met values to point ids: a full point id stays as it is, a letter is the point at that
+    position in score_points(part_id). Returns (point ids without repeats, values that belong to no point)."""
+    points = score_points(part_id)
+    by_letter = {point_letter(i): p["id"] for i, p in enumerate(points)}
+    ids = {p["id"] for p in points}
+    found, unknown = [], []
+    for value in given:
+        value = str(value).strip()
+        point = value if value in ids else by_letter.get(value.lower())
+        if point is None:
+            unknown.append(value)
+        elif point not in found:
+            found.append(point)
+    return found, unknown
+
+
 def source_types(source_ids: list[str]) -> list[str]:
     """The types (textbook, examiner_report, ...) of the given sources, skipping unknown ids."""
     if not source_ids:

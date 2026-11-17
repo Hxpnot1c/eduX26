@@ -189,7 +189,7 @@ def feedback(answer: dict, evidence: dict) -> tuple[dict, dict | None]:
         return _step("feedback", part, {"type": "prequestion", "correct": evidence["score"] == 1.0,
                                         "correct_idea": core_idea(part)[1], "misconceptions": shown}), None
     points = graph.score_points(part)
-    met = set(answer.get("points_met") or [])
+    met = set(evidence.get("points_met") or [])
     first = _step("feedback", part, {"type": answer["type"], "points_met": [p["point"] for p in points if p["id"] in met],
                                      "misconceptions": shown})
     missing = [p["point"] for p in points if p["id"] not in met]
@@ -350,18 +350,24 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
     return steps[:MAX_STEPS]
 
 
+def lettered(part_id: str) -> list[dict]:
+    """A part's score points as the chatbot sees them: {id: a, b, c..., point}, in point order."""
+    return [{"id": graph.point_letter(i), "point": p["point"]} for i, p in enumerate(graph.score_points(part_id))]
+
+
 def score_next(plan: list[dict]) -> dict[str, list[dict]]:
     """For each part a step asks about (a pre-question is answered by option, so it has none): the points to
-    tick in the student's next answer."""
+    tick in the student's next answer, lettered a, b, c... in point order. A letter is resolved from the
+    course content when the answer comes back, so no mapping is saved."""
     out: dict[str, list[dict]] = {}
     for step in plan:
         if step["move"] == "offer_stop":   # the short burst of quick questions, if they choose it
             for part in step["data"]["quick_parts"]:
-                points = graph.score_points(part["id"])
+                points = lettered(part["id"])
                 if points:
                     out.setdefault(part["id"], points)
         if step["move"] in ASKS and step["move"] != "prequestion" and step["part_id"] and step["part_id"] not in out:
-            points = graph.score_points(step["part_id"])
+            points = lettered(step["part_id"])
             if points:
                 out[step["part_id"]] = points
     return out
