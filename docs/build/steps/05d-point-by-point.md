@@ -12,7 +12,7 @@ Sources are in `reference/research.md`.
 - **Checks the server can score.** The server scores a multiple-choice check from the letter picked, without relying on the chatbot's judgement, and a wrong pick names the misconception directly.
 
 ## What changes, in one line each
-1. The course pack gets an intuition line per part, a teaching use and a required note on every edge, and an order for mark points.
+1. The course pack gets an intuition line per part, a teaching use and a note on every edge (required on intuition edges), and an order for mark points.
 2. An intuition question replaces the pre-question. It is asked once; right or wrong, teaching follows.
 3. Teaching a part becomes a loop: one short point, then one multiple-choice check on that point.
 4. "Just show me" shows the point and still ends with its check, and no longer discounts later evidence.
@@ -25,7 +25,7 @@ Sources are in `reference/research.md`.
 ## A. Course pack
 - **`nodes.csv`** gets `intuition`: for parts, one line in everyday language that leads into the idea (e.g. for PED: "If the price of your usual snack went up, would you still buy it?").
 - **`edges.csv`:**
-  - `note` is required for every edge type, not only analogous and causal;
+  - `note` is expected on every edge: missing, it is an error on an edge with `teach_use = intuition` and a warning on any other (05d follow-ups);
   - new column `teach_use`: `intuition` (the linked part can lead into this one), `contrast` (use it to show the difference) or `none` (default).
 - **`mark_points.csv`** gets `order`: an integer within a part.
 - **Validation:**

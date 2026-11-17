@@ -86,7 +86,7 @@ An edge on a concept applies to all its parts.
 | from_id | node id |
 | to_id | node id |
 | type | `prerequisite` / `analogous` / `confusable` / `causal` |
-| note | **required for every edge** (from step 05d; before, for analogous and causal only): what maps onto what, how A affects B, or how they differ, in one line. The chatbot uses it to explain |
+| note | **required on `teach_use = intuition` edges**, and a warning if missing on any other edge: what maps onto what, how A affects B, or how they differ, in one line. The chatbot uses it to explain |
 | teach_use | `intuition` (a known `from` part can lead into the `to` part), `contrast` (use it to show the difference) or `none` (default) (step 05d) |
 | confidence | 0–1 |
 | source_ids | where the link is evidenced; may be blank for `ours` |
@@ -211,7 +211,7 @@ The load report also lists **suggested links**: pairs of parts in different conc
 - bad enum values
 - tree-rule violations
 - prerequisite cycles (print the cycle)
-- edges without a note (from step 05d; before, analogous or causal only), or a bad `teach_use`
+- an edge with `teach_use = intuition` and no note, or a bad `teach_use`
 - mark points without sources
 - confidence values outside 0–1
 - key wordings of 15 words or more
@@ -224,6 +224,7 @@ The load report also lists **suggested links**: pairs of parts in different conc
 - a part with no question, mark point or note
 - a part with fewer than `mcq.min_distractors` misconceptions (step 05d; before, a part with no misconception)
 - a part with no `intuition` (step 05d)
+- an edge with no note, unless its `teach_use` is `intuition` (then it is an error)
 - a concept with no parts
 - a node with no edges
 - `extraction_confidence` below 0.5
