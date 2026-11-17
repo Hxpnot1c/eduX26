@@ -1,5 +1,6 @@
-"""Context blocks returned by get_learning_context.
+"""Context blocks: the inputs tutor_turn chooses its plan from, and the reference it sends.
 
+Blocks carry data, not instructions; the wording for the chatbot is in text/moves/ (see plan.py).
 Each block is one function taking (turn, settings) and returning a small dict, or None to leave it out.
 A Turn carries the student, the focus parts and the message, so every block chooses what to show for
 this turn: content weights (importance, link weight, authority, marks), the student's state and the
@@ -21,7 +22,7 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Turn:
-    """What one get_learning_context call is about."""
+    """What one turn (tutor_turn, or service.learning_context for debugging) is about."""
 
     student: dict
     parts: list[str]            # focus parts, best first
@@ -142,14 +143,6 @@ def focus(turn: Turn, settings: Settings) -> dict | None:
     return out
 
 
-def _support_file(level: str, part_type: str | None, settings: Settings) -> str:
-    """The text file for a support level: hints depend on the part type (a completion problem for procedural
-    parts, a short example and a guiding question for conceptual ones)."""
-    if level == "hint":
-        return "hint_procedural" if part_type in settings.support.procedural_types else "hint_conceptual"
-    return level
-
-
 def _latest_evidence_correct(turn: Turn, part_id: str, settings: Settings) -> bool:
     row = learner._conn().execute(
         "SELECT score FROM evidence_log WHERE student_id = ? AND part_id = ? AND ts <= ? ORDER BY ts DESC, id DESC LIMIT 1",
@@ -158,20 +151,15 @@ def _latest_evidence_correct(turn: Turn, part_id: str, settings: Settings) -> bo
 
 
 def support(turn: Turn, settings: Settings) -> dict | None:
-    """Support level for the main focus part, from its p_now, and the instruction for it. extend is added when
-    p_now >= support.extend_from and the student's latest answer on the part was correct."""
+    """Support level for the main focus part, from its p_now. extend is true when p_now >= support.extend_from
+    and the student's latest answer on the part was correct. The wording is in text/moves/ (plan.py)."""
     if not turn.parts:
         return None
     part = turn.parts[0]
     p = turn.p(part)
     level = learner.support_level(p)
-    node = graph.get_node(part)
-    out = {"part_id": part, "level": level, "extend": False,
-           "text": read_text(f"support/{_support_file(level, node['part_type'], settings)}.md")}
-    if p >= settings.support.extend_from and _latest_evidence_correct(turn, part, settings):
-        out["extend"] = True
-        out["extend_text"] = read_text("support/extend.md")
-    return out
+    extend = p >= settings.support.extend_from and _latest_evidence_correct(turn, part, settings)
+    return {"part_id": part, "level": level, "extend": extend}
 
 
 def _session_offloaded(turn: Turn) -> bool:
@@ -219,8 +207,7 @@ def prequestion(turn: Turn, settings: Settings) -> dict | None:
     target, correct = core_idea(part)
     return {"part_id": part, "target": target, "correct": correct,
             "distractors": [{"id": m["id"], "wrong_idea": m["wrong_idea"], "correction": m["correction"]}
-                            for m in found[:pq.max_options - 1]],
-            "text": read_text("support/prequestion.md")}
+                            for m in found[:pq.max_options - 1]]}
 
 
 def _quick_parts(turn: Turn, settings: Settings, stuck: set[str]) -> list[dict]:
@@ -250,16 +237,14 @@ def session(turn: Turn, settings: Settings) -> dict | None:
     if state is None:
         return None
     if state["fatigued"]:
-        out = {"state": "fatigued", "minutes": round(state["minutes"]), "quick_parts": _quick_parts(turn, settings, {p["part_id"] for p in state["stuck_parts"]}),
-               "text": read_text("session/fatigued.md")}
+        out = {"state": "fatigued", "minutes": round(state["minutes"]), "quick_parts": _quick_parts(turn, settings, {p["part_id"] for p in state["stuck_parts"]})}
         if state["stuck_parts"]:
             out["also_stuck_on"] = [p["part_id"] for p in state["stuck_parts"]]
         return out
     if state["stuck_parts"]:
         parts = [{"part_id": p["part_id"], "name": p["name"], "attempts": p["attempts"], "mean_score": _r(p["mean_score"]),
                   "step_back_to": _step_back_to(turn, p["part_id"])} for p in state["stuck_parts"]]
-        return {"state": "stuck", "parts": parts, "step_back_to": parts[0]["step_back_to"],
-                "text": read_text("session/stuck.md")}
+        return {"state": "stuck", "parts": parts, "step_back_to": parts[0]["step_back_to"]}
     return None
 
 
@@ -436,7 +421,7 @@ def exam_relevance(turn: Turn, settings: Settings) -> dict | None:
 
 def reviews_due(turn: Turn, settings: Settings) -> dict | None:
     """Due reviews ranked by how overdue x importance, boosted when the part is linked to the current focus;
-    each with a mode (recall or transfer) and the instruction for each mode present."""
+    each with a mode (recall or transfer)."""
     b = settings.blocks
     due = learner.due_reviews(turn.student_id, 10_000, turn.at)
     if not due:
@@ -453,9 +438,7 @@ def reviews_due(turn: Turn, settings: Settings) -> dict | None:
         scored.append((score, r, is_linked))
     scored.sort(key=lambda s: -s[0])
     limit = min(turn.limit("reviews_due"), settings.scheduling.max_reviews_per_reply)
-    items = [_review_item(turn, r, is_linked, settings) for _, r, is_linked in scored[:limit]]
-    modes = sorted({i["mode"] for i in items})
-    return {"items": items, "text": {mode: read_text(f"reviews/{mode}.md") for mode in modes}}
+    return {"items": [_review_item(turn, r, is_linked, settings) for _, r, is_linked in scored[:limit]]}
 
 
 def _new_context(part_id: str, settings: Settings) -> dict:

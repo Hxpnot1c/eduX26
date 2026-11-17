@@ -1,1 +1,0 @@
-Give one short, complete example of the idea in action, then ask one guiding question that leads them towards the answer without giving it away. Wait for their reply before saying more. Use their own words when you build on what they say.

@@ -1,1 +1,0 @@
-Recall review: the part is still weak. Ask a straight recall question about it: what it is, or how to do it. Once they answer, give feedback that explains why the answer is right or wrong. Log it as review evidence.

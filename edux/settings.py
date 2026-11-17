@@ -318,5 +318,5 @@ def protocol_label(settings: Settings, profile: str) -> str:
 
 
 def read_text(relative_path: str) -> str:
-    """Read a markdown file from text/, e.g. "tools/log_exchange.md"."""
+    """Read a markdown file from text/, e.g. "tools/tutor_turn.md"."""
     return (TEXT_DIR / relative_path).read_text(encoding="utf-8")
