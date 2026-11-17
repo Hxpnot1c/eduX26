@@ -1,1 +1,1 @@
-They asked to be shown. Give one short worked example of this part, step by step, saying why each step is done. Don't add a question, a review or anything else this turn.
+They asked to be shown: give one short worked example, step by step, saying why each step is done. Add nothing else this turn.

@@ -1,1 +1,1 @@
-This part builds on {name}, which they haven't got yet. Ask one quick question on it to check, and wait for their answer before teaching anything else.
+This part builds on data.name, which they haven't got yet: ask one quick question on it, and wait for their answer before teaching anything else.

@@ -134,4 +134,9 @@ exam_w_command = 0.2       # share from the question's command word appearing in
 exam_horizon_days = 365    # an exam this far off or further adds nothing for closeness
 
 [style]                    # how tutor_turn asks the chatbot to write (step 05b)
-max_words = 120            # default reply length; the student's profile answer_length overrides
+max_words = 120            # default length of a reply's explanation (MCQ options don't count); the student's profile answer_length overrides
+
+[instructions]             # the MCP server instructions, sent once per chat (step 05c)
+max_words = 900            # server_instructions.md + style.md + every move section; over this is a startup error
+max_sentences = 2          # per move section; longer is a startup warning
+cue_max_words = 15         # per cue; longer is a startup warning

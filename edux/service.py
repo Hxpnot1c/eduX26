@@ -81,6 +81,11 @@ def _support_given(steps: list[dict]) -> str:
     return "none"
 
 
+def public_steps(steps: list[dict]) -> list[dict]:
+    """The plan as the chatbot sees it: {move, part_id, cue, data} per step, levels only."""
+    return levels_only([{k: v for k, v in step.items() if k != "key"} for step in steps])
+
+
 def levels_only(value: object) -> object:
     """A copy with every p_now dropped: what the chatbot sees carries levels only (the CLI keeps the numbers)."""
     if isinstance(value, dict):
@@ -180,7 +185,7 @@ def tutor_turn(
     focus = blocks.get("focus") or {}
     out = {
         "ok": True,
-        "plan": levels_only(steps),
+        "plan": public_steps(steps),
         "score_next": next_points,
         "style": style(student, client),
         "reference": _reference(blocks),
