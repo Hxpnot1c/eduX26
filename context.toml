@@ -32,7 +32,9 @@ reference = ["misconceptions"]
 reference = ["notes", "anchor"]
 [moves.show]
 reference = ["notes"]
-[moves.teach]              # all teach levels
+[moves.teach]              # the explain-back of a whole part
+reference = ["notes", "misconceptions"]
+[moves.teach_point]        # one point at a time (step 05d)
 reference = ["notes", "misconceptions"]
 [moves.extend]
 reference = ["causal"]
