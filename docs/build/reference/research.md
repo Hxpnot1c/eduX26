@@ -27,11 +27,11 @@ The evidence behind teaching and modelling decisions. Effect sizes are as report
 | Behaviour, not self-report | Lintner (2024), *npj Science of Learning* | 3 performance-based vs 13 self-report AI-literacy scales | |
 | Performance predicts better | Jin et al. (2025), GLAT, *Computers and Education: AI* | A performance test predicted AI-assisted task performance better than self-report | A separate test, university students |
 | How-AI-works checks | Ng et al. (2021); AILit (2026) | "Know and understand AI" / "Shape AI" are core aspects of AI literacy | |
-| Don't withhold answers | Khanmigo trial (team research doc) | Students stopped using it when it refused answers | Verify the citation before using it in the white paper |
+| Don't withhold answers | Our reasoning; Oreopoulos & Low (2026), NBER WP 35620, for context | Refusing an answer doesn't stop a student asking another chatbot. The Khanmigo trial does not show students left when refused: use of the tutor was thin from the start (median student messaged in 17% of mistake sessions), with small gains similar to Khan Academy practice alone | Not evidence that refusing answers drives students away (`docs/research/personalisation.md` §4) |
 | Question templates | Fu & Choe (2022); item-model literature | Templates can produce comparable items, but many need revision | |
 | Context stays small | Anthropic docs on compaction | Long chats are summarised only near the limit; quality degrades as context grows | Product behaviour may change |
 
 ## Considered and not adopted
-- **FSRS scheduling.** It needs many graded reviews per user to fit, and it targets a constant level of recall with no exam date. Our model is a simpler version of the same idea (difficulty, half-life, `p_now`). Revisit only with real review data.
+- **FSRS scheduling.** It targets a constant level of recall with no exam date. It no longer needs hundreds of reviews per user: the current optimiser uses default parameters below 64 reviews and pulls a full fit towards the defaults (FSRS-7; FSRS-6 also fitted only the initial stabilities from 8 reviews; `docs/research/personalisation.md` §4, finding 8-10). Our model is a simpler version of the same idea (difficulty, half-life, `p_now`). Revisit with real review data.
 - **A hard gate that blocks progress.** The chatbot's interface can't enforce it, and students would go round it. Graduated choices are used instead.
 - **Ending sessions.** The server can't end them. It offers stopping and protects the learner model instead.

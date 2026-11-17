@@ -4,7 +4,7 @@
 **Read first:** `docs/build/README.md`, `reference/tools-and-context.md`, `reference/learner-model.md`, `reference/course-pack-format.md`, `reference/research.md`, `edux/plan.py`, `edux/service.py`
 
 ## Why
-- **Refusing answers drives students away.** Students who were refused answers stopped using the tool (the Khanmigo trial, in the team research doc). So the answer is never withheld.
+- Refusing an answer doesn't stop a student asking another chatbot, so every answer comes with a small task instead (our reasoning).
 - **Every research answer teaches a little.** Each one comes with one line of feedback and one task for the student to do. That's how the skill is built up over time.
 - **Checking claims can be taught.** Checking claims the way fact-checkers do ("lateral reading") can be taught to high-school students in a few lessons (Wineburg et al., 2022, randomised). We apply it to AI answers.
 
