@@ -20,11 +20,12 @@ Each student has a key. The connector URL is `https://<host>/mcp?key=<key>`.
 ## Call timing
 Every tool adapter is wrapped to time it. Each call:
 - writes a `call_log` row (see `database.md`);
-- prints one console line, e.g. `tutor_turn demo-weak 18ms 3.1k chars ok`.
+- prints one console line, e.g. `tutor_turn demo-weak 18ms 3.1k chars ok`, ending in `OVER BUDGET` when the result was over `results.max_chars` (step 05c; the row's `over_budget` is 1).
 
 `python -m edux.cli calls [--student] [--last N]` lists:
 - recent calls;
 - the median and 90th-percentile server time per tool;
+- the median and largest result size per tool, and how many calls were over budget;
 - the median gap between a student's consecutive calls (roughly the chatbot's time per turn).
 
 ## Tools
@@ -35,16 +36,16 @@ Called once, at the start of every reply about the course. It replaces `get_lear
 | arg | what it is |
 |---|---|
 | `message` | the student's message, word for word |
-| `this_message` | labels for the student's message: `question_depth` (`surface` / `mechanism` / `transfer`), `engagement` (`passive` / `active` / `constructive`), `choice` (`try_first` / `hint` / `just_show_me` / `none`, default `none`) |
+| `this_message` | labels for the student's message: `question_depth` (`surface` / `mechanism` / `transfer`), `engagement` (`passive` / `active` / `constructive`), `choice` (`try_first` / `hint` / `just_show_me` / `skip_point` / `none`, default `none`; `skip_point` is "I know this", step 05d), `request_type` (`concept` / `research` / `homework` / `other`, step 05e), `question_features` (research only: any of `concept`, `context`, `asks_sources`, `asks_reasoning`), `source_conflict` (a link failed or didn't say what was claimed) |
 | `node_ids` | optional: part ids from an earlier plan or focus |
 | `answer` | optional: only when the message answers something asked last turn (see below) |
 | `client` | e.g. `claude`, `chatgpt`, `gemini`; picks the formatting note |
 
 `answer` fields:
-- `part_id` and `type`: the asking step's `part_id` and `data.answer_type`. Types are `prequestion`, `explain_back`, `review`, `extend` and `past_question`.
+- `part_id` and `type`: the asking step's `part_id` and `data.answer_type`. Types are `prequestion`, `explain_back`, `review`, `extend`, `past_question`, `point_check` (step 05d), `ail_task` and `ail_unprompted` (step 05e; `ail_unprompted` is sent without being asked, when the student reports checking a claim).
 - `correct`: prequestion only.
 - `picked_misconception_id`: prequestion only, when they picked a wrong option.
-- `points_met`: ids from `score_next`.
+- `points_met`: the letters from `score_next` (step 05c). The server translates them back to point ids with the mapping saved in `issued_plan`.
 - `misconception_ids`: other misconceptions the answer showed.
 
 #### What the server does, in order
@@ -66,7 +67,7 @@ Called once, at the start of every reply about the course. It replaces `get_lear
 5. **Build the turn** (`order_parts`, the blocks in the student's profile), **choose the plan**, save it to `issued_plan` and return.
 
 #### Choosing the plan
-At most two steps. Each is `{move, part_id, text, data}`. `text` comes from `text/moves/`, and steps that ask something carry `data.answer_type`. Steps marked **(stop)** end the plan, because the student needs to reply.
+At most two steps. Each is `{move, part_id, cue, data}`. `cue` is one line from `text/moves/<key>.cue.md`, where the key is the move text's name (`teach_<level>`, `review_<mode>`, otherwise the move); what the move means is in the server instructions, sent once (step 05c). Steps that ask something carry `data.answer_type`. Steps marked **(stop)** end the plan, because the student needs to reply.
 
 **With an answer,** the plan is a feedback step, then the main step:
 - prequestion → `feedback`: confirm, or name the picked misconception with its correction, plus the correct idea.
@@ -93,27 +94,44 @@ At most two steps. Each is `{move, part_id, text, data}`. `text` comes from `tex
 
 **Without an answer,** when the main step isn't a stop step or `show`, a second step is added: `extend` if earned, otherwise the top due `review` (in its mode, `recall` or `transfer`), otherwise nothing.
 
+**Point by point (step 05d).** Where the main step would be `teach` at `worked_example` or `hint`, the part is taught one point at a time, in mark-point order:
+- `teach_point` **(stop)**: one point (`data`: `index`, `total`, `point`, `exemplar`, `check_hint`), as a heading `Point {index} of {total}: {short title}`, one or two sentences, one worked line, then one quick check question on that point only. At most `points.max_words` words. `support_given` is the part's support level.
+- The answer (`point_check`, score 1 or 0) gets `feedback`, then the next `teach_point`, or, when wrong, `reteach_point` **(stop)**: a different way in, with the same check, at most `points.reteach_limit` times before moving on.
+- `choice == skip_point` → `check_point` **(stop)**: the check question only.
+- `choice == just_show_me` → `show` for the current point, with no check.
+- After the last point → `explain_back` of the whole part **(stop)**, scored on all its points. A part already at `levels.secure` goes straight to it.
+- Progress is kept per part in `issued_plan` (`points`). Moving to another part keeps that part's progress; coming back resumes where it stopped.
+
+**Research questions (step 05e).** `request_type == research` gets:
+1. `answer_with_sources`: a full answer, never withheld, with sources and links (`data.trusted_sources` for the message's topic first), the claims that need checking marked, and a plain statement when the chatbot has no web access.
+2. `literacy_task`: line 1 is feedback on the skill, line 2 is one task to do now. The skill is Ask when the question shows fewer than `literacy.ask_min_features` features, otherwise Verify; the wording comes from `text/literacy/<skill>_<level>.md` for the skill's level. At secure, the task appears only every `literacy.secure_every` research turns, and other turns get the feedback line only. Skipped while fatigued.
+- The task is saved as pending in `issued_plan` (`literacy`). If the next message doesn't do it, that message is answered as usual and `literacy_followup` re-asks the task in one line. After `literacy.max_followups`, the task is recorded as `ail_task` with score 0 and dropped.
+- `source_conflict` puts a `source_conflict` step first: that's exactly what checking is for, and the claim is corrected.
+- `concept` and `homework` follow the rules above and never get a literacy task. `other` gets an empty plan.
+
 A profile with `plan = false` (`minimal`) gets no plan, but still gets `score_next` for its focus parts, so its answers are scored.
 
 #### Response
 ```json
 {
   "ok": true,
-  "plan": [{"move": "feedback", "part_id": "ped_formula", "text": "...", "data": {"type": "prequestion", "correct": false, "picked": {...}, "correct_idea": "..."}},
-           {"move": "teach", "part_id": "ped_formula", "text": "...", "data": {"level": "worked_example", "part_type": "calculation", "answer_type": "explain_back"}}],
-  "score_next": {"ped_formula": [{"id": "ped_formula_n1:k1", "point": "Percentage change = change / original x 100"}, ...]},
+  "plan": [{"move": "feedback", "part_id": "ped_formula", "cue": "...", "data": {"type": "prequestion", "correct": false, "picked": {...}, "correct_idea": "..."}},
+           {"move": "teach", "part_id": "ped_formula", "cue": "...", "data": {"level": "worked_example", "part_type": "calculation", "answer_type": "explain_back"}}],
+  "score_next": {"ped_formula": [{"id": "a", "point": "Percentage change = change / original x 100"}, ...]},
   "style": {"max_words": 120, "interests": "football", "format": "..."},
   "reference": {"anchor": {...}, "confusables": [...], "misconceptions": {"held": [...], "watch_for": [...]}, "notes": {...}, "exam_relevance": {...}},
   "focus": [{"id": "ped_formula", "name": "PED: formula and calculation", "level": "new"}]
 }
 ```
 - `score_next`: for each part a step asks about (and an `offer_stop`'s quick parts), except a pre-question, which is answered by option: the points to tick in the student's next answer.
-- `style`:
+- `score_next` ids are letters, `a`, `b`, `c`… per part in point order (step 05c). A research turn's `score_next` always includes `ail_verify`'s ticks (step 05e).
+- `style`, sent only on the first `tutor_turn` of a session or when `client`, `interests` or `max_words` changed since it was last sent (step 05c):
   - `max_words`: the profile's `answer_length`, else `style.max_words`.
   - `interests`: from the profile.
   - `format`: `text/format/<client>.md`, the first of `claude`, `chatgpt` or `gemini` contained in `client`, else `default`.
-- `reference`: the profile's blocks that are not plan inputs. Plan inputs are `focus`, `prequestion`, `support`, `session` and `reviews_due`; `teaching_note` is never sent. A block that is only `{"items": [...]}` is sent as the list. The move texts say to use reference only when it helps the current step.
+- `reference`: only the blocks the plan's moves use, from `[moves.<move>] reference` in `context.toml` (step 05c), and only those in the profile. Misconceptions are the held ones for the step's part only; `watch_for` is no longer sent. `exam_relevance` is added only when the message mentions an exam or a command word. Before 05c: the profile's blocks that are not plan inputs. Plan inputs are `focus`, `prequestion`, `support`, `session` and `reviews_due`; `teaching_note` is never sent. A block that is only `{"items": [...]}` is sent as the list. The move texts say to use reference only when it helps the current step.
 - `candidates` appears when the focus is ambiguous, and `unknown_ids` when `node_ids` had unknown ids.
+- **Budget:** a result over `results.max_chars` drops reference blocks from the end of the moves' priority order until it fits. `plan`, `score_next`, `focus` and `style` are never cut. If it is still over, it is sent and the call is logged as over budget.
 - Levels only: `p_now` never appears in chatbot-facing output (the CLI keeps the numbers).
 
 #### Blocks
@@ -148,6 +166,7 @@ For students. Levels only, never numbers.
 - Weak links: confusable or causal pairs where one side is weak.
 - Reviews due.
 - AI-literacy trends, as directions over the last 14 days vs before: share of mechanism/transfer questions, share of constructive engagement, "just show me" rate.
+- `ai_literacy` (step 05e): the level of `ail_ask` and `ail_verify`, and the share of research questions showing each question feature over the last `progress.trend_days` against before, as up, down or steady. These parts are left out of the tree and levers above.
 - `study_pattern`: "your answers tend to drop after about N minutes" (median fatigue onset), when at least `session.pattern_min_sessions` sessions had one; otherwise `null`.
 
 ### update_my_profile(interests?, exam_date_override?, answer_length?)
@@ -158,7 +177,7 @@ Updates `student_profile`. `interests` and `answer_length` come back in every tu
 - `check_me`: "Check my understanding of ___."
 
 ## Server instructions
-`text/server_instructions.md`, with `text/style.md` appended:
+`text/server_instructions.md`, with `text/style.md` appended, then one section per move (`## <move>` and `text/moves/<move>.md`, at most 2 sentences each; step 05c). The `tutor_turn` description is at most 8 lines. The numbered rules:
 1. Call `tutor_turn` at the start of every reply about the course.
 2. Do the plan's steps in order and nothing else.
 3. Label the student's message honestly.
@@ -166,7 +185,9 @@ Updates `student_profile`. `interests` and `answer_length` come back in every tu
 5. Use `reference` only when it helps.
 6. Follow `style`.
 7. Never give a numeric mark for a level-marked question.
-8. Never claim to be a teacher. (Safeguarding is left to the chatbot's own guardrails.)
+8. Each plan step names a move: do what that move's section says, using the step's `data` (step 05c).
+9. One point per message, ending in one question (step 05d).
+10. Never claim to be a teacher. (Safeguarding is left to the chatbot's own guardrails.)
 
 ## Changes
 - Adding a field to a tool's output is fine.

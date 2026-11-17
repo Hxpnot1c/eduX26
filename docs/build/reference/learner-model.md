@@ -47,6 +47,11 @@ Evidence is an event in `evidence_log`, one row per part, with a score from 0 to
 - **chat:** when the student's message answers something the chatbot asked, the chatbot sends it as `answer` with the next `tutor_turn` call, ticking the points from `score_next` the student produced. The server computes the score: 1 or 0 for a pre-question, otherwise points met / points for the part (the part's mark points, or its notes' key points when it has none). Never for the chatbot's own explanation.
 - **check:** results of issued checks (step 07).
 
+Evidence types from chat, each with its own slip and guess in `[bkt.evidence]`:
+- `prequestion`, `explain_back`, `review`, `extend`, `past_question`: as asked by the plan.
+- `point_check` (step 05d): a quick check on one point while a part is taught point by point. Score 1 or 0. Its guess is higher than `explain_back`'s, so one point counts for less than an explanation of the whole part. Progress through a part's points is kept in `issued_plan`, not in state, so rebuild is unaffected.
+- `ail_question`, `ail_task`, `ail_unprompted` (step 05e): AI-literacy evidence (see below).
+
 The result counts as correct if `score ≥ bkt.correct_share`. Wrong evidence that carries misconception ids activates them.
 
 **Immediate recall.** Performance straight after teaching overstates learning. Evidence on a part within `evidence.immediate_window_minutes` of an exchange on that part with `support_given` = `worked_example` or `hint` (including the exchange it was sent with) is applied as type `immediate`, which has a higher guess. Evidence later in the session, or in a later session, uses its own type. The type is stored as sent and the rule applied when replaying, so changing the window re-scores old evidence.
@@ -111,6 +116,12 @@ Approach records: an exchange with `support_given` other than `none` adds a reco
 After `untested_after` exchanges on a part with no evidence, if `p_now < untested_below`, a review is queued straight away with reason `untested`. A student who keeps discussing a part can feel they know it because it's familiar. If the model still thinks they're weak, they should be checked rather than taught it again.
 
 A review queued by an exchange keeps any earlier due date already in the queue. A review scheduled after evidence replaces it.
+
+### 7. AI-literacy skills (step 05e)
+Two parts, `ail_ask` and `ail_verify`, loaded with every pack (see `course-pack-format.md`), are tracked like any other part: decay, spacing and levels. They have a fixed importance (`literacy.importance`) and are left out of course levers and candidates.
+- **`ail_question`** on `ail_ask`, on every research question: score = question features present / 4.
+- **`ail_task`** on `ail_verify`: the student's reply to a verify task, scored by the ticks they produced / 4. An ignored task (any skill) is recorded as `ail_task` with score 0 on that skill's part after `literacy.max_followups` re-asks.
+- **`ail_unprompted`** on `ail_verify`: the student reports checking a claim without being asked. Its slip is lower, so it counts more.
 
 ## Spacing (review queue)
 After any evidence on a part:

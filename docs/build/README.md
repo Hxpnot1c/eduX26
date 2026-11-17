@@ -17,6 +17,9 @@ This folder is the build plan for the learning service: an MCP server that a sch
 | [04c](steps/04c-session-signals.md) | `build/04c-session-signals` | Sessions from events, surprise against the model's expectation, fatigue (softened evidence) and stuck parts |
 | [05](steps/05-server-context.md) | `build/05-server-context` | MCP server over HTTP: learning context, exchange logging, progress, profile; context assembled from configurable blocks |
 | [05b](steps/05b-one-call-per-turn.md) | `build/05b-one-call-per-turn` | One `tutor_turn` call per reply returning a short ordered plan; scores from mark points; call timing; reply length, interests and per-client formatting |
+| [05c](steps/05c-lean-results.md) | `build/05c-lean-results` | Smaller results: move instructions sent once with short cues per step, style only when it changes, reference blocks per move, letter point ids, a result budget |
+| [05d](steps/05d-point-by-point.md) | `build/05d-point-by-point` | Teaching one point per message with a quick check after each, a skip to the check, and an explain-back to finish the part |
+| [05e](steps/05e-literacy-coaching.md) | `build/05e-literacy-coaching` | AI-literacy coaching: research questions answered in full with sources, plus one feedback line and one task; trusted sources; AI-literacy progress |
 | [06](steps/06-demo.md) | `build/06-demo` | Demo seeding script, README, tunnel and connector set-up |
 | [Later](steps/later.md) | | Checks (past-question, explain-back, link, find-the-error), automated tests, student and teacher pages, extras |
 

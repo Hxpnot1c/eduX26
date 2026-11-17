@@ -40,6 +40,9 @@ CREATE TABLE edge_weight (from_id TEXT NOT NULL, to_id TEXT NOT NULL, type TEXT 
   exam_questions INTEGER NOT NULL DEFAULT 0, exam_marks REAL NOT NULL DEFAULT 0, material_count INTEGER NOT NULL DEFAULT 0,
   computed REAL, teacher_weight REAL, weight REAL,   -- weight = teacher_weight if set, else computed
   PRIMARY KEY (from_id, to_id, type));
+CREATE TABLE trusted_source (id TEXT PRIMARY KEY, node_id TEXT NOT NULL, name TEXT NOT NULL, url TEXT NOT NULL,
+  what_for TEXT DEFAULT '',          -- step 05e
+  status TEXT DEFAULT 'draft', flag TEXT DEFAULT '', updated_by TEXT DEFAULT 'extraction', updated_at TEXT, extra TEXT);
 CREATE TABLE id_map (old_id TEXT PRIMARY KEY, new_id TEXT NOT NULL);
 CREATE TABLE teacher_feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, teacher TEXT, tbl TEXT, target_id TEXT, action TEXT,
   field TEXT, value TEXT, note TEXT, applied INTEGER, message TEXT);
@@ -138,4 +141,14 @@ CREATE INDEX idx_call_log_student ON call_log(student_id, ts);
 CREATE TABLE issued_plan (student_id TEXT PRIMARY KEY,
   ts TEXT NOT NULL,
   plan_json TEXT NOT NULL);          -- {"plan", "focus", "corrected", "offered_stop"}: carried within a session
+```
+
+`migrations/007_call_log_budget.sql` (step 05c) adds `over_budget INTEGER NOT NULL DEFAULT 0` to `call_log`: 1 when a result was still over `results.max_chars` after dropping every reference block. `issued_plan.plan_json` also carries `style_sent` (the style last sent, so it is sent again only when it changes) and `point_ids` (the letter → point id mapping for `score_next`). From step 05d it carries `points` (progress through each part's points), and from step 05e `literacy` (the pending literacy task and its follow-ups).
+
+`migrations/008_exchange_request.sql` (step 05e) adds labels to `exchange_log`. They are events, so rebuild replays them:
+
+```sql
+ALTER TABLE exchange_log ADD COLUMN request_type TEXT;              -- concept / research / homework / other
+ALTER TABLE exchange_log ADD COLUMN question_features TEXT DEFAULT '';  -- research only: concept;context;asks_sources;asks_reasoning
+ALTER TABLE exchange_log ADD COLUMN source_conflict INTEGER NOT NULL DEFAULT 0;  -- a link failed or didn't say what was claimed; also sets conflict_flagged
 ```
