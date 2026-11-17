@@ -8,7 +8,6 @@ Requests without a known key are refused with 401 before they reach MCP.
 from __future__ import annotations
 
 import functools
-import json
 import os
 import time
 from collections.abc import Callable
@@ -139,7 +138,8 @@ def _student_id(ctx: Context | None) -> str | None:
 
 def timed(name: str, fn: Callable[..., dict]) -> Callable[..., dict]:
     """Wrap a tool adapter: time it, write a call_log row and print one console line such as
-    "tutor_turn demo-weak 18ms 3.1k chars ok". The key is never printed or stored."""
+    "tutor_turn demo-weak 18ms 3.1k chars ok", ending in OVER BUDGET when a tutor_turn result is still over
+    results.max_chars. The key is never printed or stored."""
 
     @functools.wraps(fn)
     def wrapper(*args: object, **kwargs: object) -> dict:
@@ -155,12 +155,13 @@ def timed(name: str, fn: Callable[..., dict]) -> Callable[..., dict]:
             ms = (time.perf_counter() - t0) * 1000
             if error is None and isinstance(result, dict) and result.get("ok") is False:
                 error = str(result.get("error") or "ok: false")
-            chars = len(json.dumps(result, default=str)) if result is not None else 0
+            chars = service.result_size(result) if result is not None else 0
             ctx = kwargs.get("ctx") or next((a for a in args if isinstance(a, Context)), None)
             student_id = _student_id(ctx)
-            service.log_call(student_id, name, started, ms, chars, error is None, error)
+            over = service.over_budget(name, chars)
+            service.log_call(student_id, name, started, ms, chars, error is None, error, over)
             print(f"{name} {student_id or '-'} {ms:.0f}ms {chars / 1000:.1f}k chars "
-                  f"{'ok' if error is None else 'error: ' + error}", flush=True)
+                  f"{'ok' if error is None else 'error: ' + error}{' OVER BUDGET' if over else ''}", flush=True)
 
     return wrapper
 

@@ -147,6 +147,12 @@ async def conversation(keyed: str, student: str) -> None:
           "style comes with the first call of a session only", ", ".join(str("style" in t) for t in turns))
     for i, t in enumerate(turns, 1):
         print(f"     turn {i}: {len(json.dumps(t))} chars")
+    sizes = [len(json.dumps(t)) for t in turns]
+    limit = load_settings().results.max_chars
+    over = learner._conn().execute("SELECT COALESCE(SUM(over_budget), 0) FROM call_log WHERE student_id = ? AND tool = 'tutor_turn'",
+                                   (student,)).fetchone()[0]
+    check(statistics.median(sizes) <= limit and over == 0, f"the median result is at most {limit} characters, none over budget",
+          f"median {statistics.median(sizes):.0f}, largest {max(sizes)}, {over} over budget")
     leaked = [i + 1 for i, t in enumerate(turns) if "p_now" in json.dumps(t)]
     check(not leaked, "no p_now in tutor_turn output", f"found in turn(s) {leaked}" if leaked else "")
 
