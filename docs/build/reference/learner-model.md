@@ -48,8 +48,8 @@ Evidence is an event in `evidence_log`, one row per part, with a score from 0 to
 - **check:** results of issued checks (step 07).
 
 Evidence types from chat, each with its own slip and guess in `[bkt.evidence]`:
-- `prequestion`, `explain_back`, `review`, `extend`, `past_question`: as asked by the plan. From step 05d the intuition MCQ records `prequestion`.
-- `mcq_check` (step 05d): a server-built multiple-choice check on one point while a part is taught point by point. Score 1 or 0 from the letter picked; a wrong pick activates its misconception. Its guess is about 1 in 4, so one point counts for less than an explanation of the whole part. Progress through a part's points is kept in `issued_plan`, not in state, so rebuild is unaffected.
+- `prequestion`, `explain_back`, `review`, `extend`, `past_question`: as asked by the plan. From step 05d, an `ask_mcq` with purpose `intuition` records `prequestion`, and `review` is no longer sent (reviews are MCQs, below); old `review` events still replay.
+- `mcq_check` (step 05d): a server-built multiple-choice question on one point: a check while a part is taught point by point, a prerequisite check, or a review (`ask_mcq` with purpose `check`, `prereq` or `review`). Score 1 or 0 from the letter picked; a wrong pick activates its misconception. Its guess is about 1 in 4, so one point counts for less than an explanation of the whole part. Progress through a part's points is kept in `issued_plan`, not in state, so rebuild is unaffected.
 - `ail_question`, `ail_task`, `ail_unprompted` (step 05e): AI-literacy evidence (see below).
 
 The result counts as correct if `score ≥ bkt.correct_share`. Wrong evidence that carries misconception ids activates them.

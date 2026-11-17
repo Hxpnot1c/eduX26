@@ -70,7 +70,7 @@ The research-turn count since the last task comes from `exchange_log` and `evide
 
 ### Not ignorable, never a barrier
 - The task is saved as pending in `issued_plan.plan_json` (`literacy: {skill, part_id, followups}`).
-- **Not done in the next message:** answer the new message as usual, and the plan adds `literacy_followup`, which re-asks the pending task in one line.
+- **Not done in the next message:** answer the new message as usual, and the plan adds `reask`, which re-asks the pending task in one line (the same move that re-asks a pending question, step 05c).
 - **Still not done after `literacy.max_followups`:** record `ail_task` with score 0 on that skill's part, and drop the task.
 - **Bad links:** when `source_conflict` is set, a `source_conflict` step comes first: tell the student that's exactly what checking is for, and correct the claim. If they reported the ticks, they are scored as for any verify task.
 - **Fatigue:** no task while the student is fatigued (04c). The answer still comes with sources.
@@ -110,7 +110,7 @@ ail_unprompted = { slip = 0.05, guess = 0.10 }
 ```
 
 ## Text
-- `text/moves/answer_with_sources.md`, `literacy_task.md`, `literacy_followup.md` and `source_conflict.md`, each with a `.cue.md`.
+- `text/moves/answer_with_sources.md`, `literacy_task.md` and `source_conflict.md`, each with a `.cue.md`. `reask.md` covers a pending literacy task too. The server instructions stay within `instructions.max_words` (the budget is in `reference/tools-and-context.md`, "The move set").
 - `text/literacy/<skill>_<level>.md` (`ask_new`, `ask_developing`, `ask_secure`, `verify_new`, `verify_developing`, `verify_secure`): the feedback and task patterns from the table above.
 - `text/tools/tutor_turn.md` lists the new labels.
 
@@ -135,7 +135,7 @@ ail_unprompted = { slip = 0.05, guess = 0.10 }
 
 ## Done when (by hand, no tests yet)
 - **A research question from a new student** gets `answer_with_sources`, then a `literacy_task` with one feedback line and one task.
-- **Ignoring the task** gets one `literacy_followup`, then a recorded `ail_task` score of 0.
+- **Ignoring the task** gets one `reask`, then a recorded `ail_task` score of 0.
 - **Answering a verify task** raises `ail_verify`.
 - **A well-phrased question** raises `ail_ask`.
 - **At secure level,** the task appears only every `secure_every` research turns.

@@ -148,16 +148,16 @@ exam_horizon_days = 365    # an exam this far off or further adds nothing for cl
 exam_cues = ["exam", "paper", "marks", "question"]   # exam_relevance is sent only when the message has one of these or a command word (step 05c)
 
 [style]                    # how tutor_turn asks the chatbot to write (step 05b)
-max_words = 120            # default reply length; the student's profile answer_length overrides
+max_words = 120            # default length of a reply's explanation (MCQ options don't count); the student's profile answer_length overrides
 
 [results]                  # size of a tutor_turn result (step 05c)
 max_chars = 2400           # about 600 tokens; over this, reference blocks are dropped, then the call is logged as over budget
 
 [instructions]             # the MCP server instructions, sent once per chat (step 05c)
-max_words = 600            # server_instructions.md + style.md + every move section; over this is a startup error
+max_words = 900            # server_instructions.md + style.md + every move section; over this is a startup error
 
 [points]                   # point-by-point teaching (step 05d)
-max_words = 80             # words per teach_point reply
+max_words = 80             # words of explanation per teach_point (MCQ options don't count)
 reteach_limit = 1          # re-teaches of a missed point before moving on
 warn_min = 2               # validation warning below this many points per part
 warn_max = 4               # and above this many
@@ -165,7 +165,7 @@ warn_max = 4               # and above this many
 [mcq]                      # server-built multiple-choice questions (step 05d)
 max_options = 4            # correct option plus up to this many minus one misconceptions
 min_distractors = 2        # fewer misconceptions: the chatbot may write one extra distractor; also a validation warning
-intuition_max = 2          # intuition questions per part
+# one intuition question per part, whatever the answer; teaching follows it
 
 [literacy]                 # AI-literacy coaching (step 05e)
 secure_every = 3           # at secure, a task every this many research turns
@@ -202,33 +202,35 @@ exam_questions = 2
 reviews_due = 3
 candidates = 3             # candidate parts when the message is ambiguous
 
-# Reference blocks each move uses, in priority order (step 05c). Keys are the move text names (teach_<level>,
-# review_<mode>); a bare move's table covers its variants. `misconceptions` means the step part's held ones only. The result carries the union over the plan's
-# steps; over the result budget, blocks are dropped from the end. A move with no table gets no reference.
-[moves.feedback]
+# Reference blocks each move uses, in priority order (step 05c). Keys are the move plus its variant (teach_<level> and
+# review_<mode> until 05d, ask_mcq_<purpose> from 05d); a bare move's table covers its variants. `misconceptions` means the
+# step part's held ones only. The result carries the union over the plan's steps; over the result budget, blocks are dropped
+# from the end. A move with no table gets no reference.
+[moves.feedback]           # also holds a held misconception's correction (correct_misconception before 05c)
 reference = ["misconceptions"]
-[moves.reteach_gap]
-reference = ["notes"]
-[moves.correct_misconception]
-reference = ["misconceptions"]
-[moves.switch_approach]
-reference = ["anchor", "confusables"]
+[moves.reteach]            # missing points, or the whole part through the anchor when stuck
+reference = ["notes", "anchor"]
 [moves.show]
+reference = ["notes"]
+[moves.teach]              # all teach levels until 05d; teach_point from 05d
 reference = ["notes", "misconceptions"]
-[moves.teach]              # all teach levels, unless a level has its own table
+[moves.teach_point]
 reference = ["notes", "misconceptions"]
 [moves.extend]
 reference = ["causal"]
-[moves.review_transfer]
+[moves.answer_brief]
 reference = ["notes"]
-# prequestion, check_prereq, review_recall, offer_stop, step_back, ask_which: none
+[moves.review_transfer]    # until 05d
+reference = ["notes"]
+# prequestion, check_prereq, step_back, review_recall, reask, offer_stop, ask_which; from 05d ask_mcq and explain_back;
+# from 05e answer_with_sources, literacy_task, source_conflict: none
 ```
 
 `exam_relevance` is not listed per move: it is added when the message mentions an exam (`blocks.exam_cues`) or a command word from the part's questions.
 
 ```toml
 [watch_for]                # moves that ask the student something also get the part's watch-for misconceptions (step 05c)
-moves = ["intuition_mcq", "check_prereq", "check_mcq", "teach_explain_back", "review", "extend"]   # step 05c: prequestion in place of intuition_mcq, no check_mcq
+moves = ["ask_mcq", "explain_back", "extend"]   # step 05c: ["prequestion", "check_prereq", "step_back", "teach_explain_back", "review", "extend"]
 ```
 
 Watch-for misconceptions are sent as `id` and `wrong_idea` only, so the chatbot can tag one the student's answer shows. Over the result budget they are dropped last.
@@ -242,8 +244,8 @@ Plain markdown files read at startup. Changing wording never touches code.
 | `server_instructions.md` | the MCP server instructions |
 | `tools/<tool>.md` | each tool's description (`tutor_turn`: at most 8 lines) |
 | `style.md` | reply length, interests and formatting rules, appended to the server instructions |
-| `moves/<move>.md` | what each move does, at most 2 sentences, with `{field}` placeholders filled from the step's `data`. Sent once, as a section of the server instructions (step 05c): `feedback`, `reteach_gap`, `offer_stop`, `step_back`, `switch_approach`, `ask_which`, `show`, `prequestion`, `check_prereq`, `correct_misconception`, `teach_<level>` (`worked_example`, `hint_procedural`, `hint_conceptual`, `explain_back`), `extend`, `review_<mode>` (`recall`, `transfer`), `intuition_mcq`, `teach_point`, `check_mcq`, `reteach_point` (step 05d, which removes `prequestion`), `answer_brief`, `reask` (step 05c), `answer_with_sources`, `literacy_task`, `literacy_followup`, `source_conflict` (step 05e) |
-| `moves/<key>.cue.md` | one line, at most 15 words, sent with every step of that move (step 05c) |
+| `moves/<move>.md` | what each move does, at most 2 sentences, with `{field}` placeholders filled from the step's `data`. Sent once, as a section of the server instructions (step 05c). The final set is the 14 moves in `tools-and-context.md` ("The move set"): `ask_mcq`, `teach_point`, `show`, `explain_back`, `extend`, `feedback`, `reteach`, `answer_brief`, `reask`, `offer_stop`, `ask_which`, `answer_with_sources`, `literacy_task`, `source_conflict`. Step 05c has the interim 17 listed there |
+| `moves/<key>.cue.md` | one line, at most 15 words, sent with every step of that move (step 05c). The key adds the variant (`ask_mcq_<purpose>`, `teach_<level>`, `review_<mode>`), falling back to the bare move |
 | `literacy/<skill>_<level>.md` | feedback and task patterns for `ask` and `verify` at `new`, `developing` and `secure` (step 05e) |
 | `format/<client>.md` | formatting for maths, money and diagrams per chatbot (`claude`, `chatgpt`, `gemini`, `default`), returned in `style.format` |
 | `progress/study_pattern.md` | the study-pattern line in `get_my_progress` (`{minutes}` is filled in) |

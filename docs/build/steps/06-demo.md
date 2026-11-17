@@ -32,7 +32,7 @@ Picks are deterministic: ties go to importance, then pack order.
 
 | role | rule |
 |---|---|
-| `target` | a part with a prerequisite part and at least `prequestion.min_distractors` misconceptions, most important first |
+| `target` | a part with a prerequisite part and at least `prequestion.min_distractors` misconceptions (`mcq.min_distractors` from step 05d), most important first |
 | `prereq` | the target's prerequisite part with the highest link weight |
 | `misconception` | the target's misconception from an examiner report, otherwise its first |
 | `anchor` | a part analogous to the target: highest link weight, then the same part type |
