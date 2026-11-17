@@ -147,6 +147,54 @@ def support(turn: Turn, settings: Settings) -> dict | None:
     return {"part_id": part, "level": level, "text": read_text(f"support/{_support_file(level, node['part_type'])}.md")}
 
 
+def _session_offloaded(turn: Turn) -> bool:
+    """True if the student chose "just show me" (or offloaded) at any point in the current session."""
+    session = learner.session_state(turn.student_id, turn.at)
+    if session is None:
+        return False
+    row = learner._conn().execute(
+        """SELECT 1 FROM exchange_log WHERE student_id = ? AND ts >= ? AND ts <= ?
+           AND (offloading = 1 OR choice_taken = 'just_show_me') LIMIT 1""",
+        (turn.student_id, session["session_id"], learner._event_ts(turn.at))).fetchone()
+    return row is not None
+
+
+def _core_idea(part_id: str) -> tuple[str, str]:
+    """(target, correct): the part's core idea from its first mark point, else its main key wording, else its
+    note's first key point, else its description; correct is the mark point's exemplar when there is one."""
+    points = graph.mark_points_for([part_id])
+    if points:
+        return points[0]["point"], points[0]["exemplar"] or points[0]["point"]
+    for note in graph.notes_for([part_id], limit=1):
+        idea = (note["key_wording"] or note["key_points"] or [None])[0]
+        if idea:
+            return idea, idea
+    description = graph.get_node(part_id)["description"]
+    return description, description
+
+
+def prequestion(turn: Turn, settings: Settings) -> dict | None:
+    """A multiple-choice question to ask before teaching an untaught, weak part, with misconceptions as the
+    wrong options (examiner-report sources first). Left out once the student has said "just show me" this session."""
+    pq = settings.prequestion
+    if not pq.enabled or not turn.parts:
+        return None
+    part = turn.parts[0]
+    row = learner._conn().execute("SELECT n_evidence FROM part_state WHERE student_id = ? AND part_id = ?",
+                                  (turn.student_id, part)).fetchone()
+    if (row and row["n_evidence"]) or turn.p(part) >= settings.support.worked_example_below:
+        return None
+    found = graph.misconceptions_for([part])
+    if len(found) < pq.min_distractors or _session_offloaded(turn):
+        return None
+    found.sort(key=lambda m: "examiner_report" not in graph.source_types(m["source_ids"]))
+    target, correct = _core_idea(part)
+    return {"part_id": part, "target": target, "correct": correct,
+            "distractors": [{"id": m["id"], "wrong_idea": m["wrong_idea"], "correction": m["correction"]}
+                            for m in found[:pq.max_options - 1]],
+            "text": read_text("support/prequestion.md")}
+
+
 def weak_prerequisites(turn: Turn, settings: Settings) -> dict | None:
     """Prerequisites below secure, ranked by how weak the student is x link weight x importance."""
     found: dict[str, dict] = {}
@@ -412,6 +460,7 @@ Block = Callable[[Turn, Settings], dict | None]
 
 BLOCKS: dict[str, Block] = {
     "focus": focus,
+    "prequestion": prequestion,
     "support": support,
     "weak_prerequisites": weak_prerequisites,
     "anchor": anchor,
