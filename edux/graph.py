@@ -289,6 +289,13 @@ def misconceptions_for(part_ids: list[str]) -> list[dict]:
     return [{**dict(r), "source_ids": split_list(r["source_ids"])} for r in rows]
 
 
+def get_misconception(misconception_id: str) -> dict | None:
+    """One misconception by id (old ids resolve through id_map), or None if unknown or rejected."""
+    row = _conn().execute("SELECT * FROM misconception WHERE id = ? AND status != 'rejected'",
+                          (canonical(misconception_id),)).fetchone()
+    return {**dict(row), "source_ids": split_list(row["source_ids"])} if row else None
+
+
 def mark_points_for(part_ids: list[str]) -> list[dict]:
     """Mark points on the parts (concept ids expand to their parts), approved first."""
     parts = _expand_parts(part_ids)
@@ -300,6 +307,17 @@ def mark_points_for(part_ids: list[str]) -> list[dict]:
         parts,
     )
     return [{**dict(r), "source_ids": split_list(r["source_ids"])} for r in rows]
+
+
+def score_points(part_id: str) -> list[dict]:
+    """The points an answer on a part is scored against: {id, point}. The part's own mark points (ids from
+    mark_point), or, if it has none, the key points of its notes, with ids "<note_id>:k<n>" (n from 1)."""
+    points = [{"id": mp["id"], "point": mp["point"]} for mp in mark_points_for([part_id]) if mp["node_id"] == part_id]
+    if points:
+        return points
+    for note in notes_for([part_id]):
+        points += [{"id": f"{note['id']}:k{n}", "point": text} for n, text in enumerate(note["key_points"], 1)]
+    return points
 
 
 def source_types(source_ids: list[str]) -> list[str]:
