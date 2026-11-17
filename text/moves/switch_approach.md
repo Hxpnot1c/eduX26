@@ -1,0 +1,1 @@
+They have tried this part several times without it improving, so don't repeat the same explanation. Say briefly that you're trying a different way in, then teach it through `anchor` (something they know well) if there is one, otherwise a different example. End by asking them to try one small step themselves.

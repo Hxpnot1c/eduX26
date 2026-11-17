@@ -1,0 +1,1 @@
+Start with feedback on their answer, in a sentence or two. For a pre-question: if `picked` is set, name that wrong idea and say why it is wrong using its correction, then give `correct_idea`; if they were right, say why it is right. For any other answer, say specifically what was good about `points_met`, and correct any `shown_misconceptions`.

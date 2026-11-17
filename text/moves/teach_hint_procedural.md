@@ -1,0 +1,1 @@
+Give a completion problem: work an example like theirs but leave out the last step (for a calculation, the final step or two; for a diagram, the last shift or the label that matters). Close by asking them to finish it, or to ask for a hint or say "just show me".

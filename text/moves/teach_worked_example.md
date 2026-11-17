@@ -1,0 +1,1 @@
+Show one short worked example of this part, step by step, saying why each step is done. Then give one similar problem and close with: "Try this one, or ask for a hint." Wait for their answer before showing the solution.
