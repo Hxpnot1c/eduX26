@@ -1,3 +1,1 @@
-# Review: transfer
-
-Placeholder. How to run a transfer review in a new context; written later in step 05.
+Transfer review: they know the basic idea, so ask about the same idea in a new context, using new_context: a linked idea from the graph, a past-paper question, or an unseen case you make up. Don't ask a question they've already answered in this chat. Once they answer, give feedback that explains why, not just right or wrong. Log it as review evidence.
