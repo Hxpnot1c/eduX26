@@ -47,7 +47,7 @@ The commands below read the environment, so load `.env` first (`set -a; . ./.env
 .venv/bin/python -m ingest.cli validate coursepacks/example-mini
 .venv/bin/python -m edux.cli load coursepacks/example-mini
 ```
-`example-mini` is a small invented Economics pack that is committed for testing and demos. Real packs live in `coursepacks/<id>/private/`, which git ignores. [`coursepacks/README.md`](coursepacks/README.md) describes the format. Loading rebuilds `content.db`; students' records in `learner.db` are kept.
+`example-mini` is a small invented Economics pack that is committed for testing and demos. Real packs live in `coursepacks/<id>/private/`, which git ignores. The real course is Pearson Edexcel A level Economics A (9EC0), with pack id `edexcel-econ-a` in `coursepacks/edexcel-econ-a/private/`. Its specification, papers, mark schemes and examiner reports are © Pearson Education Limited, so the pack holds our own summaries, short key wordings and references only, never full question or mark-scheme text. [`coursepacks/README.md`](coursepacks/README.md) describes the format. Loading rebuilds `content.db`; students' records in `learner.db` are kept.
 
 ### Add a student
 ```bash

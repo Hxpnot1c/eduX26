@@ -22,19 +22,27 @@ A course pack is the contract between extraction (turning the specification, pas
 ### course.csv (one row)
 | column | meaning |
 |---|---|
-| id | `aqa-econ-alevel` |
-| name | `A-level Economics` |
-| exam_board | `AQA` |
-| spec_code | `7136` |
+| id | `edexcel-econ-a` |
+| name | `A level Economics A` |
+| exam_board | `Pearson Edexcel` |
+| spec_code | `9EC0` |
 | spec_version | version or first-teaching year, used to reject past papers from an older specification |
 
 ### exam_papers.csv: the papers students will sit
 | column | meaning |
 |---|---|
 | id | `paper1` |
-| name | `Paper 1: Markets and market failure` |
+| name | `Paper 1: Markets and business behaviour` |
 | date | ISO date of the next sitting (students can override) |
 | node_ids | topics this paper examines (their descendants are included) |
+
+The course is Pearson Edexcel A level Economics A (9EC0), with three papers:
+
+| id | name | node_ids |
+|---|---|---|
+| `paper1` | Paper 1: Markets and business behaviour | Themes 1 and 3 |
+| `paper2` | Paper 2: The national and global economy | Themes 2 and 4 |
+| `paper3` | Paper 3: Microeconomics and macroeconomics | all four themes |
 
 ### sources.csv: every document the pack was built from
 | column | meaning |
@@ -246,4 +254,4 @@ The load report also lists **suggested links**: pairs of parts in different conc
 Each action is also recorded in the `teacher_feedback` table along with whether it applied. A missing target is reported, not fatal.
 
 ## Copyright
-Specifications, past papers, mark schemes, examiner reports and textbooks belong to their publishers. Packs store our own summaries, short key wordings (< 15 words) and references, never full question or mark-scheme text. Real packs live in `coursepacks/<id>/private/`, which is git-ignored. Only `example-mini`, whose past-paper rows are invented and labelled `synthetic`, is committed.
+Specifications, past papers, mark schemes, examiner reports and textbooks belong to their publishers. The 9EC0 specification, papers, mark schemes and examiner reports are © Pearson Education Limited. Packs store our own summaries, short key wordings (< 15 words) and references, never full question or mark-scheme text. Real packs live in `coursepacks/<id>/private/`, which is git-ignored; the 9EC0 pack is `coursepacks/edexcel-econ-a/private/`. Only `example-mini`, whose past-paper rows are invented and labelled `synthetic`, is committed.
