@@ -144,7 +144,7 @@ def _support_given(steps: list[dict]) -> str:
     """The support the chatbot gave last reply, from the plan it was given: a teach level (teach_point's, or a
     point re-taught at that level), or a worked example for show; otherwise none."""
     for step in steps:
-        if step["move"] in ("teach", "teach_point") or (step["move"] == "reteach" and step["data"].get("level")):
+        if step["move"] == "teach_point" or (step["move"] == "reteach" and step["data"].get("level")):
             return step["data"]["level"]
         if step["move"] == "show":
             return "worked_example"

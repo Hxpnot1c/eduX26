@@ -34,12 +34,12 @@ from edux.settings import TEXT_DIR, Settings, SettingsError, read_text
 
 log = logging.getLogger(__name__)
 
-STOP = {"reteach", "offer_stop", "step_back", "ask_which", "ask_mcq", "check_prereq", "reask"}
-ASKS = {"reteach", "step_back", "ask_mcq", "check_prereq", "teach", "extend", "review", "reask"}
+STOP = {"reteach", "offer_stop", "step_back", "ask_which", "ask_mcq", "explain_back", "check_prereq", "reask"}
+ASKS = {"reteach", "step_back", "ask_mcq", "check_prereq", "explain_back", "extend", "review", "reask"}
 MAX_STEPS = 3
 # The answer.type the chatbot sends back for a step that asks something.
 ANSWER_TYPE = {"ask_mcq": "mcq", "check_prereq": "review", "step_back": "review", "review": "review",
-               "extend": "extend", "teach": "explain_back"}
+               "extend": "extend", "explain_back": "explain_back"}
 LETTERS = "ABCDEFGHIJ"
 
 
@@ -61,7 +61,7 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "review_transfer": ({"name", "mode", "new_context", "answer_type"}, set()),
     "show": ({"point"}, {"note"}),
     "step_back": ({"to", "for", "answer_type"}, set()),
-    "teach_explain_back": ({"level", "part_type", "answer_type"}, set()),
+    "explain_back": ({"answer_type"}, set()),
     "teach_point": ({"index", "total", "point", "exemplar", "level", "max_words"}, set()),
 }
 PLACEHOLDER = re.compile(r"\{([a-z_]+)\}")
@@ -172,7 +172,7 @@ def server_instructions(settings: Settings) -> str:
 
 
 def _step(move: str, part_id: str | None, data: dict | None = None, key: str | None = None) -> dict:
-    """A plan step. key is the cue's name (ask_mcq_<purpose>, teach_<level>, review_<mode>, otherwise the
+    """A plan step. key is the cue's name (ask_mcq_<purpose>, review_<mode>, otherwise the
     move): its section is in the server instructions, and its one-line cue goes with the step, filled from
     data. The key stays in the saved plan; service.public_steps leaves it out of the result."""
     data = dict(data or {})
@@ -248,7 +248,7 @@ def ask_again(turn: Turn, pending: dict) -> dict:
 
 
 def is_stop(step: dict) -> bool:
-    return step["move"] in STOP or (step["move"] == "teach" and step["data"].get("level") == "explain_back")
+    return step["move"] in STOP
 
 
 # --- feedback on the student's answer -----------------------------------------------
@@ -389,15 +389,14 @@ def check(turn: Turn, part_id: str, index: int, settings: Settings, avoid: list[
 
 def teach(turn: Turn, part_id: str, settings: Settings, progress: dict) -> list[dict]:
     """Teaching on a part. At worked_example or hint: the point it has reached, as teach_point and an ask_mcq
-    check on it; after the last point, or for a part already at explain_back level (secure), the explain-back
-    of the whole part, which ends the part's progress."""
+    check on it. After the last point, or for a part already at explain_back level (secure), explain_back of
+    the whole part, which joins the points together, is scored on all of them and ends the part's progress."""
     level = learner.support_level(turn.p(part_id))
     points = _points(part_id)
     state = _progress(progress, part_id)
     if level == "explain_back" or state["index"] > len(points):
         progress.pop(part_id, None)
-        part_type = graph.get_node(part_id)["part_type"]
-        return [_step("teach", part_id, {"level": "explain_back", "part_type": part_type}, key="teach_explain_back")]
+        return [_step("explain_back", part_id)]
     point = points[state["index"] - 1]
     return [_step("teach_point", part_id, {"index": state["index"], "total": len(points), "point": point["point"],
                                            "exemplar": point["exemplar"], "level": level,
