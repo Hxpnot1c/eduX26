@@ -43,4 +43,4 @@ reference = ["notes"]
 
 [watch_for]                # moves that ask the student something also get the part's watch-for misconceptions,
                            # as id and wrong_idea only; a bare move covers its variants
-moves = ["prequestion", "check_prereq", "step_back", "teach_explain_back", "review", "extend"]
+moves = ["prequestion", "check_prereq", "step_back", "teach_explain_back", "review", "extend", "reask"]
