@@ -7,7 +7,7 @@ Every number the system uses lives in `settings.toml`. Everything about what the
 ## settings.toml
 
 ```toml
-protocol = "v0.1"          # bump when the meaning of labels or scoring changes
+protocol = "v0.2"          # bump when the meaning of labels or scoring changes (v0.2: labels describe the student's message; scores come from points met)
 
 [levels]                   # part levels shown to students
 new = 0.40                 # p_known below this = new
@@ -26,6 +26,7 @@ review = { slip = 0.10, guess = 0.15 }
 find_error = { slip = 0.15, guess = 0.25 }
 prequestion = { slip = 0.20, guess = 0.20 }
 mcq = { slip = 0.10, guess = 0.25 }
+extend = { slip = 0.10, guess = 0.10 }      # an answer to a harder, extending question
 immediate = { slip = 0.10, guess = 0.30 }   # chat evidence straight after a worked example or hint
 
 [nudges]                   # small odds multipliers from an ordinary exchange
@@ -79,6 +80,11 @@ hint_below = 0.75          # at or above: ask them to explain it back
 extend_from = 0.40         # developing and above get higher-order questions mixed in
 procedural_types = ["calculation", "diagram"]   # these part types get the procedural hint; others the conceptual one
 
+[teaching_note]
+max_words = 200
+exam_close_days = 14
+approach_min_records = 2   # past approaches needed before "what worked before" is shown
+
 [prequestion]              # a question asked before teaching an untaught part
 enabled = true
 max_options = 4
@@ -100,11 +106,6 @@ stuck_below = 0.5
 quick_parts = 3            # parts offered for a short burst when fatigued
 pattern_min_sessions = 3   # sessions with a fatigue onset before study_pattern is shown
 
-[teaching_note]
-max_words = 200
-exam_close_days = 14
-approach_min_records = 2   # past approaches needed before "what worked before" is shown
-
 [difficulty]               # optional teacher-set difficulty per node (0 easy – 1 hard), inherited by parts
 default = 0.5              # used when no node above the part has one
 prior_shift = 0.15         # starting p_known moves down (hard) or up (easy) by up to this much
@@ -115,7 +116,7 @@ w_cross = 0.0              # share of the cross-student difficulty estimate (off
 base = 0.3                 # weight of a link with no evidence; evidence raises it towards 1
 w_exam = 0.7               # share from past-paper questions that test both ends
 w_material = 0.3           # share from teaching materials that cover both ends in one section
-w_misconception = 0.0      # cross-student misconception signal, read from learner.db (off until there is enough data)
+w_misconception = 0.0      # cross-student misconception signal, read from learner.db (off until checks exist)
 material_source_types = ["textbook", "teacher"]
 suggest_min_questions = 2  # questions co-testing two unlinked parts before a link is suggested
 
@@ -129,7 +130,7 @@ weak_links = 5             # confusable or causal pairs with one side weak
 trend_days = 14            # AI-literacy trends compare this many recent days with everything before
 trend_min_change = 0.05    # a share must move at least this much to count as up or down
 
-[blocks]                   # how get_learning_context ranks what goes into each block, per turn (step 05)
+[blocks]                   # how each turn ranks what goes into each context block (step 05)
 review_link_boost = 0.5    # a due review linked to the current focus counts this much more
 review_importance_floor = 0.1   # added to importance so unweighted parts still rank by how overdue they are
 confusable_mixup = 1.0     # a misconception this student has had on either side adds this
@@ -140,21 +141,26 @@ exam_w_marks = 0.5         # exam_relevance: share from marks at stake
 exam_w_closeness = 0.3     # share from how close the paper's exam is
 exam_w_command = 0.2       # share from the question's command word appearing in the message
 exam_horizon_days = 365    # an exam this far off or further adds nothing for closeness
+
+[style]                    # how tutor_turn asks the chatbot to write (step 05b)
+max_words = 120            # default reply length; the student's profile answer_length overrides
 ```
 
 ## context.toml
 
-Decides which blocks `get_learning_context` returns, in what order, and how long each may be. A **profile** is a named set of blocks. Students use the default unless their `student.profile` says otherwise, which allows A/B comparisons without code changes.
+Decides which blocks each turn is built from, in what order, and how long each may be. `tutor_turn` chooses its plan from the plan-input blocks (`focus`, `prequestion`, `support`, `session`, `reviews_due`) and sends the rest as `reference`; `teaching_note` is only shown by the `context` CLI command. A **profile** is a named set of blocks plus `plan`: with `plan = false` (the `minimal` comparison profile) `tutor_turn` returns no plan. Students use the default unless their `student.profile` says otherwise, which allows A/B comparisons without code changes.
 
 ```toml
 default_profile = "full"
 
 [profiles.full]
 blocks = ["focus", "prequestion", "support", "session", "weak_prerequisites", "anchor", "confusables", "causal",
-          "active_misconceptions", "notes", "exam_relevance", "reviews_due", "teaching_note"]
+          "misconceptions", "notes", "exam_relevance", "reviews_due", "teaching_note"]
+plan = true                # tutor_turn chooses a plan from the blocks; the rest go to reference
 
-[profiles.minimal]         # for comparison: notes only
+[profiles.minimal]         # for comparison: notes only, no plan
 blocks = ["focus", "notes"]
+plan = false
 
 [limits]
 notes = 3                  # notes per focus part
@@ -176,11 +182,11 @@ Plain markdown files read at startup. Changing wording never touches code.
 |---|---|
 | `server_instructions.md` | the MCP server instructions |
 | `tools/<tool>.md` | each tool's description |
-| `support/<level>.md` | the support instruction for each level: `worked_example`, `hint_procedural`, `hint_conceptual`, `explain_back`, `extend`, and `prequestion` |
-| `reviews/<mode>.md` | how to run a due review in `recall` or `transfer` mode |
+| `style.md` | reply length, interests and formatting rules, appended to the server instructions |
+| `moves/<move>.md` | each plan step's text, at most 3 sentences: `feedback`, `reteach_gap`, `offer_stop`, `step_back`, `switch_approach`, `ask_which`, `show`, `prequestion`, `check_prereq`, `correct_misconception`, `teach_<level>` (`worked_example`, `hint_procedural`, `hint_conceptual`, `explain_back`), `extend`, `review_<mode>` (`recall`, `transfer`) |
+| `format/<client>.md` | formatting for maths, money and diagrams per chatbot (`claude`, `chatgpt`, `gemini`, `default`), returned in `style.format` |
 | `progress/study_pattern.md` | the study-pattern line in `get_my_progress` (`{minutes}` is filled in) |
-| `session/<state>.md` | what to do when the session is `fatigued` or a part is `stuck` |
 | `checks/<kind>.md` | marking instructions for `points` and `level` checks (step 07) |
 | `prompts/<prompt>.md` | the text of the `review_due` and `check_me` prompts (`{topic}` is filled in) |
-| `teaching_note.md` | the teaching-note template with `{placeholders}` |
+| `teaching_note.md` | the teaching-note template with `{placeholders}` (debugging output only) |
 | `chatbot_setup.md` | the text students paste into their chatbot's custom instructions |

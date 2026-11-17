@@ -115,3 +115,27 @@ CREATE TABLE evidence_derived (evidence_id INTEGER PRIMARY KEY, student_id TEXT 
   fatigued INTEGER NOT NULL DEFAULT 0);
 CREATE INDEX idx_evidence_derived_session ON evidence_derived(student_id, session_id);
 ```
+
+Two **operational** tables (step 05b) follow. They are not events and not derived: `rebuild_state` neither replays nor clears them.
+
+`migrations/005_call_log.sql` adds one row per MCP tool call, for timing (`python -m edux.cli calls`). The key is never stored:
+
+```sql
+CREATE TABLE call_log (id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts TEXT NOT NULL,                  -- when the call started, ISO UTC to the millisecond
+  student_id TEXT,                   -- null when the key didn't resolve
+  tool TEXT NOT NULL,
+  ms REAL NOT NULL,                  -- server time for the call
+  result_chars INTEGER NOT NULL,     -- size of the JSON result
+  ok INTEGER NOT NULL,               -- 0 when the tool raised or returned ok: false
+  error TEXT);
+CREATE INDEX idx_call_log_student ON call_log(student_id, ts);
+```
+
+`migrations/006_issued_plan.sql` keeps the last plan `tutor_turn` issued to each student. The next turn reads what was asked from it, and the support given (`support_given` on the exchange), so the chatbot doesn't repeat them. `seed-demo --reset` clears it for the demo students.
+
+```sql
+CREATE TABLE issued_plan (student_id TEXT PRIMARY KEY,
+  ts TEXT NOT NULL,
+  plan_json TEXT NOT NULL);          -- {"plan": [steps], "focus": [part ids], "corrected": [misconception ids this session]}
+```
