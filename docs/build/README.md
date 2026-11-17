@@ -16,6 +16,7 @@ This folder is the build plan for the learning service: an MCP server that a sch
 | [04b](steps/04b-evidence-log.md) | `build/04b-evidence-log` | Evidence as an event: chat evidence with exchanges, immediate-recall discount, replay in rebuild |
 | [04c](steps/04c-session-signals.md) | `build/04c-session-signals` | Sessions from events, surprise against the model's expectation, fatigue (softened evidence) and stuck parts |
 | [05](steps/05-server-context.md) | `build/05-server-context` | MCP server over HTTP: learning context, exchange logging, progress, profile; context assembled from configurable blocks |
+| [05b](steps/05b-one-call-per-turn.md) | `build/05b-one-call-per-turn` | One `tutor_turn` call per reply returning a short ordered plan; scores from mark points; call timing; reply length, interests and per-client formatting |
 | [06](steps/06-demo.md) | `build/06-demo` | Demo seeding script, README, tunnel and connector set-up |
 | [Later](steps/later.md) | | Checks (past-question, explain-back, link, find-the-error), automated tests, student and teacher pages, extras |
 
