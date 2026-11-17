@@ -155,6 +155,8 @@ max_chars = 2400           # about 600 tokens; over this, reference blocks are d
 
 [instructions]             # the MCP server instructions, sent once per chat (step 05c)
 max_words = 900            # server_instructions.md + style.md + every move section; over this is a startup error
+max_sentences = 2          # per move section; longer is a startup warning
+cue_max_words = 15         # per cue; longer is a startup warning
 
 [points]                   # point-by-point teaching (step 05d)
 max_words = 80             # words of explanation per teach_point (MCQ options don't count)
@@ -192,7 +194,7 @@ plan = false
 
 [limits]
 notes = 3                  # notes per focus part
-terms = 30                 # course terms in data.terms (step 05c)
+terms = 30                 # course terms in data.terms, sent once per plan (step 05c)
 key_wording = 4
 weak_prerequisites = 2
 confusables = 2
@@ -230,7 +232,7 @@ reference = ["notes"]
 
 ```toml
 [watch_for]                # moves that ask the student something also get the part's watch-for misconceptions (step 05c)
-moves = ["ask_mcq", "explain_back", "extend"]   # step 05c: ["prequestion", "check_prereq", "step_back", "teach_explain_back", "review", "extend"]
+moves = ["ask_mcq", "explain_back", "extend", "reask"]   # step 05c: ["prequestion", "check_prereq", "step_back", "teach_explain_back", "review", "extend", "reask"]
 ```
 
 Watch-for misconceptions are sent as `id` and `wrong_idea` only, so the chatbot can tag one the student's answer shows. Over the result budget they are dropped last.

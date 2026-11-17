@@ -111,7 +111,7 @@ max_chars = 2400   # about 600 tokens
 - When the student asks something instead of answering what they were asked, the chatbot doesn't send `answer`.
 - The question last asked is kept in `issued_plan.plan_json` as `pending` (the asking step: move, part and data) until it is answered.
 - **A message with no `answer` while a question is pending,** on the same part or with no new focus → `answer_brief` (answer their question in a few lines), then `reask` **(stop)**: the same pending question, word for word, with the same `score_next`.
-- A message about a different part, or a research question, drops `pending` and is planned as usual.
+- A message about a different part, a research question, "just show me" or a new session (a gap longer than `session.gap_minutes`) drops `pending` and is planned as usual. A follow-up the resolver maps to an unrelated part also drops it, unless the chatbot sends `node_ids` for the topic it continues.
 - Fatigue and stuck rules still come first.
 
 ## I. Self-correction
@@ -120,8 +120,8 @@ max_chars = 2400   # about 600 tokens
 - One line in `text/server_instructions.md` says this.
 
 ## J. Known terms
-- Every step that teaches or asks gets `data.terms`: the names and aliases of the focus part, and of parts the student has at developing or above.
-  - Order: the focus part, then known parts linked to it by an edge, then other known parts by importance, up to `limits.terms` in `context.toml`.
+- The plan gets `data.terms` once, on its first step on a part: the names and aliases of the steps' parts, and of parts the student has at developing or above. (Per step, two parts' lists pushed a teach step's notes out of the 2,400-character budget.)
+  - Order: the steps' parts, then known parts linked to them by an edge, then other known parts by importance, up to `limits.terms` in `context.toml`.
 - `text/server_instructions.md`: don't introduce course terms that aren't in `terms`; when one is needed, explain it in plain words instead.
 
 ## K. The move set
@@ -178,6 +178,6 @@ This step builds sections and cues for the interim 17 moves (listed in the refer
 - No result names `correct_misconception`, `reteach_gap` or `switch_approach`.
 - A question asked instead of an answer gets `answer_brief` then `reask` with the same question, and nothing is scored.
 - `conflict_flagged = true` is stored on the exchange.
-- `data.terms` on a teaching step for a new student holds only the focus part's names.
+- `data.terms` for a new student holds only the names of the plan's parts.
 - `calls` shows result sizes and the over-budget count.
 - `rebuild` gives identical state.
