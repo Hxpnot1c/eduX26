@@ -2,7 +2,7 @@ default_profile = "full"
 
 [profiles.full]
 blocks = ["focus", "prequestion", "support", "session", "weak_prerequisites", "anchor", "confusables", "causal",
-          "active_misconceptions", "notes", "exam_relevance", "reviews_due", "teaching_note"]
+          "misconceptions", "notes", "exam_relevance", "reviews_due", "teaching_note"]
 plan = true                # tutor_turn chooses a plan from the blocks; the rest go to reference
 
 [profiles.minimal]         # for comparison: notes only, no plan

@@ -66,10 +66,20 @@ def _support_given(steps: list[dict]) -> str:
     return "none"
 
 
+def levels_only(value: object) -> object:
+    """A copy with every p_now dropped: what the chatbot sees carries levels only (the CLI keeps the numbers)."""
+    if isinstance(value, dict):
+        return {k: levels_only(v) for k, v in value.items() if k != "p_now"}
+    if isinstance(value, list):
+        return [levels_only(v) for v in value]
+    return value
+
+
 def _reference(blocks: dict) -> dict:
-    """Background for the chatbot: the profile's blocks that aren't plan inputs; {"items": [...]} becomes the list."""
-    return {name: block["items"] if set(block) == {"items"} else block
-            for name, block in blocks.items() if name not in PLAN_INPUTS}
+    """Background for the chatbot: the profile's blocks that aren't plan inputs; {"items": [...]} becomes the
+    list. Levels only."""
+    return levels_only({name: block["items"] if set(block) == {"items"} else block
+                        for name, block in blocks.items() if name not in PLAN_INPUTS})
 
 
 def _format_for(client: str | None) -> str:
@@ -147,7 +157,7 @@ def tutor_turn(
     focus = blocks.get("focus") or {}
     out = {
         "ok": True,
-        "plan": steps,
+        "plan": levels_only(steps),
         "score_next": plan.score_next(steps),
         "style": style(student, client),
         "reference": _reference(blocks),
@@ -165,7 +175,7 @@ def tutor_turn(
 
 def _node_entry(student_id: str, node: dict, at: str) -> dict:
     p = learner.rollup(student_id, node["id"], at)
-    return {"id": node["id"], "name": node["name"], "level": learner.level(p), "p": round(p, 2)}
+    return {"id": node["id"], "name": node["name"], "level": learner.level(p)}
 
 
 def _tree(student_id: str, at: str, include_parts: bool) -> list[dict]:
@@ -189,7 +199,7 @@ def _levers(student_id: str, at: str, limit: int) -> list[dict]:
             continue
         importance = graph.weight(part)["importance"]
         found.append({"part_id": part, "name": graph.get_node(part)["name"], "level": learner.level(p),
-                      "p_now": round(p, 2), "score": importance * (1 - p)})
+                      "score": importance * (1 - p)})
     found.sort(key=lambda f: -f["score"])
     for f in found:
         del f["score"]
