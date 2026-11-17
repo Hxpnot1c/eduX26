@@ -177,6 +177,7 @@ Plain markdown files read at startup. Changing wording never touches code.
 | `server_instructions.md` | the MCP server instructions |
 | `tools/<tool>.md` | each tool's description |
 | `support/<level>.md` | the support instruction for each level: `worked_example`, `hint_procedural`, `hint_conceptual`, `explain_back`, `extend`, and `prequestion` |
+| `reviews/<mode>.md` | how to run a due review in `recall` or `transfer` mode |
 | `session/<state>.md` | what to do when the session is `fatigued` or a part is `stuck` |
 | `checks/<kind>.md` | marking instructions for `points` and `level` checks (step 07) |
 | `prompts/<prompt>.md` | the text of the `review_due` and `check_me` prompts (`{topic}` is filled in) |
