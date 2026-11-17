@@ -54,7 +54,7 @@ The target has no events for `demo-secure` or `demo-showme`, and neither do the 
 - **demo-weak:** weak prerequisite, the misconception to correct and worked-example support. No pre-question, because the target has evidence.
 - **demo-showme:** its offloading history ("just show me" reviews, a rising just-show-me trend), and a pre-question only if there's no "just show me" in the current session. Three past sessions (9, 6 and 3 days ago, about 50 minutes each) start well and then drop on previously correct parts from about minute 35, so `get_my_progress` shows the study pattern. They're past sessions, so there's no fatigue block now.
 
-`docs/demo-script.md` uses AQA-style questions written by us and refers to real papers only by reference: no exam-board text in the script, README or video.
+`docs/demo-script.md` uses Edexcel 9EC0-style questions written by us and refers to real papers only by reference: no exam-board text in the script, README or video.
 
 ## Commits
 1. `docs: pick demo parts by role from the loaded pack`

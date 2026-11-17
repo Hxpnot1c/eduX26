@@ -2,7 +2,7 @@
 
 A walkthrough for the demo video: which student and which question show each feature. It assumes `scripts/demo.sh` is running against `example-mini` and each demo student is connected in its own chat (or chatbot account) with the set-up text pasted in.
 
-All questions below are written by us in the style of A-level Economics data and short-answer questions. They are not taken from any exam board's papers, and no exam-board text appears in the video. Where a real paper is mentioned, mention it by reference only (for example "the kind of short calculation set on Paper 1").
+All questions below are written by us in the style of Pearson Edexcel A level Economics A (9EC0) data and short-answer questions. They are not taken from Pearson's papers, and no Pearson text appears in the video (the papers are © Pearson Education Limited). Where a real paper is mentioned, mention it by reference only (for example "the kind of short calculation set on Paper 1, Markets and business behaviour").
 
 ## Before recording
 - Run `scripts/demo.sh` and note the roles it prints. On `example-mini` they are:

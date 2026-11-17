@@ -6,7 +6,7 @@ A course pack is a folder of UTF-8 CSV files in `coursepacks/<course_id>/`. See 
 
 - Lists inside a cell are separated by `;`, with `\;` for a literal semicolon.
 - Unknown extra columns are kept in the row's `extra` JSON column.
-- Real packs live in `coursepacks/<id>/private/`, which is git-ignored.
+- Real packs live in `coursepacks/<id>/private/`, which is git-ignored (the Pearson Edexcel A level Economics A (9EC0) pack: `coursepacks/edexcel-econ-a/private/`).
 
 ## Files
 
@@ -16,10 +16,10 @@ One row.
 
 | column | type | required | allowed values | default | meaning |
 |---|---|---|---|---|---|
-| id | text | yes |  |  | course id, e.g. `aqa-econ-alevel` |
-| name | text | yes |  |  | e.g. `A-level Economics` |
-| exam_board | text |  |  |  | e.g. `AQA` |
-| spec_code | text |  |  |  | e.g. `7136` |
+| id | text | yes |  |  | course id, e.g. `edexcel-econ-a` |
+| name | text | yes |  |  | e.g. `A level Economics A` |
+| exam_board | text |  |  |  | e.g. `Pearson Edexcel` |
+| spec_code | text |  |  |  | e.g. `9EC0` |
 | spec_version | text |  |  |  | version or first-teaching year; past papers from an earlier year are rejected |
 
 ### exam_papers.csv
@@ -29,7 +29,7 @@ The papers students will sit.
 | column | type | required | allowed values | default | meaning |
 |---|---|---|---|---|---|
 | id | text | yes |  |  | e.g. `paper1` |
-| name | text |  |  |  | e.g. `Paper 1: Markets and market failure` |
+| name | text |  |  |  | e.g. `Paper 1: Markets and business behaviour` |
 | date | date |  |  |  | ISO date of the next sitting |
 | node_ids | list |  |  |  | topics this paper examines (descendants included) |
 

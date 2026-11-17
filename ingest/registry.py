@@ -79,15 +79,15 @@ def _content(*columns: Column) -> tuple[Column, ...]:
 
 _FILES = (
     FileSpec("course.csv", "course", (
-        C("id", required=True, doc="course id, e.g. `aqa-econ-alevel`"),
-        C("name", required=True, doc="e.g. `A-level Economics`"),
-        C("exam_board", doc="e.g. `AQA`"),
-        C("spec_code", doc="e.g. `7136`"),
+        C("id", required=True, doc="course id, e.g. `edexcel-econ-a`"),
+        C("name", required=True, doc="e.g. `A level Economics A`"),
+        C("exam_board", doc="e.g. `Pearson Edexcel`"),
+        C("spec_code", doc="e.g. `9EC0`"),
         C("spec_version", doc="version or first-teaching year; past papers from an earlier year are rejected"),
     ), required_file=True, doc="One row."),
     FileSpec("exam_papers.csv", "exam_paper", (
         C("id", required=True, doc="e.g. `paper1`"),
-        C("name", doc="e.g. `Paper 1: Markets and market failure`"),
+        C("name", doc="e.g. `Paper 1: Markets and business behaviour`"),
         C("date", "date", doc="ISO date of the next sitting"),
         C("node_ids", "list", doc="topics this paper examines (descendants included)"),
     ), course_scoped=True, doc="The papers students will sit."),
@@ -257,7 +257,8 @@ def render_readme() -> str:
         "",
         "- Lists inside a cell are separated by `;`, with `\\;` for a literal semicolon.",
         "- Unknown extra columns are kept in the row's `extra` JSON column.",
-        "- Real packs live in `coursepacks/<id>/private/`, which is git-ignored.",
+        "- Real packs live in `coursepacks/<id>/private/`, which is git-ignored "
+        "(the Pearson Edexcel A level Economics A (9EC0) pack: `coursepacks/edexcel-econ-a/private/`).",
         "",
         "## Files",
         "",
