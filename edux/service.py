@@ -81,7 +81,7 @@ def _open_question(last: dict, parts: list[str], answer: dict | None, choice: st
     session, not "just show me", and on the same part or with no new focus. A message about another part
     drops it."""
     pending = last.get("pending")
-    if not pending or answer or choice == "just_show_me" or last["ts"] is None:
+    if not pending or answer or choice in ("just_show_me", "skip_point") or last["ts"] is None:
         return None
     gap = (learner.parse_ts(at) - learner.parse_ts(last["ts"])).total_seconds() / 60
     if gap > _settings().session.gap_minutes:

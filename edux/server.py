@@ -27,7 +27,7 @@ from edux.settings import load_settings, read_text
 
 QuestionDepth = Literal["surface", "mechanism", "transfer"]
 Engagement = Literal["passive", "active", "constructive"]
-Choice = Literal["try_first", "hint", "just_show_me", "none"]
+Choice = Literal["try_first", "hint", "just_show_me", "skip_point", "none"]
 AnswerType = Literal[learner.ANSWER_TYPES]  # type: ignore[valid-type]
 
 
@@ -36,7 +36,7 @@ class ThisMessage(BaseModel):
 
     question_depth: QuestionDepth = Field(description="surface (what is it), mechanism (how or why), transfer (applying it somewhere new)")
     engagement: Engagement = Field(description="passive (just reading), active (asking or answering), constructive (their own reasoning)")
-    choice: Choice = Field("none", description="what they chose when offered: try_first, hint, just_show_me, or none")
+    choice: Choice = Field("none", description="what they chose: try_first, hint, just_show_me, skip_point (\"I know this\"), or none")
     conflict_flagged: bool = Field(False, description="true when your reply corrects a mistake you made earlier")
 
 

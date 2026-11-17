@@ -23,7 +23,7 @@ from ingest.registry import split_list as split
 from edux.settings import ContextConfig, Settings, load_context, load_settings, protocol_label, settings_hash
 
 SUPPORT_GIVEN = ("worked_example", "hint", "explain_back", "none")
-CHOICE_TAKEN = ("try_first", "hint", "just_show_me", "none")
+CHOICE_TAKEN = ("try_first", "hint", "just_show_me", "skip_point", "none")   # skip_point: "I know this" (step 05d)
 # What a student's answer can be to, as sent by the chatbot; each is also a key of [bkt.evidence].
 # "mcq" is any server-built multiple-choice question (step 05d), scored from the letter picked.
 ANSWER_TYPES = ("prequestion", "mcq", "explain_back", "review", "extend", "past_question")
