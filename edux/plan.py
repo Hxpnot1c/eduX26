@@ -1,4 +1,4 @@
-"""Choose the plan for one turn: at most two ordered steps for the chatbot to carry out, and nothing else.
+"""Choose the plan for one turn: at most three ordered steps for the chatbot to carry out, and nothing else.
 
 Each step is {move, part_id, cue, data}. What each move means is in the server instructions, sent once
 (server_instructions below); the cue is one line from text/moves/<key>.cue.md, so the move stays clear in a long chat. The plan is built from the context
@@ -6,18 +6,21 @@ blocks the student's profile produced this turn, so a profile without a block ne
 Steps in STOP end the plan, because the student needs to reply.
 
 Order (first match wins for the main step):
-  answer given    -> feedback, then reteach when points are missing (which ends the plan)
+  answer given    -> feedback, then reteach when points are missing (which ends the plan); after a multiple-choice
+                     intuition answer, teaching; after a check, the next point (or the same point re-taught)
   question instead of the pending answer -> answer_brief, then reask the same question (fatigue and stuck first)
   fatigued        -> offer_stop (once a session; also replaces reteach's re-ask, as do stuck moves)
-  stuck on focus  -> step_back (weakest prerequisite) / reteach of the whole part (through the anchor)
-  ambiguous focus -> ask_which (no focus at all: the top due review, if any)
-  just_show_me    -> show (nothing else this turn)
-  pre-question    -> prequestion
-  weak prereq     -> check_prereq (level new, not checked this session)
-  held misconc.   -> feedback with the held misconception (unless already corrected this session)
-  otherwise       -> teach at the support level
-With an answer the plan is [feedback, main step]; without one it is [main step, extend or one review] when
-the main step is not a stop step. feedback is the only move that names misconceptions; reteach never repeats them.
+  stuck on focus  -> ask_mcq on the weakest prerequisite (prereq, stuck) / reteach of the whole part (through the anchor)
+  ambiguous focus -> ask_which (no focus at all: the top due review, as ask_mcq)
+  just_show_me    -> show the current point, then its check; skip_point ("I know this") -> its check only
+  intuition       -> ask_mcq (intuition), once per part
+  weak prereq     -> ask_mcq (prereq) (level new, not checked this session)
+  held misconc.   -> feedback with the held misconception (unless already corrected this session), then teaching
+  otherwise       -> teaching: teach_point and ask_mcq (check) on the point reached; after the last point, or
+                     for a secure part, explain_back of the whole part
+Every multiple-choice question is built, lettered and scored by the server (ask_mcq). Without an answer, or after
+a complete explain-back, a plan with no stop step gets extend or one due review. feedback is the only move that
+names misconceptions; reteach never repeats them.
 """
 
 from __future__ import annotations
@@ -34,12 +37,11 @@ from edux.settings import TEXT_DIR, Settings, SettingsError, read_text
 
 log = logging.getLogger(__name__)
 
-STOP = {"reteach", "offer_stop", "step_back", "ask_which", "ask_mcq", "explain_back", "check_prereq", "reask"}
-ASKS = {"reteach", "step_back", "ask_mcq", "check_prereq", "explain_back", "extend", "review", "reask"}
+STOP = {"reteach", "offer_stop", "ask_which", "ask_mcq", "explain_back", "reask"}
+ASKS = {"reteach", "ask_mcq", "explain_back", "extend", "reask"}
 MAX_STEPS = 3
 # The answer.type the chatbot sends back for a step that asks something.
-ANSWER_TYPE = {"ask_mcq": "mcq", "check_prereq": "review", "step_back": "review", "review": "review",
-               "extend": "extend", "explain_back": "explain_back"}
+ANSWER_TYPE = {"ask_mcq": "mcq", "extend": "extend", "explain_back": "explain_back"}
 LETTERS = "ABCDEFGHIJ"
 
 
@@ -51,16 +53,14 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "ask_which": ({"candidates"}, set()),
     "ask_mcq_intuition": ({"purpose", "options", "answer_type"}, {"note", "via", "extra_option"}),
     "ask_mcq_check": ({"purpose", "options", "index", "answer_type"}, {"extra_option"}),
-    "check_prereq": ({"name", "for", "note", "answer_type"}, set()),
+    "ask_mcq_prereq": ({"purpose", "options", "name", "for", "answer_type"}, {"note", "stuck", "extra_option"}),
+    "ask_mcq_review": ({"purpose", "options", "name", "mode", "answer_type"}, {"new_context", "extra_option"}),
     "extend": ({"answer_type"}, set()),
     "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "correct_option", "purpose", "points_met", "missing"}),
     "offer_stop": ({"minutes", "quick_parts"}, set()),
     "reask": ({"asked", "answer_type"}, set()),
     "reteach": (set(), {"missing", "anchor", "point", "level", "answer_type"}),
-    "review_recall": ({"name", "mode", "answer_type"}, set()),
-    "review_transfer": ({"name", "mode", "new_context", "answer_type"}, set()),
     "show": ({"point"}, {"note"}),
-    "step_back": ({"to", "for", "answer_type"}, set()),
     "explain_back": ({"answer_type"}, set()),
     "teach_point": ({"index", "total", "point", "exemplar", "level", "max_words"}, set()),
 }
@@ -290,7 +290,7 @@ def feedback(answer: dict, evidence: dict) -> tuple[dict, dict | None]:
 
 def _checked_this_session(turn: Turn, part_id: str, last_plan: list[dict]) -> bool:
     """Evidence on the part in the current session, or the last plan already asked about it."""
-    if any(s["move"] == "check_prereq" and s["part_id"] == part_id for s in last_plan):
+    if any(s["move"] == "ask_mcq" and s["data"].get("purpose") == "prereq" and s["part_id"] == part_id for s in last_plan):
         return True
     session = learner.session_state(turn.student_id, turn.at)
     if session is None:
@@ -334,7 +334,7 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
         if stuck:
             back = stuck["step_back_to"]
             if back:
-                return [_step("step_back", back["id"], {"to": {k: back[k] for k in ("id", "name", "level")}, "for": focus})]
+                return [prereq_check(turn, back["id"], focus, settings, stuck=True)]
             anchor = blocks.get("anchor")
             return [_step("reteach", focus, {
                 "anchor": {"id": anchor["part_id"], "name": anchor["name"], "note": anchor["note"]} if anchor else None,
@@ -344,7 +344,7 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
         candidates = (blocks.get("focus") or {}).get("candidates")
         if candidates:
             return [_step("ask_which", None, {"candidates": [{k: c[k] for k in ("id", "name")} for c in candidates]})]
-        review = _second_step(turn, blocks, reviews_only=True)   # e.g. "quiz me on what's due"
+        review = _second_step(turn, blocks, settings, reviews_only=True)   # e.g. "quiz me on what's due"
         return [review] if review else []
 
     if choice in ("just_show_me", "skip_point"):
@@ -358,7 +358,7 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
 
     for item in (blocks.get("weak_prerequisites") or {}).get("items", []):
         if item["level"] == "new" and not _checked_this_session(turn, item["part_id"], last_plan):
-            return [_step("check_prereq", item["part_id"], {"name": item["name"], "for": item["for"], "note": item["note"]})]
+            return [prereq_check(turn, item["part_id"], item["for"], settings, note=item["note"])]
 
     teaching = teach(turn, focus, settings, progress)
     held = [m for m in held_misconceptions(turn.student_id, turn.parts) if m["id"] not in handled]
@@ -438,19 +438,38 @@ def after_check(turn: Turn, evidence: dict, settings: Settings, progress: dict, 
     return teach(turn, part, settings, progress)
 
 
-def _second_step(turn: Turn, blocks: dict, reviews_only: bool = False) -> dict | None:
-    """extend when earned, otherwise the top due review (not on a focus part) in its mode, otherwise nothing."""
+def prereq_check(turn: Turn, part_id: str, for_part: str, settings: Settings, note: str = "", stuck: bool = False) -> dict:
+    """ask_mcq (prereq) on a weak prerequisite: its first point is the correct option. stuck marks a step back
+    from a part they're stuck on, so the chatbot says it is trying a different way in."""
+    data = {"name": graph.get_node(part_id)["name"], "for": for_part}
+    if note:
+        data["note"] = note
+    if stuck:
+        data["stuck"] = True
+    return ask_mcq(turn, question(part_id, "prereq", _points(part_id)[0]["point"], settings,
+                                  point_id=_points(part_id)[0]["id"]), data)
+
+
+def review_check(turn: Turn, r: dict, settings: Settings) -> dict:
+    """ask_mcq (review) on a due part, in its mode (recall, or transfer framed in data.new_context). The correct
+    option rotates through the part's points: the point at (its evidence count) mod (its number of points)."""
+    points = _points(r["part_id"])
+    row = learner._conn().execute("SELECT n_evidence FROM part_state WHERE student_id = ? AND part_id = ?",
+                                  (turn.student_id, r["part_id"])).fetchone()
+    point = points[(row["n_evidence"] if row else 0) % len(points)]
+    data = {"name": r["name"], "mode": r["mode"]}
+    if r.get("new_context"):
+        data["new_context"] = r["new_context"]
+    return ask_mcq(turn, question(r["part_id"], "review", point["point"], settings, point_id=point["id"]), data)
+
+
+def _second_step(turn: Turn, blocks: dict, settings: Settings, reviews_only: bool = False) -> dict | None:
+    """extend when earned, otherwise the top due review (not on a focus part) as an MCQ, otherwise nothing."""
     support = blocks.get("support")
     if support and support.get("extend") and not reviews_only:
         return _step("extend", support["part_id"])
     reviews = [r for r in (blocks.get("reviews_due") or {}).get("items") or [] if r["part_id"] not in turn.parts]
-    if reviews:
-        r = reviews[0]
-        data = {"name": r["name"], "mode": r["mode"]}
-        if r.get("new_context"):
-            data["new_context"] = r["new_context"]
-        return _step("review", r["part_id"], data, key=f"review_{r['mode']}")
-    return None
+    return review_check(turn, reviews[0], settings) if reviews else None
 
 
 # --- the plan -----------------------------------------------------------------------
@@ -481,7 +500,10 @@ def reask(pending: dict) -> list[dict]:
     return [_step("answer_brief", pending["part_id"]), {**_step("reask", pending["part_id"], data)}]
 
 
-URGENT = ("offer_stop", "step_back", "reteach")   # reteach here is the whole part, when stuck
+def _urgent(steps: list[dict]) -> bool:
+    """Fatigue or stuck: offer_stop, a step back to a prerequisite (ask_mcq with data.stuck) or a re-teach of the
+    whole part. These come before a pending question, a re-teach of missing points and the point loop."""
+    return bool(steps) and (steps[0]["move"] in ("offer_stop", "reteach") or bool(steps[0]["data"].get("stuck")))
 
 
 def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", answer: dict | None = None,
@@ -505,9 +527,7 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
 
     if pending and not answer:
         urgent = main()
-        if urgent and urgent[0]["move"] in URGENT:
-            return urgent
-        return reask(pending)
+        return urgent if _urgent(urgent) else reask(pending)
     if answer and evidence:
         first, retry = feedback(answer, evidence)
         steps.append(first)
@@ -517,11 +537,13 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
             _progress(progress, evidence["part_id"])["intuition_asked"] = True
         if retry:   # reteach ends the plan, unless they're tired or stuck: then say what's missing and do that instead
             urgent = main()
-            if urgent and urgent[0]["move"] in URGENT:
+            if _urgent(urgent):
                 return [_refill({**first, "data": {**first["data"], "missing": retry["data"]["missing"]}}), urgent[0]]
             return [first, retry]
     rest = main()
-    if not (rest and rest[0]["move"] in URGENT):
+    # all points met on an explain-back or a harder question (a retry returned above): the part is done for now
+    finished = bool(answer and evidence and answer["type"] in ("explain_back", "extend"))
+    if not _urgent(rest):
         if rest and rest[0]["move"] == "feedback" and steps:   # a held misconception joins the answer's feedback
             known = {m["id"] for m in steps[0]["data"]["misconceptions"]}
             extra = [m for m in rest[0]["data"]["misconceptions"] if m["id"] not in known]
@@ -532,9 +554,11 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
             rest = teach(turn, evidence["part_id"], settings, progress)
         elif evidence and evidence.get("purpose") == "check":
             rest = after_check(turn, evidence, settings, progress, last_mcq)
+        elif finished:   # the part is done for now: extend or a due review instead of teaching it again
+            rest = []
     steps += rest
-    if not answer and steps and not any(is_stop(s) for s in steps) and steps[-1]["move"] not in ("show", "review"):
-        second = _second_step(turn, blocks)
+    if (not answer or finished) and steps and not any(is_stop(s) for s in steps) and steps[-1]["move"] != "show":
+        second = _second_step(turn, blocks, settings)
         if second:
             steps.append(second)
     return steps[:MAX_STEPS]

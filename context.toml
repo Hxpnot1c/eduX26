@@ -38,10 +38,8 @@ reference = ["notes", "misconceptions"]
 reference = ["causal"]
 [moves.answer_brief]
 reference = ["notes"]
-[moves.review_transfer]
-reference = ["notes"]
-# ask_mcq (all purposes), check_prereq, step_back, review_recall, reask, offer_stop, ask_which: none
+# ask_mcq (all purposes), explain_back, reask, offer_stop, ask_which: none
 
 [watch_for]                # moves that ask the student something also get the part's watch-for misconceptions,
                            # as id and wrong_idea only; a bare move covers its variants
-moves = ["ask_mcq", "check_prereq", "step_back", "explain_back", "review", "extend", "reteach", "reask"]
+moves = ["ask_mcq", "explain_back", "extend", "reteach", "reask"]
