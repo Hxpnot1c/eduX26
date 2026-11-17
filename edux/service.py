@@ -105,10 +105,22 @@ def levels_only(value: object) -> object:
 
 
 def _reference(blocks: dict) -> dict:
-    """Background for the chatbot: the profile's blocks that aren't plan inputs; {"items": [...]} becomes the
+    """Background for a profile with no plan: its blocks that aren't plan inputs; {"items": [...]} becomes the
     list. Levels only."""
     return levels_only({name: block["items"] if set(block) == {"items"} else block
                         for name, block in blocks.items() if name not in PLAN_INPUTS})
+
+
+def _plan_reference(turn: context_blocks.Turn, steps: list[dict], profile_blocks: list[str]) -> dict:
+    """Only the reference blocks the plan's moves use (context_blocks.reference_for), as the chatbot sees
+    them: {"items": [...]} becomes the list, and watch-for misconceptions join the misconceptions block."""
+    found = context_blocks.reference_for(turn, steps, profile_blocks, _settings(), _context())
+    watch = found.pop("watch_for", None)
+    out = {name: block["items"] if isinstance(block, dict) and set(block) == {"items"} else block
+           for name, block in found.items()}
+    if watch:
+        out["misconceptions"] = {**(out.get("misconceptions") or {}), "watch_for": watch}
+    return levels_only(out)
 
 
 def _format_for(client: str | None) -> str:
@@ -198,7 +210,7 @@ def tutor_turn(
         "ok": True,
         "plan": public_steps(steps),
         "score_next": next_points,
-        "reference": _reference(blocks),
+        "reference": _plan_reference(turn, steps, config.blocks) if config.plan else _reference(blocks),
         "focus": [{"id": p["id"], "name": p["name"], "level": p["level"]} for p in focus.get("parts", [])],
     }
     if send_style:

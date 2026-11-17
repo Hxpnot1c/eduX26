@@ -140,6 +140,9 @@ async def conversation(keyed: str, student: str) -> None:
           json.dumps(sorted(shapes)))
     filled = [step["cue"] for t in turns for step in t.get("plan", []) if PLACEHOLDER.search(json.dumps(step))]
     check(not filled, "no placeholder in any step", "; ".join(filled[:2]))
+    watch = ((first.get("reference") or {}).get("misconceptions") or {}).get("watch_for") or []
+    check(bool(watch) and all(set(w) == {"id", "wrong_idea"} for w in watch),
+          "an asking step carries watch-for misconceptions as id and wrong_idea only", json.dumps(watch)[:120])
     check("style" in turns[0] and not any("style" in t for t in turns[1:]),
           "style comes with the first call of a session only", ", ".join(str("style" in t) for t in turns))
     for i, t in enumerate(turns, 1):

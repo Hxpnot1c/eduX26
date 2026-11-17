@@ -19,3 +19,28 @@ causal = 2
 exam_questions = 2
 reviews_due = 3
 candidates = 3             # candidate parts when the message is ambiguous
+
+# Reference blocks each move uses, in priority order (step 05c). Keys are the move text names (teach_<level>,
+# review_<mode>); a bare move's table covers its variants. `misconceptions` means the step part's held ones,
+# in full. The result carries the union over the plan's steps; over the result budget, blocks are dropped from
+# the end. A move with no table gets no reference. exam_relevance isn't listed: it is added when the message
+# mentions an exam (blocks.exam_cues in settings.toml) or a command word from the part's questions.
+[moves.feedback]           # includes a held misconception (was correct_misconception)
+reference = ["misconceptions"]
+[moves.reteach]            # missing points, or the whole part through the anchor when stuck
+reference = ["notes", "anchor"]
+[moves.show]
+reference = ["notes"]
+[moves.teach]              # all teach levels
+reference = ["notes", "misconceptions"]
+[moves.extend]
+reference = ["causal"]
+[moves.answer_brief]
+reference = ["notes"]
+[moves.review_transfer]
+reference = ["notes"]
+# prequestion, check_prereq, step_back, review_recall, reask, offer_stop, ask_which: none
+
+[watch_for]                # moves that ask the student something also get the part's watch-for misconceptions,
+                           # as id and wrong_idea only; a bare move covers its variants
+moves = ["prequestion", "check_prereq", "step_back", "teach_explain_back", "review", "extend"]

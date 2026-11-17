@@ -573,3 +573,88 @@ def assemble(profile: str, turn: Turn, settings: Settings, context: ContextConfi
         if value is not None:
             out[name] = value
     return out
+
+
+# --- reference per move (step 05c) ----------------------------------------------
+
+
+def _move_table(context: ContextConfig, step: dict) -> list[str]:
+    """The reference blocks a step's move uses: its key's table, else the bare move's, else none."""
+    table = context.moves.get(step.get("key") or step["move"]) or context.moves.get(step["move"])
+    return list(table.reference) if table else []
+
+
+def asks_watch_for(context: ContextConfig, step: dict) -> bool:
+    return bool({step.get("key"), step["move"]} & set(context.watch_for.moves))
+
+
+def _part_turn(turn: Turn, part_id: str) -> Turn:
+    """The same turn narrowed to one part, so a block shows only what that step is about."""
+    return Turn(student=turn.student, parts=[part_id], message=turn.message, at=turn.at, limits=turn.limits,
+                resolution=turn.resolution)
+
+
+def _merge(into: dict, name: str, value: object) -> None:
+    """Add one step's block to the reference: lists and {"items"} blocks are joined without repeats, notes'
+    mark points merged, anything else kept from the first step that brought it."""
+    if name not in into:
+        into[name] = value
+        return
+    have = into[name]
+    if isinstance(have, dict) and isinstance(value, dict):
+        for k, v in value.items():
+            if isinstance(v, list) and isinstance(have.get(k), list):
+                have[k] = have[k] + [x for x in v if x not in have[k]]
+            elif isinstance(v, dict) and isinstance(have.get(k), dict):
+                have[k] = {**have[k], **v}
+            else:
+                have.setdefault(k, v)
+
+
+def _mentions_exam(turn: Turn, settings: Settings) -> bool:
+    """The message mentions an exam (blocks.exam_cues) or a command word used in the focus parts' questions."""
+    words = set(re.findall(r"[a-z]+", turn.message.lower()))
+    commands = {(q["command_word"] or "").lower() for q in graph.questions_for(turn.parts)} - {""}
+    return bool(words & set(settings.blocks.exam_cues)) or bool(words & commands)
+
+
+def reference_for(turn: Turn, steps: list[dict], profile_blocks: list[str], settings: Settings,
+                  context: ContextConfig) -> dict:
+    """The reference the plan's moves use, in priority order: for each step in plan order, the blocks in its
+    move's table (context.toml [moves.<key>]), narrowed to the step's part; misconceptions are the step part's
+    held ones in full. Then exam_relevance when the message mentions an exam or a command word, and last the
+    watch-for misconceptions of steps that ask something, as id and wrong_idea only. Blocks not in the
+    profile are never sent. Returns {name: block}; watch-for misconceptions are under "watch_for"."""
+    out: dict[str, object] = {}
+    cache: dict[tuple[str, str | None], dict | None] = {}
+
+    def block(name: str, part: str | None) -> dict | None:
+        if (name, part) not in cache:
+            fn = BLOCKS.get(name)
+            cache[(name, part)] = fn(_part_turn(turn, part), settings) if fn and part else None
+        return cache[(name, part)]
+
+    for step in steps:
+        part = step.get("part_id")
+        for name in _move_table(context, step):
+            if name not in profile_blocks:
+                continue
+            value = block(name, part)
+            if name == "misconceptions":
+                value = {"held": value["held"]} if value and value["held"] else None
+            if value:
+                _merge(out, name, {k: v for k, v in value.items()} if isinstance(value, dict) else value)
+    if "exam_relevance" in profile_blocks and turn.parts and _mentions_exam(turn, settings):
+        value = exam_relevance(turn, settings)
+        if value:
+            out["exam_relevance"] = value
+    if "misconceptions" in profile_blocks:
+        watch: list[dict] = []
+        for step in steps:
+            if step.get("part_id") and asks_watch_for(context, step):
+                value = block("misconceptions", step["part_id"]) or {}
+                watch += [{"id": m["id"], "wrong_idea": m["wrong_idea"]} for m in value.get("watch_for", [])
+                          if m["id"] not in {w["id"] for w in watch}]
+        if watch:
+            out["watch_for"] = watch
+    return out
