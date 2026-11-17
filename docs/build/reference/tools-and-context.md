@@ -212,7 +212,7 @@ For students. Levels only, never numbers.
 - Weak links: confusable or causal pairs where one side is weak.
 - Reviews due.
 - AI-literacy trends, as directions over the last 14 days vs before: share of mechanism/transfer questions, share of constructive engagement, "just show me" rate.
-- `ai_literacy` (step 05e): the level of `ail_ask` and `ail_verify`, and the share of research questions showing each question feature over the last `progress.trend_days` against before, as up, down or steady. These parts are left out of the tree and levers above.
+- `ai_literacy` (step 05e): `ask` and `verify`, each with the `level` of `ail_ask` and `ail_verify`, and `question_features`: for each feature, the share of research questions showing it over the last `progress.trend_days` against before (`recent`, `before`, `direction` up, down or steady, as for `trends`). These parts are left out of the tree, levers and reviews above.
 - `study_pattern`: "your answers tend to drop after about N minutes" (median fatigue onset), when at least `session.pattern_min_sessions` sessions had one; otherwise `null`.
 
 ### update_my_profile(interests?, exam_date_override?, answer_length?)
