@@ -12,7 +12,7 @@ Order (first match wins for the main step):
   just_show_me    -> show (nothing else this turn)
   pre-question    -> prequestion
   weak prereq     -> check_prereq (level new, not checked this session)
-  held misconc.   -> correct_misconception (unless feedback already covered it)
+  held misconc.   -> correct_misconception (unless already corrected this session)
   otherwise       -> teach at the support level
 With an answer the plan is [feedback, main step]; without one it is [main step, extend or one review] when
 the main step is not a stop step.
@@ -93,6 +93,19 @@ def _checked_this_session(turn: Turn, part_id: str, last_plan: list[dict]) -> bo
         (turn.student_id, part_id, session["session_id"], learner._event_ts(turn.at))).fetchone() is not None
 
 
+def corrected_in(steps: list[dict]) -> set[str]:
+    """Misconception ids a plan already corrected: by correct_misconception, or in feedback."""
+    found: set[str] = set()
+    for step in steps:
+        data = step["data"]
+        if step["move"] == "correct_misconception":
+            found.add(data["id"])
+        if (data.get("picked") or {}).get("id"):
+            found.add(data["picked"]["id"])
+        found |= {m["id"] for m in data.get("shown_misconceptions") or []}
+    return found
+
+
 def _options(turn: Turn, block: dict) -> list[dict]:
     """The pre-question's options, the correct idea among the misconceptions, in an order fixed per student and part."""
     options = [{"id": "correct", "text": block["correct"]}] + [
@@ -158,12 +171,12 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
     return None
 
 
-def _second_step(blocks: dict) -> dict | None:
-    """extend when earned, otherwise the top due review in its mode, otherwise nothing."""
+def _second_step(turn: Turn, blocks: dict) -> dict | None:
+    """extend when earned, otherwise the top due review (not on a focus part) in its mode, otherwise nothing."""
     support = blocks.get("support")
     if support and support.get("extend"):
         return _step("extend", support["part_id"])
-    reviews = (blocks.get("reviews_due") or {}).get("items") or []
+    reviews = [r for r in (blocks.get("reviews_due") or {}).get("items") or [] if r["part_id"] not in turn.parts]
     if reviews:
         r = reviews[0]
         data = {"name": r["name"], "mode": r["mode"]}
@@ -177,17 +190,19 @@ def _second_step(blocks: dict) -> dict | None:
 
 
 def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", answer: dict | None = None,
-           evidence: dict | None = None, last_plan: list[dict] | None = None) -> list[dict]:
+           evidence: dict | None = None, last_plan: list[dict] | None = None,
+           corrected: set[str] | None = None) -> list[dict]:
     """The plan for this turn (see the module docstring). answer is what the chatbot sent about the student's
-    answer and evidence its scored item; last_plan is the plan issued on the previous turn."""
+    answer and evidence its scored item; last_plan is the plan issued on the previous turn; corrected holds the
+    misconceptions already corrected this session, which aren't corrected again."""
     last_plan = last_plan or []
     steps: list[dict] = []
-    handled: set[str] = set()
+    handled: set[str] = set(corrected or ()) | corrected_in(last_plan)
     answered_prequestion = None
     if answer and evidence:
         first = feedback(answer, evidence)
         steps.append(first)
-        handled = set(evidence["misconception_ids"])
+        handled |= set(evidence["misconception_ids"])
         if answer["type"] == "prequestion":
             answered_prequestion = evidence["part_id"]
         if is_stop(first):
@@ -196,7 +211,7 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
     if main:
         steps.append(main)
     if len(steps) == 1 and main and not is_stop(main) and main["move"] != "show":
-        second = _second_step(blocks)
+        second = _second_step(turn, blocks)
         if second:
             steps.append(second)
     return steps[:MAX_STEPS]
