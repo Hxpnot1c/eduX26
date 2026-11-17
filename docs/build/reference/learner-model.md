@@ -179,7 +179,7 @@ Personalisation never uses learning styles.
 ## Rebuild
 `learner.rebuild_state(student_id)`:
 1. Deletes the student's derived rows, including `evidence_derived`.
-2. Replays their events from `exchange_log` and `evidence_log`, merged in order of (`ts`, exchanges before evidence, `id`), through the rules above with the current settings. This is the same order they are applied live, so a rebuild gives exactly the live state.
+2. Replays their events from `exchange_log` and `evidence_log`, merged in order of `ts`, then each exchange followed straight away by the evidence that came with it, then evidence with no exchange, through the rules above with the current settings. This is the same order they are applied live, so a rebuild gives exactly the live state.
 
 `rebuild_all()` does every student. Events keep the `protocol` and `settings_hash` they were recorded under, for analysis.
 

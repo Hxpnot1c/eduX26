@@ -840,17 +840,20 @@ DERIVED_TABLES = ("part_state", "student_misconception", "approach_record", "rev
 def rebuild_state(student_id: str) -> int:
     """Delete the student's derived rows and replay their events with the current settings.
 
-    exchange_log and evidence_log are merged in order of (ts, exchanges before evidence, id), the order in which
-    they are applied live. Returns the number of events replayed. Old ids resolve through id_map as they replay.
+    exchange_log and evidence_log are merged in the order they are applied live: by ts, then each exchange
+    followed straight away by the evidence that came with it (so two exchanges in the same second replay in
+    turn), then evidence with no exchange. Returns the number of events replayed. Old ids resolve through
+    id_map as they replay.
     """
     conn = _conn()
     with conn:
         for table in DERIVED_TABLES:
             conn.execute(f"DELETE FROM {table} WHERE student_id = ?", (student_id,))
         events = conn.execute(
-            """SELECT ts, 0 AS kind, id FROM exchange_log WHERE student_id = ?
-               UNION ALL SELECT ts, 1 AS kind, id FROM evidence_log WHERE student_id = ?
-               ORDER BY ts, kind, id""",
+            """SELECT ts, id AS grp, 0 AS kind, id FROM exchange_log WHERE student_id = ?
+               UNION ALL SELECT ts, COALESCE(exchange_id, 9223372036854775807) AS grp, 1 AS kind, id
+                 FROM evidence_log WHERE student_id = ?
+               ORDER BY ts, grp, kind, id""",
             (student_id, student_id)).fetchall()
         for event in events:
             if event["kind"] == 0:
