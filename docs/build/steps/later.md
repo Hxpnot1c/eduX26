@@ -69,5 +69,4 @@ A simple read-only page at `/me?key=` showing:
 - Embeddings alongside FTS for note search.
 - OAuth instead of keys.
 - Hosting and Postgres.
-- A real safeguarding detector and the escalation route.
 - A browser extension for chatbots without connectors.
