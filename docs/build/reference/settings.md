@@ -153,6 +153,9 @@ max_words = 120            # default reply length; the student's profile answer_
 [results]                  # size of a tutor_turn result (step 05c)
 max_chars = 2400           # about 600 tokens; over this, reference blocks are dropped, then the call is logged as over budget
 
+[instructions]             # the MCP server instructions, sent once per chat (step 05c)
+max_words = 600            # server_instructions.md + style.md + every move section; over this is a startup error
+
 [points]                   # point-by-point teaching (step 05d)
 max_words = 80             # words per teach_point reply
 reteach_limit = 1          # re-teaches of a missed point before moving on
@@ -216,6 +219,13 @@ reference = ["notes"]
 ```
 
 `exam_relevance` is not listed per move: it is added when the message mentions an exam (`blocks.exam_cues`) or a command word from the part's questions.
+
+```toml
+[watch_for]                # moves that ask the student something also get the part's watch-for misconceptions (step 05c)
+moves = ["prequestion", "check_prereq", "teach_point", "check_point", "teach_explain_back", "review", "extend"]
+```
+
+Watch-for misconceptions are sent as `id` and `wrong_idea` only, so the chatbot can tag one the student's answer shows. Over the result budget they are dropped last.
 
 ## text/
 

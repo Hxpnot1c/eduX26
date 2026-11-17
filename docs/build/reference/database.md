@@ -143,7 +143,7 @@ CREATE TABLE issued_plan (student_id TEXT PRIMARY KEY,
   plan_json TEXT NOT NULL);          -- {"plan", "focus", "corrected", "offered_stop"}: carried within a session
 ```
 
-`migrations/007_call_log_budget.sql` (step 05c) adds `over_budget INTEGER NOT NULL DEFAULT 0` to `call_log`: 1 when a result was still over `results.max_chars` after dropping every reference block. `issued_plan.plan_json` also carries `style_sent` (the style last sent, so it is sent again only when it changes) and `point_ids` (the letter → point id mapping for `score_next`). From step 05d it carries `points` (progress through each part's points), and from step 05e `literacy` (the pending literacy task and its follow-ups).
+`migrations/007_call_log_budget.sql` (step 05c) adds `over_budget INTEGER NOT NULL DEFAULT 0` to `call_log`: 1 when a result was still over `results.max_chars` after dropping every reference block. `issued_plan.plan_json` also carries `style_sent` (the style last sent, so it is sent again only when it changes). From step 05d it carries `points` (progress through each part's points), and from step 05e `literacy` (the pending literacy task and its follow-ups).
 
 `migrations/008_exchange_request.sql` (step 05e) adds labels to `exchange_log`. They are events, so rebuild replays them:
 
