@@ -22,6 +22,11 @@ The evidence behind teaching and modelling decisions. Effect sizes are as report
 | Not too often | Davis, Chan & Wilford (2017) | Frequent switching between retrieval and study can impair new learning | |
 | Move on once a point is learned, with a skip | Kulik, Kulik & Bangert-Drowns (1990), *Review of Educational Research* | Mastery programmes: about 0.5 SD, larger for weaker students | Can lower completion; estimates vary widely across syntheses |
 | Checking sources | Wineburg et al. (2022), *Journal of Educational Psychology* | Six lessons in lateral reading improved high-school students' judgement of online sources (randomised) | About websites, not AI output |
+| Assess AI literacy inside normal work | Shute (2011); Rahimi & Shute (2023), *ETR&D* | Stealth assessment embeds evidence collection in the learning activity and supports the skill as well as measuring it | Evidence mostly from games and simulations |
+| Competency, evidence and task models | Mislevy, Steinberg & Almond (2003) | Evidence-centred design links what's measured, what counts as evidence and where it comes from | |
+| Behaviour, not self-report | Lintner (2024), *npj Science of Learning* | 3 performance-based vs 13 self-report AI-literacy scales | |
+| Performance predicts better | Jin et al. (2025), GLAT, *Computers and Education: AI* | A performance test predicted AI-assisted task performance better than self-report | A separate test, university students |
+| How-AI-works checks | Ng et al. (2021); AILit (2026) | "Know and understand AI" / "Shape AI" are core aspects of AI literacy | |
 | Don't withhold answers | Khanmigo trial (team research doc) | Students stopped using it when it refused answers | Verify the citation before using it in the white paper |
 | Question templates | Fu & Choe (2022); item-model literature | Templates can produce comparable items, but many need revision | |
 | Context stays small | Anthropic docs on compaction | Long chats are summarised only near the limit; quality degrades as context grows | Product behaviour may change |

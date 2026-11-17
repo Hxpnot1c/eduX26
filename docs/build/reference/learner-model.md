@@ -2,6 +2,15 @@
 
 What the system believes each student knows, and how it updates. All numbers are in `settings.toml`. All state is derived from events, so changing a rule here and running `python -m edux.cli rebuild` re-scores every student.
 
+## Assessment design
+AI literacy is assessed by stealth assessment (Shute, 2011): evidence comes from normal work, and the same moments build the skill. It follows evidence-centred design (Mislevy, Steinberg & Almond, 2003):
+
+| model | what it is here |
+|---|---|
+| Competency (what we measure) | the AI-literacy parts `ail_ask`, `ail_verify` and the `ail_how_*` parts, alongside the course parts |
+| Evidence (what counts, how it's scored) | the chatbot's labels and ticks, plus multiple-choice letters, scored by the server's fixed rules into this learner model |
+| Task (where evidence comes from) | moments in normal work: a research question leads to a literacy task; a failed link, a self-correction or a changed answer after pushback leads to a one-question how-AI-works check |
+
 ## What is tracked
 - **Per part:** `p_known` (chance the student knows it, before decay), `half_life_days`, `clock_start` (when the current decay began), `last_correct`, `last_seen`, `n_evidence`, `exchanges_since_evidence`, `offload_left`, `was_secure` (set once the part reaches secure).
 - **Per misconception:** active or not, last seen.
@@ -120,10 +129,11 @@ After `untested_after` exchanges on a part with no evidence, if `p_now < unteste
 A review queued by an exchange keeps any earlier due date already in the queue. A review scheduled after evidence replaces it.
 
 ### 7. AI-literacy skills (step 05e)
-Two parts, `ail_ask` and `ail_verify`, loaded with every pack (see `course-pack-format.md`), are tracked like any other part: decay, spacing and levels. They have a fixed importance (`literacy.importance`) and are left out of course levers and candidates.
+The parts `ail_ask`, `ail_verify` and the four `ail_how_*` parts (`fabrication`, `confidence`, `cutoff`, `agreement`), loaded with every pack (see `course-pack-format.md`), are tracked like any other part: decay, spacing and levels. They have a fixed importance (`literacy.importance`) and are left out of course levers and candidates.
 - **`ail_question`** on `ail_ask`, on every research question: score = question features present / 4.
 - **`ail_task`** on `ail_verify`: the student's reply to a verify task, scored by the ticks they produced / 4. An ignored task (any skill) is recorded as `ail_task` with score 0 on that skill's part after `literacy.max_followups` re-asks.
 - **`ail_unprompted`** on `ail_verify`: the student reports checking a claim without being asked. Its slip is lower, so it counts more.
+- **`ail_how`** on an `ail_how_*` part: a how-AI-works multiple-choice check, scored 1 or 0 from the letter. A wrong pick activates that misconception (section 5). An ignored check is recorded as 0 after one re-ask.
 
 ## Spacing (review queue)
 After any evidence on a part:
