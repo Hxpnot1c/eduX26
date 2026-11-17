@@ -43,16 +43,27 @@ PLAN_INPUTS = ("focus", "prequestion", "support", "session", "reviews_due", "tea
 
 
 def _last_plan(student_id: str) -> dict:
-    """The last plan issued to the student: {"plan": [steps], "focus": [part ids]}, empty if none."""
-    row = learner._conn().execute("SELECT plan_json FROM issued_plan WHERE student_id = ?", (student_id,)).fetchone()
-    return json.loads(row["plan_json"]) if row else {"plan": [], "focus": []}
+    """The last plan issued to the student: {"ts", "plan": [steps], "focus": [part ids], "corrected": [misconception
+    ids corrected so far in that session]}, empty if none."""
+    row = learner._conn().execute("SELECT ts, plan_json FROM issued_plan WHERE student_id = ?", (student_id,)).fetchone()
+    if row is None:
+        return {"ts": None, "plan": [], "focus": [], "corrected": []}
+    return {"ts": row["ts"], "corrected": [], **json.loads(row["plan_json"])}
 
 
-def _save_plan(student_id: str, at: str, steps: list[dict], focus: list[str]) -> None:
+def _corrected_this_session(student_id: str, last: dict, at: str) -> set[str]:
+    """Misconceptions already corrected this session: carried in issued_plan while the session lasts."""
+    session = learner.session_state(student_id, at)
+    if last["ts"] is None or session is None or last["ts"] < session["session_id"]:
+        return set()
+    return set(last["corrected"]) | plan.corrected_in(last["plan"])
+
+
+def _save_plan(student_id: str, at: str, steps: list[dict], focus: list[str], corrected: set[str]) -> None:
     conn = learner._conn()
     with conn:
         conn.execute("INSERT OR REPLACE INTO issued_plan (student_id, ts, plan_json) VALUES (?, ?, ?)",
-                     (student_id, at, json.dumps({"plan": steps, "focus": focus})))
+                     (student_id, at, json.dumps({"plan": steps, "focus": focus, "corrected": sorted(corrected)})))
 
 
 def _support_given(steps: list[dict]) -> str:
@@ -113,8 +124,8 @@ def tutor_turn(
     then return the plan for this reply, the points to score their next answer against, and reference.
 
     A bad label, part, point or misconception returns {"ok": False, "error": ...} and records nothing.
-    The focus is node_ids if given, else the answer's part, else the message; a message that names nothing
-    keeps the previous turn's focus.
+    The focus is node_ids if given; else, with an answer, the previous turn's focus (or the answer's part);
+    else the message; a message that names nothing keeps the previous turn's focus.
     """
     s = _settings()
     at = learner._event_ts(at)
@@ -132,7 +143,9 @@ def tutor_turn(
         return {"ok": False, "error": str(e)}
 
     last = _last_plan(student["id"])
-    resolution = graph.resolve(message or "", node_ids or ([evidence["part_id"]] if evidence else None))
+    if not node_ids and evidence:   # an answer continues the last turn's topic (after a prereq check or review too)
+        node_ids = last["focus"] or [evidence["part_id"]]
+    resolution = graph.resolve(message or "", node_ids)
     if not resolution["parts"] and not resolution["candidates"] and last["focus"]:
         resolution = {**graph.resolve("", last["focus"]), "unknown": resolution["unknown"]}
     tagged = list(dict.fromkeys(([evidence["part_id"]] if evidence else []) + resolution["parts"]))
@@ -151,8 +164,9 @@ def tutor_turn(
     profile = learner.profile_of(student)
     blocks = context_blocks.assemble(profile, turn, s, _context())
     config = _context().profiles.get(profile, _context().profiles[_context().default_profile])
-    steps = plan.choose(turn, blocks, s, choice, answer, evidence, last["plan"]) if config.plan else []
-    _save_plan(student["id"], at, steps, parts)
+    corrected = _corrected_this_session(student["id"], last, at)
+    steps = plan.choose(turn, blocks, s, choice, answer, evidence, last["plan"], corrected) if config.plan else []
+    _save_plan(student["id"], at, steps, parts, corrected | plan.corrected_in(steps))
 
     focus = blocks.get("focus") or {}
     out = {
