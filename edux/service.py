@@ -244,7 +244,8 @@ def tutor_turn(
     config = _context().profiles.get(profile, _context().profiles[_context().default_profile])
     corrected, offered_stop = _this_session(student["id"], last, at)
     pending = _open_question(last, parts, answer, choice, at)
-    steps = (plan.choose(turn, blocks, s, choice, answer, evidence, last["plan"], corrected, offered_stop, pending)
+    steps = (plan.add_terms(turn, plan.choose(turn, blocks, s, choice, answer, evidence, last["plan"], corrected,
+                                              offered_stop, pending))
              if config.plan else [])
     current_style = style(student, client)
     send_style = _style_due(last, current_style, at)

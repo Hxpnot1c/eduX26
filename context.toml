@@ -11,6 +11,7 @@ plan = false
 
 [limits]
 notes = 3                  # notes per focus part
+terms = 30                 # course terms in a step's data.terms (step 05c)
 key_wording = 4
 weak_prerequisites = 2
 confusables = 2

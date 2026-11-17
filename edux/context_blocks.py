@@ -658,3 +658,40 @@ def reference_for(turn: Turn, steps: list[dict], profile_blocks: list[str], sett
         if watch:
             out["watch_for"] = watch
     return out
+
+
+# --- known terms (step 05c) ------------------------------------------------------
+
+
+def _linked_parts(part_id: str) -> set[str]:
+    """Parts linked to a part by an edge of any type."""
+    found: set[str] = set()
+    for lookup in (graph.prerequisites, graph.dependents):
+        for edge in lookup(part_id, 1):
+            found.update(graph.parts_of(edge["other"]))
+    for lookup in (graph.analogous, graph.confusables, graph.causal_out, graph.causal_in):
+        for edge in lookup(part_id):
+            found.update(graph.parts_of(edge["other"]))
+    found.discard(part_id)
+    return found
+
+
+def known_terms(turn: Turn, part_ids: list[str], known: list[str]) -> list[str]:
+    """The course terms a plan may use: the names and aliases of its steps' parts, then of the known parts
+    (developing or above) linked to them by an edge, then of the other known parts by importance; at most
+    limits.terms. known is the student's known parts, most important first."""
+    linked = set().union(*(_linked_parts(p) for p in part_ids)) if part_ids else set()
+    order = list(part_ids) + [p for p in known if p in linked] + [p for p in known if p not in linked]
+    terms: list[str] = []
+    for part in dict.fromkeys(order):
+        node = graph.get_node(part)
+        for term in [node["name"], *node["aliases"]]:
+            if term and term not in terms:
+                terms.append(term)
+    return terms[:turn.limit("terms", 30)]
+
+
+def known_parts(turn: Turn) -> list[str]:
+    """Parts the student has at developing or above, most important first."""
+    found = [p for p in learner.all_parts() if learner.level(turn.p(p)) != "new"]
+    return sorted(found, key=lambda p: -graph.weight(p)["importance"])
