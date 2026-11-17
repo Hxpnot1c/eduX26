@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import re
 import statistics
 import subprocess
 import sys
@@ -30,11 +31,14 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
 from edux import graph, learner
+from edux.settings import load_settings
 
 EXPECTED_TOOLS = {"tutor_turn", "get_my_progress", "update_my_profile"}
 EXPECTED_PROMPTS = {"review_due", "check_me"}
 PART, MISCONCEPTION = "ped_formula", "ped_formula_m1"
 STATE_TABLES = ("part_state", "student_misconception", "review_queue", "approach_record", "evidence_derived")
+INSTRUCTIONS_MAX_WORDS = load_settings().instructions.max_words
+PLACEHOLDER = re.compile(r"\{[a-z_]+\}|`name`")
 failures: list[str] = []
 
 
@@ -131,6 +135,13 @@ async def conversation(keyed: str, student: str) -> None:
     check(len(recorded) == 2 and recorded[-1]["score"] == 1 / len(points),
           f"3. the recorded score is {1 / len(points)}", json.dumps([e["score"] for e in recorded]))
 
+    shapes = {tuple(sorted(step)) for t in turns for step in t.get("plan", [])}
+    check(shapes == {("cue", "data", "move", "part_id")}, "each step carries only move, part_id, cue and data",
+          json.dumps(sorted(shapes)))
+    filled = [step["cue"] for t in turns for step in t.get("plan", []) if PLACEHOLDER.search(json.dumps(step))]
+    check(not filled, "no placeholder in any step", "; ".join(filled[:2]))
+    for i, t in enumerate(turns, 1):
+        print(f"     turn {i}: {len(json.dumps(t))} chars")
     leaked = [i + 1 for i, t in enumerate(turns) if "p_now" in json.dumps(t)]
     check(not leaked, "no p_now in tutor_turn output", f"found in turn(s) {leaked}" if leaked else "")
 
@@ -138,7 +149,13 @@ async def conversation(keyed: str, student: str) -> None:
 async def main(url: str, key: str, student: str) -> None:
     keyed = f"{url}?key={key}"
     async with streamablehttp_client(keyed) as (read, write, _), ClientSession(read, write) as session:
-        await session.initialize()
+        init = await session.initialize()
+        instructions = init.instructions or ""
+        words = len(instructions.split())
+        check(0 < words <= INSTRUCTIONS_MAX_WORDS, f"the server instructions are at most {INSTRUCTIONS_MAX_WORDS} words",
+              f"{words} words, {instructions.count(chr(10) + '## ')} move sections")
+        check(not PLACEHOLDER.search(instructions), "no placeholder in the server instructions",
+              ", ".join(PLACEHOLDER.findall(instructions)[:3]))
         tools = {t.name for t in (await session.list_tools()).tools}
         check(tools == EXPECTED_TOOLS, "lists the tools", ", ".join(sorted(tools)))
         prompts = {p.name for p in (await session.list_prompts()).prompts}

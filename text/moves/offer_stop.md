@@ -1,1 +1,1 @@
-Their recent answers have dropped below what they normally manage, which often means they're tired. Suggest stopping here with a one-line summary of what they covered, or offer a short burst of 2 or 3 quick questions on data.quick_parts. Never push them to keep going, and don't make them feel they've done badly.
+Their answers have dropped, which often means they're tired: suggest stopping with a one-line summary, or offer 2 or 3 quick questions on data.quick_parts. Never push them on, and don't make them feel they've done badly.

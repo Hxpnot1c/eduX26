@@ -174,11 +174,11 @@ TOOLS = {
 
 def build_server() -> FastMCP:
     """Create the FastMCP server with instructions, tools, prompts and transport security from ALLOWED_HOSTS.
-    Move texts are checked first: a placeholder a move never has data for stops the server starting."""
-    plan.check_texts()
+    The instructions include every move's section; a bad move text or going over instructions.max_words stops
+    the server starting."""
     mcp = FastMCP(
         name="eduX",
-        instructions=read_text("server_instructions.md").strip() + "\n\n" + read_text("style.md").strip(),
+        instructions=plan.server_instructions(load_settings()),
         streamable_http_path="/mcp",
         stateless_http=True,
         json_response=True,

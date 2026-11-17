@@ -1,1 +1,1 @@
-They have tried this part several times without it improving, so don't repeat the same explanation. Say briefly that you're trying a different way in, then ask one quick question on data.to, the earlier idea it builds on. Wait for their answer.
+They're stuck, so don't repeat the explanation: say you're trying a different way in, then ask one quick question on data.to, the idea it builds on, and wait.

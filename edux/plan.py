@@ -1,6 +1,7 @@
 """Choose the plan for one turn: at most two ordered steps for the chatbot to carry out, and nothing else.
 
-Each step is {move, part_id, text, data}; text comes from text/moves/. The plan is built from the context
+Each step is {move, part_id, cue, data}. What each move means is in the server instructions, sent once
+(server_instructions below); the cue is one line from text/moves/<key>.cue.md, so the move stays clear in a long chat. The plan is built from the context
 blocks the student's profile produced this turn, so a profile without a block never triggers its move.
 Steps in STOP end the plan, because the student needs to reply.
 
@@ -28,7 +29,7 @@ import re
 
 from edux import graph, learner
 from edux.context_blocks import Turn, core_idea, held_misconceptions
-from edux.settings import Settings, SettingsError, read_text
+from edux.settings import TEXT_DIR, Settings, SettingsError, read_text
 
 log = logging.getLogger(__name__)
 
@@ -40,8 +41,9 @@ ANSWER_TYPE = {"prequestion": "prequestion", "check_prereq": "review", "step_bac
                "extend": "extend", "teach": "explain_back"}
 
 
-# The data fields each move text can name as a {field} placeholder: (always present, sometimes present).
-# A placeholder outside both is a startup error; one that is only sometimes present is a warning.
+# The data fields each move's cue can name as a {field} placeholder: (always present, sometimes present).
+# A placeholder outside both is a startup error; one that is only sometimes present is a warning. Sections
+# (text/moves/<key>.md) are sent once with no data, so they name fields as data.<field> and have no placeholders.
 TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "ask_which": ({"candidates"}, set()),
     "check_prereq": ({"name", "for", "note", "answer_type"}, set()),
@@ -77,23 +79,52 @@ def fill(text: str, data: dict) -> str:
     return PLACEHOLDER.sub(value, text)
 
 
-def check_texts() -> list[str]:
-    """Check every move text's placeholders against TEXT_FIELDS at startup. Raises SettingsError for a
-    placeholder the move never has, or a backticked field name left unfilled; returns warnings for ones it
-    only sometimes has."""
+def move_keys() -> list[str]:
+    """Every move key with a section text: text/moves/<key>.md (cue files aside)."""
+    return sorted(f.name[:-3] for f in (TEXT_DIR / "moves").glob("*.md") if not f.name.endswith(".cue.md"))
+
+
+def _text(key: str) -> str:
+    return read_text(f"moves/{key}.md").strip()
+
+
+def _cue(key: str) -> str:
+    return read_text(f"moves/{key}.cue.md").strip()
+
+
+def _sentences(text: str) -> int:
+    return len(re.findall(r"[.!?]\"?(?=\s|$)", text))
+
+
+def check_texts(settings: Settings) -> list[str]:
+    """Check the move texts at startup. Raises SettingsError for a section with a placeholder or a backticked
+    data field (sections are sent once, with no data), a missing cue, or a cue placeholder the move never has
+    data for. Returns warnings (also logged) for a cue placeholder the move only sometimes has, a section over
+    instructions.max_sentences and a cue over instructions.cue_max_words."""
+    limits = settings.instructions
     errors, warnings = [], []
-    for key, (always, sometimes) in TEXT_FIELDS.items():
+    for key in move_keys():
+        always, sometimes = TEXT_FIELDS.get(key, (set(), set()))
         text = _text(key)
-        for name in sorted(placeholders(text)):
-            if name in always:
-                continue
-            if name in sometimes:
-                warnings.append(f"text/moves/{key}.md: {{{name}}} is only sometimes in the step's data")
-            else:
-                errors.append(f"text/moves/{key}.md: {{{name}}} is never in the step's data")
+        if placeholders(text):
+            errors.append(f"text/moves/{key}.md: sections are sent once, so use data.<field>, "
+                          f"not {{{sorted(placeholders(text))[0]}}}")
         stray = sorted(set(re.findall(r"`([a-z_]+)`", text)) & (always | sometimes))
         if stray:
-            errors.append(f"text/moves/{key}.md: write data fields as {{field}} or data.field, not `{stray[0]}`")
+            errors.append(f"text/moves/{key}.md: write data fields as data.<field>, not `{stray[0]}`")
+        if _sentences(text) > limits.max_sentences:
+            warnings.append(f"text/moves/{key}.md: {_sentences(text)} sentences, over {limits.max_sentences}")
+        if not (TEXT_DIR / "moves" / f"{key}.cue.md").exists():
+            errors.append(f"text/moves/{key}.cue.md is missing")
+            continue
+        cue = _cue(key)
+        if len(cue.split()) > limits.cue_max_words:
+            warnings.append(f"text/moves/{key}.cue.md: {len(cue.split())} words, over {limits.cue_max_words}")
+        for name in sorted(placeholders(cue)):
+            if name in sometimes:
+                warnings.append(f"text/moves/{key}.cue.md: {{{name}}} is only sometimes in the step's data")
+            elif name not in always:
+                errors.append(f"text/moves/{key}.cue.md: {{{name}}} is never in the step's data")
     if errors:
         raise SettingsError("; ".join(errors))
     for w in warnings:
@@ -101,15 +132,30 @@ def check_texts() -> list[str]:
     return warnings
 
 
-def _text(name: str) -> str:
-    return read_text(f"moves/{name}.md").strip()
+def server_instructions(settings: Settings) -> str:
+    """The MCP server instructions, sent once per chat: server_instructions.md, style.md, then one section per
+    move ("## <key>" and its text). Over instructions.max_words is a SettingsError naming the longest sections."""
+    check_texts(settings)
+    sections = {key: f"## {key}\n{_text(key)}" for key in move_keys()}
+    text = "\n\n".join([read_text("server_instructions.md").strip(), read_text("style.md").strip(), *sections.values()])
+    words = len(text.split())
+    if words > settings.instructions.max_words:
+        longest = sorted(sections, key=lambda k: -len(sections[k].split()))[:3]
+        raise SettingsError(f"server instructions are {words} words, over instructions.max_words "
+                            f"({settings.instructions.max_words}); longest move sections: "
+                            + ", ".join(f"{k} ({len(sections[k].split())})" for k in longest))
+    return text
 
 
-def _step(move: str, part_id: str | None, data: dict | None = None, text: str | None = None) -> dict:
+def _step(move: str, part_id: str | None, data: dict | None = None, key: str | None = None) -> dict:
+    """A plan step. key is the move text's name (teach_<level>, review_<mode>, otherwise the move): its
+    section is in the server instructions, and its one-line cue goes with the step, filled from data. The key
+    stays in the saved plan; service.public_steps leaves it out of the result."""
     data = dict(data or {})
     if move in ANSWER_TYPE:
         data["answer_type"] = ANSWER_TYPE[move]
-    return {"move": move, "part_id": part_id, "text": fill(_text(text or move), data), "data": data}
+    key = key or move
+    return {"move": move, "part_id": part_id, "key": key, "cue": fill(_cue(key), data), "data": data}
 
 
 def _summary(turn: Turn, part_id: str) -> dict:
@@ -129,8 +175,8 @@ def _misconception(m: dict) -> dict:
 
 
 def _refill(step: dict) -> dict:
-    """The step with its text filled again after its data changed."""
-    return {**step, "text": fill(_text(step["move"]), step["data"])}
+    """The step with its cue filled again after its data changed."""
+    return {**step, "cue": fill(_cue(step["key"]), step["data"])}
 
 
 def feedback(answer: dict, evidence: dict) -> tuple[dict, dict | None]:
@@ -244,7 +290,7 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
             text = "teach_hint_procedural" if part_type in settings.support.procedural_types else "teach_hint_conceptual"
         else:
             text = f"teach_{level}"
-        return _step("teach", support["part_id"], {"level": level, "part_type": part_type}, text=text)
+        return _step("teach", support["part_id"], {"level": level, "part_type": part_type}, key=text)
     return None
 
 
@@ -259,7 +305,7 @@ def _second_step(turn: Turn, blocks: dict, reviews_only: bool = False) -> dict |
         data = {"name": r["name"], "mode": r["mode"]}
         if r.get("new_context"):
             data["new_context"] = r["new_context"]
-        return _step("review", r["part_id"], data, text=f"review_{r['mode']}")
+        return _step("review", r["part_id"], data, key=f"review_{r['mode']}")
     return None
 
 
