@@ -26,7 +26,9 @@ SUPPORT_GIVEN = ("worked_example", "hint", "explain_back", "none")
 CHOICE_TAKEN = ("try_first", "hint", "just_show_me", "skip_point", "none")   # skip_point: "I know this" (step 05d)
 # What a student's answer can be to, as sent by the chatbot; each is also a key of [bkt.evidence].
 # "mcq" is any server-built multiple-choice question (step 05d), scored from the letter picked.
-ANSWER_TYPES = ("prequestion", "mcq", "explain_back", "review", "extend", "past_question")
+ANSWER_TYPES = ("prequestion", "mcq", "explain_back", "review", "extend", "past_question", "ail_task", "ail_unprompted")
+LITERACY_ANSWERS = ("ail_task", "ail_unprompted")   # a verify task's answer, or checking a claim unprompted (step 05e)
+AIL_ASK, AIL_VERIFY = "ail_ask", "ail_verify"       # the AI-literacy skills Ask and Verify (ingest/ai_literacy/)
 REQUEST_TYPES = ("concept", "research", "homework", "other")   # step 05e
 QUESTION_FEATURES = ("concept", "context", "asks_sources", "asks_reasoning")   # research questions only (step 05e)
 
@@ -198,6 +200,8 @@ def score_answer(answer: dict, mcq: dict | None = None) -> dict:
                 "score": 1.0 if correct else 0.0, "misconception_ids": misconception_ids, "purpose": mcq["purpose"],
                 "correct": correct, "picked": picked, "point_id": mcq.get("point_id"),
                 "correct_option": next((o["text"] for o in mcq["options"].values() if o["id"] == "correct"), "")}
+    if kind in LITERACY_ANSWERS and part_id != AIL_VERIFY:
+        raise ValueError(f"answer.type {kind} is for {AIL_VERIFY}, the verify ticks")
     if kind == "prequestion":
         if not isinstance(answer.get("correct"), bool):
             raise ValueError("answer.correct (true or false) is required for a prequestion")
@@ -220,6 +224,13 @@ def score_answer(answer: dict, mcq: dict | None = None) -> dict:
         return {"part_id": part_id, "type": kind, "score": score, "misconception_ids": misconception_ids,
                 "points_met": met}
     return {"part_id": part_id, "type": kind, "score": score, "misconception_ids": misconception_ids}
+
+
+def question_evidence(features: list[str] | None) -> dict:
+    """Ask evidence for a research question (step 05e): ail_question on ail_ask, scored by the question features
+    it shows out of the four."""
+    shown = {f for f in features or [] if f in QUESTION_FEATURES}
+    return {"part_id": AIL_ASK, "type": "ail_question", "score": len(shown) / len(QUESTION_FEATURES), "misconception_ids": []}
 
 
 def _write_evidence(conn: sqlite3.Connection, student: dict, ts: str, rows: list, origin: str,

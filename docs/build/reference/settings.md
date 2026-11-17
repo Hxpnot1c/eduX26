@@ -28,6 +28,9 @@ prequestion = { slip = 0.20, guess = 0.20 }
 mcq = { slip = 0.10, guess = 0.25 }
 extend = { slip = 0.10, guess = 0.10 }      # an answer to a harder, extending question
 immediate = { slip = 0.10, guess = 0.30 }   # chat evidence straight after a worked example or hint
+ail_question = { slip = 0.15, guess = 0.20 }     # a research question, scored by its features (step 05e)
+ail_task = { slip = 0.10, guess = 0.15 }         # the answer to a verify task, or 0 for an ignored task
+ail_unprompted = { slip = 0.05, guess = 0.10 }   # checking a claim without being asked: counts more
 mcq_check = { slip = 0.10, guess = 0.25 }   # a multiple-choice check on one point (step 05d); guess about 1 in 4 options
 ail_question = { slip = 0.15, guess = 0.20 }    # question features of a research question (step 05e)
 ail_task = { slip = 0.10, guess = 0.15 }        # a literacy task done when asked
