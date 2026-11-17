@@ -109,8 +109,8 @@ async def conversation(keyed: str, student: str) -> None:
                          "this_message": {"question_depth": "surface", "engagement": "active"},
                          "answer": {"part_id": PART, "type": "prequestion", "correct": False,
                                     "picked_misconception_id": MISCONCEPTION}})
-    picked = ((second.get("plan") or [{}])[0].get("data") or {}).get("picked") or {}
-    check(moves(second) == ["feedback", "teach"] and picked.get("id") == MISCONCEPTION,
+    named = ((second.get("plan") or [{}])[0].get("data") or {}).get("misconceptions") or [{}]
+    check(moves(second) == ["feedback", "teach"] and named[0].get("id") == MISCONCEPTION,
           "2. a wrong pre-question answer gets feedback naming it, then teach", ", ".join(moves(second)) or second.get("error", ""))
     held = learner._conn().execute("SELECT active FROM student_misconception WHERE student_id = ? AND misconception_id = ?",
                                    (student, MISCONCEPTION)).fetchone()
@@ -123,9 +123,9 @@ async def conversation(keyed: str, student: str) -> None:
     third = await turn({"message": "You divide the change by the original value and times by 100 for each percentage.",
                         "this_message": {"question_depth": "mechanism", "engagement": "constructive"},
                         "answer": {"part_id": PART, "type": "explain_back", "points_met": [points[0]["id"]]}})
-    missing = ((third.get("plan") or [{}])[0].get("data") or {}).get("missing")
-    check(moves(third) == ["reteach_gap"] and missing == [p["point"] for p in points[1:]],
-          "3. an explanation missing a point gets reteach_gap with only that point",
+    missing = ((third.get("plan") or [{}, {}])[-1].get("data") or {}).get("missing")
+    check(moves(third) == ["feedback", "reteach"] and missing == [p["point"] for p in points[1:]],
+          "3. an explanation missing a point gets feedback, then reteach with only that point",
           f"{', '.join(moves(third)) or third.get('error', '')}; missing {missing}")
     recorded = evidence(student, start)
     check(len(recorded) == 2 and recorded[-1]["score"] == 1 / len(points),

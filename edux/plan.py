@@ -5,17 +5,17 @@ blocks the student's profile produced this turn, so a profile without a block ne
 Steps in STOP end the plan, because the student needs to reply.
 
 Order (first match wins for the main step):
-  answer given    -> feedback (prequestion, or all points met) / reteach_gap (points missing; ends the plan)
-  fatigued        -> offer_stop (once a session; also replaces reteach_gap's re-ask, as do stuck moves)
-  stuck on focus  -> step_back (weakest prerequisite) / switch_approach
+  answer given    -> feedback, then reteach when points are missing (which ends the plan)
+  fatigued        -> offer_stop (once a session; also replaces reteach's re-ask, as do stuck moves)
+  stuck on focus  -> step_back (weakest prerequisite) / reteach of the whole part (through the anchor)
   ambiguous focus -> ask_which (no focus at all: the top due review, if any)
   just_show_me    -> show (nothing else this turn)
   pre-question    -> prequestion
   weak prereq     -> check_prereq (level new, not checked this session)
-  held misconc.   -> correct_misconception (unless already corrected this session)
+  held misconc.   -> feedback with the held misconception (unless already corrected this session)
   otherwise       -> teach at the support level
 With an answer the plan is [feedback, main step]; without one it is [main step, extend or one review] when
-the main step is not a stop step.
+the main step is not a stop step. feedback is the only move that names misconceptions; reteach never repeats them.
 """
 
 from __future__ import annotations
@@ -32,12 +32,12 @@ from edux.settings import Settings, SettingsError, read_text
 
 log = logging.getLogger(__name__)
 
-STOP = {"reteach_gap", "offer_stop", "step_back", "ask_which", "prequestion", "check_prereq"}
-ASKS = {"reteach_gap", "step_back", "switch_approach", "prequestion", "check_prereq", "teach", "extend", "review"}
+STOP = {"reteach", "offer_stop", "step_back", "ask_which", "prequestion", "check_prereq"}
+ASKS = {"reteach", "step_back", "prequestion", "check_prereq", "teach", "extend", "review"}
 MAX_STEPS = 2
 # The answer.type the chatbot sends back for a step that asks something.
 ANSWER_TYPE = {"prequestion": "prequestion", "check_prereq": "review", "step_back": "review", "review": "review",
-               "extend": "extend", "teach": "explain_back", "switch_approach": "explain_back"}
+               "extend": "extend", "teach": "explain_back"}
 
 
 # The data fields each move text can name as a {field} placeholder: (always present, sometimes present).
@@ -45,17 +45,15 @@ ANSWER_TYPE = {"prequestion": "prequestion", "check_prereq": "review", "step_bac
 TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "ask_which": ({"candidates"}, set()),
     "check_prereq": ({"name", "for", "note", "answer_type"}, set()),
-    "correct_misconception": ({"id", "wrong_idea", "correction"}, set()),
     "extend": ({"answer_type"}, set()),
-    "feedback": ({"type"}, {"correct", "correct_idea", "picked", "points_met", "shown_misconceptions", "missing"}),
+    "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "points_met", "missing"}),
     "offer_stop": ({"minutes", "quick_parts"}, set()),
     "prequestion": ({"target", "options", "answer_type"}, set()),
-    "reteach_gap": ({"type", "answer_type", "missing", "shown_misconceptions"}, set()),
+    "reteach": ({"answer_type"}, {"missing", "anchor"}),
     "review_recall": ({"name", "mode", "answer_type"}, set()),
     "review_transfer": ({"name", "mode", "new_context", "answer_type"}, set()),
     "show": ({"part_type"}, set()),
     "step_back": ({"to", "for", "answer_type"}, set()),
-    "switch_approach": ({"anchor", "answer_type"}, set()),
     "teach_explain_back": ({"level", "part_type", "answer_type"}, set()),
     "teach_hint_conceptual": ({"level", "part_type", "answer_type"}, set()),
     "teach_hint_procedural": ({"level", "part_type", "answer_type"}, set()),
@@ -126,24 +124,32 @@ def is_stop(step: dict) -> bool:
 # --- feedback on the student's answer -----------------------------------------------
 
 
-def feedback(answer: dict, evidence: dict) -> dict:
-    """The step answering what the student just said: answer is what the chatbot sent, evidence the scored item."""
+def _misconception(m: dict) -> dict:
+    return {"id": m["id"], "wrong_idea": m["wrong_idea"], "correction": m["correction"]}
+
+
+def _refill(step: dict) -> dict:
+    """The step with its text filled again after its data changed."""
+    return {**step, "text": fill(_text(step["move"]), step["data"])}
+
+
+def feedback(answer: dict, evidence: dict) -> tuple[dict, dict | None]:
+    """The steps answering what the student just said: answer is what the chatbot sent, evidence the scored
+    item. Returns (feedback, reteach): feedback names every misconception the answer picked or showed; reteach
+    re-teaches the missing points (None when nothing is missing)."""
     part = evidence["part_id"]
-    shown = [graph.get_misconception(m) for m in evidence["misconception_ids"]]
-    if answer["type"] == "prequestion":
-        picked = answer.get("picked_misconception_id")
-        wrong = graph.get_misconception(picked) if picked else None
-        return _step("feedback", part, {
-            "type": "prequestion", "correct": evidence["score"] == 1.0, "correct_idea": core_idea(part)[1],
-            "picked": {"id": wrong["id"], "wrong_idea": wrong["wrong_idea"], "correction": wrong["correction"]} if wrong else None})
+    shown = [_misconception(m) for m in map(graph.get_misconception, evidence["misconception_ids"]) if m]
+    if answer["type"] == "prequestion":   # the picked option comes first in misconception_ids
+        return _step("feedback", part, {"type": "prequestion", "correct": evidence["score"] == 1.0,
+                                        "correct_idea": core_idea(part)[1], "misconceptions": shown}), None
     points = graph.score_points(part)
     met = set(answer.get("points_met") or [])
-    others = [{"id": m["id"], "wrong_idea": m["wrong_idea"], "correction": m["correction"]} for m in shown if m]
-    if len(met) == len(points):
-        return _step("feedback", part, {"type": answer["type"], "points_met": [p["point"] for p in points],
-                                        "shown_misconceptions": others})
-    return _step("reteach_gap", part, {"type": answer["type"], "answer_type": answer["type"], "missing": [p["point"] for p in points if p["id"] not in met],
-                                       "shown_misconceptions": others})
+    first = _step("feedback", part, {"type": answer["type"], "points_met": [p["point"] for p in points if p["id"] in met],
+                                     "misconceptions": shown})
+    missing = [p["point"] for p in points if p["id"] not in met]
+    if not missing:
+        return first, None
+    return first, _step("reteach", part, {"missing": missing, "answer_type": answer["type"]})
 
 
 # --- the main step --------------------------------------------------------------------
@@ -162,10 +168,12 @@ def _checked_this_session(turn: Turn, part_id: str, last_plan: list[dict]) -> bo
 
 
 def corrected_in(steps: list[dict]) -> set[str]:
-    """Misconception ids a plan already corrected: by correct_misconception, or in feedback."""
+    """Misconception ids a plan already corrected, in feedback (or, in plans saved before step 05c, by
+    correct_misconception, a picked option or shown misconceptions)."""
     found: set[str] = set()
     for step in steps:
         data = step["data"]
+        found |= {m["id"] for m in data.get("misconceptions") or []}
         if step["move"] == "correct_misconception":
             found.add(data["id"])
         if (data.get("picked") or {}).get("id"):
@@ -201,8 +209,9 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
             if back:
                 return _step("step_back", back["id"], {"to": {k: back[k] for k in ("id", "name", "level")}, "for": focus})
             anchor = blocks.get("anchor")
-            return _step("switch_approach", focus, {
-                "anchor": {"id": anchor["part_id"], "name": anchor["name"], "note": anchor["note"]} if anchor else None})
+            return _step("reteach", focus, {
+                "anchor": {"id": anchor["part_id"], "name": anchor["name"], "note": anchor["note"]} if anchor else None,
+                "answer_type": "explain_back"})
 
     if focus is None:
         candidates = (blocks.get("focus") or {}).get("candidates")
@@ -225,8 +234,7 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
     held = [m for m in held_misconceptions(turn.student_id, turn.parts) if m["id"] not in handled]
     if held:
         m = held[0]
-        return _step("correct_misconception", m["node_id"], {"id": m["id"], "wrong_idea": m["wrong_idea"],
-                                                             "correction": m["correction"]})
+        return _step("feedback", m["node_id"], {"type": "held", "misconceptions": [_misconception(m)]})
 
     support = blocks.get("support")
     if support:
@@ -270,17 +278,23 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
     handled: set[str] = set(corrected or ()) | corrected_in(last_plan)
     answered_prequestion = None
     if answer and evidence:
-        first = feedback(answer, evidence)
+        first, retry = feedback(answer, evidence)
         steps.append(first)
         handled |= set(evidence["misconception_ids"])
         if answer["type"] == "prequestion":
             answered_prequestion = evidence["part_id"]
-        if is_stop(first):   # reteach_gap, unless they're tired or stuck: then say what's missing and do that instead
+        if retry:   # reteach ends the plan, unless they're tired or stuck: then say what's missing and do that instead
             urgent = main_step(turn, blocks, settings, choice, last_plan, handled, answered_prequestion, offered_stop)
-            if urgent and urgent["move"] in ("offer_stop", "step_back", "switch_approach"):
-                return [{**first, "move": "feedback", "text": fill(_text("feedback"), first["data"])}, urgent]
-            return steps
+            if urgent and urgent["move"] in ("offer_stop", "step_back", "reteach"):
+                return [_refill({**first, "data": {**first["data"], "missing": retry["data"]["missing"]}}), urgent]
+            return [first, retry]
     main = main_step(turn, blocks, settings, choice, last_plan, handled, answered_prequestion, offered_stop)
+    if main and main["move"] == "feedback" and steps:   # a held misconception joins the answer's feedback
+        known = {m["id"] for m in steps[0]["data"]["misconceptions"]}
+        extra = [m for m in main["data"]["misconceptions"] if m["id"] not in known]
+        steps[0] = _refill({**steps[0], "data": {**steps[0]["data"],
+                                                 "misconceptions": steps[0]["data"]["misconceptions"] + extra}})
+        main = None
     if main:
         steps.append(main)
     if len(steps) == 1 and main and not is_stop(main) and main["move"] not in ("show", "review"):
