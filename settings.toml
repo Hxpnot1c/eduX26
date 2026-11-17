@@ -109,3 +109,15 @@ suggest_min_questions = 2  # questions co-testing two unlinked parts before a li
 [resolve]                  # turning a student's message into the parts it is about
 name_boost = 2.0           # a match on a node's name or alias counts this many times a match in a note
 candidate_ratio = 0.8      # other results scoring at least this share of the top one are "close": ask which
+
+[blocks]                   # how get_learning_context ranks what goes into each block, per turn (step 05)
+review_link_boost = 0.5    # a due review linked to the current focus counts this much more
+review_importance_floor = 0.1   # added to importance so unweighted parts still rank by how overdue they are
+confusable_mixup = 1.0     # a misconception this student has had on either side adds this
+confusable_mention = 1.0   # the message mentions the other part: adds this x its relevance
+causal_mention = 1.0       # the message mentions the other end of a causal link: adds this x its relevance
+causal_cues = ["affect", "effect", "cause", "impact", "lead", "result", "consequence", "happen", "why", "because"]
+exam_w_marks = 0.5         # exam_relevance: share from marks at stake
+exam_w_closeness = 0.3     # share from how close the paper's exam is
+exam_w_command = 0.2       # share from the question's command word appearing in the message
+exam_horizon_days = 365    # an exam this far off or further adds nothing for closeness
