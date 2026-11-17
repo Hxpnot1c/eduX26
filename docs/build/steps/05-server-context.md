@@ -24,7 +24,7 @@ The MCP server over Streamable HTTP at `/mcp`, with student keys, the four base 
 - `context.toml`: add `prequestion`, `session` and `causal` to the `full` profile.
 - Unknown keys are refused at the HTTP level (401) before the MCP handshake, as well as in each tool.
 - **Progress levers:** "five biggest levers" are ranked by `importance × (1 − p_now)` (important and weak), the same as candidates.
-- **Safeguarding, until there is a reporting route:** if a student says something suggesting they or someone else is at risk, the chatbot stops tutoring, encourages them to speak to a trusted adult or the school's safeguarding lead, and gives emergency contacts if it's urgent. Nothing is logged or sent automatically.
+- **Safeguarding** is left to the chatbot's own guardrails. The server instructions don't add a rule for it.
 
 ## Pre-questions, support levels, reviews and sessions
 
