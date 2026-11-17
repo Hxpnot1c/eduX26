@@ -129,6 +129,17 @@ At most two steps (three from step 05d, for feedback, `teach_point` and `ask_mcq
 - `source_conflict` (on any turn) puts a `source_conflict` step first: that's exactly what checking is for, and the claim is corrected. The plan keeps its last steps, where its question is, within the three-step limit.
 - `concept` and `homework` follow the rules above and never get a literacy task. `other` gets an empty plan. A research question that comes with an answer to a course question is planned as that answer.
 
+**How-AI-works checks (step 05e).** A one-question check on how chatbots work, at the moment one has just failed. Triggers, in priority order (`plan.HOW_TRIGGERS`), each for one part:
+- `source_conflict` → `ail_how_fabrication`;
+- `pushback_changed` → `ail_how_agreement`;
+- `conflict_flagged` without `source_conflict` (the chatbot corrects itself) → `ail_how_confidence`;
+- a research question with `asks_recent = true` and `web_access = false` → `ail_how_cutoff`.
+
+The moment is handled as usual first; then `ask_mcq` with `purpose = how_ai_works` **(stop)** is the last step: the part's point plus its three misconceptions, shuffled and lettered by the server, answered by letter and scored as `ail_how` (with its `point_id`). The check wins: the plan's own question and any literacy task are left out (a literacy task waits), and the steps handling the moment are kept within the three-step limit.
+- **Limits:** at most one check per reply (the first trigger that passes); at most one per part per session (any `ail_how` evidence on it this session); none while fatigued; with the part at secure, only when the count of that trigger in `exchange_log` is a multiple of `literacy.how_secure_every`.
+- **Not ignorable:** the check is kept in `issued_plan` (`how`). Not answered in the next message, it is re-asked (`reask`, same options and letter map), up to `literacy.max_followups` times; not answered after that, `ail_how` is recorded with score 0. While fatigued, a pending check is dropped unscored.
+- **Feedback:** one line: whether they were right, naming the picked misconception, then the part's `intuition` (`data.intuition`). Then back to what they were doing (nothing more when there is no course focus).
+
 A profile with `plan = false` (`minimal`) gets no plan, but still gets `score_next` for its focus parts, so its answers are scored.
 
 #### The move set
@@ -136,7 +147,7 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
 
 | move | asks? | from | replaces | `data` that varies it | reference | words in its section |
 |---|---|---|---|---|---|---|
-| `ask_mcq` | yes **(stop)** | 05d | `prequestion`, `intuition_mcq`, `check_mcq`, `check_prereq`, `step_back`, `review_recall`, `review_transfer` | `purpose` (`intuition` / `check` / `prereq` / `review`), `options`, `extra_option`; `note` and `via` (intuition), `stuck` (prereq), `mode` and `new_context` (review) | none | 60 |
+| `ask_mcq` | yes **(stop)** | 05d | `prequestion`, `intuition_mcq`, `check_mcq`, `check_prereq`, `step_back`, `review_recall`, `review_transfer` | `purpose` (`intuition` / `check` / `prereq` / `review` / `how_ai_works`, 05e), `options`, `extra_option`; `note` and `via` (intuition), `stuck` (prereq), `mode` and `new_context` (review) | none | 60 |
 | `teach_point` | no: an `ask_mcq` check follows | 05d | `teach_worked_example`, `teach_hint_procedural`, `teach_hint_conceptual` | `index`, `total`, `point`, `exemplar`, `level` | notes, misconceptions | 45 |
 | `show` | no: an `ask_mcq` check follows | 05b | | `point`, `note` | notes | 30 |
 | `explain_back` | yes **(stop)** | 05b | `teach_explain_back` | | none | 25 |
@@ -212,7 +223,7 @@ For students. Levels only, never numbers.
 - Weak links: confusable or causal pairs where one side is weak.
 - Reviews due.
 - AI-literacy trends, as directions over the last 14 days vs before: share of mechanism/transfer questions, share of constructive engagement, "just show me" rate.
-- `ai_literacy` (step 05e): `ask` and `verify`, each with the `level` of `ail_ask` and `ail_verify`, and `question_features`: for each feature, the share of research questions showing it over the last `progress.trend_days` against before (`recent`, `before`, `direction` up, down or steady, as for `trends`). These parts are left out of the tree, levers and reviews above.
+- `ai_literacy` (step 05e): `ask` and `verify`, each with the `level` of `ail_ask` and `ail_verify`; `how_ai_works`, the rollup `level` of its parts and `held`, the wrong ideas about AI the student still holds; and `question_features`: for each feature, the share of research questions showing it over the last `progress.trend_days` against before (`recent`, `before`, `direction` up, down or steady, as for `trends`). These parts are left out of the tree, levers and reviews above.
 - `study_pattern`: "your answers tend to drop after about N minutes" (median fatigue onset), when at least `session.pattern_min_sessions` sessions had one; otherwise `null`.
 
 ### update_my_profile(interests?, exam_date_override?, answer_length?)

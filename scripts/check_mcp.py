@@ -193,10 +193,7 @@ async def conversation(keyed: str, student: str) -> None:
 
     before = max_evidence_id()
     seventh = await turn({"message": "Wait, why do you use the original value and not the new one?", "node_ids": [PART],
-                          "this_message": {**labels, "conflict_flagged": True}})
-    flagged = learner._conn().execute("SELECT conflict_flagged FROM exchange_log WHERE student_id = ? ORDER BY id DESC LIMIT 1",
-                                      (student,)).fetchone()
-    check(bool(flagged and flagged[0] == 1), "7. conflict_flagged is stored on the exchange")
+                          "this_message": labels})   # a self-correction here would add a how-AI-works check (05e)
     asked = ((seventh.get("plan") or [{}, {}])[-1].get("data") or {})
     check(purposes(seventh) == ["answer_brief", "reask"] and asked.get("asked") == "reteach"
           and asked.get("missing") == missing and seventh.get("score_next") == sixth.get("score_next")

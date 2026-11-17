@@ -63,18 +63,62 @@ def _this_session(student_id: str, last: dict, at: str) -> tuple[set[str], bool]
 
 def _save_plan(student_id: str, at: str, steps: list[dict], focus: list[str], corrected: set[str],
                offered_stop: bool, style_sent: dict | None, pending: dict | None, mcq: dict | None,
-               points: dict, literacy: dict | None = None) -> None:
+               points: dict, literacy: dict | None = None, how: dict | None = None) -> None:
     """Save the plan issued this turn, with what the next turn needs: the focus, misconceptions corrected and
     whether stopping was offered this session, the style sent, the question waiting for an answer, the MCQ
     letter map (step 05d), point-by-point progress per part (step 05d; kept across parts and sessions, so
-    coming back to a part resumes where it stopped) and the pending literacy task (step 05e)."""
+    coming back to a part resumes where it stopped), and the pending literacy task and how-AI-works check
+    (step 05e)."""
     conn = learner._conn()
     with conn:
         conn.execute("INSERT OR REPLACE INTO issued_plan (student_id, ts, plan_json) VALUES (?, ?, ?)",
                      (student_id, at, json.dumps({"plan": steps, "focus": focus, "corrected": sorted(corrected),
                                                   "offered_stop": offered_stop, "style_sent": style_sent,
                                                   "pending": pending, "mcq": mcq, "points": points,
-                                                  "literacy": literacy})))
+                                                  "literacy": literacy, "how": how})))
+
+
+def _how_ai_works(turn: context_blocks.Turn, blocks: dict, last: dict, steps: list[dict], evidence: dict | None,
+                  labels: dict) -> tuple[list[dict], dict | None]:
+    """A one-question how-AI-works check at the moment a chatbot fails (step 05e); returns (steps, the check still
+    pending).
+
+    Nothing while the student is fatigued (a pending check is dropped unscored). A pending check not answered this
+    turn is re-asked (reask, with the same options and letter map) up to literacy.max_followups times; not answered
+    after that, it is recorded as ail_how with score 0. Otherwise the first trigger in this turn's labels
+    (plan.HOW_TRIGGERS) adds the check as the plan's last step, unless its part already had a check this session, or, with the part at secure, the trigger count isn't a multiple of
+    literacy.how_secure_every. The check wins over the plan's own question and any literacy task."""
+    s, sid = _settings(), turn.student_id
+    if (blocks.get("session") or {}).get("state") == "fatigued":   # no checks while tired: a pending one is dropped
+        return steps, None
+    pending = last.get("how")
+    if pending and last["ts"] is not None:
+        gap = (learner.parse_ts(turn.at) - learner.parse_ts(last["ts"])).total_seconds() / 60
+        answered = evidence is not None and evidence["type"] == "ail_how" and evidence["part_id"] == pending["part_id"]
+        if not answered and gap <= s.session.gap_minutes:
+            if pending["followups"] < s.literacy.max_followups:
+                return (plan.with_check(steps, plan.reask(pending["step"])[1]),
+                        {**pending, "followups": pending["followups"] + 1})
+            learner.record_evidence(sid, pending["part_id"], "ail_how", 0.0, ts=turn.at, apply="now",
+                                    point_id=(pending["step"].get("question") or {}).get("point_id"))
+    session = learner.session_state(sid, turn.at)
+    start = session["session_id"] if session else turn.at
+    conn = learner._conn()
+    for part, fired, condition in plan.HOW_TRIGGERS:
+        if not fired(labels) or graph.get_node(part) is None:
+            continue
+        if conn.execute("SELECT 1 FROM evidence_log WHERE student_id = ? AND part_id = ? AND evidence_type = 'ail_how' "
+                        "AND ts >= ? LIMIT 1", (sid, part, start)).fetchone():
+            continue
+        if learner.level(turn.p(part)) == "secure":
+            count = conn.execute(f"SELECT COUNT(*) FROM exchange_log WHERE student_id = ? AND ts <= ? AND {condition}",
+                                 (sid, turn.at)).fetchone()[0]
+            if count % s.literacy.how_secure_every:
+                continue
+        check = plan.how_check(turn, part, s)
+        saved = {k: check[k] for k in ("move", "key", "part_id", "data", "question")}
+        return plan.with_check(steps, check), {"part_id": part, "followups": 0, "step": saved}
+    return steps, None
 
 
 def _literacy_followup(student_id: str, last: dict, steps: list[dict], evidence: dict | None, request: str,
@@ -331,12 +375,15 @@ def tutor_turn(
                                                  last.get("mcq")))
     if config.plan and this_message.get("source_conflict"):
         steps = plan.with_source_conflict(steps)
+    how = None
+    if config.plan:
+        steps, how = _how_ai_works(turn, blocks, last, steps, evidence, this_message)
     steps, literacy = _literacy_followup(student["id"], last, steps, evidence, request, at) if config.plan else (steps, None)
     current_style = style(student, client)
     send_style = _style_due(last, current_style, at)
     _save_plan(student["id"], at, steps, parts, corrected | plan.corrected_in(steps),
                offered_stop or any(step["move"] == "offer_stop" for step in steps), current_style,
-               _pending_after(steps, pending), _mcq_after(steps, last), points, literacy)
+               _pending_after(steps, pending), _mcq_after(steps, last), points, literacy, how)
     # with no plan (a comparison profile), answers on the focus parts can still be scored
     next_points = plan.score_next(steps) if config.plan else {
         p: points for p in parts if (points := plan.lettered(p))}
@@ -455,8 +502,9 @@ def _trend(now: float | None, then: float | None) -> dict:
 
 
 def _ai_literacy(student_id: str, at: str) -> dict:
-    """AI-literacy skills (step 05e): the level of Ask and Verify, and the share of research questions showing
-    each question feature over the last progress.trend_days against before."""
+    """AI-literacy skills (step 05e): the level of Ask and Verify, How AI works (the rollup of its parts, with the
+    wrong ideas about AI the student still holds), and the share of research questions showing each question
+    feature over the last progress.trend_days against before."""
     cut = learner._event_ts(learner.parse_ts(at) - timedelta(days=_settings().progress.trend_days))
     rows = learner._conn().execute(
         "SELECT ts, question_features FROM exchange_log WHERE student_id = ? AND request_type = 'research' AND ts <= ?",
@@ -466,9 +514,11 @@ def _ai_literacy(student_id: str, at: str) -> dict:
         return sum(feature in r["question_features"].split(";") for r in chosen) / len(chosen) if chosen else None
 
     recent, before = [r for r in rows if r["ts"] > cut], [r for r in rows if r["ts"] <= cut]
+    held = [m["wrong_idea"] for m in context_blocks.held_misconceptions(student_id, graph.parts_of(learner.AIL_HOW))]
     return {
         "ask": {"level": learner.level(learner.part_p(student_id, learner.AIL_ASK, at))},
         "verify": {"level": learner.level(learner.part_p(student_id, learner.AIL_VERIFY, at))},
+        "how_ai_works": {"level": learner.level(learner.rollup(student_id, learner.AIL_HOW, at)), "held": held},
         "question_features": {f: _trend(share(f, recent), share(f, before)) for f in learner.QUESTION_FEATURES},
     }
 

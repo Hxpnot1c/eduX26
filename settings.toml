@@ -22,6 +22,7 @@ immediate = { slip = 0.10, guess = 0.30 }   # chat evidence straight after a wor
 ail_question = { slip = 0.15, guess = 0.20 }     # a research question, scored by its features (step 05e)
 ail_task = { slip = 0.10, guess = 0.15 }         # the answer to a verify task, or 0 for an ignored task
 ail_unprompted = { slip = 0.05, guess = 0.10 }   # checking a claim without being asked: counts more
+ail_how = { slip = 0.10, guess = 0.25 }          # a how-AI-works check: 4-option multiple choice
 
 [nudges]                   # small odds multipliers from an ordinary exchange
 depth = { surface = 1.0, mechanism = 1.0, transfer = 1.1 }   # a basic question doesn't lower the estimate; evidence does that
@@ -94,6 +95,7 @@ min_distractors = 2        # fewer misconceptions than this: the chatbot may wri
 secure_every = 3           # at secure, a task every this many research questions (others: the feedback line only)
 max_followups = 1          # re-asks of an ignored literacy task before it scores 0
 ask_min_features = 2       # fewer question features than this: coach the question (Ask), else Verify
+how_secure_every = 3       # at secure, a how-AI-works check every this many triggers for that part
 importance = 0.5           # fixed importance of the AI-literacy parts (they have no exam weight)
 
 [session]                  # sessions, fatigue and getting stuck, derived from events

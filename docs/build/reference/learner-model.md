@@ -133,7 +133,7 @@ The parts `ail_ask`, `ail_verify` and the four `ail_how_*` parts (`fabrication`,
 - **`ail_question`** on `ail_ask`, on every research question: score = question features present / 4.
 - **`ail_task`** on `ail_verify`: the student's reply to a verify task, scored by the ticks they produced / 4. An ignored task (any skill) is recorded as `ail_task` with score 0 on that skill's part after `literacy.max_followups` re-asks.
 - **`ail_unprompted`** on `ail_verify`: the student reports checking a claim without being asked. Its slip is lower, so it counts more.
-- **`ail_how`** on an `ail_how_*` part: a how-AI-works multiple-choice check, scored 1 or 0 from the letter. A wrong pick activates that misconception (section 5). An ignored check is recorded as 0 after one re-ask.
+- **`ail_how`** on an `ail_how_*` part: a how-AI-works multiple-choice check, scored 1 or 0 from the letter. A wrong pick activates that misconception (section 5). An ignored check is recorded as 0 after `literacy.max_followups` re-asks.
 
 ## Spacing (review queue)
 After any evidence on a part:
@@ -183,7 +183,7 @@ Derived from both event logs at read and rebuild time. There are no session even
 
   It lasts until the session ends. Evidence while fatigued uses the raised slip above, so errors count for less and correct answers still count fully. The "just show me" share and the `surface` share over the last `session.signal_window` exchanges are reported but never trigger fatigue.
 - **Stuck:** a part the student keeps failing in the session. This calls for a different approach, not a break. Intuition and other prequestion evidence never count.
-  - On 0/1 MCQ checks (`mcq_check`): the same `point_id` missed on its check and again on the re-check after its reteach (a part with no score points counts as one point).
+  - On 0/1 MCQ checks (`mcq_check`, and `ail_how` from step 05e): the same `point_id` missed on its check and again on the re-check after its reteach (a part with no score points counts as one point).
   - On open answers: at least `session.stuck_attempts` of them, mean score below `session.stuck_below`, and a latest score no better than the first.
 - **API:**
   - `learner.session_state(student_id, at)` returns the current session (minutes, rolling surprise, fatigued and since when, stuck parts, supporting signals), or `None`.
