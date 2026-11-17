@@ -188,10 +188,26 @@ def core_idea(part_id: str) -> tuple[str, str]:
     return description, description
 
 
+def intuition_source(turn: Turn, part_id: str) -> dict | None:
+    """Where an intuition question on a part leads in from (step 05d): an edge with teach_use = intuition from a
+    part or concept the student has at developing or above (the strongest link first), as {note, via}; else the
+    part's own intuition line, as {note}; else None. Linked parts the student doesn't know are never named."""
+    edges = [e for lookup in (graph.prerequisites, graph.analogous, graph.confusables, graph.causal_in)
+             for e in (lookup(part_id, 1) if lookup is graph.prerequisites else lookup(part_id))
+             if e["teach_use"] == "intuition" and e["direction"] == "in" and e["note"]]
+    known = [e for e in edges if _node_level(turn, e["other"]) != "new"]
+    if known:
+        best = max(known, key=lambda e: e["weight"] or 0)
+        return {"note": best["note"], "via": best["other_name"]}
+    line = graph.get_node(part_id).get("intuition") or ""
+    return {"note": line} if line else None
+
+
 def prequestion(turn: Turn, settings: Settings) -> dict | None:
     """A multiple-choice question to ask before teaching an untaught, weak part (no evidence on it yet, even an
     untaught pre-question), with misconceptions as the wrong options (examiner-report sources first). Left out
-    once the student has said "just show me" this session."""
+    once the student has said "just show me" this session. From step 05d it is the intuition question, with
+    its source (intuition_source)."""
     pq = settings.prequestion
     if not pq.enabled or not turn.parts:
         return None
@@ -205,7 +221,7 @@ def prequestion(turn: Turn, settings: Settings) -> dict | None:
         return None
     found.sort(key=lambda m: "examiner_report" not in graph.source_types(m["source_ids"]))
     target, correct = core_idea(part)
-    return {"part_id": part, "target": target, "correct": correct,
+    return {"part_id": part, "target": target, "correct": correct, "source": intuition_source(turn, part),
             "distractors": [{"id": m["id"], "wrong_idea": m["wrong_idea"], "correction": m["correction"]}
                             for m in found[:settings.mcq.max_options - 1]]}
 
