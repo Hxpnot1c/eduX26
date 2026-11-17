@@ -44,7 +44,7 @@ Forgetting runs from the last time the student **got the part right**, not from 
 
 ### 1. Evidence (chat and checks)
 Evidence is an event in `evidence_log`, one row per part, with a score from 0 to 1. It comes from two places:
-- **chat:** the chatbot sends it with `log_exchange` when the student produced an answer or explanation in that turn, scored against the notes and mark points it was given. Never for the chatbot's own explanation.
+- **chat:** when the student's message answers something the chatbot asked, the chatbot sends it as `answer` with the next `tutor_turn` call, ticking the points from `score_next` the student produced. The server computes the score: 1 or 0 for a pre-question, otherwise points met / points for the part (the part's mark points, or its notes' key points when it has none). Never for the chatbot's own explanation.
 - **check:** results of issued checks (step 07).
 
 The result counts as correct if `score ≥ bkt.correct_share`. Wrong evidence that carries misconception ids activates them.
@@ -165,7 +165,7 @@ Derived from both event logs at read and rebuild time. There are no session even
   - `learner.sessions(student_id)` lists past sessions with fatigue onset minutes.
 
 ## Teaching note
-A short paragraph built from `text/teaching_note.md` with:
+Debugging output only (`python -m edux.cli context`); `tutor_turn` doesn't send it. A short paragraph built from `text/teaching_note.md` with:
 - focus parts and levels
 - weak prerequisites
 - the anchor (an analogous part that is secure, with its edge note)

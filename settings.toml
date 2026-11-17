@@ -121,7 +121,7 @@ weak_links = 5             # confusable or causal pairs with one side weak
 trend_days = 14            # AI-literacy trends compare this many recent days with everything before
 trend_min_change = 0.05    # a share must move at least this much to count as up or down
 
-[blocks]                   # how get_learning_context ranks what goes into each block, per turn (step 05)
+[blocks]                   # how each turn ranks what goes into each context block (step 05)
 review_link_boost = 0.5    # a due review linked to the current focus counts this much more
 review_importance_floor = 0.1   # added to importance so unweighted parts still rank by how overdue they are
 confusable_mixup = 1.0     # a misconception this student has had on either side adds this

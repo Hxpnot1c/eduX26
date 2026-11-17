@@ -25,9 +25,9 @@ The teaching protocol, the course-pack columns, the tools and the context given 
 - Change tool outputs by **adding** fields; rename or remove only with a note in the pull request. Chatbots re-read the tool list when they reconnect, so changes reach them without a client update.
 
 ## 5. Context built from configured blocks
-- `get_learning_context` returns a list of named blocks. Each block is one function in `edux/context_blocks.py` that takes the resolved situation (student, focus, settings) and returns a small dict, or nothing.
+- Each turn is built from named blocks. Each block is one function in `edux/context_blocks.py` that takes the resolved situation (student, focus, settings) and returns a small dict of data, or nothing.
+- `tutor_turn` chooses a short plan from the plan-input blocks (`edux/plan.py`, wording in `text/moves/`) and sends the other blocks as `reference`.
 - `context.toml` lists the blocks to include, their order and limits (items, words), per **profile**. A profile is a named version of the protocol, e.g. `full` and `minimal`. Each student has a profile (default from `context.toml`).
-- The teaching note is a template file, `text/teaching_note.md`, filled from the blocks.
 
 ## Ids
 Once students have data, never rename a content id. If you must, add a row to `coursepacks/<id>/id_map.csv` (`old_id,new_id`). `rebuild_state` applies the map to events before replaying them.
