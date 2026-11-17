@@ -183,10 +183,11 @@ Plus the standard status columns. Research answers prefer the trusted sources li
 | new_id | what it became |
 
 ## AI-literacy skills (loaded with every pack)
-`ingest/ai_literacy/` is a committed mini pack in this format (`sources.csv`, `nodes.csv`, `mark_points.csv`), read in with every course pack and validated with it (step 05e). An issue on one of its rows gives the line in the mini pack's file:
+`ingest/ai_literacy/` is a committed mini pack in this format (`sources.csv`, `nodes.csv`, `mark_points.csv`, `misconceptions.csv`), read in with every course pack and validated with it (step 05e). An issue on one of its rows gives the line in the mini pack's file:
 - topic `ai_literacy` → concept `ai_literacy_skills` → parts `ail_ask` (phrasing a precise, answerable question) and `ail_verify` (checking a claim against an independent source);
 - `ail_ask`'s mark points are the four question features: `concept`, `context`, `asks_sources`, `asks_reasoning`;
 - `ail_verify`'s mark points are the four verify ticks, in order: opened the source, named the publisher and date, compared the claim, said whether it matched.
+- concept `ail_how_ai_works` → one part per AI failure type: `ail_how_fabrication`, `ail_how_confidence`, `ail_how_cutoff`, `ail_how_agreement`. Each has one mark point (the correct option of its how-AI-works check), three misconceptions (`misconceptions.csv`: real beliefs about AI, used as the wrong options, kept similar in length to the point), and an `intuition` line used in the feedback.
 
 They have no exam weight and a fixed importance (`literacy.importance`). They are left out of the course tree, levers, candidates, search and course reviews, and out of the coverage warnings.
 
