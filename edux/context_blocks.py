@@ -379,7 +379,8 @@ def exam_relevance(turn: Turn, settings: Settings) -> dict | None:
 
 
 def reviews_due(turn: Turn, settings: Settings) -> dict | None:
-    """Due reviews ranked by how overdue x importance, boosted when the part is linked to the current focus."""
+    """Due reviews ranked by how overdue x importance, boosted when the part is linked to the current focus;
+    each with a mode (recall or transfer) and the instruction for each mode present."""
     b = settings.blocks
     due = learner.due_reviews(turn.student_id, 10_000, turn.at)
     if not due:
@@ -397,12 +398,34 @@ def reviews_due(turn: Turn, settings: Settings) -> dict | None:
     scored.sort(key=lambda s: -s[0])
     limit = min(turn.limit("reviews_due"), settings.scheduling.max_reviews_per_reply)
     items = [_review_item(turn, r, is_linked, settings) for _, r, is_linked in scored[:limit]]
-    return {"items": items}
+    modes = sorted({i["mode"] for i in items})
+    return {"items": items, "text": {mode: read_text(f"reviews/{mode}.md") for mode in modes}}
+
+
+def _new_context(part_id: str, settings: Settings) -> dict:
+    """A new context for a transfer review: a causal or analogous link from the graph (strongest first), then a
+    past-paper question on the part (most marks first), then an unseen case for the chatbot to make up.
+    Which past questions a student has already seen isn't recorded yet, so any question can be suggested."""
+    edges = [e for lookup in (graph.causal_out, graph.causal_in, graph.analogous) for e in lookup(part_id)]
+    if edges:
+        edge = max(edges, key=lambda e: link_weight(e, part_id, settings))
+        return {"kind": "link", "type": edge["type"], "id": edge["other"], "name": edge["other_name"], "note": edge["note"]}
+    questions = sorted(graph.questions_for([part_id]), key=lambda q: -q["marks"])
+    if questions:
+        q = questions[0]
+        return {"kind": "past_question", "id": q["id"], "series": q["series"], "marks": q["marks"],
+                "command_word": q["command_word"], "summary": q["summary"]}
+    return {"kind": "unseen_case"}
 
 
 def _review_item(turn: Turn, r: dict, is_linked: bool, settings: Settings) -> dict:
-    return {"part_id": r["part_id"], "name": r["name"], "level": learner.level(r["p_now"]), "p_now": _r(r["p_now"]),
-            "reason": r["reason"], "due": r["due"], "linked_to_focus": is_linked}
+    """A due review with its mode: recall when the part is weak (p_now < levels.new), otherwise transfer to a new context."""
+    mode = "recall" if r["p_now"] < settings.levels.new else "transfer"
+    item = {"part_id": r["part_id"], "name": r["name"], "level": learner.level(r["p_now"]), "p_now": _r(r["p_now"]),
+            "reason": r["reason"], "due": r["due"], "linked_to_focus": is_linked, "mode": mode}
+    if mode == "transfer":
+        item["new_context"] = _new_context(r["part_id"], settings)
+    return item
 
 
 # --- teaching note -------------------------------------------------------------
