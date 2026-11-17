@@ -140,6 +140,8 @@ async def conversation(keyed: str, student: str) -> None:
           json.dumps(sorted(shapes)))
     filled = [step["cue"] for t in turns for step in t.get("plan", []) if PLACEHOLDER.search(json.dumps(step))]
     check(not filled, "no placeholder in any step", "; ".join(filled[:2]))
+    check("style" in turns[0] and not any("style" in t for t in turns[1:]),
+          "style comes with the first call of a session only", ", ".join(str("style" in t) for t in turns))
     for i, t in enumerate(turns, 1):
         print(f"     turn {i}: {len(json.dumps(t))} chars")
     leaked = [i + 1 for i, t in enumerate(turns) if "p_now" in json.dumps(t)]
@@ -191,6 +193,8 @@ async def main(url: str, key: str, student: str) -> None:
                                                    "this_message": {"question_depth": "surface", "engagement": "passive"}})
     finally:
         cli("set-profile", "--student", student, "--profile", "default")
+    check((minimal.get("style") or {}).get("interests") == "football",
+          "style is sent again after the interests change", json.dumps(minimal.get("style", {}).get("interests")))
     check(minimal.get("plan") == [] and set(minimal.get("reference", {})) == {"notes"},
           "the minimal profile returns notes only and no plan", ", ".join(minimal.get("reference", {})))
 
