@@ -92,6 +92,7 @@ min_distractors = 2        # fewer misconceptions than this: the chatbot may wri
 
 [literacy]                 # AI-literacy coaching (step 05e)
 secure_every = 3           # at secure, a task every this many research questions (others: the feedback line only)
+max_followups = 1          # re-asks of an ignored literacy task before it scores 0
 ask_min_features = 2       # fewer question features than this: coach the question (Ask), else Verify
 importance = 0.5           # fixed importance of the AI-literacy parts (they have no exam weight)
 

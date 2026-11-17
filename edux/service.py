@@ -63,17 +63,50 @@ def _this_session(student_id: str, last: dict, at: str) -> tuple[set[str], bool]
 
 def _save_plan(student_id: str, at: str, steps: list[dict], focus: list[str], corrected: set[str],
                offered_stop: bool, style_sent: dict | None, pending: dict | None, mcq: dict | None,
-               points: dict) -> None:
+               points: dict, literacy: dict | None = None) -> None:
     """Save the plan issued this turn, with what the next turn needs: the focus, misconceptions corrected and
     whether stopping was offered this session, the style sent, the question waiting for an answer, the MCQ
-    letter map (step 05d) and point-by-point progress per part (step 05d; kept across parts and sessions, so
-    coming back to a part resumes where it stopped)."""
+    letter map (step 05d), point-by-point progress per part (step 05d; kept across parts and sessions, so
+    coming back to a part resumes where it stopped) and the pending literacy task (step 05e)."""
     conn = learner._conn()
     with conn:
         conn.execute("INSERT OR REPLACE INTO issued_plan (student_id, ts, plan_json) VALUES (?, ?, ?)",
                      (student_id, at, json.dumps({"plan": steps, "focus": focus, "corrected": sorted(corrected),
                                                   "offered_stop": offered_stop, "style_sent": style_sent,
-                                                  "pending": pending, "mcq": mcq, "points": points})))
+                                                  "pending": pending, "mcq": mcq, "points": points,
+                                                  "literacy": literacy})))
+
+
+def _literacy_followup(student_id: str, last: dict, steps: list[dict], evidence: dict | None, request: str,
+                       at: str) -> tuple[list[dict], dict | None]:
+    """Follow up the literacy task set last turn (step 05e); returns (steps, the task still pending).
+
+    The task is done when a verify task is answered (ail_task) or, for an ask task, when this message is a research
+    question (its ail_question is the score). Not done: when the plan doesn't already end in a question, reask
+    re-asks it in one line, at most literacy.max_followups times; not done after that, it is recorded as ail_task
+    with score 0 on its skill's part and dropped. A plan that ends in a question, or sets a new task, leaves it
+    waiting (not counted). A new session drops it unscored. A new task in this plan becomes the pending one."""
+    task = last.get("literacy")
+    if task and last["ts"] is not None:
+        gap = (learner.parse_ts(at) - learner.parse_ts(last["ts"])).total_seconds() / 60
+        done = ((task["skill"] == "verify" and evidence is not None and evidence["type"] == "ail_task")
+                or (task["skill"] == "ask" and request == "research"))
+        if done or gap > _settings().session.gap_minutes:
+            task = None
+        elif any(plan.is_stop(step) for step in steps) or len(steps) >= plan.MAX_STEPS:
+            pass   # waits for a turn with room
+        elif task["followups"] >= _settings().literacy.max_followups:
+            learner.record_evidence(student_id, task["part_id"], "ail_task", 0.0, ts=at, apply="now")
+            task = None
+        else:
+            steps = steps + [plan.literacy_reask(task)]
+            task = {**task, "followups": task["followups"] + 1}
+    else:
+        task = None
+    new = next((step for step in steps if step["move"] == "literacy_task" and step["data"].get("task")), None)
+    if new:
+        task = {"skill": new["data"]["skill"], "part_id": new["part_id"], "followups": 0}
+    return steps, task
 
 
 def _open_question(last: dict, parts: list[str], answer: dict | None, choice: str, at: str) -> dict | None:
@@ -298,11 +331,12 @@ def tutor_turn(
                                                  last.get("mcq")))
     if config.plan and this_message.get("source_conflict"):
         steps = plan.with_source_conflict(steps)
+    steps, literacy = _literacy_followup(student["id"], last, steps, evidence, request, at) if config.plan else (steps, None)
     current_style = style(student, client)
     send_style = _style_due(last, current_style, at)
     _save_plan(student["id"], at, steps, parts, corrected | plan.corrected_in(steps),
                offered_stop or any(step["move"] == "offer_stop" for step in steps), current_style,
-               _pending_after(steps, pending), _mcq_after(steps, last), points)
+               _pending_after(steps, pending), _mcq_after(steps, last), points, literacy)
     # with no plan (a comparison profile), answers on the focus parts can still be scored
     next_points = plan.score_next(steps) if config.plan else {
         p: points for p in parts if (points := plan.lettered(p))}

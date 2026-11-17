@@ -58,7 +58,7 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "extend": ({"answer_type"}, set()),
     "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "correct_option", "purpose", "points_met", "missing"}),
     "offer_stop": ({"minutes", "quick_parts"}, set()),
-    "reask": ({"asked", "answer_type"}, set()),
+    "reask": ({"asked"}, {"answer_type", "skill"}),
     "reteach": (set(), {"missing", "anchor", "point", "level", "answer_type"}),
     "show": ({"point"}, {"note"}),
     "explain_back": ({"answer_type"}, set()),
@@ -596,6 +596,14 @@ def research(turn: Turn, blocks: dict, settings: Settings, features: list[str]) 
     return [_step("answer_with_sources", None, {"trusted_sources": sources})] + ([task] if task else [])
 
 
+def literacy_reask(task: dict) -> dict:
+    """reask of a pending literacy task, in one line (data.asked is literacy_task)."""
+    data = {"asked": "literacy_task", "skill": task["skill"]}
+    if task["skill"] == "verify":
+        data["answer_type"] = "ail_task"
+    return _step("reask", task["part_id"], data)
+
+
 def with_source_conflict(steps: list[dict]) -> list[dict]:
     """source_conflict first (the student found a link that failed or didn't say what was claimed), keeping the
     end of the plan, where its question is."""
@@ -619,6 +627,8 @@ def score_next(plan: list[dict]) -> dict[str, list[dict]]:
                 if points:
                     out.setdefault(part["id"], points)
         by_option = step["move"] == "ask_mcq" or step["data"].get("asked") in ("ask_mcq", "prequestion")
+        if step["part_id"] == learner.AIL_ASK:   # an ask task is done by asking a research question, not ticked
+            continue
         if step["move"] in ASKS and not by_option and step["part_id"] and step["part_id"] not in out:
             points = lettered(step["part_id"])
             if points:

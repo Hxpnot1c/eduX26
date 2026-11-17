@@ -128,6 +128,7 @@ class Mcq:
 class Literacy:
     importance: float
     secure_every: int
+    max_followups: int
     ask_min_features: int
 
 
