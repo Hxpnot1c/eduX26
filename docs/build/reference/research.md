@@ -17,6 +17,14 @@ The evidence behind teaching and modelling decisions. Effect sizes are as report
 | Fatigue within a session | Randles, Harlow & Inzlicht (2017), *PLOS ONE* | Fatigue within an hour on task; negligible time-of-day effect | Online self-testing, not school chatbots |
 | Stuck vs tired | Beck & Gong (2013), AIED | Wheel-spinning: repeated failure to master a skill | Definitions vary across studies |
 | Spacing anchored to the exam | Cepeda et al. (2008) | The best gap shrinks as the test gets closer | |
+| One point per message | Rey et al. (2019), *Educational Psychology Review*, meta-analysis | Meaningful, learner-paced segments improve retention and transfer, and reduce load | Mostly multimedia, not chat |
+| Check after each point | Chan, Meissner & Davis (2018), *Psychological Bulletin*, meta-analysis | Testing earlier material improves learning of the next material | |
+| Not too often | Davis, Chan & Wilford (2017) | Frequent switching between retrieval and study can impair new learning | |
+| Move on once a point is learned, with a skip | Kulik, Kulik & Bangert-Drowns (1990), *Review of Educational Research* | Mastery programmes: about 0.5 SD, larger for weaker students | Can lower completion; estimates vary widely across syntheses |
+| Checking sources | Wineburg et al. (2022), *Journal of Educational Psychology* | Six lessons in lateral reading improved high-school students' judgement of online sources (randomised) | About websites, not AI output |
+| Don't withhold answers | Khanmigo trial (team research doc) | Students stopped using it when it refused answers | Verify the citation before using it in the white paper |
+| Question templates | Fu & Choe (2022); item-model literature | Templates can produce comparable items, but many need revision | |
+| Context stays small | Anthropic docs on compaction | Long chats are summarised only near the limit; quality degrades as context grows | Product behaviour may change |
 
 ## Considered and not adopted
 - **FSRS scheduling.** It needs many graded reviews per user to fit, and it targets a constant level of recall with no exam date. Our model is a simpler version of the same idea (difficulty, half-life, `p_now`). Revisit only with real review data.
