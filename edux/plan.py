@@ -30,6 +30,9 @@ from edux.settings import Settings, read_text
 STOP = {"reteach_gap", "offer_stop", "step_back", "ask_which", "prequestion", "check_prereq"}
 ASKS = {"reteach_gap", "step_back", "switch_approach", "prequestion", "check_prereq", "teach", "extend", "review"}
 MAX_STEPS = 2
+# The answer.type the chatbot sends back for a step that asks something.
+ANSWER_TYPE = {"prequestion": "prequestion", "check_prereq": "review", "step_back": "review", "review": "review",
+               "extend": "extend", "teach": "explain_back", "switch_approach": "explain_back"}
 
 
 def _text(name: str) -> str:
@@ -37,7 +40,10 @@ def _text(name: str) -> str:
 
 
 def _step(move: str, part_id: str | None, data: dict | None = None, text: str | None = None) -> dict:
-    return {"move": move, "part_id": part_id, "text": _text(text or move), "data": data or {}}
+    data = dict(data or {})
+    if move in ANSWER_TYPE:
+        data["answer_type"] = ANSWER_TYPE[move]
+    return {"move": move, "part_id": part_id, "text": _text(text or move), "data": data}
 
 
 def _summary(turn: Turn, part_id: str) -> dict:
@@ -68,7 +74,7 @@ def feedback(answer: dict, evidence: dict) -> dict:
     if len(met) == len(points):
         return _step("feedback", part, {"type": answer["type"], "points_met": [p["point"] for p in points],
                                         "shown_misconceptions": others})
-    return _step("reteach_gap", part, {"type": answer["type"], "missing": [p["point"] for p in points if p["id"] not in met],
+    return _step("reteach_gap", part, {"type": answer["type"], "answer_type": answer["type"], "missing": [p["point"] for p in points if p["id"] not in met],
                                        "shown_misconceptions": others})
 
 

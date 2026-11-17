@@ -28,19 +28,27 @@ from edux.settings import load_settings, read_text
 
 QuestionDepth = Literal["surface", "mechanism", "transfer"]
 Engagement = Literal["passive", "active", "constructive"]
-SupportGiven = Literal["worked_example", "hint", "explain_back", "none"]
-ChoiceTaken = Literal["try_first", "hint", "just_show_me", "none"]
-# Evidence types the chatbot may send: the keys of [bkt.evidence], except "immediate", which the server assigns.
-EvidenceType = Literal[tuple(t for t in load_settings().bkt.evidence if t != "immediate")]  # type: ignore[valid-type]
+Choice = Literal["try_first", "hint", "just_show_me", "none"]
+AnswerType = Literal[learner.ANSWER_TYPES]  # type: ignore[valid-type]
 
 
-class EvidenceItem(BaseModel):
-    """What the student produced this turn on one part, scored against the notes and mark points."""
+class ThisMessage(BaseModel):
+    """Labels for the student's message in this turn."""
 
-    part_id: str = Field(description="part (or concept) id the answer was about")
-    type: EvidenceType = Field(description="what kind of answer it was, e.g. explain_back or prequestion")
-    score: float = Field(ge=0, le=1, description="0-1 against the mark points and key wording")
-    misconception_ids: list[str] = Field(default_factory=list, description="misconceptions the answer showed")
+    question_depth: QuestionDepth = Field(description="surface (what is it), mechanism (how or why), transfer (applying it somewhere new)")
+    engagement: Engagement = Field(description="passive (just reading), active (asking or answering), constructive (their own reasoning)")
+    choice: Choice = Field("none", description="what they chose when offered: try_first, hint, just_show_me, or none")
+
+
+class Answer(BaseModel):
+    """The student's answer to what you asked last turn. The server works out the score."""
+
+    part_id: str = Field(description="the part the question was on (the step's part_id)")
+    type: AnswerType = Field(description="what was asked: prequestion, explain_back, review, extend or past_question")
+    correct: bool | None = Field(None, description="prequestion only: did they pick the correct option")
+    picked_misconception_id: str | None = Field(None, description="prequestion only: the option id they picked, if it was a misconception")
+    points_met: list[str] = Field(default_factory=list, description="ids from score_next of the points the student actually produced")
+    misconception_ids: list[str] = Field(default_factory=list, description="other misconceptions the answer showed")
 
 
 def _key_from_scope(scope: Scope) -> str | None:
@@ -83,29 +91,17 @@ def student_from_request(ctx: Context) -> dict:
     return student
 
 
-def get_learning_context(ctx: Context, message: str, node_ids: list[str] | None = None, client: str | None = None) -> dict:
-    """Tool adapter for service.learning_context."""
-    return service.learning_context(student_from_request(ctx), message, node_ids, client)
-
-
-def log_exchange(
+def tutor_turn(
     ctx: Context,
-    node_ids: list[str],
-    question_depth: QuestionDepth,
-    engagement: Engagement,
-    offloading: bool,
-    support_given: SupportGiven | None = None,
-    choice_taken: ChoiceTaken | None = None,
-    misconception_ids: list[str] | None = None,
-    conflict_flagged: bool = False,
-    prompt_text: str | None = None,
-    evidence: list[EvidenceItem] | None = None,
+    message: str,
+    this_message: ThisMessage,
+    node_ids: list[str] | None = None,
+    answer: Answer | None = None,
     client: str | None = None,
 ) -> dict:
-    """Tool adapter for service.log_exchange."""
-    return service.log_exchange(student_from_request(ctx), node_ids, question_depth, engagement, offloading,
-                                support_given, choice_taken, misconception_ids, conflict_flagged, prompt_text,
-                                [e.model_dump() for e in evidence or []], client)
+    """Tool adapter for service.tutor_turn."""
+    return service.tutor_turn(student_from_request(ctx), message, this_message.model_dump(), node_ids,
+                              answer.model_dump() if answer else None, client)
 
 
 def get_my_progress(ctx: Context, include_parts: bool = False) -> dict:
@@ -170,8 +166,7 @@ def timed(name: str, fn: Callable[..., dict]) -> Callable[..., dict]:
 
 
 TOOLS = {
-    "get_learning_context": get_learning_context,
-    "log_exchange": log_exchange,
+    "tutor_turn": tutor_turn,
     "get_my_progress": get_my_progress,
     "update_my_profile": update_my_profile,
 }
@@ -203,5 +198,4 @@ def serve(host: str, port: int) -> None:
     """Run the server with uvicorn. The access log is off: request URLs carry student keys."""
     import uvicorn
 
-    learner.start_worker()
     uvicorn.run(http_app(), host=host, port=port, access_log=False)

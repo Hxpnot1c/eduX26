@@ -209,6 +209,7 @@ class Settings:
 @dataclass(frozen=True)
 class Profile:
     blocks: list[str]
+    plan: bool                 # false: tutor_turn returns no plan (a comparison profile)
 
 
 @dataclass(frozen=True)

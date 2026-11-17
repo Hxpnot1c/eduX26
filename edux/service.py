@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import functools
+import json
 import statistics
 from datetime import date, datetime, timedelta, timezone
 
-from edux import context_blocks, graph, learner
+from edux import context_blocks, graph, learner, plan
 from edux.settings import ContextConfig, Settings, load_context, load_settings, read_text
 
 
@@ -37,29 +38,107 @@ def learning_context(student: dict, message: str, node_ids: list[str] | None = N
     return {"profile": profile, "blocks": context_blocks.assemble(profile, turn, _settings(), _context())}
 
 
-def log_exchange(
+# Blocks the plan is built from; every other block the profile produces goes to reference.
+PLAN_INPUTS = ("focus", "prequestion", "support", "session", "reviews_due", "teaching_note")
+
+
+def _last_plan(student_id: str) -> dict:
+    """The last plan issued to the student: {"plan": [steps], "focus": [part ids]}, empty if none."""
+    row = learner._conn().execute("SELECT plan_json FROM issued_plan WHERE student_id = ?", (student_id,)).fetchone()
+    return json.loads(row["plan_json"]) if row else {"plan": [], "focus": []}
+
+
+def _save_plan(student_id: str, at: str, steps: list[dict], focus: list[str]) -> None:
+    conn = learner._conn()
+    with conn:
+        conn.execute("INSERT OR REPLACE INTO issued_plan (student_id, ts, plan_json) VALUES (?, ?, ?)",
+                     (student_id, at, json.dumps({"plan": steps, "focus": focus})))
+
+
+def _support_given(steps: list[dict]) -> str:
+    """The support the chatbot gave last reply, from the plan it was given: a teach level, or a worked example
+    for show; otherwise none."""
+    for step in steps:
+        if step["move"] == "teach":
+            return step["data"]["level"]
+        if step["move"] == "show":
+            return "worked_example"
+    return "none"
+
+
+def _reference(blocks: dict) -> dict:
+    """Background for the chatbot: the profile's blocks that aren't plan inputs; {"items": [...]} becomes the list."""
+    return {name: block["items"] if set(block) == {"items"} else block
+            for name, block in blocks.items() if name not in PLAN_INPUTS}
+
+
+def tutor_turn(
     student: dict,
-    node_ids: list[str],
-    question_depth: str,
-    engagement: str,
-    offloading: bool,
-    support_given: str | None = None,
-    choice_taken: str | None = None,
-    misconception_ids: list[str] | None = None,
-    conflict_flagged: bool = False,
-    prompt_text: str | None = None,
-    evidence: list[dict] | None = None,
+    message: str,
+    this_message: dict,
+    node_ids: list[str] | None = None,
+    answer: dict | None = None,
     client: str | None = None,
+    at: str | None = None,
 ) -> dict:
-    """Record the exchange (and any evidence) and return {"ok": True} at once; the update is applied in the
-    background. A label or evidence item that doesn't fit returns {"ok": False, "error": ...} and records nothing."""
+    """One call at the start of each reply: score and record the student's message (and answer, if any) now,
+    then return the plan for this reply, the points to score their next answer against, and reference.
+
+    A bad label, part, point or misconception returns {"ok": False, "error": ...} and records nothing.
+    The focus is node_ids if given, else the answer's part, else the message; a message that names nothing
+    keeps the previous turn's focus.
+    """
+    s = _settings()
+    at = learner._event_ts(at)
+    depth, engagement = this_message.get("question_depth"), this_message.get("engagement")
+    choice = this_message.get("choice") or "none"
+    if depth not in s.nudges.depth:
+        return {"ok": False, "error": f"this_message.question_depth must be one of {', '.join(s.nudges.depth)}"}
+    if engagement not in s.nudges.engagement:
+        return {"ok": False, "error": f"this_message.engagement must be one of {', '.join(s.nudges.engagement)}"}
+    if choice not in learner.CHOICE_TAKEN:
+        return {"ok": False, "error": f"this_message.choice must be one of {', '.join(learner.CHOICE_TAKEN)}"}
     try:
-        learner.record_exchange(student["id"], node_ids, question_depth, engagement, offloading, support_given,
-                                choice_taken, misconception_ids, conflict_flagged, prompt_text, client,
-                                evidence=evidence, apply="background")
+        evidence = learner.score_answer(answer) if answer else None
     except ValueError as e:
         return {"ok": False, "error": str(e)}
-    return {"ok": True}
+
+    last = _last_plan(student["id"])
+    resolution = graph.resolve(message or "", node_ids or ([evidence["part_id"]] if evidence else None))
+    if not resolution["parts"] and not resolution["candidates"] and last["focus"]:
+        resolution = {**graph.resolve("", last["focus"]), "unknown": resolution["unknown"]}
+    tagged = list(dict.fromkeys(([evidence["part_id"]] if evidence else []) + resolution["parts"]))
+    if tagged:
+        try:
+            learner.record_exchange(student["id"], tagged, depth, engagement, choice == "just_show_me",
+                                    _support_given(last["plan"]), choice,
+                                    evidence["misconception_ids"] if evidence else None, client=client, ts=at,
+                                    evidence=[evidence] if evidence else None, apply="now")
+        except ValueError as e:
+            return {"ok": False, "error": str(e)}
+
+    parts = context_blocks.order_parts(student, resolution["parts"], message or "")
+    turn = context_blocks.Turn(student=student, parts=parts, message=message or "", at=at,
+                               limits=_context().limits, resolution=resolution)
+    profile = learner.profile_of(student)
+    blocks = context_blocks.assemble(profile, turn, s, _context())
+    config = _context().profiles.get(profile, _context().profiles[_context().default_profile])
+    steps = plan.choose(turn, blocks, s, choice, answer, evidence, last["plan"]) if config.plan else []
+    _save_plan(student["id"], at, steps, parts)
+
+    focus = blocks.get("focus") or {}
+    out = {
+        "ok": True,
+        "plan": steps,
+        "score_next": plan.score_next(steps),
+        "reference": _reference(blocks),
+        "focus": [{"id": p["id"], "name": p["name"], "level": p["level"]} for p in focus.get("parts", [])],
+    }
+    if focus.get("candidates"):
+        out["candidates"] = [{"id": c["id"], "name": c["name"]} for c in focus["candidates"]]
+    if resolution["unknown"]:
+        out["unknown_ids"] = resolution["unknown"]
+    return out
 
 
 # --- progress ------------------------------------------------------------------

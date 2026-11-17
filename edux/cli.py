@@ -1,4 +1,4 @@
-"""Command line: python -m edux.cli load | add-student | set-profile | log | evidence | state | sessions | calls | rebuild | serve | seed-demo."""
+"""Command line: python -m edux.cli load | add-student | set-profile | log | evidence | state | sessions | context | calls | rebuild | serve | seed-demo."""
 
 from __future__ import annotations
 
@@ -132,6 +132,20 @@ def cmd_sessions(student: str) -> int:
     return 0
 
 
+def cmd_context(student: str, message: str, nodes: list[str] | None = None) -> int:
+    """Print the context blocks for a message as JSON, numbers included (for debugging; reads only, records nothing)."""
+    import json
+
+    from edux import service
+
+    found = learner.get_student(student)
+    if found is None:
+        print(f"unknown student {student!r}", file=sys.stderr)
+        return 1
+    print(json.dumps(service.learning_context(found, message, nodes), indent=2))
+    return 0
+
+
 def cmd_calls(student: str | None = None, last: int = 20) -> int:
     """Recent tool calls, median and 90th-percentile server time per tool, and the median gap between a
     student's consecutive calls (roughly the chatbot's time per turn)."""
@@ -252,6 +266,10 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--at", help="ISO timestamp to read decay at (default: now)")
     p = sub.add_parser("sessions", help="list a student's sessions")
     p.add_argument("--student", required=True)
+    p = sub.add_parser("context", help="print the context blocks for a message (debugging; records nothing)")
+    p.add_argument("--student", required=True)
+    p.add_argument("--message", required=True)
+    p.add_argument("--nodes", type=_list, help="comma-separated part or concept ids")
     p = sub.add_parser("calls", help="tool call timing: recent calls, per-tool median and p90, gaps per student")
     p.add_argument("--student")
     p.add_argument("--last", type=int, default=20, help="recent calls to list (default 20)")
@@ -282,6 +300,8 @@ def main(argv: list[str] | None = None) -> None:
         code = cmd_state(args.student, args.node, args.at)
     elif args.command == "sessions":
         code = cmd_sessions(args.student)
+    elif args.command == "context":
+        code = cmd_context(args.student, args.message, args.nodes)
     elif args.command == "calls":
         code = cmd_calls(args.student, args.last)
     elif args.command == "seed-demo":
