@@ -1,0 +1,1 @@
+Use plain text. Write formulas in words, e.g. "PED = percentage change in quantity demanded divided by percentage change in price". Describe diagrams in words: the axes, the curves, which way the shift goes and how price and quantity change.

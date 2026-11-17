@@ -181,6 +181,11 @@ class Blocks:
 
 
 @dataclass(frozen=True)
+class Style:
+    max_words: int
+
+
+@dataclass(frozen=True)
 class Settings:
     """Typed view of settings.toml."""
 
@@ -204,6 +209,7 @@ class Settings:
     resolve: Resolve
     progress: Progress
     blocks: Blocks
+    style: Style
 
 
 @dataclass(frozen=True)

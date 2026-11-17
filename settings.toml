@@ -132,3 +132,6 @@ exam_w_marks = 0.5         # exam_relevance: share from marks at stake
 exam_w_closeness = 0.3     # share from how close the paper's exam is
 exam_w_command = 0.2       # share from the question's command word appearing in the message
 exam_horizon_days = 365    # an exam this far off or further adds nothing for closeness
+
+[style]                    # how tutor_turn asks the chatbot to write (step 05b)
+max_words = 120            # default reply length; the student's profile answer_length overrides

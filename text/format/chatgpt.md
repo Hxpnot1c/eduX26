@@ -1,0 +1,1 @@
+Write formulas in LaTeX, inline with \( … \) and on their own line with \[ … \]. For a diagram part, or when the student asks for one, draw a labelled chart with Python if you can (axes, curves, the shift and P1→P2 / Q1→Q2 marked); otherwise describe it in words. Don't draw otherwise: drawing is slow.
