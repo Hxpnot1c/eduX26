@@ -6,9 +6,14 @@ Run it from the repo root against a server started on the same data folder (EDUX
 example-mini pack loaded and the demo students seeded. It:
 - resets the demo students (seed-demo --reset keeps their keys), so the run starts from the seeded state;
 - lists the tools and prompts;
-- runs a three-message conversation as the student through tutor_turn, then a question asked instead of an
-  answer, and checks each plan, the recorded evidence and the misconception state, result sizes against the
-  budget, style, known terms, watch-for misconceptions, and that no p_now reaches the chatbot;
+- runs the point-by-point loop on ped_formula as the student through tutor_turn (intuition MCQ, each point and its
+  check, a wrong letter and its re-teach, the explain-back), then an explain-back missing a point and a question
+  asked instead of an answer, and checks each plan, the letters scored from the stored map, the misconception
+  state, that every reply in the loop ends in one question, result sizes against the budget, style, known terms,
+  watch-for misconceptions, and that no p_now reaches the chatbot;
+- checks "I know this", "just show me" (and no discount after it), a lost letter map, a wrong intuition answer
+  followed by teaching (demo-weak), a prerequisite check and a
+  due review as MCQs (demo-weak, demo-showme), and that options are shuffled differently per student;
 - checks the server instructions' length, that points_met scores the same as letters, full ids, a mix or with
   no saved plan, and that another part's point is refused;
 - checks a bad answer is refused and records nothing, get_my_progress, update_my_profile, that a wrong or
@@ -38,7 +43,7 @@ from edux.settings import load_settings
 
 EXPECTED_TOOLS = {"tutor_turn", "get_my_progress", "update_my_profile"}
 EXPECTED_PROMPTS = {"review_due", "check_me"}
-PART, MISCONCEPTION = "ped_formula", "ped_formula_m1"
+PART = "ped_formula"
 STATE_TABLES = ("part_state", "student_misconception", "review_queue", "approach_record", "evidence_derived")
 INSTRUCTIONS_MAX_WORDS = load_settings().instructions.max_words
 PLACEHOLDER = re.compile(r"\{[a-z_]+\}|`name`")
@@ -95,62 +100,107 @@ def max_evidence_id() -> int:
     return learner._conn().execute("SELECT COALESCE(MAX(id), 0) FROM evidence_log").fetchone()[0]
 
 
+def plan_json(student: str) -> dict:
+    row = learner._conn().execute("SELECT plan_json FROM issued_plan WHERE student_id = ?", (student,)).fetchone()
+    return json.loads(row[0]) if row else {}
+
+
+def letter(student: str, right: bool) -> tuple[str, str]:
+    """(letter, option id) of the correct option, or of a misconception option, in the stored map."""
+    options = plan_json(student)["mcq"]["options"]
+    return next((k, o["id"]) for k, o in sorted(options.items()) if (o["id"] == "correct") == right and o["id"] != "extra")
+
+
+def ends_in_one_question(turn: dict) -> bool:
+    steps = turn.get("plan", [])
+    asking = [s for s in steps if "answer_type" in s["data"]]
+    return bool(steps) and len(asking) == 1 and asking[0] is steps[-1]
+
+
 async def conversation(keyed: str, student: str) -> None:
-    """The three-message run from the step 05b done-when list, then a question asked instead of an answer
-    (step 05c), with result sizes, style, terms and watch-for checks."""
+    """The point-by-point run from the step 05d done-when list on PART: intuition MCQ, point 1 and its check, a
+    right letter, point 2, a wrong letter (named and active), one re-teach, a right letter, the explain-back; then
+    an explain-back missing a point and a question asked instead of an answer (step 05c), with result sizes,
+    style, terms and watch-for checks."""
     start = max_evidence_id()
     turns = []
+    labels = {"question_depth": "mechanism", "engagement": "active"}
 
     async def turn(arguments: dict) -> dict:
         if turns:
-            time.sleep(1.1)   # event timestamps are to the second; keep the three turns in separate seconds
+            time.sleep(1.1)   # event timestamps are to the second; keep the turns in separate seconds
         got = await call(keyed, "tutor_turn", {"client": "check_mcp", **arguments})
         turns.append(got)
         return got
 
-    first = await turn({"message": "How do I calculate PED?",
-                        "this_message": {"question_depth": "mechanism", "engagement": "active"}})
-    check(moves(first) == ["prequestion"] and first["plan"][0]["part_id"] == PART,
-          "1. a question on an untaught part gets a single pre-question", ", ".join(moves(first)) or first.get("error", ""))
+    async def pick(right: bool) -> tuple[dict, str]:
+        chosen, option = letter(student, right)
+        got = await turn({"message": chosen, "this_message": labels,
+                          "answer": {"part_id": PART, "type": "mcq", "choice": chosen}})
+        return got, option
 
-    second = await turn({"message": "Is it the change in price divided by the change in quantity?",
-                         "this_message": {"question_depth": "surface", "engagement": "active"},
-                         "answer": {"part_id": PART, "type": "prequestion", "correct": False,
-                                    "picked_misconception_id": MISCONCEPTION}})
-    named = ((second.get("plan") or [{}])[0].get("data") or {}).get("misconceptions") or [{}]
-    check(moves(second) == ["feedback", "teach"] and named[0].get("id") == MISCONCEPTION,
-          "2. a wrong pre-question answer gets feedback naming it, then teach", ", ".join(moves(second)) or second.get("error", ""))
-    held = learner._conn().execute("SELECT active FROM student_misconception WHERE student_id = ? AND misconception_id = ?",
-                                   (student, MISCONCEPTION)).fetchone()
-    check(bool(held and held["active"]), f"2. {MISCONCEPTION} is active")
-    recorded = evidence(student, start)
-    check([(e["evidence_type"], e["score"]) for e in recorded] == [("prequestion", 0.0)],
-          "2. the pre-question evidence is recorded", json.dumps([(e["evidence_type"], e["score"]) for e in recorded]))
+    def purposes(t: dict) -> list[str]:
+        return [s["move"] + (f":{s['data']['purpose']}" if s["move"] == "ask_mcq" else "") for s in t.get("plan", [])]
 
     points = graph.score_points(PART)
-    third = await turn({"message": "You divide the change by the original value and times by 100 for each percentage.",
+    first = await turn({"message": "How do I calculate PED?", "this_message": labels})
+    data = (first.get("plan") or [{}])[0].get("data") or {}
+    check(purposes(first) == ["ask_mcq:intuition"] and first["plan"][0]["part_id"] == PART
+          and not first.get("score_next", {}).get(PART),
+          "1. an untaught part gets one intuition MCQ, answered by letter", ", ".join(purposes(first)) or first.get("error", ""))
+    named = [r[0] for r in graph._conn().execute("SELECT id FROM node WHERE name = ?", (data.get("via") or "",))]
+    via_known = not data.get("via") or any(learner.level(learner.rollup(student, i)) != "new" for i in named)
+    check(bool(data.get("note")) and via_known, "1. the intuition leads in from a known link or the part's intuition line",
+          json.dumps({k: data.get(k) for k in ("note", "via")}))
+
+    second, _ = await pick(True)
+    step = (second.get("plan") or [{}, {}])[1:2] or [{}]
+    check(purposes(second) == ["feedback", "teach_point", "ask_mcq:check"] and step[0].get("data", {}).get("index") == 1,
+          "2. the intuition answer gets feedback, then point 1 and its check", ", ".join(purposes(second)) or second.get("error", ""))
+    third, _ = await pick(True)
+    check(purposes(third) == ["feedback", "teach_point", "ask_mcq:check"] and third["plan"][1]["data"]["index"] == 2,
+          "3. a right letter moves to point 2", ", ".join(purposes(third)) or third.get("error", ""))
+    fourth, picked = await pick(False)
+    named = ((fourth.get("plan") or [{}])[0].get("data") or {}).get("misconceptions") or [{}]
+    check(purposes(fourth) == ["feedback", "reteach", "ask_mcq:check"] and named[0].get("id") == picked,
+          "4. a wrong letter gets feedback naming it, one re-teach of the point and the check again",
+          ", ".join(purposes(fourth)) or fourth.get("error", ""))
+    held = learner._conn().execute("SELECT active FROM student_misconception WHERE student_id = ? AND misconception_id = ?",
+                                   (student, picked)).fetchone()
+    check(bool(held and held["active"]), f"4. {picked} is active")
+    fifth, _ = await pick(True)
+    check(purposes(fifth) == ["feedback", "explain_back"] and len(points) == 2,
+          "5. after the last point comes the explain-back of the whole part", ", ".join(purposes(fifth)) or fifth.get("error", ""))
+    recorded = [(e["evidence_type"], e["score"]) for e in evidence(student, start)]
+    check(recorded == [("prequestion", 1.0), ("mcq_check", 1.0), ("mcq_check", 0.0), ("mcq_check", 1.0)],
+          "the server scored every letter from its stored map", json.dumps(recorded))
+    loop = [first, second, third, fourth, fifth]
+    check(all(ends_in_one_question(t) for t in loop), "every reply in the loop ends in exactly one question",
+          "; ".join(", ".join(purposes(t)) for t in loop if not ends_in_one_question(t)))
+    words = [s["data"].get("max_words") for t in loop for s in t["plan"] if s["move"] == "teach_point"]
+    check(bool(words) and all(w == load_settings().points.max_words <= 80 for w in words),
+          "every teach_point asks for at most 80 words of explanation", json.dumps(words))
+
+    sixth = await turn({"message": "You divide the change by the original value and times by 100 for each percentage.",
                         "this_message": {"question_depth": "mechanism", "engagement": "constructive"},
                         "answer": {"part_id": PART, "type": "explain_back", "points_met": ["a"]}})
-    missing = ((third.get("plan") or [{}, {}])[-1].get("data") or {}).get("missing")
-    check(moves(third) == ["feedback", "reteach"] and missing == [p["point"] for p in points[1:]],
-          "3. an explanation missing a point gets feedback, then reteach with only that point",
-          f"{', '.join(moves(third)) or third.get('error', '')}; missing {missing}")
-    recorded = evidence(student, start)
-    check(len(recorded) == 2 and recorded[-1]["score"] == 1 / len(points),
-          f"3. the recorded score is {1 / len(points)}", json.dumps([e["score"] for e in recorded]))
+    missing = ((sixth.get("plan") or [{}, {}])[-1].get("data") or {}).get("missing")
+    check(purposes(sixth) == ["feedback", "reteach"] and missing == [p["point"] for p in points[1:]],
+          "6. an explanation missing a point gets feedback, then reteach with only that point",
+          f"{', '.join(purposes(sixth)) or sixth.get('error', '')}; missing {missing}")
 
     before = max_evidence_id()
-    fourth = await turn({"message": "Wait, why do you use the original value and not the new one?", "node_ids": [PART],
-                         "this_message": {"question_depth": "mechanism", "engagement": "active", "conflict_flagged": True}})
+    seventh = await turn({"message": "Wait, why do you use the original value and not the new one?", "node_ids": [PART],
+                          "this_message": {**labels, "conflict_flagged": True}})
     flagged = learner._conn().execute("SELECT conflict_flagged FROM exchange_log WHERE student_id = ? ORDER BY id DESC LIMIT 1",
                                       (student,)).fetchone()
-    check(bool(flagged and flagged[0] == 1), "4. conflict_flagged is stored on the exchange")
-    asked = ((fourth.get("plan") or [{}, {}])[-1].get("data") or {})
-    check(moves(fourth) == ["answer_brief", "reask"] and asked.get("asked") == "reteach"
-          and asked.get("missing") == missing and fourth.get("score_next") == third.get("score_next")
+    check(bool(flagged and flagged[0] == 1), "7. conflict_flagged is stored on the exchange")
+    asked = ((seventh.get("plan") or [{}, {}])[-1].get("data") or {})
+    check(purposes(seventh) == ["answer_brief", "reask"] and asked.get("asked") == "reteach"
+          and asked.get("missing") == missing and seventh.get("score_next") == sixth.get("score_next")
           and max_evidence_id() == before,
-          "4. a question instead of an answer gets answer_brief, then the same question again, and scores nothing",
-          ", ".join(moves(fourth)) or fourth.get("error", ""))
+          "7. a question instead of an answer gets answer_brief, then the same question again, and scores nothing",
+          ", ".join(purposes(seventh)) or seventh.get("error", ""))
 
     untermed = []
     for t in turns:
@@ -185,6 +235,103 @@ async def conversation(keyed: str, student: str) -> None:
     check(not leaked, "no p_now in tutor_turn output", f"found in turn(s) {leaked}" if leaked else "")
 
 
+async def choices(keyed: str, student: str) -> None:
+    """"I know this" goes straight to the check; "just show me" shows the point and ends with its check, with no
+    discount on the next answer; a lost letter map records nothing and asks the same question with new letters."""
+    other = "pes_definition"
+    labels = {"question_depth": "surface", "engagement": "active"}
+    time.sleep(1.1)
+    skip = await call(keyed, "tutor_turn", {"message": "I know this", "node_ids": [other],
+                                            "this_message": {**labels, "choice": "skip_point"}})
+    check([s["move"] for s in skip.get("plan", [])] == ["ask_mcq"] and skip["plan"][0]["data"].get("purpose") == "check",
+          '"I know this" goes straight to the check', json.dumps([s["move"] for s in skip.get("plan", [])]))
+
+    shown_before = [o["text"] for o in skip["plan"][0]["data"]["options"]] if skip.get("plan") else []
+    row = plan_json(student)
+    row["mcq"] = None
+    with learner._conn() as conn:
+        conn.execute("UPDATE issued_plan SET plan_json = ? WHERE student_id = ?", (json.dumps(row), student))
+    time.sleep(1.1)
+    before, exchanges = max_evidence_id(), learner._conn().execute("SELECT COUNT(*) FROM exchange_log").fetchone()[0]
+    again = await call(keyed, "tutor_turn", {"message": "A", "this_message": labels,
+                                             "answer": {"part_id": other, "type": "mcq", "choice": "A"}})
+    shown_after = [o["text"] for o in again["plan"][0]["data"]["options"]] if again.get("plan") else []
+    check(max_evidence_id() == before and learner._conn().execute("SELECT COUNT(*) FROM exchange_log").fetchone()[0] == exchanges
+          and sorted(shown_after) == sorted(shown_before) and shown_after != shown_before,
+          "with the map deleted, an answer records nothing and the same question comes back with new letters",
+          json.dumps(shown_after))
+
+    time.sleep(1.1)
+    show = await call(keyed, "tutor_turn", {"message": "just show me", "node_ids": ["yed_definition"],
+                                            "this_message": {**labels, "choice": "just_show_me"}})
+    check([s["move"] for s in show.get("plan", [])] == ["show", "ask_mcq"],
+          '"just show me" shows the point and ends with its check', json.dumps([s["move"] for s in show.get("plan", [])]))
+    chosen, _ = letter(student, True)
+    time.sleep(1.1)
+    await call(keyed, "tutor_turn", {"message": chosen, "this_message": labels,
+                                     "answer": {"part_id": "yed_definition", "type": "mcq", "choice": chosen}})
+    left = learner._conn().execute("SELECT COALESCE(MAX(offload_left), 0) FROM part_state WHERE student_id = ?",
+                                   (student,)).fetchone()[0]
+    check(left == 0, 'after "just show me", the next answer is not discounted (offload_left stays 0)', str(left))
+
+
+async def wrong_intuition(url: str) -> None:
+    """A wrong intuition answer is followed by teaching, never by another intuition question (demo-weak)."""
+    student, part = "demo-weak", "pes_formula"
+    keyed = f"{url}?key={learner.get_student(student)['key']}"
+    labels = {"question_depth": "surface", "engagement": "active"}
+    got = await call(keyed, "tutor_turn", {"message": "How do I work out PES?", "node_ids": [part], "client": "check_mcp",
+                                           "this_message": labels})
+    if [s["data"].get("purpose") for s in got.get("plan", [])] != ["intuition"]:
+        check(False, "a wrong intuition answer is followed by teaching", "no intuition question to answer")
+        return
+    chosen, picked = letter(student, False)
+    time.sleep(1.1)
+    got = await call(keyed, "tutor_turn", {"message": chosen, "client": "check_mcp", "this_message": labels,
+                                           "answer": {"part_id": part, "type": "mcq", "choice": chosen}})
+    moves_ = [s["move"] + (f":{s['data']['purpose']}" if s["move"] == "ask_mcq" else "") for s in got.get("plan", [])]
+    named = (got.get("plan") or [{}])[0].get("data", {}).get("misconceptions") or [{}]
+    check(moves_ == ["feedback", "teach_point", "ask_mcq:check"] and named[0].get("id") == picked,
+          "a wrong intuition answer gets feedback naming it, then teaching, not another intuition question",
+          ", ".join(moves_) or got.get("error", ""))
+
+
+async def prerequisite_and_review(url: str) -> None:
+    """A prerequisite check (demo-weak) and a due review (demo-showme) come as ask_mcq and are scored from the letter."""
+    for student, message, purpose in (("demo-weak", "How do I calculate PED?", "prereq"),
+                                      ("demo-showme", "quiz me on what's due", "review")):
+        keyed = f"{url}?key={learner.get_student(student)['key']}"
+        got = await call(keyed, "tutor_turn", {"message": message, "client": "check_mcp",
+                                               "this_message": {"question_depth": "surface", "engagement": "active"}})
+        step = (got.get("plan") or [{}])[-1]
+        check(step.get("move") == "ask_mcq" and step.get("data", {}).get("purpose") == purpose,
+              f"{student}: a {purpose} question comes as ask_mcq", json.dumps([s["move"] for s in got.get("plan", [])]))
+        if step.get("move") != "ask_mcq":
+            continue
+        chosen, _ = letter(student, True)
+        before = max_evidence_id()
+        time.sleep(1.1)
+        await call(keyed, "tutor_turn", {"message": chosen, "client": "check_mcp",
+                                         "this_message": {"question_depth": "surface", "engagement": "active"},
+                                         "answer": {"part_id": step["part_id"], "type": "mcq", "choice": chosen}})
+        scored = [(e["part_id"], e["evidence_type"], e["score"]) for e in evidence(student, before)]
+        check(scored == [(step["part_id"], "mcq_check", 1.0)], f"{student}: the {purpose} letter is scored", json.dumps(scored))
+
+
+def shuffles() -> None:
+    """MCQ options are shuffled differently for different students."""
+    from edux import plan
+    from edux.context_blocks import Turn
+    settings = load_settings()
+    orders = set()
+    for student in ("demo-secure", "demo-weak", "demo-showme"):
+        turn = Turn(student=learner.get_student(student), parts=[PART], message="", at=learner.now_iso(), limits={},
+                    resolution={})
+        step = plan.ask_mcq(turn, plan.question(PART, "check", graph.score_points(PART)[0]["point"], settings))
+        orders.add(tuple(o["text"] for o in step["data"]["options"]))
+    check(len(orders) > 1, "MCQ options are shuffled differently for different students", f"{len(orders)} orders for 3 students")
+
+
 async def point_ids(keyed: str, student: str) -> None:
     """points_met scores the same as letters, full ids, a mix, or with no saved plan; another part's id is refused."""
     points = graph.score_points(PART)
@@ -216,8 +363,10 @@ async def main(url: str, key: str, student: str) -> None:
         init = await session.initialize()
         instructions = init.instructions or ""
         words = len(instructions.split())
-        check(0 < words <= INSTRUCTIONS_MAX_WORDS, f"the server instructions are at most {INSTRUCTIONS_MAX_WORDS} words",
-              f"{words} words, {instructions.count(chr(10) + '## ')} move sections")
+        sections = instructions.count(chr(10) + "## ")
+        check(0 < words <= INSTRUCTIONS_MAX_WORDS and sections == 11,
+              f"the server instructions have 11 move sections and are at most {INSTRUCTIONS_MAX_WORDS} words",
+              f"{words} words, {sections} move sections")
         check(not PLACEHOLDER.search(instructions), "no placeholder in the server instructions",
               ", ".join(PLACEHOLDER.findall(instructions)[:3]))
         tools = {t.name for t in (await session.list_tools()).tools}
@@ -230,6 +379,10 @@ async def main(url: str, key: str, student: str) -> None:
             check(bool(got.messages), f"prompt {name}")
 
     await conversation(keyed, student)
+    await choices(keyed, student)
+    await wrong_intuition(url)
+    await prerequisite_and_review(url)
+    shuffles()
 
     before = max_evidence_id()
     bad = await call(keyed, "tutor_turn", {"message": "it's the minus sign", "node_ids": [PART],
