@@ -78,7 +78,7 @@ reference = ["notes"]
 - **Watch-for misconceptions** go with every move that asks the student something, so the chatbot can tag a misconception the answer shows. They are sent as `id` and `wrong_idea` only, with no correction, for the step's part. The moves are listed in `context.toml`:
   ```toml
   [watch_for]                # moves that ask the student something also get the part's watch-for misconceptions (step 05c)
-  moves = ["prequestion", "check_prereq", "step_back", "teach_explain_back", "review", "extend"]
+  moves = ["prequestion", "check_prereq", "step_back", "teach", "review", "extend", "reteach", "reask"]
   ```
   A bare move (`review`) covers its variants, as with the reference tables.
 - `notes` is limited to the step's part.

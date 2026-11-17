@@ -23,7 +23,7 @@ Ask each student, in their own chat: **"How do I calculate price elasticity of d
 | student | what the chatbot should do | plan |
 |---|---|---|
 | demo-secure | asks a multiple-choice question first and nothing else | `prequestion` |
-| demo-weak | no question on the formula; first checks what PED means with one quick question. Once they answer: feedback, then corrects "divide the change in price by the change in quantity" | `check_prereq`, then `feedback` + `correct_misconception` |
+| demo-weak | no question on the formula; first checks what PED means with one quick question. Once they answer: feedback, then corrects "divide the change in price by the change in quantity" | `check_prereq`, then `feedback` (with the held misconception) |
 | demo-showme | asks the question first, unless they've said "just show me" this session; has reviews booked from earlier "just show me" turns | `prequestion` |
 
 Optionally show the plans side by side (`python -m edux.cli context --student <id> --message "..."` shows the blocks they're built from) to make the difference explicit.
@@ -40,7 +40,7 @@ Optionally show the plans side by side (`python -m edux.cli context --student <i
 
    The answer: quantity −10%, price +25%, so PED = −0.4 (inelastic).
 2. Answer correctly, then say "I've got it". The chatbot should ask for the idea in your own words.
-3. Give an explanation that misses one point, e.g. "you divide the change in quantity by the change in price". The chatbot ticks the points you made, and the server scores them (points met / points). The plan is `reteach_gap` with only the missing point: the chatbot re-teaches just that and asks you to try again.
+3. Give an explanation that misses one point, e.g. "you divide the change in quantity by the change in price". The chatbot ticks the points you made, and the server scores them (points met / points). The plan is `feedback` then `reteach` with only the missing point: the chatbot says what was good, re-teaches just the missing point and asks you to try again.
 
 ## 4. Reviews: recall and transfer (demo-secure, about 1 minute)
 Ask **"Quiz me on what's due"** (the `review_due` prompt). Three reviews are due:
