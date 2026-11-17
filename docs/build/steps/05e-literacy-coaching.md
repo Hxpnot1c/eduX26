@@ -65,7 +65,7 @@ A committed mini pack, `ingest/ai_literacy/`, in course-pack format (`nodes.csv`
 - `asks_recent`, a boolean, for `research` only: the question is about recent data or events;
 - `pushback_changed`, a boolean: the student challenged the previous answer and the chatbot changed it.
 
-Migration `008_exchange_request.sql` adds `request_type`, `question_features`, `source_conflict`, `web_access`, `asks_recent` and `pushback_changed` columns to `exchange_log` (events, so they are replayed). `source_conflict` also sets the existing `conflict_flagged`.
+Migration `009_exchange_request.sql` adds `request_type`, `question_features`, `source_conflict`, `web_access`, `asks_recent` and `pushback_changed` columns to `exchange_log` (events, so they are replayed). `source_conflict` also sets the existing `conflict_flagged`.
 
 `concept` and `homework` follow the existing plan and never get literacy tasks. `other` gets an empty plan.
 
@@ -178,7 +178,7 @@ ail_how = { slip = 0.10, guess = 0.25 }   # 4-option multiple choice
 - `reference/tools-and-context.md`: the labels, the research plan, the how-AI-works checks and limits, the new moves and the progress section.
 - `reference/learner-model.md`: the AI-literacy parts and evidence types, including `ail_how`. (The "Assessment design" paragraph was written with this plan.)
 - `reference/settings.md`: `[literacy]` and the new evidence types.
-- `reference/database.md`: migration 008 and the `trusted_source` table.
+- `reference/database.md`: migration 009 and the `trusted_source` table.
 - `example-mini`: a few trusted sources.
 - `scripts/check_mcp.py`: a research-question run (below).
 
