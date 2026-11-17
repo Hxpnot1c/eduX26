@@ -25,7 +25,13 @@ from edux.settings import ContextConfig, Settings, load_context, load_settings, 
 SUPPORT_GIVEN = ("worked_example", "hint", "explain_back", "none")
 CHOICE_TAKEN = ("try_first", "hint", "just_show_me", "none")
 # What a student's answer can be to, as sent by the chatbot; each is also a key of [bkt.evidence].
-ANSWER_TYPES = ("prequestion", "explain_back", "review", "extend", "past_question")
+# "mcq" is any server-built multiple-choice question (step 05d), scored from the letter picked.
+ANSWER_TYPES = ("prequestion", "mcq", "explain_back", "review", "extend", "past_question")
+
+
+class LostQuestion(ValueError):
+    """An mcq answer arrived but the letter -> option map for that part is gone (a restart, a reset): nothing
+    can be scored, so nothing is recorded and the question is asked again."""
 
 _local = threading.local()
 _paths: dict[str, Path | None] = {"learner": None, "content": None}
@@ -147,13 +153,18 @@ def _evidence_rows(evidence: list[dict]) -> list[tuple[str, str, float, list[str
     return rows
 
 
-def score_answer(answer: dict) -> dict:
+def score_answer(answer: dict, mcq: dict | None = None) -> dict:
     """Turn a chatbot's answer report into an evidence item {part_id, type, score, misconception_ids}.
 
-    The chatbot ticks; the server scores. A prequestion scores 1 if correct, else 0, and its picked
-    misconception goes into misconception_ids. Every other type scores len(points_met) / len(points), against
-    graph.score_points for the part; points_met may be letters from score_next, full point ids or a mix, and
-    the resolved point ids are returned as points_met. Raises ValueError on an unknown part, type, point or misconception.
+    The chatbot ticks; the server scores. An mcq answer is scored from answer.choice against mcq, the letter ->
+    option map stored with the last plan (step 05d): 1 for the correct option, else 0, with the picked
+    misconception first in misconception_ids (a chatbot-written extra option activates nothing). Its evidence
+    type is prequestion for an intuition question, otherwise mcq_check, and the item also carries purpose,
+    correct, picked, point_id and correct_option (its text). A prequestion scores 1 if correct, else 0, and its picked misconception goes
+    into misconception_ids. Every other type scores len(points_met) / len(points), against graph.score_points
+    for the part; points_met may be letters from score_next, full point ids or a mix, and the resolved point
+    ids are returned as points_met. Raises LostQuestion when an mcq answer has no map for its part, and
+    ValueError on an unknown part, type, letter, point or misconception.
     """
     node = graph.get_node(answer.get("part_id") or "")
     if node is None or node["level"] != "part":
@@ -166,6 +177,23 @@ def score_answer(answer: dict) -> dict:
     for m in misconception_ids:
         if graph.get_misconception(m) is None:
             raise ValueError(f"answer.misconception_ids: unknown misconception {m!r}")
+    if kind == "mcq":
+        letter = str(answer.get("choice") or "").strip().upper()
+        if not letter:
+            raise ValueError("answer.choice (the letter picked, e.g. B) is required for an mcq answer")
+        if not mcq or mcq.get("part_id") != part_id:
+            raise LostQuestion(f"no multiple-choice question on {part_id} is waiting for an answer")
+        option = mcq["options"].get(letter)
+        if option is None:
+            raise ValueError(f"answer.choice: {letter!r} is not an option; use one of {', '.join(sorted(mcq['options']))}")
+        picked = option["id"]
+        correct = picked == "correct"
+        if not correct and picked != "extra":
+            misconception_ids = [picked] + [m for m in misconception_ids if m != picked]
+        return {"part_id": part_id, "type": "prequestion" if mcq["purpose"] == "intuition" else "mcq_check",
+                "score": 1.0 if correct else 0.0, "misconception_ids": misconception_ids, "purpose": mcq["purpose"],
+                "correct": correct, "picked": picked, "point_id": mcq.get("point_id"),
+                "correct_option": next((o["text"] for o in mcq["options"].values() if o["id"] == "correct"), "")}
     if kind == "prequestion":
         if not isinstance(answer.get("correct"), bool):
             raise ValueError("answer.correct (true or false) is required for a prequestion")

@@ -34,12 +34,13 @@ from edux.settings import TEXT_DIR, Settings, SettingsError, read_text
 
 log = logging.getLogger(__name__)
 
-STOP = {"reteach", "offer_stop", "step_back", "ask_which", "prequestion", "check_prereq", "reask"}
-ASKS = {"reteach", "step_back", "prequestion", "check_prereq", "teach", "extend", "review", "reask"}
+STOP = {"reteach", "offer_stop", "step_back", "ask_which", "ask_mcq", "check_prereq", "reask"}
+ASKS = {"reteach", "step_back", "ask_mcq", "check_prereq", "teach", "extend", "review", "reask"}
 MAX_STEPS = 2
 # The answer.type the chatbot sends back for a step that asks something.
-ANSWER_TYPE = {"prequestion": "prequestion", "check_prereq": "review", "step_back": "review", "review": "review",
+ANSWER_TYPE = {"ask_mcq": "mcq", "check_prereq": "review", "step_back": "review", "review": "review",
                "extend": "extend", "teach": "explain_back"}
+LETTERS = "ABCDEFGHIJ"
 
 
 # The data fields each move's cue can name as a {field} placeholder: (always present, sometimes present).
@@ -48,11 +49,11 @@ ANSWER_TYPE = {"prequestion": "prequestion", "check_prereq": "review", "step_bac
 TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "answer_brief": (set(), set()),
     "ask_which": ({"candidates"}, set()),
+    "ask_mcq_intuition": ({"purpose", "options", "answer_type"}, {"target", "extra_option"}),
     "check_prereq": ({"name", "for", "note", "answer_type"}, set()),
     "extend": ({"answer_type"}, set()),
-    "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "points_met", "missing"}),
+    "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "correct_option", "purpose", "points_met", "missing"}),
     "offer_stop": ({"minutes", "quick_parts"}, set()),
-    "prequestion": ({"target", "options", "answer_type"}, set()),
     "reask": ({"asked", "answer_type"}, set()),
     "reteach": ({"answer_type"}, {"missing", "anchor"}),
     "review_recall": ({"name", "mode", "answer_type"}, set()),
@@ -87,6 +88,21 @@ def move_keys() -> list[str]:
     return sorted(f.name[:-3] for f in (TEXT_DIR / "moves").glob("*.md") if not f.name.endswith(".cue.md"))
 
 
+def cue_keys() -> list[str]:
+    """Every key with a cue: text/moves/<key>.cue.md. A key is a move, or a move plus its variant
+    (ask_mcq_<purpose>), whose section is the move's."""
+    return sorted(f.name[:-7] for f in (TEXT_DIR / "moves").glob("*.cue.md"))
+
+
+def section_of(key: str) -> str | None:
+    """The section a cue key belongs to: its own, else the longest move whose name it extends (<move>_<variant>)."""
+    sections = move_keys()
+    if key in sections:
+        return key
+    found = [m for m in sections if key.startswith(m + "_")]
+    return max(found, key=len) if found else None
+
+
 def _text(key: str) -> str:
     return read_text(f"moves/{key}.md").strip()
 
@@ -106,20 +122,26 @@ def check_texts(settings: Settings) -> list[str]:
     instructions.max_sentences and a cue over instructions.cue_max_words."""
     limits = settings.instructions
     errors, warnings = [], []
+    cues = cue_keys()
     for key in move_keys():
-        always, sometimes = TEXT_FIELDS.get(key, (set(), set()))
+        mine = [c for c in cues if section_of(c) == key]
+        fields = set().union(*(a | b for c in mine for a, b in [TEXT_FIELDS.get(c, (set(), set()))]))
         text = _text(key)
         if placeholders(text):
             errors.append(f"text/moves/{key}.md: sections are sent once, so use data.<field>, "
                           f"not {{{sorted(placeholders(text))[0]}}}")
-        stray = sorted(set(re.findall(r"`([a-z_]+)`", text)) & (always | sometimes))
+        stray = sorted(set(re.findall(r"`([a-z_]+)`", text)) & fields)
         if stray:
             errors.append(f"text/moves/{key}.md: write data fields as data.<field>, not `{stray[0]}`")
         if _sentences(text) > limits.max_sentences:
             warnings.append(f"text/moves/{key}.md: {_sentences(text)} sentences, over {limits.max_sentences}")
-        if not (TEXT_DIR / "moves" / f"{key}.cue.md").exists():
-            errors.append(f"text/moves/{key}.cue.md is missing")
+        if not mine:
+            errors.append(f"text/moves/{key}.cue.md (or {key}_<variant>.cue.md) is missing")
+    for key in cues:
+        if section_of(key) is None:
+            errors.append(f"text/moves/{key}.cue.md has no section text/moves/<move>.md")
             continue
+        always, sometimes = TEXT_FIELDS.get(key, (set(), set()))
         cue = _cue(key)
         if len(cue.split()) > limits.cue_max_words:
             warnings.append(f"text/moves/{key}.cue.md: {len(cue.split())} words, over {limits.cue_max_words}")
@@ -151,9 +173,9 @@ def server_instructions(settings: Settings) -> str:
 
 
 def _step(move: str, part_id: str | None, data: dict | None = None, key: str | None = None) -> dict:
-    """A plan step. key is the move text's name (teach_<level>, review_<mode>, otherwise the move): its
-    section is in the server instructions, and its one-line cue goes with the step, filled from data. The key
-    stays in the saved plan; service.public_steps leaves it out of the result."""
+    """A plan step. key is the cue's name (ask_mcq_<purpose>, teach_<level>, review_<mode>, otherwise the
+    move): its section is in the server instructions, and its one-line cue goes with the step, filled from
+    data. The key stays in the saved plan; service.public_steps leaves it out of the result."""
     data = dict(data or {})
     if move in ANSWER_TYPE:
         data["answer_type"] = ANSWER_TYPE[move]
@@ -164,6 +186,66 @@ def _step(move: str, part_id: str | None, data: dict | None = None, key: str | N
 def _summary(turn: Turn, part_id: str) -> dict:
     node = graph.get_node(part_id)
     return {"id": part_id, "name": node["name"], "level": learner.level(turn.p(part_id))}
+
+
+# --- multiple-choice questions (step 05d) ---------------------------------------------
+
+
+def distractors(part_id: str, settings: Settings) -> list[dict]:
+    """The wrong options for a question on a part: its misconceptions (examiner-report sources first), at most
+    mcq.max_options - 1, as {id, text}."""
+    found = graph.misconceptions_for([part_id])
+    found.sort(key=lambda m: "examiner_report" not in graph.source_types(m["source_ids"]))
+    return [{"id": m["id"], "text": m["wrong_idea"]} for m in found[:settings.mcq.max_options - 1]]
+
+
+def question(part_id: str, purpose: str, correct: str, settings: Settings, point_id: str | None = None) -> dict:
+    """What a multiple-choice question asks, before it is lettered: the correct option's text, the part's
+    misconceptions as wrong options, and whether the chatbot may write one more (the part has fewer than
+    mcq.min_distractors). Kept with a pending question so it can be asked again with new letters."""
+    wrong = distractors(part_id, settings)
+    return {"part_id": part_id, "purpose": purpose, "point_id": point_id, "correct": correct, "wrong": wrong,
+            "extra": len(wrong) < settings.mcq.min_distractors}
+
+
+def ask_mcq(turn: Turn, q: dict, data: dict | None = None, avoid: list[str] | None = None) -> dict:
+    """The ask_mcq step for a question: its options shuffled by the server and lettered A, B, C..., with
+    data.extra_option naming a letter the chatbot fills when the part has too few misconceptions. The shuffle
+    differs per student and per asking, and never repeats avoid (the last order of the same question). The
+    step keeps the question and the letter -> option map (mcq), which service saves with the plan and
+    public_steps leaves out."""
+    ids = ["correct"] + [w["id"] for w in q["wrong"]] + (["extra"] if q["extra"] else [])
+    texts = {"correct": q["correct"], **{w["id"]: w["text"] for w in q["wrong"]}}
+    rng = random.Random(hashlib.sha256(f"{turn.student_id}:{q['part_id']}:{q['purpose']}:{turn.at}".encode()).digest())
+    shown = [i for i in avoid or [] if i != "extra"]
+    for _ in range(20):   # a repeat must look different: compare the options the student sees
+        rng.shuffle(ids)
+        if len(shown) < 2 or [i for i in ids if i != "extra"] != shown:
+            break
+    letters = dict(zip(LETTERS, ids))
+    out = {"purpose": q["purpose"], **(data or {}),
+           "options": [{"letter": letter, "text": texts[i]} for letter, i in letters.items() if i != "extra"]}
+    extra = next((letter for letter, i in letters.items() if i == "extra"), None)
+    if extra:
+        out["extra_option"] = extra
+    step = _step("ask_mcq", q["part_id"], out, key=f"ask_mcq_{q['purpose']}")
+    step["question"] = q
+    step["mcq"] = {"part_id": q["part_id"], "purpose": q["purpose"], "point_id": q["point_id"],
+                   "options": {letter: {"id": i, "text": texts.get(i, "")} for letter, i in letters.items()}}
+    return step
+
+
+def ask_again(turn: Turn, pending: dict) -> dict:
+    """A pending multiple-choice question asked again with freshly shuffled options, in a different order
+    from the one last shown (its map was lost, so the letter couldn't be scored)."""
+    q, data = pending["question"], pending["data"]
+    by_text = {q["correct"]: "correct", **{w["text"]: w["id"] for w in q["wrong"]}}
+    shown = {o["letter"]: by_text.get(o["text"]) for o in data.get("options", [])}
+    if data.get("extra_option"):
+        shown[data["extra_option"]] = "extra"
+    avoid = [shown[letter] for letter in sorted(shown)]
+    keep = {k: v for k, v in data.items() if k not in ("options", "extra_option", "terms", "answer_type", "purpose")}
+    return ask_mcq(turn, q, keep, avoid)
 
 
 def is_stop(step: dict) -> bool:
@@ -188,6 +270,9 @@ def feedback(answer: dict, evidence: dict) -> tuple[dict, dict | None]:
     re-teaches the missing points (None when nothing is missing)."""
     part = evidence["part_id"]
     shown = [_misconception(m) for m in map(graph.get_misconception, evidence["misconception_ids"]) if m]
+    if answer["type"] == "mcq":   # the picked misconception comes first in misconception_ids
+        return _step("feedback", part, {"type": "mcq", "purpose": evidence["purpose"], "correct": evidence["correct"],
+                                        "correct_option": evidence["correct_option"], "misconceptions": shown}), None
     if answer["type"] == "prequestion":   # the picked option comes first in misconception_ids
         return _step("feedback", part, {"type": "prequestion", "correct": evidence["score"] == 1.0,
                                         "correct_idea": core_idea(part)[1], "misconceptions": shown}), None
@@ -231,15 +316,6 @@ def corrected_in(steps: list[dict]) -> set[str]:
     return found
 
 
-def _options(turn: Turn, block: dict) -> list[dict]:
-    """The pre-question's options, the correct idea among the misconceptions, in an order fixed per student and part."""
-    options = [{"id": "correct", "text": block["correct"]}] + [
-        {"id": d["id"], "text": d["wrong_idea"]} for d in block["distractors"]]
-    seed = hashlib.sha256(f"{turn.student_id}:{block['part_id']}".encode()).hexdigest()
-    random.Random(seed).shuffle(options)
-    return options
-
-
 def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_plan: list[dict],
               handled: set[str], answered_prequestion: str | None, offered_stop: bool = False) -> dict | None:
     """The first rule that matches, or None when there is nothing to plan. Stopping is offered once a session:
@@ -272,9 +348,10 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
         return _step("show", focus, {"part_type": graph.get_node(focus)["part_type"]})
 
     pq = blocks.get("prequestion")
-    asked_before = any(s["move"] == "prequestion" and s["part_id"] == focus for s in last_plan)
+    asked_before = any(s["move"] == "ask_mcq" and s["data"].get("purpose") == "intuition" and s["part_id"] == focus
+                       for s in last_plan)
     if pq and pq["part_id"] != answered_prequestion and not asked_before:
-        return _step("prequestion", pq["part_id"], {"target": pq["target"], "options": _options(turn, pq)})
+        return ask_mcq(turn, question(pq["part_id"], "intuition", pq["correct"], settings), {"target": pq["target"]})
 
     for item in (blocks.get("weak_prerequisites") or {}).get("items", []):
         if item["level"] == "new" and not _checked_this_session(turn, item["part_id"], last_plan):
@@ -334,7 +411,8 @@ def asking_step(steps: list[dict]) -> dict | None:
 
 
 def reask(pending: dict) -> list[dict]:
-    """answer_brief, then the pending question again with the same data (so the same answer_type and score_next)."""
+    """answer_brief, then the pending question again with the same data (so the same answer_type and score_next;
+    a multiple-choice question keeps its options and letter map)."""
     data = {"asked": pending["move"], **{k: v for k, v in pending["data"].items() if k != "terms"}}
     return [_step("answer_brief", pending["part_id"]), {**_step("reask", pending["part_id"], data)}]
 
@@ -360,7 +438,7 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
         first, retry = feedback(answer, evidence)
         steps.append(first)
         handled |= set(evidence["misconception_ids"])
-        if answer["type"] == "prequestion":
+        if answer["type"] == "prequestion" or evidence.get("purpose") == "intuition":
             answered_prequestion = evidence["part_id"]
         if retry:   # reteach ends the plan, unless they're tired or stuck: then say what's missing and do that instead
             urgent = main_step(turn, blocks, settings, choice, last_plan, handled, answered_prequestion, offered_stop)
@@ -389,7 +467,7 @@ def lettered(part_id: str) -> list[dict]:
 
 
 def score_next(plan: list[dict]) -> dict[str, list[dict]]:
-    """For each part a step asks about (a pre-question is answered by option, so it has none): the points to
+    """For each part a step asks about (a multiple-choice question is answered by letter, so it has none): the points to
     tick in the student's next answer, lettered a, b, c... in point order. A letter is resolved from the
     course content when the answer comes back, so no mapping is saved."""
     out: dict[str, list[dict]] = {}
@@ -399,7 +477,7 @@ def score_next(plan: list[dict]) -> dict[str, list[dict]]:
                 points = lettered(part["id"])
                 if points:
                     out.setdefault(part["id"], points)
-        by_option = step["move"] == "prequestion" or step["data"].get("asked") == "prequestion"
+        by_option = step["move"] == "ask_mcq" or step["data"].get("asked") in ("ask_mcq", "prequestion")
         if step["move"] in ASKS and not by_option and step["part_id"] and step["part_id"] not in out:
             points = lettered(step["part_id"])
             if points:
