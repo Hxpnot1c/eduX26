@@ -232,7 +232,7 @@ reference = ["notes"]
 
 ```toml
 [watch_for]                # moves that ask the student something also get the part's watch-for misconceptions (step 05c)
-moves = ["ask_mcq", "explain_back", "extend", "reask"]   # step 05c: ["prequestion", "check_prereq", "step_back", "teach_explain_back", "review", "extend", "reask"]
+moves = ["ask_mcq", "explain_back", "extend", "reask"]   # step 05c: ["prequestion", "check_prereq", "step_back", "teach", "review", "extend", "reteach", "reask"]
 ```
 
 Watch-for misconceptions are sent as `id` and `wrong_idea` only, so the chatbot can tag one the student's answer shows. Over the result budget they are dropped last.

@@ -6,8 +6,11 @@ Run it from the repo root against a server started on the same data folder (EDUX
 example-mini pack loaded and the demo students seeded. It:
 - resets the demo students (seed-demo --reset keeps their keys), so the run starts from the seeded state;
 - lists the tools and prompts;
-- runs a three-message conversation as the student through tutor_turn and checks each plan, the recorded
-  evidence and the misconception state, and that no p_now reaches the chatbot;
+- runs a three-message conversation as the student through tutor_turn, then a question asked instead of an
+  answer, and checks each plan, the recorded evidence and the misconception state, result sizes against the
+  budget, style, known terms, watch-for misconceptions, and that no p_now reaches the chatbot;
+- checks the server instructions' length, that points_met scores the same as letters, full ids, a mix or with
+  no saved plan, and that another part's point is refused;
 - checks a bad answer is refused and records nothing, get_my_progress, update_my_profile, that a wrong or
   missing key is refused with 401, and that the minimal profile returns no plan;
 - checks rebuild gives identical state and tutor_turn's median server time is under 100 ms;
@@ -93,7 +96,8 @@ def max_evidence_id() -> int:
 
 
 async def conversation(keyed: str, student: str) -> None:
-    """The three-message run from the step 05b done-when list."""
+    """The three-message run from the step 05b done-when list, then a question asked instead of an answer
+    (step 05c), with result sizes, style, terms and watch-for checks."""
     start = max_evidence_id()
     turns = []
 
@@ -160,9 +164,13 @@ async def conversation(keyed: str, student: str) -> None:
           json.dumps(sorted(shapes)))
     filled = [step["cue"] for t in turns for step in t.get("plan", []) if PLACEHOLDER.search(json.dumps(step))]
     check(not filled, "no placeholder in any step", "; ".join(filled[:2]))
-    watch = ((first.get("reference") or {}).get("misconceptions") or {}).get("watch_for") or []
-    check(bool(watch) and all(set(w) == {"id", "wrong_idea"} for w in watch),
-          "an asking step carries watch-for misconceptions as id and wrong_idea only", json.dumps(watch)[:120])
+    bare = [i for i, t in enumerate(turns, 1) if any("answer_type" in s["data"] for s in t.get("plan", []))
+            and not ((t.get("reference") or {}).get("misconceptions") or {}).get("watch_for")]
+    shapes = {tuple(sorted(w)) for t in turns
+              for w in ((t.get("reference") or {}).get("misconceptions") or {}).get("watch_for") or []}
+    check(not bare and shapes == {("id", "wrong_idea")},
+          "every plan that asks something carries watch-for misconceptions as id and wrong_idea only",
+          f"none in turn(s) {bare}" if bare else json.dumps(sorted(shapes)))
     check("style" in turns[0] and not any("style" in t for t in turns[1:]),
           "style comes with the first call of a session only", ", ".join(str("style" in t) for t in turns))
     for i, t in enumerate(turns, 1):
