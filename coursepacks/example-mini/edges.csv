@@ -1,8 +1,8 @@
-from_id,to_id,type,note,confidence,source_ids,status,flag,updated_by,updated_at
-ped_definition,ped_formula,prerequisite,,0.95,spec,draft,,extraction,
-ped_formula,ped_values,prerequisite,,0.95,spec,draft,,extraction,
-ped_values,tax_incidence_split,prerequisite,,0.9,tb_main,draft,,extraction,
-tax_supply_shift,tax_incidence_split,prerequisite,,0.9,tb_main,draft,,extraction,
-ped,pes,analogous,"Same ratio of percentage changes, with quantity supplied in place of quantity demanded.",0.9,tb_main,draft,,extraction,
-ped,yed,confusable,"Both divide a percentage change in quantity demanded, but YED uses income, not the good's price.",0.85,tb_main,draft,,extraction,
-tax_supply_shift,externality_tax_eval,causal,"A tax shifts supply left, raising price and cutting output towards the socially optimal level.",0.85,tb_main,draft,,extraction,
+from_id,to_id,type,note,confidence,source_ids,teach_use,status,flag,updated_by,updated_at
+ped_definition,ped_formula,prerequisite,You need to know PED compares percentage changes before you can calculate it.,0.95,spec,intuition,draft,,extraction,
+ped_formula,ped_values,prerequisite,You read a value as elastic or inelastic only once you can calculate it.,0.95,spec,intuition,draft,,extraction,
+ped_values,tax_incidence_split,prerequisite,How elastic demand is decides how much of a tax consumers pay.,0.9,tb_main,none,draft,,extraction,
+tax_supply_shift,tax_incidence_split,prerequisite,The supply shift on the diagram shows the price rise that splits the tax.,0.9,tb_main,none,draft,,extraction,
+ped,pes,analogous,"Same ratio of percentage changes, with quantity supplied in place of quantity demanded.",0.9,tb_main,intuition,draft,,extraction,
+ped,yed,confusable,"Both divide a percentage change in quantity demanded, but YED uses income, not the good's price.",0.85,tb_main,contrast,draft,,extraction,
+tax_supply_shift,externality_tax_eval,causal,"A tax shifts supply left, raising price and cutting output towards the socially optimal level.",0.85,tb_main,none,draft,,extraction,

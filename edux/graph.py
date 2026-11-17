@@ -138,7 +138,7 @@ def _edges(node_id: str, edge_type: str, direction: str) -> list[dict]:
 
     direction is "out" (node is from_id), "in" (node is to_id) or "both". Each result has
     other (the node at the far end), via (the concept it was inherited from, or None),
-    note, confidence and weight.
+    note, teach_use, confidence and weight.
     """
     node_id = canonical(node_id)
     if get_node(node_id) is None:
@@ -146,7 +146,7 @@ def _edges(node_id: str, edge_type: str, direction: str) -> list[dict]:
     own = _own_ids(node_id)
     visible = _visible_ids()
     rows = _conn().execute(
-        f"""SELECT e.from_id, e.to_id, e.type, e.note, e.confidence, w.weight
+        f"""SELECT e.from_id, e.to_id, e.type, e.note, e.teach_use, e.confidence, w.weight
             FROM edge e LEFT JOIN edge_weight w ON w.from_id = e.from_id AND w.to_id = e.to_id AND w.type = e.type
             WHERE e.type = ? AND e.status != 'rejected'
             AND (e.from_id IN ({','.join('?' * len(own))}) OR e.to_id IN ({','.join('?' * len(own))}))
@@ -167,6 +167,7 @@ def _edges(node_id: str, edge_type: str, direction: str) -> list[dict]:
                     "direction": wanted,
                     "via": None if end == node_id else end,
                     "note": r["note"] or "",
+                    "teach_use": r["teach_use"] or "none",
                     "confidence": r["confidence"],
                     "weight": r["weight"],
                 })
@@ -297,26 +298,28 @@ def get_misconception(misconception_id: str) -> dict | None:
 
 
 def mark_points_for(part_ids: list[str]) -> list[dict]:
-    """Mark points on the parts (concept ids expand to their parts), approved first."""
+    """Mark points on the parts (concept ids expand to their parts), in their order within each part (points
+    with no order last), approved first among equals."""
     parts = _expand_parts(part_ids)
     if not parts:
         return []
     rows = _conn().execute(
         f"""SELECT * FROM mark_point WHERE node_id IN ({_placeholders(parts)}) AND status != 'rejected'
-            ORDER BY status != 'approved', rowid""",
+            ORDER BY "order" IS NULL, "order", status != 'approved', rowid""",
         parts,
     )
     return [{**dict(r), "source_ids": split_list(r["source_ids"])} for r in rows]
 
 
 def score_points(part_id: str) -> list[dict]:
-    """The points an answer on a part is scored against: {id, point}. The part's own mark points (ids from
-    mark_point), or, if it has none, the key points of its notes, with ids "<note_id>:k<n>" (n from 1)."""
-    points = [{"id": mp["id"], "point": mp["point"]} for mp in mark_points_for([part_id]) if mp["node_id"] == part_id]
+    """The points an answer on a part is scored against, and taught in: {id, point, exemplar}. The part's own
+    mark points in their order (ids from mark_point), or, if it has none, the key points of its notes, with ids "<note_id>:k<n>" (n from 1)."""
+    points = [{"id": mp["id"], "point": mp["point"], "exemplar": mp["exemplar"] or ""}
+              for mp in mark_points_for([part_id]) if mp["node_id"] == part_id]
     if points:
         return points
     for note in notes_for([part_id]):
-        points += [{"id": f"{note['id']}:k{n}", "point": text} for n, text in enumerate(note["key_points"], 1)]
+        points += [{"id": f"{note['id']}:k{n}", "point": text, "exemplar": ""} for n, text in enumerate(note["key_points"], 1)]
     return points
 
 

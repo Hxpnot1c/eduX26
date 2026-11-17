@@ -78,10 +78,18 @@ approach_min_records = 2   # past approaches needed before "what worked before" 
 
 [prequestion]              # a question asked before teaching an untaught part
 enabled = true
-max_options = 4
-min_distractors = 2
 exchange_weight = 0.5      # an exchange on the part counts this much towards coverage
 full_weight_at = 3.0       # coverage at which a pre-question counts as full evidence
+
+[points]                   # point-by-point teaching (step 05d)
+max_words = 80             # words of explanation per teach_point (MCQ options don't count)
+reteach_limit = 1          # re-teaches of a missed point before moving on
+warn_min = 2               # validation warning below this many points per part
+warn_max = 4               # and above this many
+
+[mcq]                      # server-built multiple-choice questions (step 05d)
+max_options = 4            # the correct option plus up to this many minus one misconceptions
+min_distractors = 2        # fewer misconceptions than this: the chatbot may write one more option
 
 [session]                  # sessions, fatigue and getting stuck, derived from events
 gap_minutes = 30           # a longer gap starts a new session

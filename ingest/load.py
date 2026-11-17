@@ -118,7 +118,7 @@ def insert_file(conn: sqlite3.Connection, spec: FileSpec, rows: list[dict[str, s
         names.append("course_id")
     if "extra" in db_columns:
         names.append("extra")
-    sql = f"INSERT INTO {spec.table} ({', '.join(names)}) VALUES ({', '.join('?' * len(names))})"
+    sql = f"INSERT INTO {spec.table} ({', '.join(f'"{n}"' for n in names)}) VALUES ({', '.join('?' * len(names))})"
     for row in rows:
         values = [_convert(row.get(c.name, ""), c) for c in known]
         if spec.course_scoped and "course_id" in db_columns:
@@ -208,7 +208,7 @@ def _apply_feedback_row(conn: sqlite3.Connection, fb: dict[str, str], course_id:
         problem = value_error(column, value)
         if problem:
             raise FeedbackError(problem)
-        cur = conn.execute(f"UPDATE {spec.table} SET {field_name} = ?, updated_by = ?, updated_at = ? WHERE {where}",
+        cur = conn.execute(f'UPDATE {spec.table} SET "{field_name}" = ?, updated_by = ?, updated_at = ? WHERE {where}',
                            [_convert(value, column), stamp["updated_by"], stamp["updated_at"], *args])
         if not cur.rowcount:
             raise FeedbackError("target not found")

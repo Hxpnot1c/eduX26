@@ -63,6 +63,7 @@ The knowledge tree.
 | source_ids | list |  |  |  | ids from sources.csv |
 | extraction_confidence | real |  |  | `1.0` | 0–1 |
 | difficulty | real |  |  |  | optional, 0 (easy) to 1 (hard); blank inherits from the nearest ancestor, else average |
+| intuition | text |  |  |  | parts only: one line in everyday language that leads into the idea; the source of the intuition question when no known part links in |
 | status | text |  | `draft` / `approved` / `rejected` | `draft` | draft / approved / rejected |
 | flag | text |  |  |  | blank, or a short reason extraction thinks the row may be wrong |
 | updated_by | text |  |  | `extraction` | `extraction`, or a teacher's name |
@@ -77,9 +78,10 @@ Typed links between nodes. An edge on a concept applies to all its parts.
 | from_id | text | yes |  |  | node id |
 | to_id | text | yes |  |  | node id |
 | type | text | yes | `prerequisite` / `analogous` / `confusable` / `causal` |  | prerequisite / analogous / confusable / causal |
-| note | text |  |  |  | required for analogous and causal: what maps onto what, or how A affects B |
+| note | text |  |  |  | required: what the link means, e.g. what maps onto what, or how A affects B |
 | confidence | real |  |  | `0.8` | 0–1 |
 | source_ids | list |  |  |  | where the link is evidenced |
+| teach_use | text |  | `intuition` / `contrast` / `none` | `none` | `intuition` (the `from` part can lead into the `to` part), `contrast` (use it to show the difference) or `none` |
 | status | text |  | `draft` / `approved` / `rejected` | `draft` | draft / approved / rejected |
 | flag | text |  |  |  | blank, or a short reason extraction thinks the row may be wrong |
 | updated_by | text |  |  | `extraction` | `extraction`, or a teacher's name |
@@ -128,6 +130,7 @@ Our fallback points, for parts past papers don't test.
 | point | text | yes |  |  | one sentence |
 | exemplar | text |  |  |  | short model answer fragment |
 | source_ids | list | yes |  |  | the specification or textbook section the point is based on |
+| order | int |  |  |  | position within the part (1, 2, ...); points are taught and scored in this order |
 | status | text |  | `draft` / `approved` / `rejected` | `draft` | draft / approved / rejected |
 | flag | text |  |  |  | blank, or a short reason extraction thinks the row may be wrong |
 | updated_by | text |  |  | `extraction` | `extraction`, or a teacher's name |

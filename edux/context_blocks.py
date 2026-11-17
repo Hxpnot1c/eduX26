@@ -201,13 +201,13 @@ def prequestion(turn: Turn, settings: Settings) -> dict | None:
     if answered or turn.p(part) >= settings.support.worked_example_below:
         return None
     found = graph.misconceptions_for([part])
-    if len(found) < pq.min_distractors or _session_offloaded(turn):
+    if len(found) < settings.mcq.min_distractors or _session_offloaded(turn):
         return None
     found.sort(key=lambda m: "examiner_report" not in graph.source_types(m["source_ids"]))
     target, correct = core_idea(part)
     return {"part_id": part, "target": target, "correct": correct,
             "distractors": [{"id": m["id"], "wrong_idea": m["wrong_idea"], "correction": m["correction"]}
-                            for m in found[:pq.max_options - 1]]}
+                            for m in found[:settings.mcq.max_options - 1]]}
 
 
 def _quick_parts(turn: Turn, settings: Settings, stuck: set[str]) -> list[dict]:

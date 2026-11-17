@@ -86,7 +86,7 @@ def pick_roles(overrides: str | None = None) -> tuple[dict, list[str]]:
     if not parts:
         raise DemoError("the loaded pack has no parts; load a pack first")
     given = _parse_overrides(overrides)
-    min_distractors = learner._settings().prequestion.min_distractors
+    min_distractors = learner._settings().mcq.min_distractors
     warnings: list[str] = []
     roles: dict = {}
 

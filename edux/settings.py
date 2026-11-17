@@ -112,10 +112,22 @@ class TeachingNote:
 @dataclass(frozen=True)
 class Prequestion:
     enabled: bool
-    max_options: int
-    min_distractors: int
     exchange_weight: float
     full_weight_at: float
+
+
+@dataclass(frozen=True)
+class Points:
+    max_words: int
+    reteach_limit: int
+    warn_min: int
+    warn_max: int
+
+
+@dataclass(frozen=True)
+class Mcq:
+    max_options: int
+    min_distractors: int
 
 
 @dataclass(frozen=True)
@@ -216,6 +228,8 @@ class Settings:
     support: Support
     teaching_note: TeachingNote
     prequestion: Prequestion
+    points: Points
+    mcq: Mcq
     session: Session
     difficulty: Difficulty
     link_weight: LinkWeight
