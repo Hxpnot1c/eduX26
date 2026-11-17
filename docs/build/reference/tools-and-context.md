@@ -71,21 +71,21 @@ At most two steps. Each is `{move, part_id, text, data}`. `text` comes from `tex
 **With an answer,** the plan is a feedback step, then the main step:
 - prequestion → `feedback`: confirm, or name the picked misconception with its correction, plus the correct idea.
 - all points met → `feedback`, with the points they made.
-- points missing → `reteach_gap` **(stop)**, with only the missing points' wording. It re-teaches those and asks them to try again, and nothing else follows it.
+- points missing → `reteach_gap` **(stop)**, with only the missing points' wording (and any misconceptions the answer showed). It re-teaches those and asks them to try again, and nothing else follows it. If they are fatigued or stuck, it becomes a `feedback` step naming what's missing, followed by `offer_stop`, `step_back` or `switch_approach`.
 
 **The main step** is the first rule that matches:
-1. Fatigued → `offer_stop` with `quick_parts` **(stop)**.
+1. Fatigued, and stopping not yet offered this session → `offer_stop` with `quick_parts` **(stop)**. If they carry on, teaching goes on.
 2. Stuck on the focus part:
    - `step_back` to its weakest prerequisite **(stop)**;
    - or, when it has no prerequisite, `switch_approach` (through the anchor, or a different example).
-3. Focus ambiguous → `ask_which` with the candidates **(stop)**.
+3. Focus ambiguous → `ask_which` with the candidates **(stop)**. No focus at all (e.g. "quiz me on what's due") → the top due `review`, if any.
 4. `choice == just_show_me` → `show`: a short worked example. Nothing else follows it.
 5. Pre-question eligible → `prequestion` **(stop)**.
    - Eligible means the part has no evidence yet, its level is below `support.worked_example_below`, it has enough misconceptions and there was no "just show me" this session.
    - It is never asked twice: not on the turn its answer arrives, and not again when the last plan already asked it.
    - Options are the correct idea and misconception wrong ideas, in an order fixed per student and part.
 6. A weak prerequisite at level new, not checked this session (no evidence on it this session, and not asked in the last plan) → `check_prereq`: one quick question on it **(stop)**.
-7. A misconception held on the focus, not already corrected by this turn's feedback or the last plan → `correct_misconception`.
+7. A misconception held on the focus, not already corrected this session (by feedback or an earlier step; carried in `issued_plan`) → `correct_misconception`.
 8. Otherwise → `teach` at the support level. The try / hint / show-me line closes the teaching step:
    - `worked_example`: a short example, then "try this one, or ask for a hint";
    - `hint`: a completion problem for `calculation` and `diagram` parts, otherwise an example and a guiding question;
@@ -93,7 +93,7 @@ At most two steps. Each is `{move, part_id, text, data}`. `text` comes from `tex
 
 **Without an answer,** when the main step isn't a stop step or `show`, a second step is added: `extend` if earned, otherwise the top due `review` (in its mode, `recall` or `transfer`), otherwise nothing.
 
-A profile with `plan = false` (`minimal`) gets no plan.
+A profile with `plan = false` (`minimal`) gets no plan, but still gets `score_next` for its focus parts, so its answers are scored.
 
 #### Response
 ```json
@@ -107,7 +107,7 @@ A profile with `plan = false` (`minimal`) gets no plan.
   "focus": [{"id": "ped_formula", "name": "PED: formula and calculation", "level": "new"}]
 }
 ```
-- `score_next`: for each part a step asks about, except a pre-question, which is answered by option: the points to tick in the student's next answer.
+- `score_next`: for each part a step asks about (and an `offer_stop`'s quick parts), except a pre-question, which is answered by option: the points to tick in the student's next answer.
 - `style`:
   - `max_words`: the profile's `answer_length`, else `style.max_words`.
   - `interests`: from the profile.
