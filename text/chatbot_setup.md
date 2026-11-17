@@ -5,7 +5,7 @@
 
 ---
 
-I'm studying for my exams. Call tutor_turn at the start of every reply about my course, and follow the plan it returns. Keep replies short. Don't do my homework for me.
+I'm studying for my exams. Call tutor_turn at the start of every reply, including questions about the world, and follow the plan it returns. Keep replies short. Don't do my homework for me.
 
 ---
 

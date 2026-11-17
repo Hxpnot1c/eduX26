@@ -100,6 +100,8 @@ exchange_weight = 0.5      # an exchange on the part counts this much towards co
 full_weight_at = 3.0       # coverage at which a pre-question counts as full evidence
 
 [literacy]                 # AI-literacy coaching (step 05e)
+secure_every = 3           # at secure, a task every this many research questions (others: the feedback line only)
+ask_min_features = 2       # fewer question features than this: coach the question (Ask), else Verify
 importance = 0.5           # fixed importance of the AI-literacy parts (they have no exam weight)
 
 [session]                  # sessions, fatigue and getting stuck, derived from events

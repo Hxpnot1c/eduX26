@@ -538,6 +538,21 @@ def difficulty(node_id: str) -> float | None:
     return None
 
 
+def trusted_sources(node_ids: list[str], limit: int) -> list[dict]:
+    """Trusted sources (step 05e) for the nodes and their ancestors, nearest first: {name, url, what_for}."""
+    order: list[str] = []
+    for node_id in node_ids:
+        for n in [node_id] + [a["id"] for a in ancestors(node_id)]:
+            if n not in order:
+                order.append(n)
+    if not order:
+        return []
+    rows = _conn().execute(f"SELECT node_id, name, url, what_for FROM trusted_source WHERE status != 'rejected' "
+                           f"AND node_id IN ({_placeholders(order)}) ORDER BY rowid", order).fetchall()
+    rows = sorted(rows, key=lambda r: order.index(r["node_id"]))
+    return [{"name": r["name"], "url": r["url"], "what_for": r["what_for"]} for r in rows[:limit]]
+
+
 def weight(node_id: str) -> dict:
     """exam_weight, dependents and importance for a node (zeros if it has none)."""
     row = _conn().execute("SELECT exam_weight, dependents, importance FROM node_weight WHERE node_id = ?",

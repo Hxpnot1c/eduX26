@@ -91,10 +91,11 @@ def _open_question(last: dict, parts: list[str], answer: dict | None, choice: st
 
 
 def _pending_after(steps: list[dict], pending: dict | None) -> dict | None:
-    """The question waiting for an answer after this plan: the same one after a reask, else the plan's asking step."""
-    if steps and steps[-1]["move"] == "reask":
+    """The course question waiting for an answer after this plan: the same one after a reask, else the plan's asking
+    step. A literacy task is not one: it has its own follow-up (step 05e)."""
+    if steps and steps[-1]["move"] == "reask" and not graph.is_literacy(steps[-1]["part_id"] or ""):
         return pending
-    step = plan.asking_step(steps)
+    step = plan.asking_step([s for s in steps if not graph.is_literacy(s["part_id"] or "")])
     return {k: step[k] for k in ("move", "key", "part_id", "data", "question") if k in step} if step else None
 
 
@@ -282,16 +283,21 @@ def tutor_turn(
     again = last.get("pending") if lost else None
     if again and not (again["move"] == "ask_mcq" and again["part_id"] == answer["part_id"] and again.get("question")):
         again = None
-    if not config.plan:
+    request = this_message.get("request_type") or "concept"
+    course_answer = None if lost or literacy_answer else answer
+    if not config.plan or (request == "other" and not course_answer):
         steps = []
     elif again:   # the letter can't be scored: the same question, freshly shuffled
         steps = plan.add_terms(turn, [plan.ask_again(turn, again)])
+    elif request == "research" and not course_answer:   # answered in full with sources, plus a literacy task
+        steps = plan.research(turn, blocks, s, this_message.get("question_features") or [])
     else:
-        course_answer = None if lost or literacy_answer else answer
         steps = plan.add_terms(turn, plan.choose(turn, blocks, s, choice, course_answer,
                                                  evidence if course_answer else None,
                                                  last["plan"], corrected, offered_stop, pending, points,
                                                  last.get("mcq")))
+    if config.plan and this_message.get("source_conflict"):
+        steps = plan.with_source_conflict(steps)
     current_style = style(student, client)
     send_style = _style_due(last, current_style, at)
     _save_plan(student["id"], at, steps, parts, corrected | plan.corrected_in(steps),
@@ -300,6 +306,8 @@ def tutor_turn(
     # with no plan (a comparison profile), answers on the focus parts can still be scored
     next_points = plan.score_next(steps) if config.plan else {
         p: points for p in parts if (points := plan.lettered(p))}
+    if request == "research":   # a student who checks a claim unprompted can be scored on the next turn
+        next_points.setdefault(learner.AIL_VERIFY, plan.lettered(learner.AIL_VERIFY))
 
     focus = blocks.get("focus") or {}
     out = {

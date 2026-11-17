@@ -20,6 +20,7 @@ causal = 2
 exam_questions = 2
 reviews_due = 3
 candidates = 3             # candidate parts when the message is ambiguous
+trusted_sources = 3        # trusted sources for a research answer (step 05e)
 
 # Reference blocks each move uses, in priority order (step 05c). Keys are the cue names (ask_mcq_<purpose>,
 # review_<mode>); a bare move's table covers its variants. `misconceptions` means the step part's held ones,
@@ -37,6 +38,8 @@ reference = ["notes", "misconceptions"]
 [moves.extend]
 reference = ["causal"]
 [moves.answer_brief]
+reference = ["notes"]
+[moves.answer_with_sources] # a research question (step 05e)
 reference = ["notes"]
 # ask_mcq (all purposes), explain_back, reask, offer_stop, ask_which: none
 

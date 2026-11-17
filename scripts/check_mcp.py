@@ -394,8 +394,10 @@ async def main(url: str, key: str, student: str) -> None:
         instructions = init.instructions or ""
         words = len(instructions.split())
         sections = instructions.count(chr(10) + "## ")
-        check(0 < words <= INSTRUCTIONS_MAX_WORDS and sections == 11,
-              f"the server instructions have 11 move sections and are at most {INSTRUCTIONS_MAX_WORDS} words",
+        from edux import plan
+        expected = len(plan.move_keys())
+        check(0 < words <= INSTRUCTIONS_MAX_WORDS and sections == expected,
+              f"the server instructions have one section per move ({expected}) and are at most {INSTRUCTIONS_MAX_WORDS} words",
               f"{words} words, {sections} move sections")
         check(not PLACEHOLDER.search(instructions), "no placeholder in the server instructions",
               ", ".join(PLACEHOLDER.findall(instructions)[:3]))
