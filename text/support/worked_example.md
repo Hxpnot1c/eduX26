@@ -1,3 +1,1 @@
-# Support: worked example
-
-Placeholder. Instruction sent with the worked_example support level; written in step 05.
+Show a full worked example of this part, step by step, from the notes. Say why each step is done, not just what is done. Use the student's interests for the context if their profile has any. Then give them one similar problem to try themselves, and wait for their answer before showing the solution.
