@@ -351,18 +351,24 @@ def causal(turn: Turn, settings: Settings) -> dict | None:
     return {"items": items} if items else None
 
 
-def active_misconceptions(turn: Turn, settings: Settings) -> dict | None:
-    """Misconceptions on the focus parts: ones the student holds first, then ones the message touches, then the
-    most recently seen. Ones the student doesn't hold are shown only when the message matches them."""
-    held = _held_misconceptions(turn, active_only=True)
+def misconceptions(turn: Turn, settings: Settings) -> dict | None:
+    """Misconceptions on the focus parts, split in two. held: ones the student currently holds, most recently
+    seen first (correct these). watch_for: the others, the ones the message touches first (raise them only if
+    the student shows them). Each list is capped at limits.misconceptions."""
+    held_rows = _held_misconceptions(turn, active_only=True)
     found = graph.misconceptions_for(turn.parts)
     relevance = graph.relevance(turn.message, {m["id"]: f"{m['wrong_idea']} {m['correction']}" for m in found})
-    keep = [m for m in found if m["id"] in held or relevance[m["id"]] > 0]
-    keep.sort(key=lambda m: (m["id"] not in held, -relevance[m["id"]],
-                             -(learner.parse_ts(held[m["id"]]["last_seen"]).timestamp() if m["id"] in held else 0.0)))
-    items = [{"id": m["id"], "part_id": m["node_id"], "wrong_idea": m["wrong_idea"], "correction": m["correction"],
-              "held": m["id"] in held} for m in keep[:turn.limit("misconceptions")]]
-    return {"items": items} if items else None
+    held = [m for m in found if m["id"] in held_rows]
+    held.sort(key=lambda m: -learner.parse_ts(held_rows[m["id"]]["last_seen"]).timestamp())
+    watch = [m for m in found if m["id"] not in held_rows]
+    watch.sort(key=lambda m: -relevance[m["id"]])
+    limit = turn.limit("misconceptions")
+
+    def item(m: dict) -> dict:
+        return {"id": m["id"], "part_id": m["node_id"], "wrong_idea": m["wrong_idea"], "correction": m["correction"]}
+
+    out = {"held": [item(m) for m in held[:limit]], "watch_for": [item(m) for m in watch[:limit]]}
+    return out if out["held"] or out["watch_for"] else None
 
 
 def notes(turn: Turn, settings: Settings) -> dict | None:
@@ -529,10 +535,8 @@ def teaching_note(turn: Turn, settings: Settings) -> dict | None:
         add("weak_prerequisites", items=_names(blocks["weak_prerequisites"]["items"]))
     if blocks.get("anchor"):
         add("anchor", name=blocks["anchor"]["name"], note=blocks["anchor"]["note"] or "")
-    if blocks.get("active_misconceptions"):
-        held = [m for m in blocks["active_misconceptions"]["items"] if m["held"]]
-        if held:
-            add("active_misconceptions", items="; ".join(m["wrong_idea"].rstrip(".") for m in held))
+    if blocks.get("misconceptions") and blocks["misconceptions"]["held"]:
+        add("misconceptions", items="; ".join(m["wrong_idea"].rstrip(".") for m in blocks["misconceptions"]["held"]))
     if turn.parts:
         days = learner.days_to_exam(turn.student_id, turn.parts[0], learner.parse_ts(turn.at))
         if days is not None and days <= settings.teaching_note.exam_close_days:
@@ -558,7 +562,7 @@ BLOCKS: dict[str, Block] = {
     "anchor": anchor,
     "confusables": confusables,
     "causal": causal,
-    "active_misconceptions": active_misconceptions,
+    "misconceptions": misconceptions,
     "notes": notes,
     "exam_relevance": exam_relevance,
     "reviews_due": reviews_due,

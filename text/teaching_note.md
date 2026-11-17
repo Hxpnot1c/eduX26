@@ -17,7 +17,7 @@ These earlier ideas are not secure yet, so check them before building on them: {
 ## anchor
 They know {name} well, so teach through it. {note}
 
-## active_misconceptions
+## misconceptions
 They currently believe: {items}. Correct this explicitly.
 
 ## exam_close
