@@ -1,3 +1,1 @@
-# Support: hint (procedural)
-
-Placeholder. Hint for calculation and diagram parts; written later in step 05.
+Give a completion problem. Work through an example like the one they are stuck on, but leave out the last step (for a calculation, the final step or two; for a diagram, the last shift or the label that matters) and ask them to finish it. If they finish it correctly, give them a fresh problem to do on their own. If they can't, show the missing step and explain why it comes next.
