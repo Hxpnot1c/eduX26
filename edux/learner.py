@@ -27,6 +27,8 @@ CHOICE_TAKEN = ("try_first", "hint", "just_show_me", "skip_point", "none")   # s
 # What a student's answer can be to, as sent by the chatbot; each is also a key of [bkt.evidence].
 # "mcq" is any server-built multiple-choice question (step 05d), scored from the letter picked.
 ANSWER_TYPES = ("prequestion", "mcq", "explain_back", "review", "extend", "past_question")
+REQUEST_TYPES = ("concept", "research", "homework", "other")   # step 05e
+QUESTION_FEATURES = ("concept", "context", "asks_sources", "asks_reasoning")   # research questions only (step 05e)
 
 
 class LostQuestion(ValueError):
@@ -242,6 +244,24 @@ def _dispatch(job: tuple[int | None, list[int]], apply: str) -> None:
         _queue.put(job)
 
 
+def _request_labels(request: dict) -> dict:
+    """The step 05e labels as stored: features, web_access and asks_recent only on research questions."""
+    kind = request.get("request_type")
+    if kind is not None and kind not in REQUEST_TYPES:
+        raise ValueError(f"request_type must be one of {', '.join(REQUEST_TYPES)}")
+    features = list(dict.fromkeys(request.get("question_features") or []))
+    unknown = [f for f in features if f not in QUESTION_FEATURES]
+    if unknown:
+        raise ValueError(f"question_features: {', '.join(unknown)} is not one of {', '.join(QUESTION_FEATURES)}")
+    research = kind == "research"
+    web = request.get("web_access")
+    return {"request_type": kind, "question_features": ";".join(features) if research else "",
+            "source_conflict": int(bool(request.get("source_conflict"))),
+            "web_access": int(web) if research and web is not None else None,
+            "asks_recent": int(research and bool(request.get("asks_recent"))),
+            "pushback_changed": int(bool(request.get("pushback_changed")))}
+
+
 def record_exchange(
     student_id: str,
     node_ids: list[str],
@@ -257,13 +277,16 @@ def record_exchange(
     ts: str | None = None,
     evidence: list[dict] | None = None,
     apply: str = "background",
+    request: dict | None = None,
 ) -> int:
     """Write an exchange event, and any evidence that came with it, then apply them; return the exchange id.
 
     evidence is a list of {part_id, type, score, misconception_ids?}: what the student produced in this turn,
     scored 0–1. Concept ids expand to their parts with the score unchanged. All rows share the exchange's ts.
     apply is "background" (queue for the worker thread), "now" (apply before returning) or "none".
-    prompt_text is stored only when STORE_PROMPTS=1.
+    prompt_text is stored only when STORE_PROMPTS=1. request holds the step 05e labels (request_type,
+    question_features, source_conflict, web_access, asks_recent, pushback_changed); features, web_access and
+    asks_recent are kept for research questions only, and source_conflict also sets conflict_flagged.
     """
     s = _settings()
     student = get_student(student_id)
@@ -279,6 +302,8 @@ def record_exchange(
         raise ValueError(f"support_given must be one of {', '.join(SUPPORT_GIVEN)}")
     if choice_taken is not None and choice_taken not in CHOICE_TAKEN:
         raise ValueError(f"choice_taken must be one of {', '.join(CHOICE_TAKEN)}")
+    req = _request_labels(request or {})
+    conflict_flagged = conflict_flagged or bool(req["source_conflict"])
     evidence_rows = _evidence_rows(evidence or [])
     store_prompt = os.environ.get("STORE_PROMPTS", "0") == "1"
     ts = _event_ts(ts)
@@ -286,11 +311,13 @@ def record_exchange(
     with conn:
         cur = conn.execute(
             """INSERT INTO exchange_log (student_id, ts, client, node_ids, question_depth, engagement, offloading,
-                 support_given, choice_taken, misconception_ids, conflict_flagged, protocol, settings_hash, prompt_text)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                 support_given, choice_taken, misconception_ids, conflict_flagged, protocol, settings_hash, prompt_text,
+                 request_type, question_features, source_conflict, web_access, asks_recent, pushback_changed)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (student_id, ts, client, ";".join(node_ids), question_depth, engagement, int(offloading), support_given,
              choice_taken, ";".join(misconception_ids or []), int(conflict_flagged), protocol_label(s, profile_of(student)),
-             settings_hash(), prompt_text if store_prompt else None),
+             settings_hash(), prompt_text if store_prompt else None, req["request_type"], req["question_features"],
+             req["source_conflict"], req["web_access"], req["asks_recent"], req["pushback_changed"]),
         )
         exchange_id = cur.lastrowid
         evidence_ids = _write_evidence(conn, student, ts, evidence_rows, "chat", exchange_id=exchange_id)

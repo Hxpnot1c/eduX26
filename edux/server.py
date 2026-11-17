@@ -28,6 +28,8 @@ from edux.settings import load_settings, read_text
 QuestionDepth = Literal["surface", "mechanism", "transfer"]
 Engagement = Literal["passive", "active", "constructive"]
 Choice = Literal["try_first", "hint", "just_show_me", "skip_point", "none"]
+RequestType = Literal[learner.REQUEST_TYPES]  # type: ignore[valid-type]
+QuestionFeature = Literal[learner.QUESTION_FEATURES]  # type: ignore[valid-type]
 AnswerType = Literal[learner.ANSWER_TYPES]  # type: ignore[valid-type]
 
 
@@ -38,6 +40,12 @@ class ThisMessage(BaseModel):
     engagement: Engagement = Field(description="passive (just reading), active (asking or answering), constructive (their own reasoning)")
     choice: Choice = Field("none", description="what they chose: try_first, hint, just_show_me, skip_point (\"I know this\"), or none")
     conflict_flagged: bool = Field(False, description="true when your reply corrects a mistake you made earlier")
+    request_type: RequestType = Field("concept", description="concept (about the course), research (a factual or current question about the world), homework, or other")
+    question_features: list[QuestionFeature] = Field(default_factory=list, description="research only: what the question shows: concept (names the idea), context (a place and time), asks_sources, asks_reasoning")
+    source_conflict: bool = Field(False, description="true when the student says a link failed or didn't say what was claimed")
+    web_access: bool | None = Field(None, description="research only: can you search the web in this chat")
+    asks_recent: bool = Field(False, description="research only: the question is about recent data or events")
+    pushback_changed: bool = Field(False, description="true when the student challenged your last answer and you are changing it")
 
 
 class Answer(BaseModel):
