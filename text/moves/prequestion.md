@@ -1,1 +1,1 @@
-Before explaining anything, ask one multiple-choice question about `target` using `options` in the order given, and tell them it's fine to guess. Give no hints, never answer it yourself, and wait for their answer. If they say "just show me", skip it and teach.
+Before explaining anything, ask one multiple-choice question about data.target using data.options in the order given, and tell them it's fine to guess. Give no hints, never answer it yourself, and wait for their answer. If they say "just show me", skip it and teach.

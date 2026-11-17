@@ -21,11 +21,16 @@ the main step is not a stop step.
 from __future__ import annotations
 
 import hashlib
+import json
+import logging
 import random
+import re
 
 from edux import graph, learner
 from edux.context_blocks import Turn, core_idea, held_misconceptions
-from edux.settings import Settings, read_text
+from edux.settings import Settings, SettingsError, read_text
+
+log = logging.getLogger(__name__)
 
 STOP = {"reteach_gap", "offer_stop", "step_back", "ask_which", "prequestion", "check_prereq"}
 ASKS = {"reteach_gap", "step_back", "switch_approach", "prequestion", "check_prereq", "teach", "extend", "review"}
@@ -33,6 +38,69 @@ MAX_STEPS = 2
 # The answer.type the chatbot sends back for a step that asks something.
 ANSWER_TYPE = {"prequestion": "prequestion", "check_prereq": "review", "step_back": "review", "review": "review",
                "extend": "extend", "teach": "explain_back", "switch_approach": "explain_back"}
+
+
+# The data fields each move text can name as a {field} placeholder: (always present, sometimes present).
+# A placeholder outside both is a startup error; one that is only sometimes present is a warning.
+TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
+    "ask_which": ({"candidates"}, set()),
+    "check_prereq": ({"name", "for", "note", "answer_type"}, set()),
+    "correct_misconception": ({"id", "wrong_idea", "correction"}, set()),
+    "extend": ({"answer_type"}, set()),
+    "feedback": ({"type"}, {"correct", "correct_idea", "picked", "points_met", "shown_misconceptions", "missing"}),
+    "offer_stop": ({"minutes", "quick_parts"}, set()),
+    "prequestion": ({"target", "options", "answer_type"}, set()),
+    "reteach_gap": ({"type", "answer_type", "missing", "shown_misconceptions"}, set()),
+    "review_recall": ({"name", "mode", "answer_type"}, set()),
+    "review_transfer": ({"name", "mode", "new_context", "answer_type"}, set()),
+    "show": ({"part_type"}, set()),
+    "step_back": ({"to", "for", "answer_type"}, set()),
+    "switch_approach": ({"anchor", "answer_type"}, set()),
+    "teach_explain_back": ({"level", "part_type", "answer_type"}, set()),
+    "teach_hint_conceptual": ({"level", "part_type", "answer_type"}, set()),
+    "teach_hint_procedural": ({"level", "part_type", "answer_type"}, set()),
+    "teach_worked_example": ({"level", "part_type", "answer_type"}, set()),
+}
+PLACEHOLDER = re.compile(r"\{([a-z_]+)\}")
+
+
+def placeholders(text: str) -> set[str]:
+    return set(PLACEHOLDER.findall(text))
+
+
+def fill(text: str, data: dict) -> str:
+    """Fill {field} placeholders from the step's data; a field that is missing this time is left out."""
+    def value(m: re.Match) -> str:
+        v = data.get(m.group(1))
+        if v is None:
+            log.warning("move text placeholder {%s} has no value in this step's data", m.group(1))
+            return ""
+        return v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)
+    return PLACEHOLDER.sub(value, text)
+
+
+def check_texts() -> list[str]:
+    """Check every move text's placeholders against TEXT_FIELDS at startup. Raises SettingsError for a
+    placeholder the move never has, or a backticked field name left unfilled; returns warnings for ones it
+    only sometimes has."""
+    errors, warnings = [], []
+    for key, (always, sometimes) in TEXT_FIELDS.items():
+        text = _text(key)
+        for name in sorted(placeholders(text)):
+            if name in always:
+                continue
+            if name in sometimes:
+                warnings.append(f"text/moves/{key}.md: {{{name}}} is only sometimes in the step's data")
+            else:
+                errors.append(f"text/moves/{key}.md: {{{name}}} is never in the step's data")
+        stray = sorted(set(re.findall(r"`([a-z_]+)`", text)) & (always | sometimes))
+        if stray:
+            errors.append(f"text/moves/{key}.md: write data fields as {{field}} or data.field, not `{stray[0]}`")
+    if errors:
+        raise SettingsError("; ".join(errors))
+    for w in warnings:
+        log.warning(w)
+    return warnings
 
 
 def _text(name: str) -> str:
@@ -43,7 +111,7 @@ def _step(move: str, part_id: str | None, data: dict | None = None, text: str | 
     data = dict(data or {})
     if move in ANSWER_TYPE:
         data["answer_type"] = ANSWER_TYPE[move]
-    return {"move": move, "part_id": part_id, "text": _text(text or move), "data": data}
+    return {"move": move, "part_id": part_id, "text": fill(_text(text or move), data), "data": data}
 
 
 def _summary(turn: Turn, part_id: str) -> dict:
@@ -210,7 +278,7 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
         if is_stop(first):   # reteach_gap, unless they're tired or stuck: then say what's missing and do that instead
             urgent = main_step(turn, blocks, settings, choice, last_plan, handled, answered_prequestion, offered_stop)
             if urgent and urgent["move"] in ("offer_stop", "step_back", "switch_approach"):
-                return [{**first, "move": "feedback", "text": _text("feedback")}, urgent]
+                return [{**first, "move": "feedback", "text": fill(_text("feedback"), first["data"])}, urgent]
             return steps
     main = main_step(turn, blocks, settings, choice, last_plan, handled, answered_prequestion, offered_stop)
     if main:
