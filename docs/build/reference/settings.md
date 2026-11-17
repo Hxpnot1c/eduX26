@@ -28,7 +28,7 @@ prequestion = { slip = 0.20, guess = 0.20 }
 mcq = { slip = 0.10, guess = 0.25 }
 extend = { slip = 0.10, guess = 0.10 }      # an answer to a harder, extending question
 immediate = { slip = 0.10, guess = 0.30 }   # chat evidence straight after a worked example or hint
-point_check = { slip = 0.10, guess = 0.20 } # a quick check on one point (step 05d); counts less than explain_back
+mcq_check = { slip = 0.10, guess = 0.25 }   # a multiple-choice check on one point (step 05d); guess about 1 in 4 options
 ail_question = { slip = 0.15, guess = 0.20 }    # question features of a research question (step 05e)
 ail_task = { slip = 0.10, guess = 0.15 }        # a literacy task done when asked
 ail_unprompted = { slip = 0.05, guess = 0.10 }  # checking a claim without being asked: counts more
@@ -41,7 +41,7 @@ concept_tag_strength = 0.5 # a nudge on a concept tag reaches its parts at this 
 [evidence]
 immediate_window_minutes = 30   # evidence this soon after a worked example or hint on the part counts as `immediate`
 
-[offloading]
+[offloading]               # removed in step 05d: "just show me" no longer discounts later evidence
 guess_after = 0.40         # guess used for the next checks after "just show me"
 checks_discounted = 2
 
@@ -89,10 +89,10 @@ max_words = 200
 exam_close_days = 14
 approach_min_records = 2   # past approaches needed before "what worked before" is shown
 
-[prequestion]              # a question asked before teaching an untaught part
+[prequestion]              # a question asked before teaching an untaught part (the intuition MCQ from step 05d)
 enabled = true
-max_options = 4
-min_distractors = 2
+max_options = 4            # moves to mcq.max_options in step 05d
+min_distractors = 2        # moves to mcq.min_distractors in step 05d
 exchange_weight = 0.5      # an exchange on the part counts this much towards coverage
 full_weight_at = 3.0       # coverage at which a pre-question counts as full evidence
 
@@ -162,6 +162,11 @@ reteach_limit = 1          # re-teaches of a missed point before moving on
 warn_min = 2               # validation warning below this many points per part
 warn_max = 4               # and above this many
 
+[mcq]                      # server-built multiple-choice questions (step 05d)
+max_options = 4            # correct option plus up to this many minus one misconceptions
+min_distractors = 2        # fewer misconceptions: the chatbot may write one extra distractor; also a validation warning
+intuition_max = 2          # intuition questions per part
+
 [literacy]                 # AI-literacy coaching (step 05e)
 secure_every = 3           # at secure, a task every this many research turns
 max_followups = 1          # re-asks of an ignored task before it scores 0
@@ -187,6 +192,7 @@ plan = false
 
 [limits]
 notes = 3                  # notes per focus part
+terms = 30                 # course terms in data.terms (step 05c)
 key_wording = 4
 weak_prerequisites = 2
 confusables = 2
@@ -222,7 +228,7 @@ reference = ["notes"]
 
 ```toml
 [watch_for]                # moves that ask the student something also get the part's watch-for misconceptions (step 05c)
-moves = ["prequestion", "check_prereq", "teach_point", "check_point", "teach_explain_back", "review", "extend"]
+moves = ["intuition_mcq", "check_prereq", "check_mcq", "teach_explain_back", "review", "extend"]   # step 05c: prequestion in place of intuition_mcq, no check_mcq
 ```
 
 Watch-for misconceptions are sent as `id` and `wrong_idea` only, so the chatbot can tag one the student's answer shows. Over the result budget they are dropped last.
@@ -236,9 +242,8 @@ Plain markdown files read at startup. Changing wording never touches code.
 | `server_instructions.md` | the MCP server instructions |
 | `tools/<tool>.md` | each tool's description (`tutor_turn`: at most 8 lines) |
 | `style.md` | reply length, interests and formatting rules, appended to the server instructions |
-| `moves/<move>.md` | what each move does, at most 2 sentences, with `{field}` placeholders filled from the step's `data`. Sent once, as a section of the server instructions (step 05c): `feedback`, `reteach_gap`, `offer_stop`, `step_back`, `switch_approach`, `ask_which`, `show`, `prequestion`, `check_prereq`, `correct_misconception`, `teach_<level>` (`worked_example`, `hint_procedural`, `hint_conceptual`, `explain_back`), `extend`, `review_<mode>` (`recall`, `transfer`), `teach_point`, `reteach_point`, `check_point` (step 05d), `answer_with_sources`, `literacy_task`, `literacy_followup`, `source_conflict` (step 05e) |
+| `moves/<move>.md` | what each move does, at most 2 sentences, with `{field}` placeholders filled from the step's `data`. Sent once, as a section of the server instructions (step 05c): `feedback`, `reteach_gap`, `offer_stop`, `step_back`, `switch_approach`, `ask_which`, `show`, `prequestion`, `check_prereq`, `correct_misconception`, `teach_<level>` (`worked_example`, `hint_procedural`, `hint_conceptual`, `explain_back`), `extend`, `review_<mode>` (`recall`, `transfer`), `intuition_mcq`, `teach_point`, `check_mcq`, `reteach_point` (step 05d, which removes `prequestion`), `answer_brief`, `reask` (step 05c), `answer_with_sources`, `literacy_task`, `literacy_followup`, `source_conflict` (step 05e) |
 | `moves/<key>.cue.md` | one line, at most 15 words, sent with every step of that move (step 05c) |
-| `points/check_<part_type>.md` | how to check one point of each part type, sent as `check_hint` (step 05d) |
 | `literacy/<skill>_<level>.md` | feedback and task patterns for `ask` and `verify` at `new`, `developing` and `secure` (step 05e) |
 | `format/<client>.md` | formatting for maths, money and diagrams per chatbot (`claude`, `chatgpt`, `gemini`, `default`), returned in `style.format` |
 | `progress/study_pattern.md` | the study-pattern line in `get_my_progress` (`{minutes}` is filled in) |

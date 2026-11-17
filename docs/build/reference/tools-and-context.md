@@ -36,15 +36,16 @@ Called once, at the start of every reply about the course. It replaces `get_lear
 | arg | what it is |
 |---|---|
 | `message` | the student's message, word for word |
-| `this_message` | labels for the student's message: `question_depth` (`surface` / `mechanism` / `transfer`), `engagement` (`passive` / `active` / `constructive`), `choice` (`try_first` / `hint` / `just_show_me` / `skip_point` / `none`, default `none`; `skip_point` is "I know this", step 05d), `request_type` (`concept` / `research` / `homework` / `other`, step 05e), `question_features` (research only: any of `concept`, `context`, `asks_sources`, `asks_reasoning`), `source_conflict` (a link failed or didn't say what was claimed) |
+| `this_message` | labels for the student's message: `question_depth` (`surface` / `mechanism` / `transfer`), `engagement` (`passive` / `active` / `constructive`), `choice` (`try_first` / `hint` / `just_show_me` / `skip_point` / `none`, default `none`; `skip_point` is "I know this", step 05d), `request_type` (`concept` / `research` / `homework` / `other`, step 05e), `question_features` (research only: any of `concept`, `context`, `asks_sources`, `asks_reasoning`), `source_conflict` (a link failed or didn't say what was claimed), `conflict_flagged` (the chatbot corrected its own earlier mistake this turn, step 05c) |
 | `node_ids` | optional: part ids from an earlier plan or focus |
-| `answer` | optional: only when the message answers something asked last turn (see below) |
+| `answer` | optional: only when the message answers something asked last turn (see below). Not sent when the student asks something instead of answering |
 | `client` | e.g. `claude`, `chatgpt`, `gemini`; picks the formatting note |
 
 `answer` fields:
-- `part_id` and `type`: the asking step's `part_id` and `data.answer_type`. Types are `prequestion`, `explain_back`, `review`, `extend`, `past_question`, `point_check` (step 05d), `ail_task` and `ail_unprompted` (step 05e; `ail_unprompted` is sent without being asked, when the student reports checking a claim).
+- `part_id` and `type`: the asking step's `part_id` and `data.answer_type`. Types are `prequestion` (until 05d), `intuition_mcq` and `mcq_check` (step 05d), `explain_back`, `review`, `extend`, `past_question`, `ail_task` and `ail_unprompted` (step 05e; `ail_unprompted` is sent without being asked, when the student reports checking a claim).
 - `correct`: prequestion only.
 - `picked_misconception_id`: prequestion only, when they picked a wrong option.
+- `choice`: the letter picked, for `intuition_mcq` and `mcq_check` (step 05d). The server scores it from the letter → option map stored in `issued_plan`, and activates the picked misconception. If the map is missing, nothing is recorded and the plan re-asks the same question with freshly shuffled options.
 - `points_met`: the letters from `score_next`, or full point ids, or a mix (step 05c). A letter is the point at that position in the part's ordered points, so no saved mapping is needed. Only ids or letters that don't belong to the part are rejected.
 - `misconception_ids`: other misconceptions the answer showed.
 
@@ -59,7 +60,8 @@ Called once, at the start of every reply about the course. It replaces `get_lear
    - else the message (`graph.resolve`);
    - a message that names nothing keeps the previous turn's focus.
 4. **Record the exchange and any evidence, and apply them now** (`apply="now"`). On the exchange:
-   - `offloading` is `choice == just_show_me`;
+   - `offloading` is `choice == just_show_me`; from step 05d it only marks the exchange (for trends and the review), with no nudge and no discount;
+   - `conflict_flagged` is `this_message.conflict_flagged` or `source_conflict`;
    - `choice_taken` is `choice`;
    - `support_given` comes from the last issued plan: a teach step's level, `worked_example` for `show`, otherwise `none`.
 
@@ -67,7 +69,9 @@ Called once, at the start of every reply about the course. It replaces `get_lear
 5. **Build the turn** (`order_parts`, the blocks in the student's profile), **choose the plan**, save it to `issued_plan` and return.
 
 #### Choosing the plan
-At most two steps. Each is `{move, part_id, cue, data}`. `cue` is one line from `text/moves/<key>.cue.md`, where the key is the move text's name (`teach_<level>`, `review_<mode>`, otherwise the move); what the move means is in the server instructions, sent once (step 05c). Steps that ask something carry `data.answer_type`. Steps marked **(stop)** end the plan, because the student needs to reply.
+At most two steps (three from step 05d, for feedback, `teach_point` and `check_mcq`). Each is `{move, part_id, cue, data}`. `cue` is one line from `text/moves/<key>.cue.md`, where the key is the move text's name (`teach_<level>`, `review_<mode>`, otherwise the move); what the move means is in the server instructions, sent once (step 05c). Steps that ask something carry `data.answer_type`. Steps marked **(stop)** end the plan, because the student needs to reply.
+
+**A question instead of an answer (step 05c).** The question last asked is kept in `issued_plan` as `pending`. A message with no `answer` while one is pending, on the same part or with no new focus, gets `answer_brief` (a few lines), then `reask` **(stop)**: the same question, with the same `score_next`. A message about another part, or a research question, drops `pending`. Fatigue and stuck rules come first.
 
 **With an answer,** the plan is a feedback step, then the main step:
 - prequestion → `feedback`: confirm, or name the picked misconception with its correction, plus the correct idea.
@@ -94,12 +98,15 @@ At most two steps. Each is `{move, part_id, cue, data}`. `cue` is one line from 
 
 **Without an answer,** when the main step isn't a stop step or `show`, a second step is added: `extend` if earned, otherwise the top due `review` (in its mode, `recall` or `transfer`), otherwise nothing.
 
-**Point by point (step 05d).** Where the main step would be `teach` at `worked_example` or `hint`, the part is taught one point at a time, in mark-point order:
-- `teach_point` **(stop)**: one point (`data`: `index`, `total`, `point`, `exemplar`, `check_hint`), as a heading `Point {index} of {total}: {short title}`, one or two sentences, one worked line, then one quick check question on that point only. At most `points.max_words` words. `support_given` is the part's support level.
-- The answer (`point_check`, score 1 or 0) gets `feedback`, then the next `teach_point`, or, when wrong, `reteach_point` **(stop)**: a different way in, with the same check, at most `points.reteach_limit` times before moving on.
-- `choice == skip_point` → `check_point` **(stop)**: the check question only.
-- `choice == just_show_me` → `show` for the current point, with no check.
+**Point by point (step 05d).** Where the main step would be `prequestion`, or `teach` at `worked_example` or `hint`, the part is taught one point at a time, in mark-point order:
+- **MCQs are built by the server:** the correct option plus up to `mcq.max_options − 1` of the part's misconceptions, shuffled, lettered `A`, `B`, …, with the map stored in `issued_plan` (`mcq`). When the part has fewer than `mcq.min_distractors` misconceptions, `data.extra_option` names a letter for which the chatbot may write one distractor, using only `data.terms`; picking it scores 0.
+- `intuition_mcq` **(stop)** replaces `prequestion`: at most `mcq.intuition_max` per part, each from an edge with `teach_use = intuition` from a part the student has at developing or above (with the edge note), otherwise from the part's `intuition` line. Eligibility and scoring are as for the pre-question (evidence type `prequestion`).
+- `teach_point` then `check_mcq` **(stop)**: one point (`data`: `index`, `total`, `point`, `exemplar`), as a heading `Point {index} of {total}: {short title}`, one or two sentences and one worked line, at most `points.max_words` words; then an MCQ on that point (correct option: the point's wording). `support_given` is the part's support level.
+- The answer (`mcq_check`, score 1 or 0) gets `feedback` (naming the picked misconception when wrong), then the next `teach_point` and `check_mcq`, or, when wrong, `reteach_point` and `check_mcq` again, freshly shuffled, at most `points.reteach_limit` times before moving on.
+- `choice == skip_point` → `check_mcq` only.
+- `choice == just_show_me` → `show`: a one-line intuition from the same source, then the point or formula, short, ending with that point's `check_mcq`.
 - After the last point → `explain_back` of the whole part **(stop)**, scored on all its points. A part already at `levels.secure` goes straight to it.
+- Linked parts the student has below developing are never mentioned.
 - Progress is kept per part in `issued_plan` (`points`). Moving to another part keeps that part's progress; coming back resumes where it stopped.
 
 **Research questions (step 05e).** `request_type == research` gets:
@@ -124,6 +131,7 @@ A profile with `plan = false` (`minimal`) gets no plan, but still gets `score_ne
 }
 ```
 - `score_next`: for each part a step asks about (and an `offer_stop`'s quick parts), except a pre-question, which is answered by option: the points to tick in the student's next answer.
+- `data.terms` (step 05c), on every step that teaches or asks: names and aliases of the focus part, then of known parts (developing or above) linked to it, then of other known parts by importance, up to `limits.terms`. The chatbot doesn't introduce course terms outside it, and explains in plain words when one is needed.
 - `score_next` ids are letters, `a`, `b`, `c`… per part in point order (step 05c). A research turn's `score_next` always includes `ail_verify`'s ticks (step 05e).
 - `style`, sent only on the first `tutor_turn` of a session or when `client`, `interests` or `max_words` changed since it was last sent (step 05c):
   - `max_words`: the profile's `answer_length`, else `style.max_words`.
@@ -140,7 +148,7 @@ Each block is data for the plan or for reference, without instructions:
 | block | contents |
 |---|---|
 | focus | resolved parts with name, level and type; or `candidates` when ambiguous |
-| prequestion | on an untaught, weak part: target, correct idea and misconception distractors |
+| prequestion | on an untaught, weak part: target, correct idea and misconception distractors; from step 05d, the intuition MCQ's source (a known linked part's edge note, or the part's `intuition` line) |
 | support | support level (`worked_example` / `hint` / `explain_back`) and `extend: true` when earned |
 | session | only when fatigued (with `quick_parts`) or stuck (with `step_back_to`) |
 | weak_prerequisites | prerequisites below secure |
@@ -186,8 +194,10 @@ Updates `student_profile`. `interests` and `answer_length` come back in every tu
 6. Follow `style`.
 7. Never give a numeric mark for a level-marked question.
 8. Each plan step names a move: do what that move's section says, using the step's `data` (step 05c).
-9. One point per message, ending in one question (step 05d).
-10. Never claim to be a teacher. (Safeguarding is left to the chatbot's own guardrails.)
+9. When you find a mistake in something you said, say so in one line, correct it and set `conflict_flagged` (step 05c).
+10. Don't introduce course terms that aren't in the step's `terms`; explain in plain words instead (step 05c).
+11. One point per message, ending in one question (step 05d).
+12. Never claim to be a teacher. (Safeguarding is left to the chatbot's own guardrails.)
 
 ## Changes
 - Adding a field to a tool's output is fine.

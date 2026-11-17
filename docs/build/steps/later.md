@@ -70,6 +70,18 @@ pytest for:
 - context assembly per profile
 - tool round-trips through the MCP client
 
+**Tricky-message set.** A scripted set of conversations run through the MCP client, each with the plan expected at every turn:
+- a question asked instead of an answer (answered briefly, then the same question again);
+- an MCQ answered with a letter that wasn't offered, or in words instead of a letter;
+- an MCQ answer after the letter map was lost (nothing recorded, question re-asked);
+- "I know this" and "just show me" in the middle of a part;
+- a switch to another part mid-loop, then back (progress resumes);
+- an answer with full point ids, letters, or ids from another part;
+- the chatbot correcting itself (`conflict_flagged`);
+- a research question in the middle of a part, and an ignored literacy task;
+- fatigue or getting stuck in the middle of a part;
+- a message that needs a course term the student hasn't met.
+
 Add CI (GitHub Actions) once tests exist.
 
 ### 09 Student page (`build/09-student-page`)
