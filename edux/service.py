@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import functools
+import statistics
 from datetime import date, timedelta
 
 from edux import context_blocks, graph, learner
-from edux.settings import ContextConfig, Settings, load_context, load_settings
+from edux.settings import ContextConfig, Settings, load_context, load_settings, read_text
 
 
 @functools.cache
@@ -153,8 +154,19 @@ def _trends(student_id: str, at: str) -> dict:
     return trends
 
 
+def _study_pattern(student_id: str) -> dict | None:
+    """When at least session.pattern_min_sessions sessions had a fatigue onset: the median onset minute and the
+    line from text/progress/study_pattern.md. Otherwise None."""
+    onsets = [s["fatigue_onset_minute"] for s in learner.sessions(student_id) if s["fatigue_onset_minute"] is not None]
+    if len(onsets) < _settings().session.pattern_min_sessions:
+        return None
+    minutes = round(statistics.median(onsets))
+    return {"minutes": minutes, "sessions": len(onsets),
+            "text": read_text("progress/study_pattern.md").strip().format(minutes=minutes)}
+
+
 def my_progress(student: dict, include_parts: bool = False, at: str | None = None) -> dict:
-    """Tree with levels, the biggest levers, weak links, reviews due and AI-literacy trends."""
+    """Tree with levels, the biggest levers, weak links, reviews due, AI-literacy trends and study pattern."""
     at = at or learner.now_iso()
     s, student_id = _settings(), student["id"]
     reviews = learner.due_reviews(student_id, _context().limits.get("reviews_due", 3), at)
@@ -165,6 +177,7 @@ def my_progress(student: dict, include_parts: bool = False, at: str | None = Non
         "reviews_due": [{"part_id": r["part_id"], "name": r["name"], "level": learner.level(r["p_now"]),
                          "due": r["due"], "reason": r["reason"]} for r in reviews],
         "trends": _trends(student_id, at),
+        "study_pattern": _study_pattern(student_id),
     }
 
 

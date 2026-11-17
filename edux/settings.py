@@ -131,6 +131,7 @@ class Session:
     stuck_attempts: int
     stuck_below: float
     quick_parts: int
+    pattern_min_sessions: int
 
 
 @dataclass(frozen=True)

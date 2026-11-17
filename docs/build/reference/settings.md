@@ -86,7 +86,7 @@ min_distractors = 2
 exchange_weight = 0.5      # an exchange on the part counts this much towards coverage
 full_weight_at = 3.0       # coverage at which a pre-question counts as full evidence
 
-[session]                  # step 04c (quick_parts and pattern_min_sessions: step 05)
+[session]                  # sessions, fatigue and getting stuck, derived from events
 gap_minutes = 30           # a longer gap starts a new session
 fatigue_min_minutes = 25   # no fatigue call before this
 fatigue_window = 4         # pieces of evidence in the rolling mean
@@ -178,6 +178,7 @@ Plain markdown files read at startup. Changing wording never touches code.
 | `tools/<tool>.md` | each tool's description |
 | `support/<level>.md` | the support instruction for each level: `worked_example`, `hint_procedural`, `hint_conceptual`, `explain_back`, `extend`, and `prequestion` |
 | `reviews/<mode>.md` | how to run a due review in `recall` or `transfer` mode |
+| `progress/study_pattern.md` | the study-pattern line in `get_my_progress` (`{minutes}` is filled in) |
 | `session/<state>.md` | what to do when the session is `fatigued` or a part is `stuck` |
 | `checks/<kind>.md` | marking instructions for `points` and `level` checks (step 07) |
 | `prompts/<prompt>.md` | the text of the `review_due` and `check_me` prompts (`{topic}` is filled in) |

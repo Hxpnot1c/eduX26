@@ -94,6 +94,7 @@ signal_window = 6          # exchanges used for the supporting signals
 stuck_attempts = 3
 stuck_below = 0.5
 quick_parts = 3            # parts offered for a short burst when fatigued
+pattern_min_sessions = 3   # sessions with a fatigue onset before study_pattern is shown
 
 [difficulty]               # optional teacher-set difficulty per node (0 easy – 1 hard), inherited by parts
 default = 0.5              # used when no node above the part has one
