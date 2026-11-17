@@ -16,6 +16,7 @@ STATUSES = ("draft", "approved", "rejected")
 LEVELS = ("topic", "subtopic", "concept", "part")
 PART_TYPES = ("definition", "calculation", "diagram", "mechanism", "evaluation", "application")
 EDGE_TYPES = ("prerequisite", "analogous", "confusable", "causal")
+TEACH_USES = ("intuition", "contrast", "none")
 SOURCE_TYPES = ("specification", "mark_scheme", "examiner_report", "question_paper", "textbook", "teacher", "ours")
 QUESTION_FORMATS = ("mcq", "short", "data_response", "essay")
 MARK_SCHEME_KINDS = ("point", "level", "indicative")
@@ -111,14 +112,17 @@ _FILES = (
         C("source_ids", "list", default="", doc="ids from sources.csv"),
         C("extraction_confidence", "real", default="1.0", doc="0–1", bounds=(0, 1)),
         C("difficulty", "real", doc="optional, 0 (easy) to 1 (hard); blank inherits from the nearest ancestor, else average", bounds=(0, 1)),
+        C("intuition", default="", doc="parts only: one line in everyday language that leads into the idea; the source of the intuition question when no known part links in"),
     ), content_row=True, required_file=True, course_scoped=True, doc="The knowledge tree."),
     FileSpec("edges.csv", "edge", _content(
         C("from_id", required=True, doc="node id"),
         C("to_id", required=True, doc="node id"),
         C("type", required=True, enum=EDGE_TYPES, doc="prerequisite / analogous / confusable / causal"),
-        C("note", default="", doc="required for analogous and causal: what maps onto what, or how A affects B"),
+        C("note", default="", doc="required: what the link means, e.g. what maps onto what, or how A affects B"),
         C("confidence", "real", default="0.8", doc="0–1", bounds=(0, 1)),
         C("source_ids", "list", default="", doc="where the link is evidenced"),
+        C("teach_use", enum=TEACH_USES, default="none",
+          doc="`intuition` (the `from` part can lead into the `to` part), `contrast` (use it to show the difference) or `none`"),
     ), key=("from_id", "to_id", "type"), content_row=True, required_file=True,
         doc="Typed links between nodes. An edge on a concept applies to all its parts."),
     FileSpec("notes.csv", "note", _content(
@@ -143,6 +147,7 @@ _FILES = (
         C("point", required=True, doc="one sentence"),
         C("exemplar", default="", doc="short model answer fragment"),
         C("source_ids", "list", required=True, doc="the specification or textbook section the point is based on"),
+        C("order", "int", doc="position within the part (1, 2, ...); points are taught and scored in this order"),
     ), content_row=True, doc="Our fallback points, for parts past papers don't test."),
     FileSpec("past_papers.csv", "past_paper", (
         C("id", required=True, doc="e.g. `2024_06_p1`"),

@@ -5,10 +5,10 @@ CREATE TABLE source (id TEXT PRIMARY KEY, course_id TEXT, type TEXT NOT NULL, ti
 -- every content table below also has: status, flag, updated_by, updated_at, extra
 CREATE TABLE node (id TEXT PRIMARY KEY, course_id TEXT NOT NULL, parent_id TEXT, level TEXT NOT NULL, name TEXT NOT NULL,
   aliases TEXT DEFAULT '', spec_ref TEXT DEFAULT '', part_type TEXT, description TEXT NOT NULL, source_ids TEXT DEFAULT '',
-  extraction_confidence REAL DEFAULT 1.0, difficulty REAL,
+  extraction_confidence REAL DEFAULT 1.0, difficulty REAL, intuition TEXT DEFAULT '',
   status TEXT DEFAULT 'draft', flag TEXT DEFAULT '', updated_by TEXT DEFAULT 'extraction', updated_at TEXT, extra TEXT);
 CREATE TABLE edge (from_id TEXT NOT NULL, to_id TEXT NOT NULL, type TEXT NOT NULL, note TEXT DEFAULT '', confidence REAL DEFAULT 0.8,
-  source_ids TEXT DEFAULT '',
+  source_ids TEXT DEFAULT '', teach_use TEXT DEFAULT 'none',
   status TEXT DEFAULT 'draft', flag TEXT DEFAULT '', updated_by TEXT DEFAULT 'extraction', updated_at TEXT, extra TEXT,
   PRIMARY KEY (from_id, to_id, type));
 CREATE TABLE note (id TEXT PRIMARY KEY, node_id TEXT NOT NULL, summary TEXT NOT NULL, key_points TEXT DEFAULT '', key_wording TEXT DEFAULT '',
@@ -19,6 +19,7 @@ CREATE VIRTUAL TABLE node_fts USING fts5(id UNINDEXED, name, aliases, descriptio
 CREATE TABLE misconception (id TEXT PRIMARY KEY, node_id TEXT NOT NULL, wrong_idea TEXT NOT NULL, correction TEXT NOT NULL, source_ids TEXT DEFAULT '',
   status TEXT DEFAULT 'draft', flag TEXT DEFAULT '', updated_by TEXT DEFAULT 'extraction', updated_at TEXT, extra TEXT);
 CREATE TABLE mark_point (id TEXT PRIMARY KEY, node_id TEXT NOT NULL, point TEXT NOT NULL, exemplar TEXT DEFAULT '', source_ids TEXT NOT NULL,
+  "order" INTEGER,
   status TEXT DEFAULT 'draft', flag TEXT DEFAULT '', updated_by TEXT DEFAULT 'extraction', updated_at TEXT, extra TEXT);
 CREATE TABLE past_paper (id TEXT PRIMARY KEY, course_id TEXT, exam_paper_id TEXT, series TEXT, question_source_id TEXT,
   mark_scheme_source_id TEXT, examiner_report_source_id TEXT, extra TEXT);

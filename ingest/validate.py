@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
+from edux.settings import load_settings
 from ingest import registry
 from ingest.registry import FileSpec, split_list
 
@@ -245,12 +246,25 @@ class _Checker:
             etype = r.get("type", "")
             if r.get("from_id") and r.get("from_id") == r.get("to_id"):
                 self.error("edges.csv", r, "an edge cannot link a node to itself")
-            if etype in ("analogous", "causal") and not r.get("note"):
-                self.error("edges.csv", r, f"an {etype} edge needs a note" if etype == "analogous" else f"a {etype} edge needs a note")
+            if not r.get("note"):
+                self.error("edges.csv", r, f"{'an' if etype[:1] in 'aeiou' else 'a'} {etype or 'untyped'} edge needs a note")
             if etype == "prerequisite" and r.get("status") != "rejected":
                 graph[r.get("from_id", "")].append(r.get("to_id", ""))
         for cycle in _find_cycles(graph):
             self.error("edges.csv", None, "prerequisite cycle: " + " -> ".join(cycle))
+
+    def check_order(self) -> None:
+        """A mark point's order must be unique within its part."""
+        seen: dict[tuple[str, str], int] = {}
+        for r in self.rows("mark_points.csv"):
+            order = r.get("order", "")
+            if not order:
+                continue
+            key = (r.get("node_id", ""), order)
+            if key in seen:
+                self.error("mark_points.csv", r, f"order {order} is already used on {key[0]!r} (line {seen[key]})")
+            else:
+                seen[key] = int(r["_line"])
 
     def check_values(self) -> None:
         for r in self.rows("nodes.csv"):
@@ -287,7 +301,18 @@ class _Checker:
         for r in self.rows("mark_scheme_items.csv"):
             tested.update(split_list(r.get("node_ids", "")))
         covered = tested | {r.get("node_id") for r in self.rows("mark_points.csv")} | {r.get("node_id") for r in self.rows("notes.csv")}
-        with_misconception = {r.get("node_id") for r in self.rows("misconceptions.csv")}
+        settings = load_settings()
+        misconception_count: dict[str, int] = defaultdict(int)
+        for r in self.rows("misconceptions.csv"):
+            if r.get("status") != "rejected":
+                misconception_count[r.get("node_id", "")] += 1
+        points: dict[str, int] = defaultdict(int)
+        for r in self.rows("mark_points.csv"):
+            if r.get("status") != "rejected":
+                points[r.get("node_id", "")] += 1
+        for r in self.rows("notes.csv"):   # a part with no mark points is taught from its notes' key points
+            if r.get("status") != "rejected":
+                points["notes:" + r.get("node_id", "")] += len(split_list(r.get("key_points", "")))
         with_edges: set[str] = set()
         for r in self.rows("edges.csv"):
             with_edges.update((r.get("from_id"), r.get("to_id")))
@@ -300,8 +325,15 @@ class _Checker:
             if level == "part":
                 if not covered.intersection(lineage(i)):
                     self.warn("nodes.csv", r, f"part {i!r} has no question, mark point or note")
-                if i not in with_misconception:
-                    self.warn("nodes.csv", r, f"part {i!r} has no misconception")
+                if misconception_count[i] < settings.mcq.min_distractors:
+                    self.warn("nodes.csv", r, f"part {i!r} has {misconception_count[i]} misconception(s), "
+                              f"fewer than mcq.min_distractors ({settings.mcq.min_distractors})")
+                n = points[i] or points["notes:" + i]
+                if n and not settings.points.warn_min <= n <= settings.points.warn_max:
+                    self.warn("nodes.csv", r, f"part {i!r} has {n} point(s), outside points.warn_min to "
+                              f"points.warn_max ({settings.points.warn_min}–{settings.points.warn_max})")
+                if not r.get("intuition"):
+                    self.warn("nodes.csv", r, f"part {i!r} has no intuition line")
                 if not with_edges.intersection(lineage(i)[:2]):
                     self.warn("nodes.csv", r, f"part {i!r} has no edges (on itself or its concept)")
             elif level == "concept":
@@ -362,6 +394,7 @@ def validate_tables(tables: dict[str, Table]) -> ValidationResult:
     checker.check_course()
     checker.check_tree()
     checker.check_edges()
+    checker.check_order()
     checker.check_values()
     checker.check_coverage()
     return checker.result
