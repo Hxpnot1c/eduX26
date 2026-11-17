@@ -154,9 +154,25 @@ def cmd_serve(host: str | None = None, port: int | None = None) -> int:
     return 0
 
 
-def cmd_seed_demo() -> int:
-    """Create the demo students by replaying scripted events."""
-    raise NotImplementedError
+def cmd_seed_demo(course: str | None = None, reset: bool = False, parts: str | None = None) -> int:
+    """Create the three demo students by replaying scripted events; print the roles picked and their keys."""
+    from edux import demo
+
+    try:
+        result = demo.seed(course, reset, parts)
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(f"course: {result['course']}")
+    for role in demo.ROLES:
+        value = result["roles"][role]
+        print(f"  {role:14} {', '.join(value) if isinstance(value, list) else value or '-'}")
+    for warning in result["warnings"]:
+        print(f"warning: {warning}")
+    host, port = os.environ.get("HOST", "127.0.0.1"), os.environ.get("PORT", "8000")
+    for student_id, key in result["students"].items():
+        print(f"{student_id:12} key {key}   http://{host}:{port}/mcp?key={key}")
+    return 0
 
 
 def _list(value: str) -> list[str]:
@@ -212,6 +228,11 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--student", required=True)
     p = sub.add_parser("rebuild", help="replay events into derived state")
     p.add_argument("--student")
+    p = sub.add_parser("seed-demo", help="create the three demo students from scripted events")
+    p.add_argument("--course", help="course id (default: the only loaded course)")
+    p.add_argument("--reset", action="store_true", help="remove the demo students and their events first")
+    p.add_argument("--parts", help="override roles, e.g. target=ped_values,prereq=ped_formula "
+                                   "(review_parts and showme_parts take ;-separated ids)")
     p = sub.add_parser("serve", help="start the MCP server")
     p.add_argument("--host", help="default: HOST from the environment, else 127.0.0.1")
     p.add_argument("--port", type=int, help="default: PORT from the environment, else 8000")
@@ -232,6 +253,8 @@ def main(argv: list[str] | None = None) -> None:
         code = cmd_state(args.student, args.node, args.at)
     elif args.command == "sessions":
         code = cmd_sessions(args.student)
+    elif args.command == "seed-demo":
+        code = cmd_seed_demo(args.course, args.reset, args.parts)
     elif args.command == "serve":
         code = cmd_serve(args.host, args.port)
     else:

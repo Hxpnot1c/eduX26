@@ -71,15 +71,16 @@ def parse_ts(ts: str | datetime) -> datetime:
 # --- students --------------------------------------------------------------
 
 
-def add_student(display_name: str, course_id: str, profile: str | None = None) -> dict:
-    """Create a student with a secret key and an empty profile; returns {"id", "key"}."""
+def add_student(display_name: str, course_id: str, profile: str | None = None, student_id: str | None = None) -> dict:
+    """Create a student with a secret key and an empty profile; returns {"id", "key"}.
+    student_id fixes the id (used for demo students); by default it is made from the name."""
     conn = _conn()
     if not conn.execute("SELECT 1 FROM content.course WHERE id = ?", (course_id,)).fetchone():
         raise ValueError(f"unknown course {course_id!r}; load its pack first")
     if profile is not None and profile not in _context().profiles:
         raise ValueError(f"unknown context profile {profile!r}")
     slug = re.sub(r"[^a-z0-9]+", "-", display_name.lower()).strip("-") or "student"
-    student_id, key = f"{slug}-{secrets.token_hex(2)}", secrets.token_urlsafe(16)
+    student_id, key = student_id or f"{slug}-{secrets.token_hex(2)}", secrets.token_urlsafe(16)
     with conn:
         conn.execute("INSERT INTO student (id, key, display_name, course_id, profile, created) VALUES (?, ?, ?, ?, ?, ?)",
                      (student_id, key, display_name, course_id, profile, now_iso()))
