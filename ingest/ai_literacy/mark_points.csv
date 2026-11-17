@@ -7,7 +7,7 @@ ail_verify_p1,ail_verify,Opens the source the claim came from.,I opened the ONS 
 ail_verify_p2,ail_verify,Names who published the source and when.,"It's the ONS, published March 2025.",edux_ai_literacy,2,approved,,eduX,
 ail_verify_p3,ail_verify,Compares the claim with what the source says.,The page gives 3.4% for February.,edux_ai_literacy,3,approved,,eduX,
 ail_verify_p4,ail_verify,Says whether the claim matched the source.,"So the chatbot's 3.4% matched.",edux_ai_literacy,4,approved,,eduX,
-ail_how_fabrication_p1,ail_how_fabrication,"Chatbots write likely-looking text, including realistic but invented citations",,edux_ai_literacy,1,approved,,eduX,
+ail_how_fabrication_p1,ail_how_fabrication,"It predicts likely text, so it can make up real-looking links",,edux_ai_literacy,1,approved,,eduX,
 ail_how_confidence_p1,ail_how_confidence,Sounding confident doesn't show whether an answer is correct,,edux_ai_literacy,1,approved,,eduX,
 ail_how_cutoff_p1,ail_how_cutoff,"Without searching, a chatbot's knowledge stops at its training date",,edux_ai_literacy,1,approved,,eduX,
 ail_how_agreement_p1,ail_how_agreement,"Chatbots can shift answers to agree with you, so check against the notes",,edux_ai_literacy,1,approved,,eduX,
