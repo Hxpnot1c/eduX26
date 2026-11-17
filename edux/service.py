@@ -8,7 +8,7 @@ import statistics
 from datetime import date, datetime, timedelta, timezone
 
 from edux import context_blocks, graph, learner, plan
-from edux.settings import ContextConfig, Settings, load_context, load_settings, read_text
+from edux.settings import TEXT_DIR, ContextConfig, Settings, load_context, load_settings, read_text
 
 
 @functools.cache
@@ -72,6 +72,24 @@ def _reference(blocks: dict) -> dict:
             for name, block in blocks.items() if name not in PLAN_INPUTS}
 
 
+def _format_for(client: str | None) -> str:
+    """The formatting note for the chatbot: text/format/<name>.md when the client name contains <name>
+    (claude, chatgpt, gemini), otherwise text/format/default.md."""
+    name = (client or "").lower()
+    found = next((f.stem for f in sorted((TEXT_DIR / "format").glob("*.md")) if f.stem != "default" and f.stem in name),
+                 "default")
+    return read_text(f"format/{found}.md").strip()
+
+
+def style(student: dict, client: str | None) -> dict:
+    """Reply length (profile answer_length, else style.max_words), the student's interests and the client's
+    formatting note."""
+    row = learner._conn().execute("SELECT interests, answer_length FROM student_profile WHERE student_id = ?",
+                                  (student["id"],)).fetchone()
+    return {"max_words": (row and row["answer_length"]) or _settings().style.max_words,
+            "interests": (row and row["interests"]) or "", "format": _format_for(client)}
+
+
 def tutor_turn(
     student: dict,
     message: str,
@@ -131,6 +149,7 @@ def tutor_turn(
         "ok": True,
         "plan": steps,
         "score_next": plan.score_next(steps),
+        "style": style(student, client),
         "reference": _reference(blocks),
         "focus": [{"id": p["id"], "name": p["name"], "level": p["level"]} for p in focus.get("parts", [])],
     }

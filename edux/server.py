@@ -176,7 +176,7 @@ def build_server() -> FastMCP:
     """Create the FastMCP server with instructions, tools, prompts and transport security from ALLOWED_HOSTS."""
     mcp = FastMCP(
         name="eduX",
-        instructions=read_text("server_instructions.md"),
+        instructions=read_text("server_instructions.md").strip() + "\n\n" + read_text("style.md").strip(),
         streamable_http_path="/mcp",
         stateless_http=True,
         json_response=True,
