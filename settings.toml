@@ -1,4 +1,4 @@
-protocol = "v0.1"          # bump when the meaning of labels or scoring changes
+protocol = "v0.2"          # bump when the meaning of labels or scoring changes (v0.2: labels describe the student's message; scores come from points met)
 
 [levels]                   # part levels shown to students
 new = 0.40                 # p_known below this = new
