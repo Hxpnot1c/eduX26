@@ -148,6 +148,13 @@ async def conversation(keyed: str, student: str) -> None:
           "4. a question instead of an answer gets answer_brief, then the same question again, and scores nothing",
           ", ".join(moves(fourth)) or fourth.get("error", ""))
 
+    untermed = []
+    for t in turns:
+        on_part = [s for s in t.get("plan", []) if s.get("part_id")]
+        if on_part and (on_part[0]["data"].get("terms") or [None])[0] != graph.get_node(on_part[0]["part_id"])["name"]:
+            untermed.append(on_part[0]["move"])
+    check(not untermed, "each plan lists the known terms once, its first part first", ", ".join(untermed))
+
     shapes = {tuple(sorted(step)) for t in turns for step in t.get("plan", [])}
     check(shapes == {("cue", "data", "move", "part_id")}, "each step carries only move, part_id, cue and data",
           json.dumps(sorted(shapes)))

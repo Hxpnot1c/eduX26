@@ -29,7 +29,7 @@ import random
 import re
 
 from edux import graph, learner
-from edux.context_blocks import Turn, core_idea, held_misconceptions
+from edux.context_blocks import Turn, core_idea, held_misconceptions, known_parts, known_terms
 from edux.settings import TEXT_DIR, Settings, SettingsError, read_text
 
 log = logging.getLogger(__name__)
@@ -315,6 +315,19 @@ def _second_step(turn: Turn, blocks: dict, reviews_only: bool = False) -> dict |
 # --- the plan -----------------------------------------------------------------------
 
 
+def add_terms(turn: Turn, steps: list[dict]) -> list[dict]:
+    """Give the plan's first step on a part (every step that teaches or asks is on a part) data.terms: the course
+    terms the student knows (context_blocks.known_terms), the steps' own parts first, so the chatbot doesn't
+    introduce others. The list is sent once per plan, which keeps the result within its budget."""
+    for step in steps:
+        step["data"].pop("terms", None)
+    parts = list(dict.fromkeys(s["part_id"] for s in steps if s["part_id"]))
+    if parts:
+        first = next(s for s in steps if s["part_id"])
+        first["data"]["terms"] = known_terms(turn, parts, known_parts(turn))
+    return steps
+
+
 def asking_step(steps: list[dict]) -> dict | None:
     """The step in a plan that asks the student something they should answer (it carries data.answer_type)."""
     return next((s for s in reversed(steps) if "answer_type" in s["data"]), None)
@@ -322,7 +335,7 @@ def asking_step(steps: list[dict]) -> dict | None:
 
 def reask(pending: dict) -> list[dict]:
     """answer_brief, then the pending question again with the same data (so the same answer_type and score_next)."""
-    data = {"asked": pending["move"], **pending["data"]}
+    data = {"asked": pending["move"], **{k: v for k, v in pending["data"].items() if k != "terms"}}
     return [_step("answer_brief", pending["part_id"]), {**_step("reask", pending["part_id"], data)}]
 
 
