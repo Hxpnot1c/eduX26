@@ -37,6 +37,7 @@ class ThisMessage(BaseModel):
     question_depth: QuestionDepth = Field(description="surface (what is it), mechanism (how or why), transfer (applying it somewhere new)")
     engagement: Engagement = Field(description="passive (just reading), active (asking or answering), constructive (their own reasoning)")
     choice: Choice = Field("none", description="what they chose when offered: try_first, hint, just_show_me, or none")
+    conflict_flagged: bool = Field(False, description="true when your reply corrects a mistake you made earlier")
 
 
 class Answer(BaseModel):

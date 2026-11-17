@@ -137,7 +137,10 @@ async def conversation(keyed: str, student: str) -> None:
 
     before = max_evidence_id()
     fourth = await turn({"message": "Wait, why do you use the original value and not the new one?", "node_ids": [PART],
-                         "this_message": {"question_depth": "mechanism", "engagement": "active"}})
+                         "this_message": {"question_depth": "mechanism", "engagement": "active", "conflict_flagged": True}})
+    flagged = learner._conn().execute("SELECT conflict_flagged FROM exchange_log WHERE student_id = ? ORDER BY id DESC LIMIT 1",
+                                      (student,)).fetchone()
+    check(bool(flagged and flagged[0] == 1), "4. conflict_flagged is stored on the exchange")
     asked = ((fourth.get("plan") or [{}, {}])[-1].get("data") or {})
     check(moves(fourth) == ["answer_brief", "reask"] and asked.get("asked") == "reteach"
           and asked.get("missing") == missing and fourth.get("score_next") == third.get("score_next")

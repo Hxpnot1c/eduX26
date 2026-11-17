@@ -230,7 +230,8 @@ def tutor_turn(
         try:
             learner.record_exchange(student["id"], tagged, depth, engagement, choice == "just_show_me",
                                     _support_given(last["plan"]), choice,
-                                    evidence["misconception_ids"] if evidence else None, client=client, ts=at,
+                                    evidence["misconception_ids"] if evidence else None,
+                                    conflict_flagged=bool(this_message.get("conflict_flagged")), client=client, ts=at,
                                     evidence=[evidence] if evidence else None, apply="now")
         except ValueError as e:
             return {"ok": False, "error": str(e)}
