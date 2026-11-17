@@ -178,5 +178,6 @@ Plain markdown files read at startup. Changing wording never touches code.
 | `support/<level>.md` | the support instruction for each level: `worked_example`, `hint_procedural`, `hint_conceptual`, `explain_back`, `extend`, and `prequestion` |
 | `session/<state>.md` | what to do when the session is `fatigued` or a part is `stuck` |
 | `checks/<kind>.md` | marking instructions for `points` and `level` checks (step 07) |
+| `prompts/<prompt>.md` | the text of the `review_due` and `check_me` prompts (`{topic}` is filled in) |
 | `teaching_note.md` | the teaching-note template with `{placeholders}` |
 | `chatbot_setup.md` | the text students paste into their chatbot's custom instructions |

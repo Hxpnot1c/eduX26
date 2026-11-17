@@ -118,6 +118,16 @@ def update_my_profile(
     return service.update_profile(student_from_request(ctx), interests, exam_date_override, answer_length)
 
 
+def review_due() -> str:
+    """Prompt: "Quiz me on what's due." """
+    return read_text("prompts/review_due.md").strip()
+
+
+def check_me(topic: str) -> str:
+    """Prompt: "Check my understanding of ___." """
+    return read_text("prompts/check_me.md").strip().format(topic=topic.strip())
+
+
 TOOLS = {
     "get_learning_context": get_learning_context,
     "log_exchange": log_exchange,
@@ -138,6 +148,8 @@ def build_server() -> FastMCP:
     )
     for name, fn in TOOLS.items():
         mcp.add_tool(fn, name=name, description=read_text(f"tools/{name}.md"))
+    mcp.prompt(name="review_due", description="Quiz me on what's due.")(review_due)
+    mcp.prompt(name="check_me", description="Check my understanding of a topic.")(check_me)
     return mcp
 
 
