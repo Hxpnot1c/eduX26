@@ -25,7 +25,7 @@ Anyone on the team can run the demo from the README in under ten minutes, from c
 - A short `docs/demo-script.md` for the video: which student and which questions show each feature.
 
 ## Demo students
-`seed-demo [--course] [--reset] [--parts role=id,...]` creates `demo-secure`, `demo-weak` and `demo-showme`. Every event goes through `record_exchange` / `record_evidence` with timestamps counted back from now. Each student's `exam_date_override` is about 150 days ahead, so spacing and review modes work whatever dates the pack has. `--reset` removes the three students and their events first.
+`seed-demo [--course] [--reset] [--parts role=id,...]` creates `demo-secure`, `demo-weak` and `demo-showme`. Every event goes through `record_exchange` / `record_evidence` with timestamps counted back from now. Each student's `exam_date_override` is about 150 days ahead, so spacing and review modes work whatever dates the pack has. `--reset` removes the three students and their events first, and recreates them with the same keys so connector URLs keep working.
 
 ### Picking parts by role
 Picks are deterministic: ties go to importance, then pack order.
@@ -37,7 +37,7 @@ Picks are deterministic: ties go to importance, then pack order.
 | `misconception` | the target's misconception from an examiner report, otherwise its first |
 | `anchor` | a part analogous to the target: highest link weight, then the same part type |
 | `confusable` | a part confusable with the target, highest link weight |
-| `review_parts` | the 3 most important parts that aren't the target, prereq or anchor |
+| `review_parts` | the 3 most important parts that aren't the target, a part depending on it, the prereq or the anchor |
 | `showme_parts` | the 2 most important parts that aren't the target |
 
 **Fallbacks**, each with a printed warning naming the feature that won't show:
@@ -49,7 +49,7 @@ Picks are deterministic: ties go to importance, then pack order.
 `--parts target=ped_values,prereq=ped_formula` overrides single roles. Ids are checked and resolve through `id_map`. The chosen roles are printed.
 
 ### The three students
-The target has no events for `demo-secure` or `demo-showme`, so the same question about it shows:
+The target has no events for `demo-secure` or `demo-showme`, and neither do the parts that depend on it (their evidence would pass a prerequisite boost to the target). Events are recorded in time order, so `rebuild` gives the same state. The same question about the target shows:
 - **demo-secure:** pre-question, anchor and reviews due. Most parts are secure, including the prerequisite and anchor; one review part is weak (`recall`), the others developing (`transfer`).
 - **demo-weak:** weak prerequisite, the misconception to correct and worked-example support. No pre-question, because the target has evidence.
 - **demo-showme:** its offloading history ("just show me" reviews, a rising just-show-me trend), and a pre-question only if there's no "just show me" in the current session. Three past sessions (9, 6 and 3 days ago, about 50 minutes each) start well and then drop on previously correct parts from about minute 35, so `get_my_progress` shows the study pattern. They're past sessions, so there's no fatigue block now.
