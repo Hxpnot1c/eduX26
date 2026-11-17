@@ -19,7 +19,8 @@ example-mini pack loaded and the demo students seeded. It:
   scored 0, Ask and Verify raised, no task on a course question; a task only every literacy.secure_every research
   questions at secure (demo-showme); and how-AI-works checks (demo-secure): cutoff only without web access, a bad
   link's fabrication check with 4 options, one per part per session, an ignored check re-asked then scored 0, a
-  self-correction's check, and the AI-literacy section of get_my_progress;
+  self-correction's check, and the AI-literacy section of get_my_progress; and, with throwaway students that are
+  removed after, no check or task for a fatigued student, and a literacy task taking the question slot after waiting;
 - checks the server instructions' length, that points_met scores the same as letters, full ids, a mix or with
   no saved plan, and that another part's point is refused;
 - checks a bad answer is refused and records nothing, get_my_progress, update_my_profile, that a wrong or
@@ -33,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from datetime import timedelta
 import json
 import re
 import statistics
@@ -515,6 +517,88 @@ async def how_ai_works(url: str) -> None:
           json.dumps(lit.get("how_ai_works")))
 
 
+THROWAWAY_TABLES = ("student_profile", "exchange_log", "part_state", "student_misconception", "approach_record",
+                    "review_queue", "evidence_derived", "evidence_log", "call_log", "issued_plan")
+
+
+def drop_student(student: str) -> None:
+    """Remove a throwaway check student and everything recorded for them."""
+    with learner._conn() as conn:
+        for table in THROWAWAY_TABLES:
+            conn.execute(f"DELETE FROM {table} WHERE student_id = ?", (student,))
+        conn.execute("DELETE FROM student WHERE id = ?", (student,))
+
+
+def new_student(student: str) -> str:
+    """A fresh throwaway student for one run; returns their keyed URL suffix (the key)."""
+    drop_student(student)
+    course = learner._conn().execute("SELECT id FROM content.course").fetchone()[0]
+    return learner.add_student(student, course, student_id=student)["key"]
+
+
+async def fatigued_student(url: str) -> None:
+    """A fatigued student whose link failed gets the correction, but no how-AI-works check and no literacy task
+    (step 05e). Fatigue comes from evidence recorded in time order: right answers, then 30 minutes of wrong ones."""
+    student = "check-fatigued"
+    keyed = f"{url}?key={new_student(student)}"
+    try:
+        now = learner.parse_ts(learner.now_iso())
+        for minutes, part, score in ((-40, "ped_formula", 1), (-38, "yed_definition", 1), (-30, "ped_formula", 0),
+                                     (-24, "yed_definition", 0), (-18, "ped_formula", 0), (-12, "yed_definition", 0),
+                                     (-6, "ped_formula", 0)):
+            learner.record_evidence(student, part, "explain_back", float(score),
+                                    ts=learner._event_ts(now + timedelta(minutes=minutes)), apply="now")
+        tired = bool((learner.session_state(student) or {}).get("fatigued"))
+        got = await call(keyed, "tutor_turn", {
+            "message": "That link you gave me doesn't work.", "client": "check_mcp",
+            "this_message": {"question_depth": "surface", "engagement": "active", "request_type": "research",
+                             "source_conflict": True, "question_features": ["context"]}})
+        check(tired and moves(got)[:1] == ["source_conflict"] and "ask_mcq" not in moves(got)
+              and "literacy_task" not in moves(got),
+              "a fatigued student gets the correction, with no how-AI-works check and no literacy task",
+              f"fatigued={tired} {json.dumps(moves(got))}")
+    finally:
+        drop_student(student)
+
+
+async def waiting_task(url: str) -> None:
+    """A literacy task behind course questions waits two replies, then takes the next reply's question slot; the
+    course check it displaced comes alone in the reply after, and the ignored re-ask scores 0 (step 05e)."""
+    student = "check-waiting"
+    keyed = f"{url}?key={new_student(student)}"
+    labels = {"question_depth": "surface", "engagement": "active", "request_type": "concept"}
+
+    async def turn(message: str, extra: dict | None = None, **more) -> dict:
+        time.sleep(1.1)
+        return await call(keyed, "tutor_turn", {"message": message, "client": "check_mcp",
+                                                "this_message": {**labels, **(extra or {})}, **more})
+
+    async def right() -> dict:
+        chosen, _ = letter(student, True)
+        return await turn(chosen, answer={"part_id": PART, "type": "mcq", "choice": chosen})
+
+    def purposes(t: dict) -> list[str]:
+        return [s["move"] + (f":{s['data'].get('purpose') or s['data'].get('asked')}" if s["move"] in ("ask_mcq", "reask") else "")
+                for s in t.get("plan", [])]
+
+    try:
+        await turn("What was UK inflation in 2024, and why? Sources please.",
+                   {"request_type": "research", "question_features": ["concept", "context", "asks_sources"]})
+        first = await turn("How do I calculate PED?", node_ids=[PART])    # waits: 1
+        second = await right()                                           # waits: 2
+        third = await right()                                            # takes the question slot
+        fourth = await turn("Sorry, can we carry on?")                   # the displaced check, alone
+        zero = learner._conn().execute("SELECT evidence_type, score FROM evidence_log WHERE student_id = ? "
+                                       "ORDER BY id DESC LIMIT 1", (student,)).fetchone()
+        check(purposes(first)[-1].startswith("ask_mcq") and purposes(second)[-1] == "ask_mcq:check"
+              and purposes(third)[-1] == "reask:literacy_task" and purposes(fourth) == ["ask_mcq:check"]
+              and tuple(zero) == ("ail_task", 0.0),
+              "a waiting literacy task takes the question slot after 2 replies; the skipped check comes next, alone",
+              " | ".join(", ".join(purposes(t)) for t in (first, second, third, fourth)))
+    finally:
+        drop_student(student)
+
+
 def shuffles() -> None:
     """MCQ options are shuffled differently for different students."""
     from edux import plan
@@ -585,6 +669,8 @@ async def main(url: str, key: str, student: str) -> None:
     await research_questions(url)
     await secure_every(url)
     await how_ai_works(url)
+    await fatigued_student(url)
+    await waiting_task(url)
     shuffles()
 
     before = max_evidence_id()
