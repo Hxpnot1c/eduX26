@@ -133,18 +133,36 @@ def focus(turn: Turn, settings: Settings) -> dict | None:
     return out
 
 
-def _support_file(level: str, part_type: str | None) -> str:
+def _support_file(level: str, part_type: str | None, settings: Settings) -> str:
+    """The text file for a support level: hints depend on the part type (a completion problem for procedural
+    parts, a short example and a guiding question for conceptual ones)."""
+    if level == "hint":
+        return "hint_procedural" if part_type in settings.support.procedural_types else "hint_conceptual"
     return level
 
 
+def _latest_evidence_correct(turn: Turn, part_id: str, settings: Settings) -> bool:
+    row = learner._conn().execute(
+        "SELECT score FROM evidence_log WHERE student_id = ? AND part_id = ? AND ts <= ? ORDER BY ts DESC, id DESC LIMIT 1",
+        (turn.student_id, part_id, learner._event_ts(turn.at))).fetchone()
+    return row is not None and row["score"] >= settings.bkt.correct_share
+
+
 def support(turn: Turn, settings: Settings) -> dict | None:
-    """Support level for the main focus part, from its p_now, and the instruction for it."""
+    """Support level for the main focus part, from its p_now, and the instruction for it. extend is added when
+    p_now >= support.extend_from and the student's latest answer on the part was correct."""
     if not turn.parts:
         return None
     part = turn.parts[0]
-    level = learner.support_level(turn.p(part))
+    p = turn.p(part)
+    level = learner.support_level(p)
     node = graph.get_node(part)
-    return {"part_id": part, "level": level, "text": read_text(f"support/{_support_file(level, node['part_type'])}.md")}
+    out = {"part_id": part, "level": level, "extend": False,
+           "text": read_text(f"support/{_support_file(level, node['part_type'], settings)}.md")}
+    if p >= settings.support.extend_from and _latest_evidence_correct(turn, part, settings):
+        out["extend"] = True
+        out["extend_text"] = read_text("support/extend.md")
+    return out
 
 
 def _session_offloaded(turn: Turn) -> bool:
