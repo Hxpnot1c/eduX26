@@ -1,2 +1,2 @@
-Feedback: one tip on the feature their question lacks, e.g. "Data questions work better with a place and a date."
-Task: "Ask it again with <that feature>, and I'll answer the sharper version."
+Feedback: name the one feature their question lacks (a place, a time period, sources or reasoning), e.g. "Your question has no time period."
+Task: "Rewrite your question adding <that feature>." Don't write the rewrite for them.
