@@ -1,1 +1,1 @@
-Re-teach only what's missing, a different way in; ask them to try again.
+Re-teach only what's missing, another way in; then the check or a retry.
