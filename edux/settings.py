@@ -98,6 +98,8 @@ class Scheduling:
 class Support:
     worked_example_below: float
     hint_below: float
+    extend_from: float
+    procedural_types: list[str]
 
 
 @dataclass(frozen=True)

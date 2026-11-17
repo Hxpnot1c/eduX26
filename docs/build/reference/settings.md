@@ -76,7 +76,8 @@ untested_below = 0.5       # and p_now below this → queue an "untested" review
 [support]                  # which support level to suggest, by p_now
 worked_example_below = 0.40
 hint_below = 0.75          # at or above: ask them to explain it back
-extend_from = 0.40         # developing and above get higher-order questions mixed in (step 05)
+extend_from = 0.40         # developing and above get higher-order questions mixed in
+procedural_types = ["calculation", "diagram"]   # these part types get the procedural hint; others the conceptual one
 
 [prequestion]              # a question asked before teaching an untaught part
 enabled = true
