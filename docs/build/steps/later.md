@@ -64,6 +64,8 @@ Plus the standard status columns.
 - `text/checks/points.md`
 
 ### 08 Tests (`build/08-tests`)
+Started in [step 08](08-tests.md): the harness, settings, learner-model core and the two size gates. The rest of this list is still to do.
+
 pytest for:
 - validation errors
 - weights
