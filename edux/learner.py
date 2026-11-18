@@ -750,16 +750,19 @@ def _fatigued(conn: sqlite3.Connection, event: dict, part_id: str, session_id: s
 
 
 def personalisation_on() -> bool:
-    """personalisation.enabled, unless the environment sets EDUX_PERSONALISATION=0."""
-    return _settings().personalisation.enabled and os.environ.get("EDUX_PERSONALISATION", "1") != "0"
+    """personalisation.enabled (off by default), unless the environment sets EDUX_PERSONALISATION: 1 turns the
+    learning-rate offset on, 0 turns it off."""
+    switch = os.environ.get("EDUX_PERSONALISATION")
+    return _settings().personalisation.enabled if switch is None else switch == "1"
 
 
 def learning_offset(student_id: str, before: str | datetime | None = None) -> dict:
     """The student's learning-rate offset (log-odds on bkt.learn_rate) for a session starting at before (default now),
     a pure function of evidence in earlier sessions, so rebuild gives the same values (personal-learning-rate).
 
-    Evidence counts unless it was fatigued, immediate recall, an untaught pre-question (weight 0) or on an AI-literacy
-    part. The offset steps once per session, in order: target = n / (n + learn_rate_k) x the mean surprise of the
+    Evidence counts unless it was fatigued, immediate recall, an untaught pre-question (weight 0), on an AI-literacy
+    part, or the student's first piece of evidence on its part (that belongs to the starting-point adjustment, step
+    05q, and counting it here would count "already knew it" twice). The offset steps once per session, in order: target = n / (n + learn_rate_k) x the mean surprise of the
     evidence before that session, weighted by recency (half each recency_half_life pieces back), x surprise_scale,
     within log(learn_rate_weight_bounds); 0 until min_observations pieces across min_parts parts. Each step rises
     at most max_change_per_session, and falls at most down_change_factor times that. Returns {offset, n, weight}:
@@ -768,10 +771,12 @@ def learning_offset(student_id: str, before: str | datetime | None = None) -> di
     if not personalisation_on():
         return {"offset": 0.0, "n": 0, "weight": 1.0}
     rows = _conn().execute(
-        """SELECT d.session_id, l.part_id, d.surprise FROM evidence_derived d JOIN evidence_log l ON l.id = d.evidence_id
+        """SELECT d.evidence_id, d.session_id, l.part_id, d.surprise FROM evidence_derived d JOIN evidence_log l ON l.id = d.evidence_id
            WHERE d.student_id = ? AND d.session_id < ? AND d.fatigued = 0 AND d.immediate = 0 AND d.weight > 0
            ORDER BY l.ts, l.id""", (student_id, _event_ts(before))).fetchall()
-    rows = [r for r in rows if not graph.is_literacy(r["part_id"])]
+    firsts = {r[0] for r in _conn().execute(
+        "SELECT MIN(id) FROM evidence_log WHERE student_id = ? GROUP BY part_id", (student_id,))}   # each part's first answer
+    rows = [r for r in rows if not graph.is_literacy(r["part_id"]) and r["evidence_id"] not in firsts]
     low, high = (math.log(b) for b in p.learn_rate_weight_bounds)
     offset, used = 0.0, 0
     for session_id in sorted({r["session_id"] for r in rows})[1:] + [None]:   # each later session, then the asked one
@@ -847,7 +852,9 @@ def apply_evidence_event(event: dict) -> None:
         slip_add = _settings().session.fatigue_slip_add if fatigued else 0.0
         if part_id == AIL_VERIFY and correct:   # Verify is graded: 3 of 4 ticks moves it 3/4 as far as 4 of 4
             weight *= event["score"]
-        learn_rate = personal_learn_rate(s.bkt.learn_rate, learning_offset(student_id, session_id)["offset"])
+        # AI literacy is a different skill, measured differently: its parts use the population learn rate
+        offset = 0.0 if graph.is_literacy(part_id) else learning_offset(student_id, session_id)["offset"]
+        learn_rate = personal_learn_rate(s.bkt.learn_rate, offset)
         _apply_evidence(conn, student_id, part_id, slip, guess, correct, ts, weight=weight, slip_add=slip_add,
                         learn_rate=learn_rate, cap=cap)
 
