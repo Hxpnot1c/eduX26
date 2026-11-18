@@ -470,6 +470,9 @@ def tutor_turn(
         evidence, lost = None, True
     except ValueError as e:
         return {"ok": False, "error": str(e)}
+    if answer and this_message.get("request_type") == "research" and not this_message.get("question_features"):
+        # an answer to something we asked is not a new research question: no Ask evidence, no research plan
+        this_message = {**this_message, "request_type": "other" if graph.is_literacy(answer.get("part_id") or "") else "concept"}
     if evidence and evidence["type"] == "explain_back":
         evidence = _narrowed(evidence, last["plan"])
 

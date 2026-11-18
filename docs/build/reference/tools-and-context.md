@@ -147,6 +147,7 @@ At most two steps (three from step 05d, for feedback, `teach_point` and `ask_mcq
 - A literacy task never becomes the course's `pending` question.
 - `source_conflict` (on any turn) puts a `source_conflict` step first: that's exactly what checking is for, and the claim is corrected. The plan keeps its last steps, where its question is, within the three-step limit.
 - A research or `other` message that isn't an answer and gives no `node_ids` is a side turn (research fixes, 0002): it never sets or changes the course focus. Its matched parts serve this turn only (e.g. for trusted sources), they aren't tagged on the exchange, and the saved focus stays where it was.
+- An answer sent with `request_type = research` and no `question_features` is not a new research question (research fixes, 0008). Before anything is recorded or routed, it becomes `other` (on an AI-literacy part) or `concept` (on a course part). This means no Ask evidence of 0/4 and no research plan. An answer that comes with a real new question (with features) keeps `research`.
 - `concept` and `homework` follow the rules above and never get a literacy task. `other` gets an empty plan. A research question that comes with an answer to a course question is planned as that answer.
 
 **How-AI-works checks (step 05e).** A one-question check on how chatbots work, at the moment one has just failed. Triggers, in priority order (`plan.HOW_TRIGGERS`), each for one part:
