@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
+import math
 import tomllib
 import typing
 from dataclasses import dataclass
@@ -168,6 +169,19 @@ class Show:
 
 
 @dataclass(frozen=True)
+class Personalisation:
+    enabled: bool
+    learn_rate_k: float
+    min_observations: int
+    min_parts: int
+    recency_half_life: float
+    surprise_scale: float
+    learn_rate_weight_bounds: tuple[float, float]
+    max_change_per_session: float
+    down_change_factor: float
+
+
+@dataclass(frozen=True)
 class Difficulty:
     default: float
     prior_shift: float
@@ -254,6 +268,7 @@ class Settings:
     session: Session
     engagement: Engagement
     show: Show
+    personalisation: Personalisation
     difficulty: Difficulty
     link_weight: LinkWeight
     resolve: Resolve
@@ -360,6 +375,9 @@ def load_settings(path: Path = SETTINGS_PATH) -> Settings:
     settings = _build(Settings, _read_toml(path), "")
     if not 0 < settings.levels.new < settings.levels.secure < 1:
         raise SettingsError("levels: expected 0 < new < secure < 1")
+    low, high = settings.personalisation.learn_rate_weight_bounds
+    if not 0 < low <= 1 <= high:
+        raise SettingsError("personalisation.learn_rate_weight_bounds: expected 0 < low <= 1 <= high")
     check_identifiable(settings)
     return settings
 
@@ -373,12 +391,20 @@ def _largest_guess(settings: Settings, evidence_type: str) -> float:
     return guess
 
 
+def personal_learn_rate(learn_rate: float, offset: float) -> float:
+    """bkt.learn_rate with a student's log-odds offset applied (personal-learning-rate)."""
+    odds = learn_rate / (1 - learn_rate) * math.exp(offset)
+    return odds / (1 + odds)
+
+
 def check_identifiable(settings: Settings) -> None:
     """Raise unless every evidence type's BKT parameters are identifiable (Baker, Corbett & Aleven, 2008), with
     slip at its largest (session.slip_cap while fatigued) and guess at its largest (immediate evidence takes the
     larger of immediate's guess and the type's own): guess + slip < 1, so a correct answer is evidence of knowing,
-    and learn_rate < 1 - slip / (1 - guess), so a wrong answer still lowers the estimate."""
+    and learn_rate < 1 - slip / (1 - guess), so a wrong answer still lowers the estimate. learn_rate is taken at
+    the top of personalisation.learn_rate_weight_bounds, the largest a student's own rate can be."""
     bkt, cap = settings.bkt, settings.session.slip_cap
+    learn_rate = personal_learn_rate(bkt.learn_rate, math.log(settings.personalisation.learn_rate_weight_bounds[1]))
     immediate = bkt.evidence.get("immediate")
     for name, sg in bkt.evidence.items():
         guesses = [_largest_guess(settings, name)]
@@ -388,8 +414,8 @@ def check_identifiable(settings: Settings) -> None:
         for slip, guess in zip(slips, guesses):
             if guess + slip >= 1:
                 raise SettingsError(f"bkt.evidence.{name}: guess {guess:.2f} + slip {slip:.2f} (at slip_cap) must be below 1")
-            if bkt.learn_rate >= 1 - slip / (1 - guess):
-                raise SettingsError(f"bkt.evidence.{name}: learn_rate {bkt.learn_rate:.2f} must be below "
+            if learn_rate >= 1 - slip / (1 - guess):
+                raise SettingsError(f"bkt.evidence.{name}: learn_rate {learn_rate:.2f} (at the top personal bound) must be below "
                                     f"1 - slip / (1 - guess) = {1 - slip / (1 - guess):.2f} (slip at slip_cap)")
 
 

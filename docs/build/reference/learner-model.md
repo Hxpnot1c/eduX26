@@ -90,6 +90,17 @@ While the session is fatigued (see Sessions), slip is raised by `session.fatigue
 
 With the current values the tightest case is a 2-option question while fatigued: `learn_rate` must stay below 0.20.
 
+**Personal learning rate (personal-learning-rate).** Each student has one learning-rate offset, pooled across their course parts (`learner.learning_offset`; `docs/research/personalisation.md`, section 7). It is applied as an odds weight on `bkt.learn_rate`: `odds(learn_rate) × exp(offset)`.
+- **What it's built from:** the `surprise` of the student's evidence in earlier sessions. Fatigued evidence, immediate recall (`evidence_derived.immediate`), untaught pre-questions (weight 0) and AI-literacy parts are left out.
+- **Size:** `target = n / (n + learn_rate_k) × recency-weighted mean surprise × surprise_scale`, within `log(learn_rate_weight_bounds)`.
+  - Each piece of evidence counts half as much `recency_half_life` pieces later.
+  - The target is 0 until there are `min_observations` pieces across `min_parts` parts.
+- **Steps:** the offset moves once per session, towards the target. It rises at most `max_change_per_session` log-odds and falls at most `down_change_factor` times that, so under-crediting is the more likely error.
+- **Rebuild:** it is a pure function of earlier events, so rebuild gives the same state.
+- **Switching it on and off:** `personalisation.enabled = true` by default. `EDUX_PERSONALISATION=0` turns it off without editing the file, and changing either then needs a rebuild to re-score.
+- **Who sees it:** it is never a label and is never shown to students or teachers. Only the CLI student view (`python -m edux.cli state`) prints the offset and `n`.
+- **What isn't personal:** slip and guess stay per evidence type.
+
 **Pre-questions.** A pre-question is asked before teaching, so a wrong answer on untaught material reveals little, and so does a lucky right one. Its effect is weighted by how much the part has been covered:
 
 ```

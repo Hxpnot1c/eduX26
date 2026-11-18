@@ -21,7 +21,8 @@ from pathlib import Path
 
 from edux import db, graph
 from ingest.registry import split_list as split
-from edux.settings import ContextConfig, Settings, load_context, load_settings, protocol_label, settings_hash
+from edux.settings import (ContextConfig, Settings, load_context, load_settings, personal_learn_rate, protocol_label,
+                           settings_hash)
 
 SUPPORT_GIVEN = ("worked_example", "hint", "explain_back", "none")
 CHOICE_TAKEN = ("try_first", "hint", "just_show_me", "skip_point", "quiz", "extend", "stop", "none")   # skip_point: "I know this" (step 05d); quiz, extend, stop: a pick from offer_choice
@@ -637,6 +638,45 @@ def _fatigued(conn: sqlite3.Connection, event: dict, part_id: str, session_id: s
     return mean <= s.fatigue_threshold and len({p for p, _ in window}) >= s.fatigue_min_parts
 
 
+def personalisation_on() -> bool:
+    """personalisation.enabled, unless the environment sets EDUX_PERSONALISATION=0."""
+    return _settings().personalisation.enabled and os.environ.get("EDUX_PERSONALISATION", "1") != "0"
+
+
+def learning_offset(student_id: str, before: str | datetime | None = None) -> dict:
+    """The student's learning-rate offset (log-odds on bkt.learn_rate) for a session starting at before (default now),
+    a pure function of evidence in earlier sessions, so rebuild gives the same values (personal-learning-rate).
+
+    Evidence counts unless it was fatigued, immediate recall, an untaught pre-question (weight 0) or on an AI-literacy
+    part. The offset steps once per session, in order: target = n / (n + learn_rate_k) x the mean surprise of the
+    evidence before that session, weighted by recency (half each recency_half_life pieces back), x surprise_scale,
+    within log(learn_rate_weight_bounds); 0 until min_observations pieces across min_parts parts. Each step rises
+    at most max_change_per_session, and falls at most down_change_factor times that. Returns {offset, n, weight}:
+    the offset, the pieces of evidence it rests on, and the odds weight exp(offset). Off: offset 0."""
+    p = _settings().personalisation
+    if not personalisation_on():
+        return {"offset": 0.0, "n": 0, "weight": 1.0}
+    rows = _conn().execute(
+        """SELECT d.session_id, l.part_id, d.surprise FROM evidence_derived d JOIN evidence_log l ON l.id = d.evidence_id
+           WHERE d.student_id = ? AND d.session_id < ? AND d.fatigued = 0 AND d.immediate = 0 AND d.weight > 0
+           ORDER BY l.ts, l.id""", (student_id, _event_ts(before))).fetchall()
+    rows = [r for r in rows if not graph.is_literacy(r["part_id"])]
+    low, high = (math.log(b) for b in p.learn_rate_weight_bounds)
+    offset, used = 0.0, 0
+    for session_id in sorted({r["session_id"] for r in rows})[1:] + [None]:   # each later session, then the asked one
+        earlier = [r for r in rows if session_id is None or r["session_id"] < session_id]
+        n = len(earlier)
+        target = 0.0
+        if n >= p.min_observations and len({r["part_id"] for r in earlier}) >= p.min_parts:
+            weights = [0.5 ** ((n - 1 - i) / p.recency_half_life) for i in range(n)]
+            mean = sum(w * r["surprise"] for w, r in zip(weights, earlier)) / sum(weights)
+            target = min(high, max(low, n / (n + p.learn_rate_k) * mean * p.surprise_scale))
+        step = p.max_change_per_session
+        offset += min(step, max(-step * p.down_change_factor, target - offset))
+        used = n
+    return {"offset": offset, "n": used, "weight": math.exp(offset)}
+
+
 def apply_evidence_event(event: dict) -> None:
     """Apply one evidence event: score -> correct, the immediate-recall discount for chat evidence,
     surprise against the expected success p(1 - slip) + (1 - p) guess (stored in evidence_derived), misconception activation
@@ -669,7 +709,9 @@ def apply_evidence_event(event: dict) -> None:
         _activate_misconceptions(conn, student_id, split(event.get("misconception_ids")), ts)
     if weight > 0:  # an untaught pre-question is diagnostic only
         slip_add = _settings().session.fatigue_slip_add if fatigued else 0.0
-        _apply_evidence(conn, student_id, part_id, slip, guess, correct, ts, weight=weight, slip_add=slip_add)
+        learn_rate = personal_learn_rate(s.bkt.learn_rate, learning_offset(student_id, session_id)["offset"])
+        _apply_evidence(conn, student_id, part_id, slip, guess, correct, ts, weight=weight, slip_add=slip_add,
+                        learn_rate=learn_rate)
 
 
 def slip_guess(evidence_type: str, n_options: int | None = None, immediate: bool = False) -> tuple[float, float]:
@@ -689,10 +731,10 @@ def slip_guess(evidence_type: str, n_options: int | None = None, immediate: bool
 
 
 def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, slip: float, guess: float, correct: bool,
-                    ts: str, weight: float = 1.0, slip_add: float = 0.0) -> None:
+                    ts: str, weight: float = 1.0, slip_add: float = 0.0, learn_rate: float | None = None) -> None:
     """The BKT update on one part with the evidence's slip and guess (slip_guess); weight (0–1) scales how far
     p_known moves towards the BKT result. slip_add raises slip (capped at session.slip_cap) while the session is
-    fatigued."""
+    fatigued. learn_rate is the student's own (learning_offset), else bkt.learn_rate."""
     s = _settings()
     node = graph.get_node(part_id)
     if node is None or node["level"] != "part":
@@ -708,7 +750,7 @@ def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, sli
         p = before * (1 - slip) / (before * (1 - slip) + (1 - before) * guess)
     else:
         p = before * slip / (before * slip + (1 - before) * (1 - guess))
-    p += (1 - p) * s.bkt.learn_rate
+    p += (1 - p) * (s.bkt.learn_rate if learn_rate is None else learn_rate)
     p = before + weight * (p - before)
 
     factor = s.decay.on_success if correct else s.decay.on_failure

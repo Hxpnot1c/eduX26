@@ -129,6 +129,17 @@ low_share = 0.5            # passive or "just show me" share of the last session
 [show]                     # "just show me" (engagement-rules)
 max_per_part_session = 2   # after this many shows of one part in a session, the next first asks a 2-option question on the point
 
+[personalisation]          # per-student learning rate (personal-learning-rate; docs/research/personalisation.md section 7)
+enabled = true             # on for the demo; EDUX_PERSONALISATION=0 turns it off without editing this file
+learn_rate_k = 20          # shrinkage: the offset is n / (n + k) of the evidence's mean surprise
+min_observations = 10      # pieces of evidence (earlier sessions, not fatigued, immediate or untaught) before any offset
+min_parts = 3              # and across at least this many parts
+recency_half_life = 20     # a piece of evidence counts half as much this many pieces later
+surprise_scale = 2.0       # log-odds of learn-rate change per unit of shrunk mean surprise
+learn_rate_weight_bounds = [0.5, 1.5]   # odds multiplier on bkt.learn_rate; narrow on purpose (over-crediting locks errors in)
+max_change_per_session = 0.25   # log-odds the offset may rise from one session to the next
+down_change_factor = 2.0   # it may fall this many times faster: under-crediting is the safer mistake
+
 [difficulty]               # optional teacher-set difficulty per node (0 easy – 1 hard), inherited by parts
 default = 0.5              # used when no node above the part has one
 prior_shift = 0.15         # starting p_known moves down (hard) or up (easy) by up to this much
