@@ -662,9 +662,9 @@ def apply_evidence_event(event: dict) -> None:
     session_id = session_start(conn, student_id, ts)
     fatigued = _fatigued(conn, event, part_id, session_id, surprise, weight)
     conn.execute(
-        """INSERT OR REPLACE INTO evidence_derived (evidence_id, student_id, session_id, p_before, surprise, weight, fatigued)
-           VALUES (?, ?, ?, ?, ?, ?, ?)""",
-        (event["id"], student_id, session_id, p_before, surprise, weight, int(fatigued)))
+        """INSERT OR REPLACE INTO evidence_derived (evidence_id, student_id, session_id, p_before, surprise, weight, fatigued,
+             immediate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+        (event["id"], student_id, session_id, p_before, surprise, weight, int(fatigued), int(immediate)))
     if not correct:
         _activate_misconceptions(conn, student_id, split(event.get("misconception_ids")), ts)
     if weight > 0:  # an untaught pre-question is diagnostic only

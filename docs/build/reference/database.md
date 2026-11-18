@@ -171,3 +171,9 @@ ALTER TABLE exchange_log ADD COLUMN pushback_changed INTEGER NOT NULL DEFAULT 0;
 ```sql
 ALTER TABLE evidence_log ADD COLUMN n_options INTEGER;
 ```
+
+`migrations/011_evidence_immediate.sql` (personal-learning-rate) records in `evidence_derived` whether a piece of evidence was applied as immediate recall, so the per-student learning-rate offset can leave it out. It is derived: `python -m edux.cli rebuild` fills it for existing rows, which start at 0.
+
+```sql
+ALTER TABLE evidence_derived ADD COLUMN immediate INTEGER NOT NULL DEFAULT 0;
+```
