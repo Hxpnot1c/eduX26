@@ -133,6 +133,7 @@ At most two steps (three from step 05d, for feedback, `teach_point` and `ask_mcq
 - When a course check loses its slot (to a how-AI-works check or a literacy re-ask), that point stays unchecked (`check_due` in `points`), and the next reply asks its check only, without teaching it again.
 - A literacy task never becomes the course's `pending` question.
 - `source_conflict` (on any turn) puts a `source_conflict` step first: that's exactly what checking is for, and the claim is corrected. The plan keeps its last steps, where its question is, within the three-step limit.
+- A research or `other` message that isn't an answer and gives no `node_ids` is a side turn (research fixes, 0002): it never sets or changes the course focus. Its matched parts serve this turn only (e.g. for trusted sources), they aren't tagged on the exchange, and the saved focus stays where it was.
 - `concept` and `homework` follow the rules above and never get a literacy task. `other` gets an empty plan. A research question that comes with an answer to a course question is planned as that answer.
 
 **How-AI-works checks (step 05e).** A one-question check on how chatbots work, at the moment one has just failed. Triggers, in priority order (`plan.HOW_TRIGGERS`), each for one part:

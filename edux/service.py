@@ -419,6 +419,9 @@ def tutor_turn(
     if not node_ids and (evidence or lost):   # an answer continues the last turn's topic (after a prereq check or review too)
         # an AI-literacy part never becomes the course focus
         node_ids = last["focus"] or ([] if graph.is_literacy(answer["part_id"]) else [answer["part_id"]])
+    # a research question or other message (not an answer, no ids given) never sets or changes the course focus:
+    # its matches serve this turn only (trusted sources), and the focus stays where it was
+    side_turn = not node_ids and this_message.get("request_type") in ("research", "other")
     resolution = graph.resolve(message or "", node_ids)
     if not resolution["parts"] and not resolution["candidates"] and last["focus"] and not _asks_for_reviews(message or ""):
         resolution = {**graph.resolve("", last["focus"]), "unknown": resolution["unknown"]}
@@ -427,7 +430,7 @@ def tutor_turn(
         [learner.question_evidence(this_message.get("question_features"))]
         if this_message.get("request_type") == "research" else [])
     literacy_answer = bool(evidence and evidence["type"] in learner.LITERACY_ANSWERS)
-    tagged = list(dict.fromkeys([e["part_id"] for e in recorded] + resolution["parts"]))
+    tagged = list(dict.fromkeys([e["part_id"] for e in recorded] + ([] if side_turn else resolution["parts"])))
     if tagged and not lost:
         try:
             learner.record_exchange(student["id"], tagged, depth, engagement, choice == "just_show_me",
@@ -475,7 +478,7 @@ def tutor_turn(
     steps = reply_style(steps, student, turn, blocks)
     current_style = style(student, client)
     send_style = _style_due(last, current_style, at)
-    _save_plan(student["id"], at, steps, parts, corrected | plan.corrected_in(steps),
+    _save_plan(student["id"], at, steps, last["focus"] if side_turn else parts, corrected | plan.corrected_in(steps),
                offered | offered_in(steps), current_style,
                _pending_after(steps, pending), _mcq_after(steps, last), points, literacy, how, considered)
     # with no plan (a comparison profile), answers on the focus parts can still be scored
