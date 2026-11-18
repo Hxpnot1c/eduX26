@@ -1,6 +1,6 @@
 # Setting up your chatbot
 
-1. Add eduX as a connector (also called a custom connector or MCP server) in your chatbot's settings, using the link your teacher gave you. It looks like https://<server>/mcp?key=<your key>. Your key is personal: don't share it.
+1. Add Synapse as a connector (also called a custom connector or MCP server) in your chatbot's settings, using the link your teacher gave you. It looks like https://<server>/mcp?key=<your key>. Your key is personal: don't share it.
 2. Paste the text below into your chatbot's custom instructions (sometimes called "personal preferences" or "instructions for this project").
 
 ---
