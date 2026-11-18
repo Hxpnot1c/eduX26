@@ -183,14 +183,14 @@ The student's message still sets the main step. The value score orders only the 
 - the order of prerequisite repairs (`weak_prerequisites`).
 
 ```
-value = move_chance × Σ over the final exam and the student's upcoming assessments covering the part
+value = Σ over the final exam and the student's upcoming assessments covering the part
         [ weight(kind) × urgency(days to it) × (1 − p on its date) ]
 urgency(days) = clamp(horizon_days / max(days, 1), urgency_floor, 1)
 ```
 
 - **Prediction at the test date.** `p on its date` is `p_now` with decay run forward to the test date, not today's value, so a part that is secure now but will fade before the mock counts as a gap.
 - **The final exam is always in the sum** (`weight_final`), at the date spacing uses. With no exam ahead, it counts at `urgency_floor` with today's p.
-- **`move_chance`** is the student's learn rate, including their personal offset. The learn rate isn't per evidence type, so a review and an extend get the same chance today.
+- **No learning-chance factor (step 05n).** The score once multiplied by the student's learn rate (`move_chance`). With one learn rate for all evidence types that factor is the same for every step, so it scaled every value equally and never changed a choice. It was removed; the `considered` values change scale but not order. Per-type learn rates are a research item in `later.md`.
 - **No cramming.** Due-ness (the share gap or `review_when_below`) still decides whether a review is eligible. A test only orders the eligible reviews and decides between extend, a review or nothing; it never makes a review due.
 - **Ties** keep the old order (extend first, then overdue × importance), so with no assessments only the extend-vs-review choice changes.
 - **Reason.** A review picked because of a test (the assessment adding the most to its value) carries `data.reason`, e.g. "on your mock on Tuesday" (the day name within 7 days, else the date).

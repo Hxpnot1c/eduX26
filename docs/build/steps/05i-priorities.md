@@ -18,13 +18,13 @@ These choices now follow the expected marks from each step. That counts the stud
 
 ## The value score
 ```
-value = move_chance × Σ over the final exam and the upcoming assessments covering the part
+value = Σ over the final exam and the upcoming assessments covering the part
         [ weight(kind) × urgency(days to it) × (1 − p on its date) ]
 urgency(days) = clamp(horizon_days / max(days, 1), urgency_floor, 1)
 ```
 - `p on its date` is `p_now(p_known, half_life_days, clock_start, date)`: the predicted level on the test date.
 - The final exam is always in the sum (`weight_final`), at the date spacing uses (`exam_date_override`, else the pack's exam papers). With none ahead, it counts at `urgency_floor` with today's p.
-- `move_chance` is the student's learn rate, with their personal offset (step 05h). The learn rate isn't per evidence type, so it's the same for a review and an extend.
+- *(Removed in step [05n](05n-priorities-fixes.md):* this score first had a `move_chance` factor, the student's learn rate. It was the same for every step, so it scaled every value equally and never changed a choice.)
 - **Eligibility is unchanged:** only due reviews (share gap or `review_when_below`) and an earned extend are candidates.
 - **Ties** keep today's order: extend, then overdue × importance.
 
@@ -34,7 +34,7 @@ urgency(days) = clamp(horizon_days / max(days, 1), urgency_floor, 1)
   - It is profile, not events: a rebuild uses the assessments as they are now, like `exam_date_override`.
 - `edux/learner.py`:
   - `assessments`, `final_exam_days` and `days_to_exam` (now the soonest of the final and the assessments covering the part);
-  - `p_on`, `move_chance`, `step_value` and `reason_text`.
+  - `p_on`, `step_value` and `reason_text`.
 - `edux/service.py` and `edux/server.py`: `update_my_profile` gets `add_assessment {name, kind, date, topics}` and `remove_assessment {id}`.
   - Topics are matched to the pack's topic names and spec codes, ignoring only case and spacing.
   - With no match, nothing is added and the topics come back to pick from.

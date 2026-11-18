@@ -89,5 +89,6 @@ The result that would make us revisit this.
 | [0005](0005-name-the-product-synapse.md) | Name the product Synapse; eduX is the competition | Proposed |
 | [0006](0006-judge-secure-feedback-before-the-answer.md) | Judge feedback's "secure" flag on the level before the answer | Proposed |
 | [0007](0007-personal-learning-rate-off-by-default.md) | Recalibrate the personal learning rate and switch it off by default | Proposed |
+| [0008](0008-drop-move-chance-from-the-value-score.md) | Drop the learning-chance factor from the priority value score | Proposed |
 
 Each later record is added to this table in the pull request that introduces it.
