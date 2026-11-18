@@ -24,7 +24,10 @@ Branch `build/bridge-ending`, from `main` after step 05s.
 - **Its evidence** follows the pre-question rules. Being pre-teaching, it feeds the starting offset of its target's sector (step 05q).
   - That's the not-covered offset for a coverage-next target, and for any target the class hasn't covered.
   - A strongest-link target that was covered in class but never practised in Synapse feeds the covered offset instead.
-- After the answer, as for any pre-question, the feedback comes first, then teaching on the target part starts.
+- **After the answer:** as for any pre-question, the feedback comes first, then the first `teach_point` on the target part.
+  - The student can still stop or switch instead. The teach step carries `data.can_stop = true`, and a cue variant (`teach_point_bridge.cue.md`) says they can stop or switch topic.
+  - The pick comes back as `this_message.choice`: `stop` gives `session_summary` (step 05l), and `quick` gives questions on a few other developing parts.
+  - There's no new move section.
 
 **Reason line:** when the target comes from the coverage record, `data.reason` is "this links to what's next in class".
 
@@ -43,7 +46,7 @@ Branch `build/bridge-ending`, from `main` after step 05s.
 - `edux/learner.py`: `next_covered_section(class_id, at)` and `not_yet_taught(student_id, part_id)`.
 - `edux/graph.py`: the strongest linked part, using pack edges only.
 - `edux/cli.py`: the tiers in the student view.
-- `text/moves/ask_mcq_prequestion_bridge.cue.md`.
+- `text/moves/ask_mcq_prequestion_bridge.cue.md`, `text/moves/teach_point_bridge.cue.md`.
 - `scripts/check_mcp.py`: a `bridge` run.
 - **Docs:** this file; `reference/tools-and-context.md` (`data.link`, the ending order); `reference/learner-model.md` (bridge evidence); `reference/research.md` rows if anything ends up different.
 
@@ -64,6 +67,7 @@ None new: `priorities.horizon_days` sets tier 1.
 - No link means no bridge.
 - Coverage-next is preferred, with its reason line.
 - The bridge answer on a not-covered target feeds the not-covered offset.
+- After a bridge answer, `stop` gives `session_summary` and `quick` switches; neither forces the target part.
 - The gate passes:
   - `check_mcp` passes;
   - no result is over 2,400 characters;
