@@ -1,8 +1,9 @@
-# 05 · Product features: which chatbots can reach eduX, how students sign in, and the teacher view
+# 05 · Product features: which chatbots can reach eduX, how students sign in, the teacher view, and accessibility
 
-Waves 1 and 2 (overnight 17–18 Nov 2026). Sources:
+Waves 1, 2 and 3 (overnight 17–18 Nov 2026). Sources:
 - Wave 1: `work/w1/w1-05.md`, marks in `verify-A.json`.
 - Wave 2: `work/w2/w2-05.md` (routes and authentication, w2-05-01 to -14, marks in `verify-E.json`); `work/w2/w2-05t.md` (teacher view, w2-05-20 to -34, marks in `verify-G.json`); simulation `sims/teacher/results.md`; panels `panel-teacher-student.md` and `panel-investor-dpo.md`.
+- Wave 3: `work/w3/w3-05.md` (accessibility, SEND, EAL, low bandwidth and equity, w3-05-01 to -17), marks in `verify-L.json`. The verifier re-audited the MCQ options and the readability figures and corrected both (applied below).
 
 Vendor pages were read on 17–18 Nov 2026. OpenAI help pages returned 403, so those claims rest on search snippets and are marked "snippet". Each finding has one blind verifier mark.
 
@@ -13,9 +14,10 @@ Vendor pages were read on 17–18 Nov 2026. OpenAI help pages returned 403, so t
 - **The one documented school route is Microsoft 365 Education plus a Copilot Studio agent. It is untested.**
   - Copilot Chat is off by default for learners aged 13–17. An admin turns it on by setting the tenant to K-12 and each student's age group to NotAdult (w2-05-04 ✓).
   - Copilot Studio agents can call a remote MCP server. The key can be sent as a header or a query parameter, or the agent can use OAuth 2.0 (w2-05-03 ✓).
-  - Each student turn costs the school Copilot Credits. Our estimate is about US$84 per student per year, on a rate we haven't verified (w2-05-06 ~). See the [business plan](business-plan.md).
-- **Mistral Le Chat is a personal-account route only.** Its terms allow 13+ with parental permission (w2-05-01 ~), and the account owner can add a custom MCP server (w2-05-02 ✓). But it is a consumer contract, used "in your personal capacity", with no school data processing agreement (DPA). **A school can't deploy it or put it in a DPIA.** Keep it off every pupil-facing slide.
-- **ChatGPT, Claude and Gemini give no under-18 route.** ChatGPT for Teachers is for US staff only. Whether teen accounts can add MCP isn't documented (w2-05-14 ~, snippet). Gemini school accounts take only named partner integrations.
+  - Each student turn costs the school Copilot Credits: 5 credits per MCP tool call at US$0.01 (£0.0075) per credit. That is about £22.50 per student per year in the central case, range £11–108 (our estimate on assumed turn counts; w3-08m-06 ✓, -07 ✓, -13 ✓). It replaces the wave-2 US$84 estimate (w2-05-06 ~). See the [business plan](business-plan.md).
+- **No other client gives a school route for pupils.**
+  - Mistral Le Chat is a personal-account route only. Its terms allow 13+ with parental permission (w2-05-01 ~), and the account owner can add a custom MCP server (w2-05-02 ✓). But it is a consumer contract with no school data processing agreement (DPA), so **a school can't deploy it or put it in a DPIA.** Keep it off every pupil-facing slide.
+  - ChatGPT, Claude and Gemini give no under-18 route. ChatGPT for Teachers is for US staff only, and whether teen accounts can add MCP isn't documented (w2-05-14 ~, snippet). Gemini school accounts take only named partner integrations.
 - **Authentication: none of the fixes is built.** `edux/server.py` still reads only `?key=` (lines 55–57, 86–89). The plan:
   - **S:** accept the key in an `Authorization: Bearer` header.
   - **M:** sign in through the school's Microsoft Entra, with eduX checking tokens (Copilot Studio only).
@@ -26,12 +28,22 @@ Vendor pages were read on 17–18 Nov 2026. OpenAI help pages returned 403, so t
   - The proposed screen is one page: misconceptions to reteach, each with a starter MCQ, plus the weakest parts.
   - Rules: k = 6, shares in bands, one 14-day window, no names (all our choice).
   - It is not built. Show it as a static mock.
-- **The flag rule can't see moderate problems in small classes.** For a set of 12, a misconception held by half the class is flagged 27–56% of the time. One held by 35% is flagged only 7–18% of the time (simulation: synthetic students, `sims/teacher/results.md` §6).
-  - Pooling across sets *may* lift the "half the class" case to about 0.8–0.9, and doesn't help the 35% case unless the threshold is lowered (our calculation, below). **Not reproduced in repo:** the pooling script was run in scratchpad only and not saved, so treat these figures as unchecked.
-  - Say plainly: "It catches big shared misconceptions, not moderate ones."
+  - **The flag rule can't see moderate problems in small classes.** For a set of 12, a misconception held by half the class is flagged 27–56% of the time. One held by 35% is flagged only 7–18% of the time (simulation: synthetic students, `sims/teacher/results.md` §6).
+    - Pooling across sets *may* lift the "half the class" case to about 0.8–0.9, and doesn't help the 35% case unless the threshold is lowered (our calculation, below). **Not reproduced in repo:** the pooling script was run in scratchpad only and not saved, so treat these figures as unchecked.
+    - Say plainly: "It catches big shared misconceptions, not moderate ones."
 - **The panel's other feature asks are still unbuilt:** numeric, chain and essay-plan tasks, a class focus, and per-student completion. Only wording and mock-ups fit before Thursday.
+- **Two accessibility bugs in code, both S fixes (wave 3).**
+  - **The MCQ gives its answer away by form.** When a part has no mark points, `plan._points` (`edux/plan.py:376`) uses the node's *description* as the point, so the description becomes the correct option. That happens in 7 of the example pack's 9 parts. The description is a topic label, not an answer ("Calculating PED from percentage changes…"). The correct option is also longer than every distractor in 7 of 9 parts (w3-05-08 ~, verifier's count). **Fix:** never use the node description as an option; keep the mark point as the key (commit `f0a1c36` on `main` made the point, not the exemplar, the right option on purpose), matched to its distractors in length and punctuation; skip the MCQ when a part has no points. A wave-4 scout is testing this (in progress); warn at ingest. This doesn't contradict [04](04-economics-education.md): where the key is a point, it is a short fragment with no full stop (04's captures); where a part has no points, the description fallback makes it the longest option (w3-05). Both give the answer away.
+  - **"Shorter replies" doesn't reach the teaching step.** The profile's `answer_length` changes `style.max_words`, but `teach_point` still sends `max_words = 80` (`edux/plan.py:403`). So the chatbot gets two conflicting caps.
+- **Accessibility: universal, student-chosen supports beat SEND labels, and uptake is the equity risk (wave 3).**
+  - Need is common. 14.8% of pupils in England's schools have SEN support and 6.0% an EHC plan (w3-05-01 ✓). 16.6–25.5% of GCSE/AS/A level candidates have 25% extra time (w3-05-03 ✓).
+  - eduX already has no timers, one point per message and formulas in words, which suits read-aloud. Read-aloud helps students with reading disabilities (d = 0.35; w3-05-05 ✓). Glossaries are the only English-learner accommodation with a significant (small) effect (w3-05-09 ~).
+  - Evidence on who gains is mixed, and nobody measured **uptake**, the likelier way a gap widens (w3-05-14 ~, -15 ~).
+  - **No 16–18 SEN or EAL rate is published** in the sources read, so we can't size the sixth-form need (w3-05-01 ✓, -02 ✓).
 
 ## Ranked recommendations
+
+**Rec numbers in wave 3.** Ranks 1–10 keep their numbers (other reports cite them). Wave 3 adds ranks 11–21. The old 11 (Entra sign-in) is now 22 and the old 12 (teacher view as code) is now 23. Ranks 1–19 can be done before Thursday 23:59; 20 is "maybe"; 21–23 come later.
 
 | Rank | Recommendation | Lands in | Effort | Before Thursday? | Rests on findings |
 |---|---|---|---|---|---|
@@ -45,8 +57,19 @@ Vendor pages were read on 17–18 Nov 2026. OpenAI help pages returned 403, so t
 | 8 | **Q&A answer, "Is the teacher view blind in my set of 12?"** "Partly, yes. It catches a misconception held by about half the class, not one held by a third. Pooling across your sets should help the big ones (our calculation, not reproduced in repo). For the rest, it says 'nothing flagged', not 'all clear'." | pitch Q&A | S | yes | w2-05-29 ✓, w2-05-30 ✓; pooling: our calculation, not reproduced in repo |
 | 9 | **Adult test of Le Chat Free** with a bearer header. Note whether each write tool asks for confirmation. If it works, the slide may say "also tested on Le Chat (adult account)". Never present it as a pupil route. | build/test | S | yes | w2-05-01 ~, w2-05-02 ✓ |
 | 10 | Build: `readOnlyHint: true` on `get_my_progress`, and fix the README's ChatGPT route (carried from wave 1). | build | S | yes | w1-05-05 ✓ |
-| 11 | **Entra sign-in for pilots (option B below).** eduX acts as a resource server using the installed `mcp` SDK's `TokenVerifier` and `AuthSettings`. It checks the Entra token's audience, and the student id is a hash of `tid`+`oid`. | build | M | no | w2-05-05 ✓, w2-05-07 ✓ |
-| 12 | **Teacher view as code:** a `[teacher_view]` settings block, an `offered_misconception_ids` log, and one server-side aggregation. Off unless the school turns it on. | build | M | no | w2-05-28 ✓ to w2-05-34 ✓ |
+| 11 | **Correct MCQ option in plain claim form (wave 3).**<br>• **Never use the node `description` as an option.** It is the fallback in `_points` (`edux/plan.py:376` on `main`) and it is a topic label, not an answer.<br>• **Keep the mark point as the key, not the exemplar.** Commit `f0a1c36` on `main` made the point the right option on purpose. Match it to its distractors in length and punctuation (a full sentence with a full stop, within 0.7–1.3× the median distractor length; our choice, as in [04](04-economics-education.md) rec 1).<br>• At ingest, warn "check has no answerable correct option" for a part with misconceptions but no mark point. Until it has one, the planner skips the MCQ check for that part and uses explain-back.<br>• Also warn when the correct option is over 1.5× its part's median distractor length (our choice).<br>• **Before filming,** add mark points for the demo parts.<br>• A wave-4 scout is testing this fix (in progress). | build, course pack | S | yes | w3-05-08 ~ |
+| 12 | **Make "shorter replies" reach the teaching step.** For `teach_point` (`edux/plan.py:403`), set `max_words = min(settings.points.max_words, profile answer_length)`, passing the profile in as `style()` does. Then add to `text/tools/update_my_profile.md`: "answer_length: e.g. 50 if they want shorter replies". | build, `text/` | S | yes | w3-05-04 ~; w3-05-12 ~ (weak) |
+| 13 | **Option count and guess rate move together.** Three options are as good as four or five in item statistics (Rodriguez 2005; w3-05-07 ~). Most example-pack checks already show 3 options: when a part has one misconception, the chatbot writes a third (`min_distractors = 2`). Set `mcq.max_options = 3` (our choice). Then set the `mcq_check` guess to match the options shown, about .33 rather than .25. Better, build guess = 1/n options (`mcq_guess_from_options`, [06](06-settings-simulation.md) Later), because an always-"A" guesser already hits 32–34% on 3-option checks (w1-06-10 ~). A chatbot-written third option is a further form cue; the rec 11 length warning can't see it. **Caveat:** most checks fall inside the 30-minute "immediate" window and are scored with the immediate guess (.30), so the `mcq_check` guess matters little until that window shrinks (w1-06-07 ✓). Changing it also shifts the economics posteriors simulated in [06](06-settings-simulation.md), so rerun those sims after any change. | settings | S | yes | w3-05-07 ~; w1-06-10 ~ |
+| 14 | **No timers, stated and guarded.** eduX never times a check or uses response speed as evidence. Call-log timings are diagnostics only. So a student with 25% extra time in exams is not penalised. Add a design note, and a test that latency never enters the learner model. Pitch/Q&A line: "no time pressure, for everyone". | pitch, docs, build (test) | S | yes | w3-05-03 ✓, -04 ~ |
+| 15 | **Read-aloud friendly.** `text/format/default.md` already writes formulas in words, which suits device read-aloud. Offer `format=plain` as a student choice, not only per client. Video line: "works with your device's read-aloud". Don't claim eduX is a reading support. | build, video | S | yes (video line) | w3-05-05 ✓ |
+| 16 | **Readability check on student-facing pack text, and shorter move sentences.**<br>• At ingest, warn on any sentence over 25 words (ASD-STE100's limit for descriptive text) in `notes.summary`, `misconceptions.correction`, `nodes.intuition` and mark-point `exemplar`. Report pooled FK grade per topic. Warn only, because FK is unstable on short texts.<br>• Split the long sentences in `text/moves/*.md`. These are chatbot-facing, so the gain is in instruction-following, not student reading (plausible, untested). | build (ingest), `text/moves/` | S | yes | w3-05-13 ~, -16 ~ |
+| 17 | **Accessibility statement for schools (one page).** Cover which WCAG 2.2 criteria eduX controls and which the chatbot vendor controls, the universal options (shorter replies, untimed checks, read-aloud-friendly format, plain words if built), and how they help the school's own Equality Act duties (Schedule 10 accessibility plan; the anticipatory duty in FE, Schedule 13). Never imply eduX makes a school compliant. | business plan, pitch Q&A | S | yes | w3-05-17 ✓ |
+| 18 | **Equity: name uptake as the gap, and let the school check it.** Pitch/Q&A: "The evidence on who gains from tutoring software is mixed. The likelier gap is who uses it, so the school can compare usage by its own FSM and SEND flags." Per-student usage minutes and checks answered are already in the school export. eduX never holds those flags. | pitch, business plan | S | yes | w3-05-14 ~, -15 ~ |
+| 19 | **Low-bandwidth line.** Add one sentence to `text/format/chatgpt.md` and `claude.md`: "If the student says the connection is slow, describe diagrams in words." A result is about 600 tokens; what costs time is the extra round trip per turn and drawn charts (first principles, not measured). | `text/format/` | S | yes | first principles (w3-05 §Low bandwidth) |
+| 20 | **Student-chosen "plain words" option, never a SEND label.** Add `plain_words` (bool) to `update_my_profile`, sent in `style`. Add to `text/style.md`: "If style.plain_words: sentences under 15 words, everyday words, each course term explained the first time." It is student-supplied, never inferred, never shown to teachers and never exported. It needs a profile column (migration). | build, `text/` | M | maybe | w3-05-09 ~, -10 ~, -13 ~ |
+| 21 | **Glossary view.** `get_my_progress` lists the course terms met so far, each with a one-line plain definition. This is the evidence-backed English-learner support (a glossary), on demand, for everyone. | build | M | no | w3-05-09 ~, -10 ~ |
+| 22 | **Entra sign-in for pilots (option B below).** eduX acts as a resource server using the installed `mcp` SDK's `TokenVerifier` and `AuthSettings`. It checks the Entra token's audience, and the student id is a hash of `tid`+`oid`. | build | M | no | w2-05-05 ✓, w2-05-07 ✓ |
+| 23 | **Teacher view as code:** a `[teacher_view]` settings block, an `offered_misconception_ids` log, and one server-side aggregation. Off unless the school turns it on. | build | M | no | w2-05-28 ✓ to w2-05-34 ✓ |
 
 ## Chatbot compatibility table
 
@@ -256,6 +279,68 @@ Rules behind it:
 | Class focus ("externalities, due Friday") | Teacher #5 (wave 1) | Not built | A focus topic and deadline the planner prefers | No |
 | A tested school route | Student wave 2 #5; investor wave 2 #2 | None | Copilot Studio test on a real tenant | No |
 
+## Accessibility, SEND, EAL, low bandwidth and equity (wave 3)
+
+### Who needs what (official statistics)
+- **SEN, schools in England, 2025/26.** 14.8% of pupils (1,319,780) have SEN support and 6.0% (538,547) an EHC plan. Speech, language and communication is the commonest primary need for SEN support (25.7%); autism is the commonest for EHC plans (33.5%) (w3-05-01 ✓).
+- **Post-16 EHC plans.** Of 718,838 EHC plans in January 2026, 100,800 (14.0%) are held in FE and post-16 settings, 79,500 of them in sixth-form and FE colleges (w3-05-01 ✓).
+- **EAL.** 21.6% of pupils (19.3% in secondary) have a first language other than English. That is a language-exposure marker, not proficiency (w3-05-02 ✓).
+- **Exam access arrangements, 2024/25** (Ofqual, official statistics in development). 16.6–25.5% of GCSE, AS and A level candidates had approved 25% extra time, and 4.8–7.7% a reader or computer reader (w3-05-03 ✓).
+- **The 16–18 data gap.** None of these releases gives an SEN-support or EAL rate for 16–18-year-olds. The SEN release says only that the shares keep falling after compulsory school age. FE uses a different, self-declared measure (ILR), which isn't comparable. So we can't size need in sixth forms. Say "schools in England", never "16–18s", for these figures. Pulling the age-by-phase tables is open.
+- **What follows.** Slow reading and a need for extra time are common, not rare. Speech-and-language needs and autism point to literal, consistent, short wording.
+
+### What eduX already does (code reading)
+- **No timers.** No response-latency signal enters the learner model; call-log timings are diagnostics only.
+- **Short, one-point teaching.** One point per message, under a word cap.
+- **Terms explained.** A known-terms block, plus instructions rule 9: explain unlisted terms in plain words.
+- **Read-aloud-friendly text.** `text/format/default.md` writes formulas in words.
+
+These are universal-design choices, not SEND features. Frame them as "high-quality teaching for all", in line with the EEF's SEND guidance (w3-05-06 ~; that guidance's strategy list was read from secondary summaries only).
+
+### Two gaps in code
+1. **The MCQ correct option differs in form from its distractors** (w3-05-08 ~; the verifier re-audited the pack with the `plan.py` logic).
+   - `plan._points` (`edux/plan.py:376`) falls back to the node `description` when a part has no mark points. The example pack has mark points for only 2 of its 9 parts with misconceptions. So in **7 of 9 parts** the correct option is the description, a topic label such as "Calculating PED from percentage changes in quantity demanded and price."
+   - In the other 2 it is mark-scheme wording ("States that…").
+   - Correct options run 10–18 words and distractors 6–15. **The correct option is longer than every distractor of its part in 7 of 9 parts.** Only `ped_formula` and `pes_formula` are exceptions (verifier's count; the scout said 6).
+   - Item-writing guidance asks for options homogeneous in form and similar in length (Haladyna, Downing & Rodriguez 2002). A test-wise student can pick the answer without the economics. That inflates mastery and adds reading for weak readers.
+   - **Fix (rec 11):** never the description; keep the point as the key with matched length and punctuation; an ingest warning; skip the MCQ for parts with no mark point. A wave-4 scout is testing it.
+   - **Consistent with wave 1, for a different option source.** [04](04-economics-education.md) counted the opposite cue in its demo captures: the correct option was a short point fragment with no full stop (6 of 6 sets). Both are true: a point used as the key is too short and unpunctuated; the description fallback is too long. Both give the answer away, and the fix above covers both.
+2. **`answer_length` doesn't reach `teach_point`** (`edux/plan.py:403`; we confirmed it in code: `service.py:202` uses `answer_length` for `style.max_words`, while `plan.py:403` passes `settings.points.max_words`). The profile option overrides `style.max_words`, but `teach_point`'s `data.max_words` is fixed at `points.max_words = 80`. A student who asks for 50 words sends the chatbot two caps, and the code doesn't show which one the model obeys (rec 12).
+
+### What the evidence supports (all outside the UK and outside 16–18 unless stated)
+
+| support | evidence | population | outcome | use in eduX |
+|---|---|---|---|---|
+| Read-aloud / text-to-speech | d = 0.35 [0.14, 0.56], 23 group-design studies; within-subject 0.15 vs between-subject 0.61 (w3-05-05 ✓) | grade 3 to postsecondary, reading disabilities, mostly US | learning (comprehension while supported) | rec 15 |
+| Three options, not four | Little or no change in difficulty, discrimination or reliability (Rodriguez 2005; w3-05-07 ~, abstract only; we don't quote a study count) | mostly school-age test takers, US | prediction (item quality) | rec 13, with the guess change |
+| Glossaries for English learners | Of 7 accommodations, only dictionaries or glossaries had a significant, small effect; none threatened validity (w3-05-09 ~, abstract only) | US K–12 English learners | learning (test performance) | recs 20–21 |
+| Explicit academic vocabulary | 20-week RCT, 14 schools, N = 2,082; larger effects for non-English home language and weak vocabulary (w3-05-10 ~) | US grade 6; a review found no UK studies for 14–18 | learning | name and define each term the first time (fits rule 9) |
+| No time pressure | Accommodations raised scores more for students with disabilities (0.30) than for peers (0.17); timing 0.47 (w3-05-04 ~; a dissertation) | US, mixed ages | test scores under accommodation | rec 14 |
+| "Dyslexia fonts" | Dyslexie font gave no benefit vs Arial; extra letter spacing and short lines helped subsets (w3-05-11 ~) | Dutch, Italian, French children; US high-school students (short lines) | reading speed and accuracy | make no font claims; eduX doesn't control rendering |
+| Segmenting | small-to-medium gains on retention and transfer (w3-05-12 ~; snippet only, and the prior-knowledge moderator is unconfirmed) | mostly adults, multimedia | learning | consistent with one point per message; don't sell as a SEND or ADHD feature |
+
+### Readability (heuristic Flesch–Kincaid; w3-05-13 ~)
+- **Student-facing text.** Pooled note summaries come out at FK grade 8.4 (reading ease 60, about 14 words per sentence). That is inside WCAG 2.2's "lower secondary" band (7–9 years of school). The verifier reproduced this.
+- **Chatbot-facing move texts (`text/moves/*.md`).**
+  - On the verifier's rerun, they pool at **FK grade 10.4 with 25.2 words per sentence**, and **5 of the 11 files** average over 25 words per sentence (`answer_brief.md` exactly 25.0).
+  - The scout got 8.8, 23.6 and 4 files. The figures depend on how the markdown is stripped before counting, so use the stricter ones.
+  - Students never see these texts. Shorter sentences there are for instruction clarity, not student readability.
+- **The 25-word threshold** is the sentence limit for descriptive text in aviation's Simplified Technical English (ASD-STE100), written for non-native readers (w3-05-16 ~, via a secondary summary; an analogy, with no comprehension data).
+- **FK is crude.** It is unstable below about 100 words, and our syllable counter can differ from standard tools by about a grade. Never publish a "reading age" as a quality badge.
+
+### Equity: uptake is the gap to watch
+- **Who gains is mixed.** An intelligent-tutoring meta-analysis found at most small effects on K–12 maths (g = 0.01–0.09) and smaller effects for low achievers (w3-05-14 ~). The ASSISTments RCT (43 Maine schools, 2,850 grade 7 students) found the biggest gains for low prior attainers (g = 0.18 overall, from a secondary summary). But every student there had a school laptop (w3-05-15 ~).
+- **Neither study measured uptake**, meaning who actually uses the tool. With bring-your-own-device and voluntary use, that is the likelier way a gap widens.
+- **eduX should neither claim to narrow gaps nor profile students.** The school can compare usage by its own flags (rec 18).
+
+### Low bandwidth and offline (first principles, not measured)
+- `results.max_chars = 2400` is about 600 tokens, or 2.4 KB per turn. A 30-turn session moves well under 0.2 MB of eduX text.
+- What costs time is elsewhere:
+  - the extra model → MCP → model round trip per turn (one call per turn is already the right design);
+  - drawn diagrams (Python charts in ChatGPT, inline SVG in Claude);
+  - the chatbot app itself, which eduX can't change.
+- eduX can't work offline, because the chatbot needs the network. Missed days are absorbed by the review queue, not lost.
+
 ## Later (not before Thursday; for the business plan and Q&A)
 - **Copilot Studio end to end** in a Microsoft education tenant, with a 17-year-old test account under the school's control. Questions to answer:
   - Does an MCP call bill as one agent action?
@@ -267,6 +352,13 @@ Rules behind it:
 - **Check the ONS SRS "below 10" threshold** (snippet only, w2-05-32 ✓ note). If confirmed, k = 10 would leave most sets of 12–16 seeing nothing, so pooling would be the only option.
 - **Ask** Mistral (Team or Enterprise for UK schools), Microsoft (billing unit) and Anthropic (under-18 members on school plans). These need a human, not an agent.
 - **Numeric, chain and essay-plan tasks**; class focus.
+- **Accessibility follow-ups (wave 3).**
+  - Pull 16–18 SEN and EAL rates from the age-by-phase tables, and FE's self-declared measure (ILR), labelled as not comparable.
+  - Read the EEF SEND guidance PDF at source.
+  - Test whether Claude, ChatGPT and Copilot render maths so that NVDA and VoiceOver read it correctly.
+  - UK data poverty for 16–18s, and the share who study mainly on phones.
+  - Find an English uptake-gap study of an edtech tool by disadvantage.
+  - Build the glossary view (rec 21) and plain words (rec 20) if they miss Thursday.
 
 ## Considered and rejected
 - **Le Chat as a pupil route** (w2-05 rec 2 put it on the slide). It is a personal consumer account with no DPA, so a school can't deploy it or name it in a DPIA (DPO wave 2 #1). Adults may test it.
@@ -281,6 +373,13 @@ Rules behind it:
 - **The M365 Copilot licence route for students.** About US$216 per student per year (US$18 a month), which is more than our metered estimate.
 - **ChatGPT Edu as the school route.** Nothing we read offers it to UK secondary schools.
 - **Claiming "DfE-compliant" or "non-compliant" for the key.** DfE doesn't address it (w2-05-12 ✓).
+- **A SEND or EAL flag that changes teaching (wave 3).** It breaks the privacy checklist ("no SEND, EAL or demographic data in eduX") and labels minors. Universal options the student chooses get most of the benefit without profiling.
+- **Inferring reading difficulty from message length or spelling.** That is profiling by proxy, and native language and disability are under-studied in algorithmic bias.
+- **A dyslexia font or coloured background.** No benefit in the font test (w3-05-11 ~), and eduX doesn't control the chatbot's rendering.
+- **Readability caps on `text/moves/*.md` as an accessibility measure.** Students never see those texts. Kept only as a clarity tidy-up (rec 16).
+- **Timed quick-fire checks for engagement.** They conflict with the extended-time population (w3-05-03 ✓).
+- **Runtime simplification of notes by an LLM.** The server never calls a model, and simplified English alone showed no significant effect for English learners (w3-05-09 ~).
+- **Fixed option order.** The per-asking shuffle in `plan.ask_mcq` stops students memorising letters on re-asks. All the pack's options are statements, so numeric ordering has no use yet.
 
 ## Panel objections this report answers or leaves open
 
@@ -296,6 +395,8 @@ Rules behind it:
 | "Runs inside Gemini" | Investor w1 #1 | **Answered**: removed |
 | Exam skills beyond MCQs | Teacher w1 #1; student w1 #5 | **Open**: roadmap only |
 | Quiz instead of answer | Student w1 #1 | **Partly**: compromise proposed |
+| "The correct option gives itself away" | Teacher w1 #2; student w1 #3; judges w1 #5 | **Recommended** (wave 3): rec 11 targets the cause in `plan.py:376`. The wave-1 capture count (04) and the wave-3 audit describe different cues; neither fix is made |
+| SEND, EAL and slow readers | (scout-raised, wave 3) | **Recommended**: universal options (recs 12–16, 20–21) and a school accessibility statement (rec 17). No 16–18 data yet |
 
 ## Findings
 
@@ -320,7 +421,7 @@ Rules behind it:
 | w2-05-03 | Copilot Studio MCP: Streamable only; none, API key (header or query, user-supplied) or OAuth 2.0 | official document | M365 tenants | policy | ✓ |
 | w2-05-04 | K-12: Copilot Chat off by default for 13–17, blocked under 13; K-12 + NotAdult; A1/A3/A5 | official document | 13–17 in M365 Education | policy | ✓ (en-GB marketing page conflicts) |
 | w2-05-05 | MCP spec: PRM, audience check, no tokens in query, S256; DCR deprecated (2026-07-28) | official document | n/a | policy | ✓ |
-| w2-05-06 | Copilot Credits: 1/2/5/10; reasoning +10 per 1,000 tokens; 125% enforcement; about US$84/student/yr | official document + our estimate | Copilot Studio tenants | cost | ~ US$0.01/credit not on the cited page; per-student cost is our estimate |
+| w2-05-06 | Copilot Credits: 1/2/5/10; reasoning +10 per 1,000 tokens; 125% enforcement; about US$84/student/yr | official document + our estimate | Copilot Studio tenants | cost | ~ US$0.01/credit not on the cited page; per-student cost is our estimate. The US$84 figure is superseded by w3-08m-13 ✓ (about £22.50, range £11–108; business plan) |
 | w2-05-07 | Entra: no DCR for MCP; discovery lacks registration endpoint and S256 metadata | official document | Microsoft tenants | policy | ✓ |
 | w2-05-08 | ChatGPT OAuth: CIMD, DCR or predefined; S256 required; no custom API keys | official document | ChatGPT developers | policy | ✓ |
 | w2-05-09 | claude.ai: sign-in options; OAuth client choices; fixed headers | official document | claude.ai users | policy | ~ published identity is "Recommended", not default |
@@ -344,5 +445,22 @@ Rules behind it:
 | w2-05-32 | DfE confidentiality policy: no numeric thresholds, case by case | official document | England | policy | ✓ |
 | w2-05-33 | NHS HES: 1–7 starred, rounding to 5 | official document | England hospital data | policy | ✓ |
 | w2-05-34 | ICO: no single formula; k-anonymity fails against background knowledge | official document | UK | policy | ✓ |
+| w3-05-01 | SEN 14.8% / EHC 6.0% (2025/26); SLCN 25.7%, autism 33.5%; 100,800 EHC plans in FE and post-16 | official document | schools in England; EHC plans 0–25 | policy (prevalence) | ✓ |
+| w3-05-02 | EAL 21.6% (19.3% secondary); no post-16 figure | official document | schools in England | policy (prevalence) | ✓ |
+| w3-05-03 | 25% extra time for 16.6–25.5% of GCSE/AS/A level candidates; reader 4.8–7.7% | official document (in development) | candidates in England, all ages | policy | ✓ |
+| w3-05-04 | Accommodations: ES 0.30 (disabilities) vs 0.17; timing 0.47; extra-time review inconclusive | meta-analysis (dissertation) | mostly US | test scores | ~ full text 403; Gregg & Nelson via reference lists only |
+| w3-05-05 | Read-aloud/TTS d = 0.35 [0.14, 0.56] for reading disabilities | meta-analysis | grade 3 to postsecondary, mostly US | learning | ✓ (paper says 22 studies in text, 23 in its table) |
+| w3-05-06 | EEF SEND guidance: five recommendations, high-quality teaching for all | practitioner | mainstream schools, England | policy | ~ via nasen; the five strategies from practitioner summaries only |
+| w3-05-07 | Three options optimal (80 years of research) | meta-analysis | mostly US school-age | prediction (item quality) | ~ abstract only; study count not confirmed |
+| w3-05-08 | Example pack: 7 of 9 correct options are the node description; correct option longer than every distractor | our code and pack audit | example pack | prediction (test-wiseness cue) | ~ longer in 7 of 9 parts, not 6 |
+| w3-05-09 | Only glossaries/dictionaries had a significant (small) effect for English learners | meta-analysis | US K–12 English learners | learning | ~ abstract only |
+| w3-05-10 | Academic-vocabulary RCT (N = 2,082) helped most for non-English home language; no UK 14–18 studies | RCT + systematic review | US grade 6; mixed | learning | ~ review points via search summary only |
+| w3-05-11 | Dyslexie font no benefit; spacing and short lines help subsets | experiments | children; US high-school (short lines) | reading | ~ Kuster and Zorzi at abstract level |
+| w3-05-12 | Segmenting: small-to-medium retention and transfer effects | meta-analysis | mostly adults | learning | ~ prior-knowledge moderator not confirmed |
+| w3-05-13 | Notes FK 8.4; move texts long-sentenced | our analysis | example pack | readability (proxy) | ~ moves pool at FKGL 10.4, 25.2 words per sentence, 5 files over 25 |
+| w3-05-14 | ITS g = 0.01–0.09 on K–12 maths; less for low achievers | meta-analysis | US K–12 maths | learning | ~ abstract only |
+| w3-05-15 | ASSISTments RCT: gains, larger for low prior attainers (g = 0.18) | RCT | US grade 7, 1:1 laptops | learning | ~ g from SRI summary; full paper not read |
+| w3-05-16 | ASD-STE100: 20/25-word sentence limits, about 900 approved words | practitioner (analogy) | technical writers | policy | ~ via Wikipedia; standard not checked |
+| w3-05-17 | Equality Act Sch 10 (accessibility plans) and Sch 13 (FE duty to disabled students generally) | official document | England, Wales, Scotland | policy | ✓ |
 
-Also cited here; each sits in its home report's table: w2-08-04 ✓ ([business plan](business-plan.md)).
+Also cited here; each sits in its home report's table: w2-08-04 ✓ ([business plan](business-plan.md)); w1-06-10 ~ ([06](06-settings-simulation.md)).

@@ -1,6 +1,6 @@
 # Pitch notes: what we can say, what we must not say, and the deck
 
-Waves 1 and 2. Every claim below comes from a finding in `findings.csv`, checked by one blind verifier. ✓ = confirmed against the source. ~ = broadly right with a stated problem; we use a ~ finding only when its caveat is built into the wording. Our own measurements are labelled and have not been verifier-checked. Numbers we chose are marked "our choice". Simulation results are labelled "simulation: synthetic students".
+Waves 1, 2 and 3. Every claim below comes from a finding in `findings.csv`, checked by one blind verifier. ✓ = confirmed against the source. ~ = broadly right with a stated problem; we use a ~ finding only when its caveat is built into the wording. Our own measurements are labelled and have not been verifier-checked. Numbers we chose are marked "our choice". Simulation results are labelled "simulation: synthetic students".
 
 Use the wording as written. If you shorten a line, keep the caveat.
 
@@ -9,6 +9,13 @@ Use the wording as written. If you shorten a line, keep the caveat.
 - **New claims.** Lines 27–42 are new.
 - **Rewritten claims.** Lines 17, 18 and 20 are rewritten.
 - **New things to avoid.** Section (b) has 14 new rows, marked (w2).
+
+**What changed in wave 3.**
+- **New problem statement (frame D).** "Teenagers feel confident with AI, but confidence doesn't show whose AI literacy is real, and nobody can see the difference." Slide 1 now leads with a performance result. Reasons and alternatives: [01](01-competition-fit.md).
+- **Revised deck.** §(c) is replaced by an 8-slide outline with one sentence and one ✓ number per slide (from `work/w3/w3-01.md`, with fixes below).
+- **New §(d): the 10 likeliest expo questions,** with 30-second answers. Each gives the caveat first, then what it enables.
+- **Lines rewritten:** 13 ("every wrong option" is not true: when a part has one misconception, the chatbot writes the third option) and the "labels are reliable" avoid row (agreement is now reported pooled per skill, not per feature).
+- **Section (b) has new rows, marked (w3).**
 
 ## (a) Claims we can make
 
@@ -39,7 +46,7 @@ Use the wording as written. If you shorten a line, keep the caveat.
 ### Educational value
 | # | Wording | Source | Mark |
 |---|---|---|---|
-| 13 | "Every wrong option is a real misconception. On one classic opportunity-cost question, only about one in five economists and economics PhD students picked the intended answer, and economists still argue about the key. The wrong ideas are common and sticky, which is why we build checks from them." | w1-04-01 (04) | ✓ (the key dispute rests on Potter & Sanders 2012, not separately verified, so the caveat stays in the line) |
+| 13 | **Rewritten (w3).** "Our wrong options come from real misconceptions. On one classic opportunity-cost question, only about one in five economists and economics PhD students picked the intended answer, and economists still argue about the key. The wrong ideas are common and sticky, which is why we build checks from them." | w1-04-01 (04) | ✓ (the key dispute rests on Potter & Sanders 2012, not separately verified, so the caveat stays in the line) |
 | 14 | "In 2022, 36% of UK adults thought a fall in inflation meant prices were falling. That is a distractor we use." | w1-04-07 (04) | ✓ (UK adults, not students) |
 | 15 | "Misconceptions survive teaching. On a US college test, one wrong idea about productive capacity fell only from 43% to 32% after a whole principles course." | w1-04-05 (04) | ✓ (US college) |
 | 16 | "England's product safety standards for AI learning tools say not to hand over final answers by default, and to track offloading. eduX's default is one point, then a check, and it flags when a student asks to be shown." | w1-09-01 (09) | ✓ (say "follows this default", never "compliant": "just show me" still skips the attempt) |
@@ -47,7 +54,7 @@ Use the wording as written. If you shorten a line, keep the caveat.
 ### Who it helps, how it works in practice
 | # | Wording | Source | Mark |
 |---|---|---|---|
-| 17 | **Rewritten.** "eduX never calls an AI model itself, so our own running cost is hosting. The school still pays its chatbot provider. On Microsoft Copilot Studio that means Copilot Credits per turn, and we're confirming the amount with Microsoft." | architecture; w2-05-06 (05, business plan) | ~ the credit rates are confirmed; the US$0.01-per-credit price and the billing unit for an MCP call are not. Never quote the US$84 estimate as fact |
+| 17 | **Rewritten.** "eduX never calls an AI model itself, so our own running cost is hosting. The school still pays its chatbot provider. On Microsoft Copilot Studio that means Copilot Credits per turn, and we're confirming the amount with Microsoft." | architecture; w2-05-06 (05, business plan) | ~ the credit rates are confirmed. Wave 3 confirmed US$0.01 (£0.0075) per credit and 5 credits per tool call (w3-08m-06 ✓, -07 ✓). Never quote the old US$84 estimate; if pressed, use the (w3) cost row |
 | 18 | **Rewritten.** "Built on the open Model Context Protocol. Tested with claude.ai on an adult account. Microsoft Copilot Studio documents MCP support; we haven't tested it yet." | w1-05-01, w2-05-03 (05) | ✓ |
 | 19 | Caption: "Filmed on an adult team member's account. claude.ai consumer plans are 18+. Students under 18 would use a school-managed chatbot." | w1-05-02 (05) | ✓ |
 | 20 | **Rewritten.** "For pupils, the documented route is Microsoft 365 Education. In K-12 tenants, Copilot Chat is off by default for 13–17s. The school switches it on and adds eduX through Copilot Studio. It's documented, and testing it is our next step." | w2-05-03, w2-05-04 (05) | ✓ (say "documented route, pilot next", never "works today") |
@@ -87,7 +94,7 @@ Lead with performance evidence, then the usage figures with their bases (researc
 | 36 | "In a randomised trial with about 1,000 Turkish high-school students, unrestricted GPT-4 raised practice scores 48% but cut unassisted exam scores 17%. A guarded tutor version avoided the harm." | w2-09-08 (09) | ✓. **Limits, say if asked:** maths, four sessions, 2023, randomised by class. The guarded tutor gave *no* exam gain. Use it only for "guarded beats unguarded", never for "AI tutors improve learning" |
 | 37 | "About two-thirds of A level Economics marks are level-marked. Multiple choice is about 3.5%. Our multiple-choice checks are the diagnostic way in, not exam practice for the levelled two-thirds." | w2-04-02 (04) | ✓ (our tally of the June 2025 Edexcel 9EC0 mark schemes: about 34% point-marked, 66% level-marked) |
 | 38 | "We set difficulty for learning, not for time on the app. In two large online experiments, the easiest version of a maths game kept players longest and taught slowest." | w2-03-12 (03) | ~ abstract only; about 10,000 and 70,000 players; engagement and learning moved in opposite directions |
-| 39 | "We tested our own AI-literacy scoring on our real code. Simulation: with the settings we propose, a synthetic student with no skill is shown 'secure' at a weekly read in under 1% of cases. Even in the chat, at most 3% ever see it, with up to 20% of the chatbot's labels wrong at random." | w2-02-01, w2-02-02, w2-02-08 (02) | ✓ (simulation: synthetic students, example pack; the settings are proposed, not yet set; 4–7% if the chatbot labels leniently) |
+| 39 | "We tested our own AI-literacy scoring on our real code. Simulation: with the settings we propose, a synthetic student with no skill is shown 'secure' at a weekly read in under 1% of cases. Even in the chat, 5% or fewer ever see it, with up to 20% of the chatbot's labels wrong at random." | w2-02-01, w2-02-02, w2-02-08 (02) | ✓ (simulation: synthetic students, example pack; the settings are proposed, not yet set; 4–7% if the chatbot labels leniently) |
 | 40 | Chart caption: "eduX tested its own alarms. With evidence-based settings, 'secure but not known on exam day' fell from 76% to 55%, and parts truly secure rose from 3.9 to 4.7 of 9." | w1-06-04, w1-06-05 (06) | ✓ (simulation: synthetic students, 9-part example pack, far scenario; not a learning result; always show both panels) |
 
 ### New in wave 2: competitors, stated fairly
@@ -100,6 +107,16 @@ Lead with performance evidence, then the usage figures with their bases (researc
 
 | Don't say | Why | Say instead |
 |---|---|---|
+| **(w3)** "Free on Microsoft", "students use it free through Copilot", "the free route" | Students without an M365 Copilot licence are billable. The "no charge" column covers licensed users under their own identity, and its framing is employee-facing (w3-08m-05 ~, w3-08m-13 ✓). Microsoft's own pages disagree on whether a pro-code declarative agent is free for unlicensed users; that is a test, not a claim (w3-08m-09 ✓). | Line 17. If pressed: "about £22.50 per student per year on our central assumption of 600 turns, range £11–108. That's our estimate on assumed turn counts, and we'll measure real turns in the pilot" (w3-08m-13 ✓). |
+| **(w3)** "Anonymous teacher view", "anonymised data", "anonymous class reports" | Hashed keys, random ids and k ≥ 6 bands are minimisation, not anonymisation. Pseudonymous data is still personal data (ICO; w3-09-18 ~: data can be anonymous only in the hands of others who lack the key). | "Class-level only, groups of 6 or more, never names or chats." |
+| **(w3)** "Preregistrations are underspecified, a Data Colada review shows", or citing Data Colada post 119 for anything about our study | The post doesn't say that. It critiques another paper's verdict on AsPredicted preregistrations (w3-02e-14 ✗). | Nothing. "We committed the protocol, messages and key to git before anyone labelled." |
+| **(w3)** "κ = .7 on 40 messages gives ±.22", a per-feature κ as a headline, or "our labels are validated" | Each label sees only its own subset, so a single feature has n ≈ 18, about ±.33. The pass rule passes a bot with true κ = .6 about 40–50% of the time (w3-02e-01 ✓, -06 ✓). | "Pooled per skill: κ = __ (95% CI __–__; n decisions); humans with each other: κ = __. Synthetic messages, team-written with AI help, one chatbot. A first check, not a validation." Template wording in [02a](02a-label-agreement-protocol.md) §3. |
+| **(w3)** "A student can't chat their way to secure", or "a part is known only once it's been checked" | On `main`, 14 exchanges with no check take a part to secure (.763), and it never decays (w3-06-06 ~, simulation). A prerequisite never answered can reach "developing" through propagation (w3-06-05 ✓). | Only after [06](06-settings-simulation.md) rec 10 is built: "A part only counts as known once the student has got it right. Until then it says *not yet shown*." |
+| **(w3)** "Our levels rank students correctly", or a ranking of students on any slide | On `main`, a never-right student reads above a right-at-least-once student in 0.82–1.00 of pairs by day 30 (w3-06-03 ✓, simulation: synthetic students, example pack). | Nothing until the decay fix ([06](06-settings-simulation.md) recs 9–10) is built. No slide ranks students. |
+| **(w3)** "Supports SEND / dyslexia-friendly / accessible to all", "eduX narrows attainment gaps" | eduX controls neither fonts nor rendering, and font claims fail (w3-05-11 ~). Evidence on who gains from tutoring software is mixed, and uptake is unmeasured (w3-05-14 ~, -15 ~). No 16–18 SEN or EAL rate is published in the sources read. | "Untimed checks, one point at a time, formulas in words for read-aloud: choices for every student, not a SEND label." On equity: "the school can compare usage by its own groups." |
+| **(w3)** "One in five sixth-formers has SEN" | 14.8% SEN support and 6.0% EHC plans are for all pupils in England's schools, not 16–18s (w3-05-01 ✓). | "In England's schools, about one in five pupils has SEN." |
+| **(w3)** "Judges are biased, so…", or citing the judging studies on a slide | They are from grant, admissions and investor settings, not expo judging, and several were read as abstracts only (w3-01-01 ~ to -13 ~). They shape how we present; they aren't claims for the deck. | Nothing on slides. |
+| **(w3)** "eduX plugs into the chatbot your school already uses", "runs in any school chatbot" | The only documented school route is Copilot Studio, untested (line 20). The same overclaim as "works with any chatbot". | "A plug-in built on the open MCP standard. Copilot Studio documents MCP support; whether 16–17-year-olds can reach a custom agent is unconfirmed (w3-08m-04 ✓ risk note), and testing it is next." |
 | **(w2)** "Hosts shape one conversation; eduX keeps a learner model across sessions", "our learner model is the moat", "only eduX tracks progress" | Gemini tracks progress across sessions and reports to teachers (w2-08-01 ✓, w2-08-02 ✓). BKT and misconception distractors aren't proprietary. | Line 41: "a head start, not a moat". |
 | **(w2)** "A compliance product for AI Act Article 4", "deployers will license our instrument" | The Commission says Article 4 does not require measuring staff's AI knowledge and needs no certificate (w2-08-09 ✓). Article 4 covers staff, not pupils. | Nothing in the pitch. In Q&A: "AI-literacy evidence is for the school's teaching, not for compliance." |
 | **(w2)** Wang & Fan (2025), "ChatGPT has a large effect on learning (g = 0.87)" | Retracted on 22 April 2026 (w2-09-13 ✓). | Line 36, with its limits. |
@@ -107,7 +124,7 @@ Lead with performance evidence, then the usage figures with their bases (researc
 | **(w2)** Gerlich (2025) as proof that AI use causes weaker critical thinking | A correlational survey-and-interview study, since corrected (w2-09-12 ~). | Line 36, or nothing. |
 | **(w2)** "52% of 16–18s use AI weekly" | 52.0% is a share of 16–18 *AI users*, not of all 16–18s (w2-09-01 ~). | Line 28, with the base. |
 | **(w2)** "58.5% of teens check AI answers" as evidence of behaviour | Self-report, and the base is those who had heard of generative AI (w2-09-02 ✓). The deck says self-report is weak, so this would contradict it. | Line 30, only as the set-up for line 6. |
-| **(w2)** "Running eduX costs schools nothing", "zero running cost", "cheaper than a chatbot" on Copilot | On Copilot Studio the school pays Copilot Credits per turn. Our rough estimate is up to about US$84 per student per year, and it rests on an unverified rate (w2-05-06 ~). | Line 17. |
+| **(w2)** "Running eduX costs schools nothing", "zero running cost", "cheaper than a chatbot" on Copilot | On Copilot Studio the school pays Copilot Credits per turn. Wave 3 replaced the old US$84 estimate: about £22.50 per student per year in the central case, range £11–108 (w3-08m-13 ✓, our estimate on assumed turn counts). See the (w3) "free on Microsoft" row. | Line 17. |
 | **(w2)** Le Chat (Mistral) as a route for pupils or schools, or a Le Chat logo | Consumer terms for personal use, with parental permission for minors and no school contract (w2-05-01 ~). It can't go in a school DPIA (DPO w2 #1). | "Adults only," if asked. Line 20 for pupils. |
 | **(w2)** "AI tutors improve learning" (citing Bastani) | The guarded tutor in Bastani et al. avoided harm but gave no exam gain (w2-09-08 ✓). | Line 36: "guarded beats unguarded". |
 | **(w2)** "It searched a database and picked the wrong entry" taught as a misconception, on screen or in the deck | With search on, it is often the true account: about a quarter to a third of citations or statements aren't backed by the page cited (w2-02-33 ~, w2-02-34 ✓). | Line 33. |
@@ -120,7 +137,7 @@ Lead with performance evidence, then the usage figures with their bases (researc
 | "Stealth assessment" | Ask and Verify are overt tasks, and the how-AI-works check is an open question. Nothing is hidden. | "Embedded assessment: scored from moments in normal study." "Unobtrusive" fits only the scoring of the questions students already ask. |
 | "eduX improves learning" or "raises grades", or any learning gain | We have measured none. Simulations use synthetic students and are not evidence about learning. | "We haven't measured learning yet. Here's the pilot design, and why it measures feasibility first." |
 | "Economists don't understand opportunity cost" (Ferraro & Taylor as settled) | Potter & Sanders (2012) dispute the key. About a third of the sample were PhD students (w1-04-01 ✓). | Line 13, with the caveat. |
-| "The chatbot's labels are reliable", or "GPT-4 marks as well as a human (κ = .70)" | LLM agreement varies widely by task (QWK .30 to .87; w1-02-29 ~). The κ .70 figure is abstract-only (w1-02-28 ~). A meta-analysis found decoder models agree less (w1-02-30 ~). None of this is our chatbot on our labels. Without outside feedback, self-correction made GPT-3.5 worse on one benchmark (w2-02-41 ✓). | "The chatbot labels the behaviour. We check its labels against two humans and report agreement per feature." |
+| "The chatbot's labels are reliable", or "GPT-4 marks as well as a human (κ = .70)" | LLM agreement varies widely by task (QWK .30 to .87; w1-02-29 ~). The κ .70 figure is abstract-only (w1-02-28 ~). A meta-analysis found decoder models agree less (w1-02-30 ~). None of this is our chatbot on our labels. Without outside feedback, self-correction made GPT-3.5 worse on one benchmark (w2-02-41 ✓). | **Rewritten (w3).** "The chatbot labels the behaviour. We check its labels against two blind humans and report agreement pooled per skill, with a confidence interval and the humans' agreement with each other." Only after the study has run; otherwise "we're checking". |
 | "A 'secure' Verify means the student checked" | Verify rests partly on what students report. A student who restates the reply scores a correct Verify moment about as often as a partial checker (49% vs 44%; w2-02-04 ~, simulation). | "Verify rests partly on what students report. How AI works is scored by our server alone." End the demo on How AI works. |
 | "DfE compliant" | eduX partly meets the standards. There are gaps in safeguarding alerts, data rights and security (report 09). | "We mapped every DfE standard, named an owner for each and ranked our fixes." |
 | "A 16-year-old can use this today", or showing a minor on claude.ai | claude.ai consumer is 18+ (w1-05-02 ✓). No tested under-18 route exists. | Lines 19–20. |
@@ -132,21 +149,86 @@ Lead with performance evidence, then the usage figures with their bases (researc
 | "Three students, three plans" | The captures show two plans; the third student differs only in history (demo-plan). | "Same question, two students, two plans." |
 | "The chatbot invented that link" (unless it did on camera) | The source report in the storyboard is scripted. | Caption: "Scripted demo: the student reports a mismatched source." |
 
-## (c) Deck outline: 4 minutes, 8 slides
+## (c) Deck outline: 4 minutes, 8 slides (revised in wave 3)
 
-**Criteria.** The rules page publishes one explicit criterion: how well the solution addresses the chosen problem (w1-01-02 ✓). It also asks teams to show who the idea helps and how it could work in practice, and to explain its educational value (w1-01-03 ✓). There are no weights. Tags: **P** = problem fit (assessing), **D** = defining (from the challenge title; re-check once the brief is pasted), **W** = who it helps, **H** = how it works in practice, **E** = educational value. One idea per slide and few words on each (w1-07-08 ~, a practitioner opinion).
+This replaces the wave-2 outline. It comes from `work/w3/w3-01.md` §3 with four fixes:
+- slide 5 no longer says "every wrong option";
+- slide 7 no longer says "plugs into the chatbot a school already uses";
+- slide 6 uses the agreement number only if the Wednesday study runs;
+- no slide leads with a ~ number.
 
-**Positioning (wave 2).** The deck leads with AI-literacy evidence from real use: performance before self-report, and behaviour scored in normal study. The school-owned learner model, which works across chatbots, comes in as a head start on slide 7, not as a moat. Gemini gets a fair mention there.
+Only ✓ numbers from `findings.csv` lead a slide. Our own captures (14 ms, 51/51) are not ✓ and don't lead.
 
-| # | Time | Slide | On screen (few words) | Spoken (key line) | Criteria | Claims used |
+**Criteria tags** (w1-01-02 ✓, w1-01-03 ✓; no weights):
+- **P**: problem fit (assessing);
+- **D**: defining (from the title; re-check once the brief is pasted);
+- **W**: who it helps;
+- **H**: how it works in practice;
+- **E**: educational value.
+
+**Delivery rules** ([01](01-competition-fit.md) recs 15–17):
+- Speak each number's population caveat out loud.
+- Keep BKT, MCP, "evidence-centred design" and "stealth" off the slides.
+- Caption key claims in 8 words or fewer.
+
+| # | Time | Slide | The sentence | Lead number (✓ id) | Spoken caveat | Criteria |
 |---|---|---|---|---|---|---|
-| 1 | 0:00–0:25 | **The problem, measured** | "Confident ≠ correct" with Ofcom's figure; NLT usage with its base | "Half of teenagers feel confident spotting AI content, and a quarter of those fail the test. Seven in ten 16–18s have used these tools. Nobody sees whether they check." | P | 27, 28, 8 |
-| 2 | 0:25–0:50 | **What we mean by AI literacy** | The one-sentence definition (report 02); AILit anchors; the "out of scope" line | Definition, then: "AI literacy isn't tool use, so we don't count use." | D | 1, 2, 3, 5 |
-| 3 | 0:50–1:20 | **Assessed from real use** | 3 skills, each an observable behaviour; Ask and Verify levels with evidence counts; How AI works as per-part results; "embedded, not a quiz" | "Self-ratings barely track skill, and even 58.5% 'I check' is self-report. So we score what students do, when it happens." | P, D | 6, 7, 12, 30 |
-| 4 | 1:20–1:55 | **See it work** | Four stills or a 20-s clip: vague question → Verify task → a source that doesn't say it → how-AI-works check → the record. Caption: "web search off" | "Search off, chatbots invent sources. Search on, they cite real pages that don't say it. We teach what's true either way: check the source says it." | P, E | 31–34, 19 |
-| 5 | 1:55–2:20 | **How far to trust our scores** | Validity argument: what we have / what we'd gather; κ = __ if the Wednesday study runs; the two-panel chart "eduX tested its own alarms" | "We don't claim a validated test. We tested our scoring on our own code, with synthetic students, and here's the pilot that tests it on real ones." | P, E | 9, 10, 11, 39, 40 |
-| 6 | 2:20–2:45 | **Why it teaches** | One check with misconception distractors; "two-thirds of marks are levelled"; "guarded beats unguarded" | "Every wrong option comes from evidence. Our checks are the diagnostic way in. And the best trial says a guarded tutor avoids the harm an unguarded one does." | E | 13 or 14, 16, 36, 37 |
-| 7 | 2:45–3:25 | **Who it helps, how it runs, why not Gemini** | School chatbot → eduX → plan; "documented route: Microsoft 365 Education, pilot next"; teacher-view mock (class patterns, groups ≥ 6, AI literacy in bands, opt-in; labelled "mock-up"); "a head start, not a moat" | "No AI model calls on our side. Gemini tracks progress inside Google. We give the school its own evidence of how pupils ask and check, across chatbots." | W, H | 17, 18, 20, 41, 42 |
-| 8 | 3:25–4:00 | **Next** | Merge, sign-in, a Copilot Studio test, a feasibility pilot; £5 per student per year (our choice); team roles | "First a feasibility pilot, not a learning claim. Here's who does what." | H | 21, 24 |
+| 1 | 0:00–0:25 | **Confident isn't competent** | "About half of teens feel confident spotting AI-made content, and one in four of those couldn't, so we assess what students do, not what they say." | **1 in 4.** Of teens confident they could identify AI-generated content (52%), 25% failed Ofcom's image test (w2-09-04 ✓; line 27) | "UK 13–17s, Ofcom 2026; an AI-image test, not fact-checking" | P |
+| 2 | 0:25–0:55 | **What we mean by AI literacy** | "For a sixth-former studying with a chatbot, AI literacy is knowing when and how far to trust it, shown in what they do while they work." | **19.** The final OECD–EC AILit Framework has 4 domains and 19 competences, and says AI literacy isn't tool use (w1-02-01 ✓, w1-02-02 ✓; lines 1–2). We score three skills from it | "We cover parts of 8, none in full; ethics and creating AI are out of scope" | D |
+| 3 | 0:55–1:20 | **Why we observe, not ask** | "Asking students how AI-literate they are tells you little, so Ask, Verify and How AI works are each scored when the student does them." The 3 × 3 rubric is the visual | **r = .21.** Self-rated AI literacy vs a knowledge test (w1-02-25 ✓; line 6). Back-up: a 20-item test predicted AI-assisted work and self-report did not (w1-02-23 ✓; line 7) | "120 German adults" | P, D |
+| 4 | 1:20–2:00 | **See it work** (20-s clip or four stills) | "The moment a chatbot gets something wrong is the moment we teach why, and the moment we record what the student did." | **Almost half.** Of 3,000+ chatbot answers about the news, almost half had a significant issue (w2-02-36 ✓) | "EBU study, 18 countries incl. UK, 2025; news questions". Caption: "scripted demo, web search off" | P, E |
+| 5 | 2:00–2:30 | **Why it teaches** | "Unguarded chatbots can make practice look better and exams worse, so eduX teaches one point at a time and builds its wrong options from real misconceptions." | **−17%.** Unrestricted GPT-4 raised practice scores 48% but lowered unassisted exam scores 17%; a guarded tutor avoided the harm (w2-09-08 ✓; line 36) | "One Turkish high school, maths; the guarded tutor didn't raise exam scores either" | E |
+| 6 | 2:30–3:00 | **How far to trust our scores** | "One moment is weak evidence, so we show the evidence count, call early levels provisional, and test against an external measure." | **About 12** observed moments per skill for reliability .70 (w1-02-31 ✓, our calculation; line 10). Bar to beat: r ≈ .40, what published embedded assessments reached against external tests (w1-02-21 ✓, -22 ✓; line 9) | "Our calculation"; "US school students, convergent validity, not learning". Add the simulation line (39) only if the settings land, and the κ line only if the Wednesday study ran ([02a](02a-label-agreement-protocol.md) §3) | P, E |
+| 7 | 3:00–3:30 | **Who it helps, how it runs** | "eduX is a plug-in a school's chatbot can call. Microsoft Copilot Studio documents MCP support; whether 16–17-year-olds can reach a custom agent is unconfirmed, and we're asking Microsoft. The teacher class view (bands, groups of 6 or more, never chats) is a labelled mock-up today." | **34%.** Only 34% of secondary schools had an AI-use policy, while 73% of secondary teachers thought pupils had used GenAI for homework (w1-08-04 ✓; line 22) | "Teachers' perceptions, not measured use"; "filmed on an adult team member's account" (w1-05-02 ✓; lines 19–20) | W, H |
+| 8 | 3:30–4:00 | **Next** | "Our first users are the 46,365 A level Economics entrants in England, and we start with a feasibility pilot, not a learning claim." | **46,365.** A level Economics entries in England, 2026 (w1-08-01 ✓; line 21). Keep 0.17 SD (w1-08-08 ✓; line 24) for Q&A 10 | "England only" | H |
+
+**Changes from the wave-2 outline.**
+- Slide 1 leads with a performance result, not self-report or teacher perception (wave-2 researcher #3).
+- Slide 3 is now "observe, not ask", and the rubric moves into its visual.
+- Slide 4 carries a frequency number, so the demo isn't a numberless interlude.
+- Slide 5 swaps the economics distractor statistic for the guarded-vs-unguarded result. The 36% inflation line (line 14) moves to the spare Q&A answer.
+- The validity slide's "eduX tested its own alarms" chart (line 40) and the Gemini line (41) move to Q&A (Q8) and the leave-behind.
 
 Keep these for Q&A unless the build team lands them on Wednesday: the safety points (wellbeing signpost, no training on pupil data, key revocation), the Copilot cost estimate, and the Bastani limits.
+
+## (d) The 10 likeliest expo questions, with 30-second answers (wave 3)
+
+These are deduplicated from `judge-panel.md`, with EduX-judge and researcher questions ranked first and investor questions last. Each answer is about 75 words: the honest caveat first, then what it enables ([01](01-competition-fit.md); w3-01-07 ~). Only ✓ numbers are used. They come from `work/w3/w3-01.md` §4, corrected for Q2, Q6, Q7, Q8 and Q9. Drill them in two 20-minute rounds on Wednesday evening, and let the person who built each part answer for it.
+
+1. **"Define AI literacy in one sentence. What's left out?"**
+   "Knowing when and how far to trust a chatbot, shown in what a student does while they work. It's anchored to the OECD–EC AILit Framework, which says literacy isn't tool use (w1-02-02 ✓). We score three skills: asking checkable questions, verifying claims against a named source, and knowing why chatbots fail. Ethics, creating with AI and building AI are deliberately out of scope. We cover parts of eight AILit competences and none in full."
+
+2. **"How do you know a student actually checked?"**
+   "We don't see clicks. Verify rests partly on what the student reports and on the chatbot's labels, so an unprompted 'I checked' doesn't make anyone secure. How AI works is the part our server scores alone, from multiple-choice checks built on real misconceptions. We're checking the chatbot's labels against two blind human raters, pooled per skill, and we report how well the humans agree with each other too."
+   - If the Wednesday study ran, give its number with n and CI ([02a](02a-label-agreement-protocol.md) §3).
+   - Say "weighted lower" only if the 0.20 guess setting is merged.
+
+3. **"Isn't this an economics revision tutor with AI literacy bolted on?"**
+   "It started as one, and the economics is still the study context. But the video is the AI-literacy episode: a research question, a Verify task, a chatbot failure, a check on why it failed, and the record. Economics gives us real moments when students lean on a chatbot. The literacy parts sit in their own pack, separate from the economics content, so the same moments can arise in any subject."
+
+4. **"Why not just give them a 20-question AI-literacy test?"**
+   "A test is good at what students know about AI, and we'd use one, GLAT or AILIT-S, to validate ours. But self-ratings track real knowledge poorly (r = .21; w1-02-25 ✓), and a test is a one-off. We score what students do at the moment a chatbot fails during real study, repeatedly, so the student sees change over a term, not one snapshot."
+
+5. **"Is it valid? What's your evidence?"**
+   "It isn't validated yet, and we don't claim it is. What we have: fixed scoring rules, evidence counts on every level, and early levels marked provisional, because a stable level needs about a dozen moments (our calculation, w1-02-31 ✓). The pilot correlates our scores with an external test. Published embedded assessments reached about r = .40 (w1-02-21 ✓, -22 ✓). That's our bar."
+
+6. **"Which 16-year-old can use this on Monday, on what?"**
+   "None yet, honestly. claude.ai is 18+ (w1-05-02 ✓), which is why the video caption says adult account. eduX is a plug-in built on the open MCP standard. Microsoft Copilot Studio documents MCP support with the per-student key we use (w1-05-11 ✓). But whether 16–17-year-olds can reach a custom agent at all is unconfirmed, and we're asking Microsoft. Testing that, and school sign-in, is the next build."
+
+7. **"What does a teacher see?"**
+   "Today, a mock-up, and it's labelled as one. The design shows class-level patterns only: the commonest misconceptions and the weakest parts, for groups of six or more, and AI literacy only in bands if the school opts in. Never chats, names or per-student AI-literacy scores. A teacher might see that most of the set read a PED of −0.4 as elastic, and that becomes a ten-minute lesson starter."
+   - Never say "anonymous" (avoid row, w3).
+
+8. **"Gemini, ChatGPT and Microsoft already have study modes. Why you?"**
+   "They're good. Gemini now tracks objectives across sessions (w2-08-01 ✓), and Microsoft's Study and Learn is free and preselected for school students (w3-08m-04 ✓). Two differences. Theirs live inside one vendor; eduX is one plug-in, and the school owns the learner model. And none we've found assesses AI literacy itself: what a student does when the chatbot is wrong. That's the part we built, and it's a head start, not a moat."
+
+9. **"The chatbot labels its own failures. What if it never admits one?"**
+   "Then no check fires, and that's a real limit: the trigger is a label the chatbot assigns itself. Models are bad at catching their own errors without outside feedback (w2-02-41 ✓). So we've designed a scripted audit of five failure modes per chatbot, to measure how often each one misses ([02](02-ai-literacy-assessment.md) rec 19). A student can also report a failure themselves: 'this link doesn't say that' starts the same check."
+
+10. **"Does it improve learning or grades?"**
+    "We haven't measured that, and we won't claim it. Even a 100-school trial could detect only about 0.17 of a standard deviation (our calculation, w1-08-08 ✓). So the first pilot tests feasibility: do students meet failure moments, do the scores hold up against a test, do teachers use the view? The design follows what the best trial found: guarded help didn't harm exam scores; unguarded help did (w2-09-08 ✓)."
+
+**Spare, if asked: "Your multiple-choice options give the answer away."**
+- If the fix landed on Wednesday: "They did. We fixed the option form before filming."
+- If not: "We found it in our own audit, and it's the first fix" ([05](05-product-features.md) rec 11; [04](04-economics-education.md) rec 1).
+- Then add: "And the wrong options themselves are real: 36% of UK adults read falling inflation as falling prices" (w1-04-07 ✓, UK adults; line 14).

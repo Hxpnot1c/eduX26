@@ -1,15 +1,17 @@
 # 02 · Defining and assessing AI literacy
 
-Waves 1 and 2. Sources:
+Waves 1, 2 and 3. Sources:
 - **Wave 1 scout notes.** `work/w1/w1-02a.md` (framework crosswalk; marks in `verify-D.json`) and `work/w1/w1-02b.md` (validity and reliability; marks in `verify-B.json`).
 - **Wave 2 scout notes.**
   - `work/w2/w2-02.md`: a scoring simulation on the 05e branch's real learner code, plus the literature on missing responses. Marks in `verify-J.json`.
   - `work/w2/w2-02h.md`: what chatbots actually get wrong with sources and pushback, and whether they can label it themselves. Marks in `verify-E.json`, ids w2-02-30 to -45.
   - `work/w2/w2-09.md`: how UK 16–18s use chatbots, and new literacy moments. Marks in `verify-E.json`.
+- **Wave 3 scout note.** `work/w3/w3-02e.md`: a ready-to-run label-agreement study, its sample-size maths and a spring 2027 pilot plan. Marks in `verify-O.json`, ids w3-02e-01 to -14. The protocol, the 40 draft messages and the key are in the appendix file [02a](02a-label-agreement-protocol.md).
+- **Wave 3 demo rehearsal.** `work/w3/w3-07.md` drove the 05e branch with the scripted demo. Three Verify scoring bugs from it are added here, marked in `verify-P.json` (w3-07-c5 ✓, w3-07-c7 ✓).
 - **Panels.** Wave 1: researcher and student. Wave 2: `panel-judges-researcher.md` and `panel-teacher-student.md`.
 - **Branch.** `build/05e-literacy-coaching`, read-only in `/home/vishnu/edux26`.
 
-Marks: ✓ confirmed; ~ broadly supported, with the stated problem. Findings marked ✗ are left out (none in this area). Simulation results are labelled "simulation: synthetic students".
+Marks: ✓ confirmed; ~ broadly supported, with the stated problem. Findings marked ✗ are left out (one in wave 3: w3-02e-14). Simulation results are labelled "simulation: synthetic students".
 
 **Coordinator's facts, which override the scout notes.**
 - Step 05e is **built on its branch, 14 commits ahead of `main`, and not merged**.
@@ -26,17 +28,20 @@ Marks: ✓ confirmed; ~ broadly supported, with the stated problem. Findings mar
 - **The simulation runs on our real code, and the risk is the level shown in the chat, not the weekly read** (simulation: synthetic students).
   - On the branch, a no-skill student is shown "secure" at a weekly read in at most 1% of cases.
   - The risk is the level shown in the chat right after a lucky moment. Up to 13–15% of no-skill students see Ask "secure" at some point when the chatbot labels leniently (w2-02-01 ✓, w2-02-02 ✓).
-  - Three setting changes, with no code, cut that to at most 3% at 20% random label errors, and 4–7% under lenient labelling (w2-02-08 ✓). The three: `ask_min_features` = 3, `ail_question` guess .30 and `ail_unprompted` guess .20.
+  - Three setting changes, with no code, keep no-skill in-chat secure at 5% or fewer in every random-noise cell (up to 20% of labels wrong), and 4–7% under lenient labelling (w2-02-08 ✓). The three: `ask_min_features` = 3, `ail_question` guess .30 and `ail_unprompted` guess .20.
   - Never lower `correct_share` to 0.5 (w2-02-03 ~).
 - **The How AI works level ranks students backwards.** At week 8, no-skill students rank above strong ones: AUC 0.40 when ignoring is tied to skill, 0.44 when it isn't (w2-02-05 ~).
   - The cause is the decay clock: 05e starts it only at a part's first correct answer (`edux/learner.py:433-434, 692-695`).
-  - Show per-part counts, not a level. The same asymmetry may affect economics parts.
+  - Show per-part counts, not a level. Wave 3 confirmed that the same asymmetry inverts rankings on economics parts on `main`. [06](06-settings-simulation.md) recommends decaying towards the prior plus a "not yet shown" cap (w3-06-01 ✓, w3-06-08 ✓). Re-running this AUC with that fix is still open.
 - **Settings can't fix Verify.** A student who restates the reply scores a correct Verify moment about as often as a partial checker: 49% vs 44% (w2-02-04 ~). Only a task that asks for something the reply doesn't contain fixes this. The new "summarise" moment does that, because the student checks against the course notes.
-- **With search off, chatbots invent sources. With search on, they mostly misattribute.**
+- **What chatbots get wrong changes with search, and many answer changes are corrections.**
   - Search off: 55% (GPT-3.5) and 18% (GPT-4) of references were invented in 2023 (w2-02-30 ✓). 2025 audits with search status not reported found 19.9% invented (w2-02-31 ~) and 39.8% wrong or invented (w2-02-32 ~).
-  - Search on: about a quarter to a third of citations or statements weren't backed by the real page cited (w2-02-33 ~, w2-02-34 ✓).
-  - So the fabrication point must be true either way, and m2 goes.
-- **Many answer changes under pushback are corrections.** In SycEval, 43.52% of rebuttals moved a model to a correct answer and 14.66% to an incorrect one (w2-02-38 ✓). Flip rates range from 17.5% to 97.3% across 2026 models (w2-02-39 ~). The agreement point must not imply that the student was wrong to push back.
+  - Search on: about a quarter to a third of citations or statements weren't backed by the real page cited (w2-02-33 ~, w2-02-34 ✓). So the fabrication point must be true either way, and m2 goes.
+  - Under pushback, SycEval found 43.52% of rebuttals moved a model to a correct answer and 14.66% to an incorrect one (w2-02-38 ✓). Flip rates range from 17.5% to 97.3% across 2026 models (w2-02-39 ~). The agreement point must not imply that the student was wrong to push back.
+- **The label-agreement study is ready to run on Wednesday (wave 3), and 40 messages buy a screening result, not a precise one.**
+  - The old line "κ = .7 on 40 items gives ±.22" held only if every message carried every label. They don't, so the study pools binary decisions within each skill. Ask has 72 decisions from 18 messages; answer scoring has 56 from 16. At κ = .7 that gives about ±.16–.20 (w3-02e-01 ✓, our calculation).
+  - The pass rule (κ ≥ .60 with a lower bound ≥ .40) is weak evidence. It passes a bot whose true κ is .6 about 40–50% of the time (w3-02e-06 ✓, simulation). So report the human–human ceiling next to it.
+  - The draft messages were written by a model, so the team must rewrite them first. Protocol, messages and key: [02a](02a-label-agreement-protocol.md).
 - **Ignored tasks are missing, not wrong.**
   - NAEP treats items a student never reached as never presented (w2-02-11 ✓). PISA has not scored not-reached items as wrong since 2015 (w2-02-12 ~).
   - Show the skip count beside the level.
@@ -56,17 +61,17 @@ Marks: ✓ confirmed; ~ broadly supported, with the stated problem. Findings mar
 | 1 | **Definition and competency-model slide** (text below). [01](01-competition-fit.md) links here and doesn't repeat it. | pitch, video | S | yes | w1-02-01 ✓, w1-02-02 ✓, w1-02-07 ✓ |
 | 2 | **Three settings in the branch's `settings.toml`, with no code** (snippet below):<br>• `literacy.ask_min_features = 3`<br>• `ail_question` guess .20 → .30<br>• `ail_unprompted` guess .10 → .20<br>Keep `ail_task` at slip .10 / guess .15 while the half-life is 2 days. **Never set `correct_share = 0.5`**: 83% of no-skill students would then be shown Ask "secure" at some point. Raising `ask_min_features` to 3 alone isn't enough: no-skill in-chat secure is then 3.4–4.6% at 10% noise, but 8–10% at 20%. | settings (branch) | S | yes | w2-02-03 ~, w2-02-08 ✓, w1-02-32 ✓ |
 | 3 | **Rewrite the how-AI-works options in `ingest/ai_literacy/misconceptions.csv`.**<br>• Make the fabrication and agreement points true whatever happened behind the scenes (see "How AI works content").<br>• Drop m2 ("searched a source database and picked the wrong entry") and the absolute agreement distractor ("only… when").<br>• Every new set must pass the cue check before it goes in the csv: hedging on both sides, no absolute words ("always", "only", "on purpose"), lengths matched within a few characters, no full stops, and no "X or Y" correct option that is also the longest. | course pack (branch) | S | yes | w2-02-33 ~, -34 ✓, -38 ✓, -39 ~; branch data |
-| 4 | **Record an ignored task or check as missing, not 0.**<br>• In `service._literacy_followup` and `_how_ai_works`, write a `literacy_ignored` engagement event instead of `ail_task 0` or `ail_how 0`.<br>• Show "tasks done: n of m" beside the level, so skipping can't quietly protect a level.<br>• Still score attempts: a reply of "idk" scores whatever ticks it showed.<br>• An Ask task should count as done when the student asks a research question later in the same session, not only in the very next message. On the branch it otherwise scores 0 about 2.7 times per no-skill student over 10 weeks. | build (branch) | S | yes, if the build team has time | w2-02-07 ✓, w2-02-11 ✓, w2-02-12 ~, w2-02-13 ~, w2-02-14 ~ |
-| 5 | **Change the Verify task, not its settings.**<br>• Ask for something the reply doesn't contain (e.g. "what does the page give for the month before?").<br>• Add a fifth tick, "decided to accept, revise or reject, and why", and require it for secure.<br>• Downweight tick 1 ("opened the source"), which can't be observed. | course pack, text (branch) | S | yes | w2-02-04 ~, w1-02-03 ✓ |
+| 4 | **Record an ignored task or check as missing, not 0.**<br>• In `service._literacy_followup` and `_how_ai_works`, write a `literacy_ignored` engagement event instead of `ail_task 0` or `ail_how 0`.<br>• Show "tasks done: n of m" beside the level, so skipping can't quietly protect a level.<br>• Still score attempts: a reply of "idk" scores whatever ticks it showed.<br>• An Ask task should count as done when the student asks a research question later in the same session, not only in the very next message. On the branch it otherwise scores 0 about 2.7 times per no-skill student over 10 weeks. | build (branch) | S | yes, if the build team has time | w2-02-07 ✓, w2-02-11 ✓, w2-02-12 ~, w2-02-13 ~, w2-02-14 ~; w3-07-c5 ✓ (moving on scores 0) |
+| 5 | **Change the Verify task, not its settings.**<br>• Ask for something the reply doesn't contain (e.g. "what does the page give for the month before?").<br>• Add a fifth tick, "decided to accept, revise or reject, and why", and require it for secure.<br>• Downweight tick 1 ("opened the source"), which can't be observed.<br>• **Credit a dead-link report (wave 3).** "The page doesn't exist" is a full comparison for an invented source, so it should meet tick 3 (compared), not score 2 of 4 and lower Verify (w3-07-c5 ✓). Until this changes, the demo uses a page that says something else, not a dead link. | course pack, text (branch) | S | yes | w2-02-04 ~, w1-02-03 ✓, w3-07-c5 ✓ |
 | 6 | **Don't show a How AI works level.** Show per part "checked n, right m" and the wrong ideas still held.<br>• The rollup never reaches secure for anyone in 10 weeks.<br>• It ranks students backwards (rank 21 softens this, but doesn't remove the cause).<br>• Pitch: say "per-part results", not "level". | build (progress), pitch | S | yes | w2-02-05 ~ |
 | 7 | **The demo never teaches m2 as a misconception, and it shows a correct pushback.**<br>• Film with web search off and caption it.<br>• In shots 4c–4d the student should pick a different wrong idea from the rewritten set (rec 3), not m2.<br>• Don't seed a held m2. Today 01 rec 5 and demo-plan shots 4c–4d still use it; their owners need to change them.<br>• Add a moment where the student correctly challenges a wrong number. The check that follows asks how to tell a correction from giving in ("check the notes"), not whether the student was wrong. | demo, seed (`edux/cli.py seed-demo`) | S | yes (after rec 3) | coordinator; w2-02-33 ~, -34 ✓, -38 ✓ |
-| 8 | **Check the chatbot's labels against humans.**<br>• Hand-write 40 synthetic research questions (0–4 features) and 20 Verify replies (0–4 ticks).<br>• Two team members tick them blind against a one-page rubric.<br>• Get the chatbot's labels through the real MCP, and report Cohen's κ per feature with 95% CIs.<br>• κ ≥ .60 counts as usable for low-stakes formative use (our choice).<br>• Don't generate the messages with the model under test. | demo, pitch | M | yes (Wednesday, if time) | w1-02-28 ~, w1-02-29 ~ |
+| 8 | **Run the label-agreement study on Wednesday, pooled per skill (rewritten in wave 3).** The protocol, the 40 draft messages and the key are in [02a](02a-label-agreement-protocol.md).<br>• **Messages:** 18 research questions (4 Ask features each), 8 Verify answers (4 ticks), 8 explain-backs (3 points) and 6 other messages.<br>• **Before labelling:** the team rewrites at least 20 messages in a student voice, adds 5–10 cold items if possible, and commits messages, key and protocol to git.<br>• **Raters:** two team members label blind, using only the real tool text, then adjudicate their disagreements without seeing the bot's labels.<br>• **Bot runs:** the chatbot runs twice through the real tool description, and we keep its first `tutor_turn` call.<br>• **Headline:** κ for bot vs consensus, pooled within each skill: Ask 72 decisions / 18 messages; answer scoring 56 / 16. Verify ticks (32 / 8) get their own row. CI by cluster bootstrap over messages. Report AC1, % agreement, sensitivity and specificity, the human–human κ and bot1–bot2 κ next to it. Per-feature κ is descriptive only (n ≈ 18, about ±.33).<br>• **Pass rule** (our choice): human–human κ ≥ .60 first (otherwise the *definition* fails); then bot κ ≥ .60 with lower bound ≥ .40, and no more than .10 below the human ceiling. Flag bot specificity below .80, because over-ticking inflates levels. | demo, pitch | M (about 2 h, 4 people) | yes (Wednesday 14:00–16:00) | w3-02e-01 ✓, -02 ✓, -04 ~, -06 ✓, -07 ✓, -08 ~; w1-02-28 ~, w1-02-29 ~ |
 | 9 | **Validity-argument slide** (table below), filled in with whatever rec 8 produces. Call the method "embedded assessment". Never use the word "stealth" in pitch, video or product text. The tasks are overt, and pitch-notes bans the word. | pitch | S | yes | w1-02-33 ~; researcher panel (wave 2) |
 | 10 | **Known-groups persona check.** Run a "novice" and a "practised" persona for 8 research turns each through the MCP, on a fresh `EDUX_DATA_DIR`, and show that their levels diverge. Say it tests the pipeline, not students. | demo | S | yes, once merged | scout note w1-02b |
 | 11 | **Fix `docs/build/reference/research.md` row 29.** How AI works anchors to AILit Engage 2 (Knowledge 1.3 and 1.4), not to Shape AI. | docs | S | yes | w1-02-04 ~ |
 | 12 | **Show how much evidence each level rests on.**<br>• Always show `n_moments`.<br>• Below 3 moments, show "not enough evidence yet" instead of a level, in the chat too, so one lucky moment can't show "secure".<br>• Below 8 moments, show "provisional".<br>The thresholds of 3 and 8 are our choice. 3 is low against the 8–12 moments that reliability needs, which is why "provisional" runs to 8. | build (progress, chat), pitch | S | pitch yes; build maybe | w1-02-31 ✓, w2-02-02 ✓; [09](09-safety-ethics.md) rec 11 |
 | 13 | **"Why AI literacy" slide: lead with performance evidence, not self-report.**<br>• First line: a quarter of teens who felt confident at spotting AI content failed Ofcom's test (w2-09-04 ✓). Say "spotting AI content"; it was an image test, not checking chatbot answers.<br>• Then NLT, with its bases: 70.6% of 16–18s have used generative AI; 52.0% *of users* use it weekly (w2-09-01 ~); 58.5% *of those who had heard of it* say they check (w2-09-02 ✓). Call the NLT survey opt-in, about 4,900 aged 16–18.<br>• If a judge asks "do you believe 58.5%?", answer: "No. It's self-report, which is why we watch what students do." | pitch | S | yes | w2-09-01 ~, -02 ✓, -04 ✓; w1-02-25 ✓ |
-| 14 | **Two pitch lines (our wording).**<br>• (a) "In simulation with the settings we propose for Wednesday, a synthetic student with no skill is shown 'secure' at a weekly read in under 1% of cases. They are ever shown it in the chat in at most 3%, with up to 20% of the chatbot's labels wrong at random, and 4–7% if the chatbot labels leniently. We checked the simulation against our real code."<br>• (b) "With web search on, many bad citations are real pages that don't say what the chatbot claims. Published medical papers misquote their sources about one time in four too, so eduX teaches checking, not distrust." | pitch, video | S | yes | w2-02-01 ✓, -02 ✓, -08 ✓; w2-02-33 ~, -34 ✓, -44 ✓ |
+| 14 | **Two pitch lines (our wording).**<br>• (a) "In simulation with the settings we propose for Wednesday, a synthetic student with no skill is shown 'secure' at a weekly read in under 1% of cases. They are ever shown it in the chat in 5% or fewer, with up to 20% of the chatbot's labels wrong at random, and 4–7% if the chatbot labels leniently. We checked the simulation against our real code."<br>• (b) "With web search on, many bad citations are real pages that don't say what the chatbot claims. Published medical papers misquote their sources about one time in four too, so eduX teaches checking, not distrust." | pitch, video | S | yes | w2-02-01 ✓, -02 ✓, -08 ✓; w2-02-33 ~, -34 ✓, -44 ✓ |
 | 15 | **New moment, `request_type = summarise`: "check the summary against your notes".**<br>• Fire it only when the student summarises course material that eduX holds.<br>• Then the task is: "Find one point in your notes this summary leaves out or gets wrong." Score it on Verify ticks 3–4.<br>• For a news article or the teacher's slides, eduX can't check. Say "check one line against the original" and score nothing.<br>• This answers "Verify measures restating", because the answer isn't in the reply. Summarising is the third most common use among 16–18 monthly users (45.5%). | text (`tutor_turn.md`), `plan.py`, step doc §B/§D | M | yes, if 05e is merged Wednesday morning | w2-09-01 ~; student panel 2 |
 | 16 | **New label `ai_output_pasted`, as an optional check that is never penalised.**<br>• When the student says "ChatGPT said…" or pastes another AI's text, offer "Which part matches your notes?". If they skip it, record nothing, not even an ignore.<br>• If they raised the doubt themselves, score `ail_unprompted`.<br>• Why: if owning up earns a task, students stop saying "ChatGPT said", and the evidence disappears (student panel 3).<br>• The label is self-reported, so don't score it beyond `ail_unprompted` until the audit (rank 19) covers it. | text, `plan.py` (branch) | S–M | yes | w2-09-01 ~; student 3; researcher 2 (wave 2) |
 | 17 | **Keep Ask language-light.** Add one line to the label instructions: score features regardless of spelling, grammar or language, so EAL students don't lose Ask points. | text | S | yes | w2-09-03 ✓; [09](09-safety-ethics.md) rec 11 |
@@ -78,7 +83,7 @@ Marks: ✓ confirmed; ~ broadly supported, with the stated problem. Findings mar
 | 23 | **Ask scored as core + bonus.** Concept + context are the core; sources and reasoning are a bonus. Then "What was UK CPI in Feb 2025?" passes. | build | M | no | researcher 1 (wave 1) |
 | 24 | **A grounded pushback label, instead of `pushback_correct` as the chatbot's own judgement.** The label asks: "does the changed answer match the plan's reference or the notes?". Use it only to change the opening line ("You were right to push"). After rec 3, the agreement check is safe to fire either way. | build | M | no | w2-02-40 ~, -41 ✓, -42 ~ |
 | 25 | **Two wrong picks before a misconception shows as "held".** One guess (p = .25) shouldn't label a student. | build | S–M | no | researcher 3 (wave 1) |
-| 26 | **Check the decay-clock asymmetry on economics parts.** On the course parts too, a part never answered correctly doesn't decay, while one answered right does, so rankings can invert. [06](06-settings-simulation.md) didn't test this. | sims, settings | M | no | w2-02-05 ~ |
+| 26 | **Done in wave 3: the decay-clock asymmetry on economics parts.** It does invert rankings on `main`; the fix recommended there is decay towards the prior plus a "not yet shown" cap ([06](06-settings-simulation.md)). Still open: re-run the How AI works AUC with that fix on the 05e branch. | sims | S | maybe | w2-02-05 ~; w3-06-01 ✓, w3-06-08 ✓ |
 | 27 | **A "feedback" moment.** When the student asks for feedback on their writing, ask "which suggestion would you reject, and why?". This needs a new mark-point design. | design | M | no | w2-09-01 ~ |
 
 ### Settings snippet (our choice, from the simulation; not an edit)
@@ -270,7 +275,7 @@ The structure follows Kane (2013) and the five sources of evidence in the AERA/A
 
 | claim (inference) | evidence we have | threats we know of | evidence we'd gather |
 |---|---|---|---|
-| **Scoring:** a tick or letter means the student did it | Fixed server rules; the how-AI-works letter is scored by the server; a simulation checked against our real code (w2-02-01 ✓) | Chatbot labels unchecked; Verify can be met by restating (w2-02-04 ~); "opened" can't be seen; distractor cues; ignored = 0 on the branch | κ per feature vs two humans (rec 8) |
+| **Scoring:** a tick or letter means the student did it | Fixed server rules; the how-AI-works letter is scored by the server; a simulation checked against our real code (w2-02-01 ✓) | Chatbot labels unchecked; Verify can be met by restating (w2-02-04 ~); "opened" can't be seen; distractor cues; ignored = 0 on the branch | κ pooled per skill vs two blind humans, with the human ceiling (rec 8, [02a](02a-label-agreement-protocol.md)) |
 | **Opportunity:** moments fire when they should | Triggers in `plan.HOW_TRIGGERS` | Triggers are the chatbot's self-labels: `web_access` records capability, not action; `conflict_flagged` under-fires on confident errors; models claim tool use falsely (w2-02-41 ✓, -42 ~, -43 ✓). So opportunity rates may differ by chatbot. | Scripted audit of five failure modes, per chatbot (rec 19); search taken from a school setting (rec 20); opportunity rate reported per host |
 | **Generalisation:** enough moments for a stable level | Spearman–Brown: about 12 moments for .70 (w1-02-31 ✓); simulated weekly reads rarely wrong (w2-02-02 ✓) | In-chat "secure" after a lucky moment; Verify about 8 tasks in 10 weeks for a strong student (w2-02-04 ~); How AI works ranks students backwards (w2-02-05 ~) | `n_moments`, "not enough evidence" and "provisional" (rec 12); split-half reliability of Ask in a pilot |
 | **Extrapolation:** the level reflects AI literacy beyond eduX | How AI works overlaps GLAT's hallucination and cutoff items (w1-02-23 ✓); Ofcom shows confidence isn't skill (w2-09-04 ✓) | A narrow construct, close to information literacy; Ask rewards a prompt ritual; GLAT probably doesn't cover misattribution | Convergent r with GLAT or AILIT-S and one COR task (N ≥ 62; target r ≈ .3–.4); think-aloud with 5 students |
@@ -290,8 +295,76 @@ All of this is first-principles calculation (w1-02-31 ✓, recomputed by the ver
 - **Attenuation.** With reliabilities of .6 and .6 and a true correlation of .7, the observed r is about .39. That is why r ≈ .4 counts as a good result.
 - **Pilot size.** r = .35 needs N ≈ 62; r = .40 needs N ≈ 47 (power .8, α .05).
 - **Label noise.** ρ₁ × r_rater ≈ .17 × .70 ≈ .12, which gives the second row. Treating κ as a reliability coefficient is an approximation (our choice).
-- **Agreement-study precision.** κ = .7 on 40 items gives a 95% CI of about ±.22.
+- **Agreement-study precision (corrected in wave 3).** The ±.22 figure assumed 40 independent decisions on one label. In the real design each label sees only its own subset: about 18 messages for an Ask feature and 8 for a Verify tick. So the study pools binary decisions within each skill. Ask has 72 decisions from 18 messages and answer scoring 56 from 16. That gives about ±.16–.20 at κ = .7, allowing for clustering within messages (w3-02e-01 ✓, our calculation and simulation). Reaching ±.15 needs about 88 independent decisions (107 at prevalence .3), and ±.10 needs about 196 (240). Per skill, that means about 25 research and 25 answer messages: a pilot-term job.
 - **In time.** Strong students get about 26 Ask moments and 11–14 Verify moments in 10 weeks (simulation, our usage assumption of 2–3 research questions a week). A reliable Verify level takes most of a term.
+
+## Label-agreement study (wave 3): design, pass rule and what to claim
+The full protocol, the 40 draft messages, the intended-label key and the analysis script are in [02a](02a-label-agreement-protocol.md). **It has not been run.** This section is the summary.
+
+**Question.** When a chatbot labels a student's message using eduX's real tool description, do its labels agree with careful humans using the same definitions, as well as the humans agree with each other?
+
+**Design, framed like a diagnostic-accuracy study (STARD 2015, cross-field; w3-02e-08 ~).**
+- **Index test:** the chatbot's `tutor_turn` arguments.
+- **Reference standard:** the consensus of two blind human labellers after adjudication.
+- **Ceiling:** human–human agreement before adjudication.
+- **Retest:** the chatbot run twice on every item, which is the A/A check of the instrument (analogy).
+- **Report:**
+  - the flow of all 40 items, including any where the bot didn't call the tool;
+  - a 2×2 table per skill (sensitivity and specificity);
+  - **spectrum bias**: balanced synthetic messages are not the real mix.
+- STARD 2015 is a 30-item checklist, developed by the 85-member STARD Group in one web survey run in two rounds (verifier correction: not "two surveys", not "seven new items").
+- Reporting follows GRRAS: give each estimate with its uncertainty (w3-02e-07 ✓).
+
+**What gets labelled.**
+- Every message: `request_type`, `question_depth` and `engagement`.
+- Research messages (R01–R18): the 4 Ask features.
+- Verify answers (V01–V08): ticks a–d. Tick a is defined as "says they opened it", because opening can't be observed.
+- Explain-backs (E01–E08): the 3 points, plus misconception ids.
+- Not labelled: `conflict_flagged`, `pushback_changed` and `web_access`. They describe the chatbot or the chat, not the student's message.
+- The rater codebook is the real `Field(description=…)` text from the 05e branch and nothing else. If humans need more explanation than the chatbot gets, that is a finding about the tool text.
+
+**Sample size (our calculation; w3-02e-01 ✓, -02 ✓, -03 ✓).**
+
+| what | decisions (messages) | expected ±95% at κ = .7 | use |
+|---|---|---|---|
+| Ask features, pooled | 72 (18) | about ±.16 independent, ±.18 clustered | headline |
+| Verify ticks + explain-back points, pooled | 56 (16) | about ±.18–.20 | headline |
+| Verify ticks alone | 32 (8) | about ±.25–.30 | own row, descriptive |
+| `question_depth`, `engagement`, `request_type` | 40 (40) | about ±.22 | secondary |
+| one feature (e.g. `asks_sources`) | 18 (18) | about ±.33 | descriptive only |
+
+- Testing beats estimating at this size. Telling κ = .8 from κ = .4 needs about 42 decisions (power .80, two-sided α .05). Telling .7 from .4 needs about 74. These come from the Donner–Eliasziw goodness-of-fit formula as we reconstructed it, and the verifier reproduced them (w3-02e-02 ✓).
+- Sim & Wright's sample-size table rests on the same approach (w3-02e-03 ✓).
+
+**Pass rule (our choice) and how weak it is.**
+1. **Ceiling first.** If the humans agree at κ < .60, the label's *definition* fails, not the bot. Rewrite the `Field(description=…)` text and rerun on Thursday morning.
+2. **Pass:** bot vs consensus κ ≥ .60, with a 95% cluster-bootstrap lower bound ≥ .40. The mean of bot–B and bot–C must also be no more than .10 below B–C.
+3. **Strong:** κ ≥ .80. Krippendorff's customary .800 bar is of the same order, but we have it only from secondary sources (w3-02e-05 ~).
+4. **Specificity guard:** flag bot specificity below .80, because over-ticking inflates Ask and Verify levels.
+
+The .60 and .40 lines are Landis & Koch's conventional bands, which they called arbitrary.
+
+**Operating characteristics** (simulation, our calculation, prevalence .5). The rule passes a bot with true κ = .6 in 38–50% of runs, κ = .7 in 80–89%, and κ = .8 in 98–99% (Ask design, 72 decisions from 18 messages). An independent rerun reproduced the upper ends. With errors clustered within messages it gave .39 / .72 / .94, so the lower ends depend on the clustering assumed (w3-02e-06 ✓). **A pass is weak evidence that κ ≥ .6, and a fail doesn't separate .6 from .7.** The human ceiling is the second criterion for that reason.
+
+**Report AC1 next to κ, and balance prevalence by design.**
+- Kappa can be low when raw agreement is high and one answer dominates (the "kappa paradox"). Gwet's AC1 is more stable under skew (w3-02e-04 ~, abstract only).
+- Our corrected example: at 87.5% "yes" prevalence and 90% raw agreement, **κ ≈ .54 and AC1 ≈ .87**. The scout's κ .28 corresponds to 92.5% prevalence; the verifier corrected it.
+- Synthetic messages let us set each label near 50% prevalence. The key's design gives Ask 56% and Verify 56% "yes". This is the main reason a synthetic set is worth doing at all.
+- AC1 alone can flatter, so always show κ too.
+
+**Circularity, and how we limit it.**
+- The draft messages and key were written by a Claude model, and the bot under test is Claude.
+- The team rewrites at least 20 messages and adds cold items.
+- The key is a coverage target, never the reference standard.
+- If time allows, run a second chatbot as well. Otherwise the claim is about one chatbot only.
+
+**What to say on Thursday.** Always give:
+- n per skill;
+- κ with its 95% CI;
+- the human–human κ;
+- the four limits: *synthetic messages, written by the team with AI help, one chatbot, not a validation*.
+
+Pre-written lines for pass, fail and ceiling-fail are in [02a](02a-label-agreement-protocol.md) §3. Never say "validated", never give a per-feature κ as a headline, and never read label agreement as reliability of the literacy level. That still needs about 12 moments per skill (w1-02-31 ✓).
 
 ## Scoring problems in the 05e branch
 We checked each problem with `git -C /home/vishnu/edux26 show origin/build/05e-literacy-coaching:<path>`. The wave-2 column shows what the simulation added.
@@ -303,7 +376,10 @@ We checked each problem with `git -C /home/vishnu/edux26 show origin/build/05e-l
 | 3 | Verify measures restating | Tick 1 can't be observed; ticks 2–4 can be met by repeating the reply; the source is from the pack's trusted list | No setting separates a gamer from a partial checker (w2-02-04 ~) | recs 5, 15 |
 | 4 | Triggers don't fit their items | Fabrication fires on `source_conflict` with no search condition; `web_access` is a capability and is stored only on research turns; agreement fires on `pushback_changed` whether or not the student was right; one wrong pick marks a misconception "held" | With search on, misattribution is the common failure (w2-02-33 ~, -34 ✓); many changes are corrections (w2-02-38 ✓) | recs 3, 7, 20, 24, 25 |
 | 5 | Give-away wording | The literacy distractors use absolute cues while the correct options hedge; lengths are matched, with no full stops | — | rec 3 |
-| 6 | **How AI works rollup ranks students backwards (new)** | The decay clock starts only at the first correct answer (`learner.py:433-434, 692-695`) | AUC 0.40 (mnar) / 0.44 (mcar); never secure (w2-02-05 ~) | rec 6; recs 21 and 26 later |
+| 6 | **How AI works rollup ranks students backwards (new)** | The decay clock starts only at the first correct answer (`learner.py:433-434, 692-695`) | AUC 0.40 (mnar) / 0.44 (mcar); never secure (w2-02-05 ~). Wave 3: the same asymmetry inverts economics parts on `main` (w3-06-01 ✓) | rec 6; rec 21 later; fix (b)+(c) in [06](06-settings-simulation.md) |
+| 7 | **Reporting a dead page scores as failing Verify (wave 3)** | A student who says an invented link leads nowhere can tick only "opened" and "said whether it matched": 2 of 4 = 0.5, below `correct_share` 0.67. So catching a fabrication *lowers* Verify, 0.30 → 0.14. (The verifier notes the 2/4 follows from the ticks the script chose, not from the server.) | Rehearsal on the branch (w3-07-c5 ✓) | rec 5 |
+| 8 | **A good Verify answer lands just under "secure" (wave 3)** | A reply that states what the page says ticks a, c and d (3 of 4) and reaches 0.748, "developing", 0.002 below secure. Scoring is binary at 0.67, so 3 and 4 ticks give the same value. A second good answer in an un-reset retake shows "secure" | Rehearsal on the branch (w3-07-c5 ✓) | demo: don't end a retake on "secure"; rec 12 |
+| 9 | **Moving on scores the task 0 (wave 3)** | After the re-ask, a reply like "ok" writes `ail_task` 0, and Verify falls 0.30 → 0.14 | Rehearsal on the branch (w3-07-c5 ✓) | rec 4 (record as missing) |
 
 **Also on the branch:**
 - The 05e step doc still carries the withdrawn Khanmigo line (w1-09-08 ~). No report's ranked list owns the fix now: it is a one-line team edit to `docs/build/steps/05e`, and the deck must not use the line ([pitch-notes](pitch-notes.md)).
@@ -312,6 +388,12 @@ We checked each problem with `git -C /home/vishnu/edux26 show origin/build/05e-l
 - Each how-AI-works part gets at most one check per session.
 
 ## Later (not before Thursday; for the business plan and Q&A)
+- **Frame the spring 2027 pilot as an EEF-style feasibility study, not an efficacy trial** (w3-02e §2; the one-page plan belongs in the [business plan](business-plan.md)).
+  - A 3–5-school pilot has an MDES of about 1.5 SD (our calculation). That rates 0 padlocks on the EEF's MDES criterion: 5 padlocks needs ≤ 0.2 and 0 means ≥ 0.6. The interim rating is the lowest of design, MDES and attrition (w3-02e-09 ✓).
+  - EEF pilot guidance: pre-specify success indicators, justify any control group or pupil test, and focus on proximal outcomes for evidence of promise (w3-02e-11 ✓).
+  - Translate only an efficacy trial's MDES into months (0.18 ≈ +2 months on the EEF scale; w3-02e-10 ✓). Never translate pilot, engagement or agreement numbers.
+  - Consent model: the school as gatekeeper, the 16–17-year-old's own opt-in for research uses, parents informed with a way to object, and withdrawal at any time (BERA 2024; w3-02e-13 ✓). Research use of logs, and any stored message sample, is non-core and needs its own basis (DPO panel wave 3, #2: open).
+  - Repeat the agreement study on about 100 real, consented, de-identified messages (two teacher raters), and log `client` and model version on every labelled exchange.
 - **Convergent-validity pilot, preregistered.** At least 62 consenting students, with school consent and a DPIA.
   - How AI works vs GLAT or AILIT-S.
   - Verify vs one COR task, scored by two humans.
@@ -339,14 +421,18 @@ We checked each problem with `git -C /home/vishnu/edux26 show origin/build/05e-l
 - **Summarise checks against articles eduX doesn't hold.** The task can't be done, and it teaches that checking is pointless (student 2).
 - **Self-report scales (MAILS, SNAIL, AILQ) as the convergent check.** MAILS correlates only r = .21 with a knowledge test (w1-02-25 ✓). Self-report vs performance r = .055 (w1-02-15 ✓, a preprint).
 - **"Stealth assessment" as our label.** Ask and Verify are overt, and the pitch bans the word. Use "embedded".
-- **Claiming reliability from BKT posteriors, generating agreement-study messages with the model under test, using real students before Thursday, putting GLAT items in the product, scoring ethics or privacy, mapping 16–18s to AILit "Advanced" or Verify to Digital Promise's "Evaluate", "Decide" as a scored skill.** Reasons as in wave 1. Each is either circular, unconsented or unsupported (w1-02-01 ✓, w1-02-09 ✓).
+- **Per-feature κ as the pass criterion** for the agreement study. With about 18 decisions per feature the CI is about ±.33, so a pass or fail says nothing (w3-02e-01 ✓).
+- **The intended-label key as the reference standard.** Its author wrote the messages to fit it, and the same model family drafted it. Use it only to find messages that don't say what was meant.
+- **Testing κ against 0.** Rejecting zero agreement is trivial. The useful question is whether κ beats .4 and comes near the human ceiling (w3-02e-02 ✓).
+- **Using the model-drafted messages as they stand.** That would be circular. In wave 3 we keep them only as a draft the team rewrites, plus cold items (rec 8).
+- **Claiming reliability from BKT posteriors, using real students before Thursday, putting GLAT items in the product, scoring ethics or privacy, mapping 16–18s to AILit "Advanced" or Verify to Digital Promise's "Evaluate", "Decide" as a scored skill.** Reasons as in wave 1. Each is either circular, unconsented or unsupported (w1-02-01 ✓, w1-02-09 ✓).
 
 ## Panel objections this report answers or leaves open
 Status words: **answered** = a fix is built or a document answers it; **recommended** = a fix is recommended but not built; **partly**; **open**.
 
 | objection | status |
 |---|---|
-| Judges (w2) 1: the demo corrects a true belief (m2) | **Partly.** Recs 3 and 7 retire m2 and rewrite the options. Demo-plan shots 4c–4d and 01 rec 5's seed still use m2, and their owners must change them. |
+| Judges (w2) 1: the demo corrects a true belief (m2) | **Partly.** Recs 3 and 7 retire m2 and rewrite the options. Demo-plan shots 4c–4d and 01 rec 5's seed still use m2, and their owners must change them. Wave-3 rehearsal: m2 is still in all 26 fabrication option sets on the branch (w3-07-c7 ✓). |
 | Researcher (w2) 1: triggers are a biased sample of self-labels | **Recommended.** Recs 19 and 20 (maybe), rec 18 for the wording. |
 | Researcher (w2) 2: new moments add self-labels | **Recommended.** Rec 16 doesn't score beyond `ail_unprompted` until the audit (rec 19). Rec 15 answers "Verify measures restating" for summaries of course material. |
 | Researcher (w2) 3: mixed bases; motivated by self-report | **Recommended.** Rec 13: Ofcom's performance result first; NLT bases stated. |
@@ -358,12 +444,14 @@ Status words: **answered** = a fix is built or a document answers it; **recommen
 | Researcher (w1) 1: scoring contradicts coaching; ignored = 0 | **Recommended.** Recs 2 and 4, with simulation support. Not made on the branch yet. |
 | Researcher (w1) 2: Verify measures restating | **Recommended.** Recs 5 and 15. The simulation shows settings can't fix it. Tick 1 stays unobservable; say so. |
 | Researcher (w1) 3: items don't fit their triggers; cues; "held" after one click | **Recommended.** Recs 3, 7 and 20 before Thursday or maybe; recs 24 and 25 later. |
-| Researcher (w1) 4: the assessed system writes its own evidence | **Partly.** Rec 8 covers labels of student messages; rec 19 covers self-labels. Neither is done. |
+| Researcher (w1) 4: the assessed system writes its own evidence | **Partly.** Rec 8 covers labels of student messages; the protocol is now ready to run ([02a](02a-label-agreement-protocol.md)), but not run. Rec 19 covers self-labels. Neither is done. |
 | Researcher (w1) 5: the claim outruns the construct | **Answered** in wording: a narrow, named construct; "embedded"; evidence counts (recs 1, 9, 12). |
 | Student (w1) 2: "I'd never see the literacy part" | **Partly.** How-AI-works checks fire on any turn. Summarise and pasted-text moments are recommended (recs 15, 16). |
 | Student (w1) 3: MCQs easy to game; "I checked" makes Verify secure; ignored = 0 | **Recommended.** Recs 2, 3 and 4. |
 | Student (w1) 4: feels like being watched | **Partly.** The trend is unscored and shown to the student only. Teachers see no per-student literacy data (coordinator). |
-| Judges (w1) 3: "Why believe a 'secure' Verify?" | **Partly.** A validity slide, maths and a simulation exist. The branch settings are unchanged until rec 2. |
+| Judges (w1) 3: "Why believe a 'secure' Verify?" | **Partly.** A validity slide, maths and a simulation exist. The branch settings are unchanged until rec 2. The agreement study (rec 8) would add Verify-tick agreement, but only as a descriptive row (32 decisions). |
+| Investor (w3) 5: evidence takes too long for a seed runway | **Partly.** The pilot is framed as feasibility with preregistered progression criteria (Later). It gives 0 padlocks by design; learning needs an efficacy trial of about 100 schools. |
+| DPO (w3) 2: the pilot's message sample brings back stored messages | **Open.** It is flagged as non-core research needing its own controller, basis and ethics approval. Nothing is decided. |
 
 ## Findings
 | id | claim (short) | strength | population | outcome | mark |
@@ -434,4 +522,19 @@ Status words: **answered** = a fix is built or a document answers it; **recommen
 | w2-09-03 | FSM: equal use, more copying (30.0% vs 24.0%) | correlational | UK 13–18 | adoption / engagement | ✓ |
 | w2-09-04 | Ofcom 2026: 25% of confident teens failed to spot an AI image | official document | UK 8–17 | prediction (confidence vs test) | ✓ |
 | w2-09-10 | Revising with ChatGPT improved the essay but not knowledge gain | RCT (lab) | 117 university students | learning vs product | ~ abstract only; comparison groups were a human expert, writing analytics and no tool |
+| w3-02e-01 | Large-sample κ SE: ±.22 at n = 40, ±.16 at 80, ±.10 at 200 (κ .7, π .5); ±.15 needs 88 (107 at π .3) | theory (calculation) | hypothetical two-rater labels | prediction (precision) | ✓ |
+| w3-02e-02 | Donner–Eliasziw n (power .80): 42 for .8 vs .4; 74 for .7 vs .4; 126 for .8 vs .6 | theory (calculation) + Monte Carlo | hypothetical | prediction (power) | ✓ (formula paper read at index level only) |
+| w3-02e-03 | Sim & Wright 2005 tabulate kappa sample sizes, based on Donner & Eliasziw | theory (methods paper) | clinical reliability studies | prediction (methods) | ✓ (S&W cite the 1994 Biometrics paper) |
+| w3-02e-04 | Kappa paradox; Gwet's AC1 more stable under skew | theory | general | prediction (measurement) | ~ abstract only; example corrected to κ ≈ .54 / AC1 ≈ .87 at 87.5% prevalence, 90% agreement |
+| w3-02e-05 | Krippendorff's α proposed as the standard; .800 / .667 thresholds | theory | human coders | prediction (measurement) | ~ thresholds from secondary sources, not in the 2007 paper |
+| w3-02e-06 | Pass rule passes true κ .6 / .7 / .8 in 38–50% / 80–89% / 98–99% (Ask design) | simulation | hypothetical | prediction (decision rule) | ✓ (upper ends reproduced; lower ends depend on the clustering model) |
+| w3-02e-07 | GRRAS: 15 reporting issues, incl. estimates with uncertainty | official document (guideline) | health research | policy (reporting) | ✓ |
+| w3-02e-08 | STARD 2015: 30 items, 85-member group; index test vs reference standard | official document (guideline) | clinical studies (cross-field) | policy (reporting) | ~ one two-round web survey; "a few" items added, not seven |
+| w3-02e-09 | EEF padlocks: lowest of design, MDES, attrition; MDES ≤ 0.2 for 5, ≥ 0.6 for 0 | official document | EEF trials, English schools | policy | ✓ |
+| w3-02e-10 | EEF months table (+2 = 0.10–0.18 … +8 = 0.62–0.69); < 11 studies → 0 padlocks | official document | international school studies | policy | ✓ (PDF dated Feb 2023 internally) |
+| w3-02e-11 | EEF pilot guidance: pre-specify success, justify controls and tests, proximal outcomes | official document | English schools | policy | ✓ (third-party copy) |
+| w3-02e-13 | BERA 2024: child's best interests, parental consent may be needed, opt-in preferred, withdrawal | official document | UK educational research | policy | ✓ |
+| w3-07-c5 | Rehearsal: dead-page report scores 2/4 (Verify 0.30 → 0.14); 3/4 reaches 0.748; "ok" after the re-ask scores the task 0 | simulation (scripted run on the branch) | scripted demo student | prediction (scoring) | ✓ (the 2/4 follows from the ticks the script chose) |
+| w3-07-c7 | m2 is in all 26 fabrication option sets on the branch; How AI works stays "new" after the wrong pick | simulation (scripted run) | scripted demo student | other (content) | ✓ |
 
+Also cited here; each sits in its home report's table: w3-06-01 ✓, w3-06-08 ✓ ([06](06-settings-simulation.md)). Not in the table: w3-02e-12 (EEF pipeline, read through a secondary summary only, not verified) and w3-02e-14 (✗, left out).

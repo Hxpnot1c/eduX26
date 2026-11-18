@@ -2,19 +2,20 @@
 
 Each wave, six personas attack eduX: investor, teacher, AI-literacy researcher, DPO, student and EduX judges. They work from that wave's scout notes and verifier marks. This file condenses their verdicts and objections and says whether each objection is answered yet.
 
-**Status key (from wave 2, applied to both waves).**
+**Status key (from wave 2, applied to all waves).**
 - *answered*: a fix is built, or a document answers the objection.
 - *recommended*: we recommend a fix, but it isn't built.
 - *partly*: part of the objection is met (by a document, a built piece or a recommendation), part is not.
 - *open*: nothing addresses it.
 
-"05 rec 6" means rank 6 in that report's Ranked recommendations. "w2-05 rec 3" means rank 3 in that wave-2 scout note.
+"05 rec 6" means rank 6 in that report's Ranked recommendations. "w2-05 rec 3" means rank 3 in that wave-2 scout note, and "w3-07 rec 5" the same for a wave-3 note. Rows marked "Wave 3:" were refreshed after wave 3.
 
 **Coordinator facts.**
 - Step 05e (Ask, Verify, How AI works) is built on branch `build/05e-literacy-coaching`, 14 commits ahead of `main`, and not merged. Scout notes that say "not built" are stale.
 - As of wave 2, none of the wave-1 code fixes is built on `main`. `edux/server.py` still reads only `?key=` (no bearer header). Delete, export, retention, key hashing and revocation, and the DSL route are plans. The `text/style.md` line "use what you already know about the student" is still on `main`.
 - Per-student data for teachers (wave-2 decision): per-student *completion* (did checks or didn't, this week) may be a school opt-in, default off, as in Sparx. Per-student *levels*, AI-literacy scores, offloading and draft counts are never shown per student. Class-level AI literacy is shown only in bands, for groups of at least 6, and only if the school opts in. This removes draft and offloading counts from the teacher view and settles the w2-09 rec 4 vs w2-05t conflict.
 - For the video, web search is off, and "searched a database and picked the wrong entry" is not taught as a misconception (with search on it is often true; w2-02h).
+- As of wave 3 (code checked on 18 November), `main` and `build/06-demo` still read only `?key=` in `edux/server.py`. Neither branch has `delete-student`, `export-student`, key hashing or a bearer header. No wave-3 fix is built.
 
 ---
 
@@ -48,7 +49,7 @@ Statuses below were re-checked in wave 2 against the new key. Wave 1 had called 
 | # | Objection | Status | By |
 |---|---|---|---|
 | 1 | It teaches recognition, not what the exam rewards: every check is a 4-option MCQ, and level-marked answers wait in unbuilt step 07. | partly | Wave 2 counts the marks (about 66% level-marked, MCQ about 3%; w2-04-02 ✓) and proposes chain checks C1–C5 (w2-04 recs 2–3). [05](05-product-features.md) rec 7 gives an honest essay answer. Step 07 is not built. |
-| 2 | It is easy to game. The correct option is a fragment and the distractors are full sentences. Distractors come from other points. Explain-backs can be pasted. | partly | [04](04-economics-education.md) rec 1 and [demo plan](demo-plan.md) rec 2 recommend option-form pack edits (not made). Pasted explain-backs are not addressed. |
+| 2 | It is easy to game. The correct option is a fragment and the distractors are full sentences. Distractors come from other points. Explain-backs can be pasted. | partly | [04](04-economics-education.md) rec 1 and [demo plan](demo-plan.md) rec 2 recommend option-form pack edits (not made). Pasted explain-backs are not addressed. Wave 3: worse than thought. The correct option is the longest in 7 of 9 parts (w3-05-08 ~). w3-05 rec 1 (an exemplar as the key) is unbuilt. |
 | 3 | Content accuracy: every row is `draft`, one correction is already wrong (`externality_tax_eval_m1`), and there's no review step. | recommended | [04](04-economics-education.md) rec 2 corrects the row; rec 3 keeps new rows as drafts until a teacher signs off. No review queue or error rate yet. |
 | 4 | No teacher view, and usage reports are off by default. | recommended | Wave 2 specifies a one-screen, k = 6 class view (w2-05t recs 1, 4, 6) and a labelled mock-up. Not built. |
 | 5 | Doesn't fit lessons: no class focus topic or deadline, the chatbot will still write the 25-marker, and students can't use the demo chatbot. | partly | [05](05-product-features.md) rec 3 (route answer); [09](09-safety-ethics.md) rec 9 (light friction); w2-09 rec 4 ("your point first" before a draft). Class focus is Later. |
@@ -85,10 +86,10 @@ Statuses below were re-checked in wave 2 against the new key. Wave 1 had called 
 
 | # | Objection | Status | By |
 |---|---|---|---|
-| 1 | No lawful chatbot route for under-18s, so there is no processor chain for a DPIA. | partly | Wave 2 documents a school-managed route: Copilot Studio in a K-12 Microsoft 365 tenant (w2-05-03, -04 ✓; w2-05 rec 1). No DPA, no processor diagram, not tested. |
+| 1 | No lawful chatbot route for under-18s, so there is no processor chain for a DPIA. | partly | Wave 2 documents a school-managed route: Copilot Studio in a K-12 Microsoft 365 tenant (w2-05-03, -04 ✓; w2-05 rec 1). No DPA, no processor diagram, not tested. Wave 3: the school's lawful basis is public task (w3-09-01 ✓), and w3-09 gives an Art 28 checklist (the ICO lists 8 compulsory terms; w3-09-04 ~). Still no signed DPA and no test. |
 | 2 | The key works like a password: it sits in a URL, is stored in plaintext (`edux/learner.py`) and can't be rotated or revoked. Ids are name slugs. | recommended | [09](09-safety-ethics.md) recs 3, 4, 7 (hash, revoke/rotate, pseudonymous ids); w2-05 rec 3 (bearer header). None built: `edux/server.py` still reads only `?key=`. OAuth is later (w2-05 recs 8–9). |
 | 3 | Every message reaches eduX word for word, with no route for a safeguarding disclosure. | recommended | [09](09-safety-ethics.md) recs 8 (wellbeing signpost) and 10 (DSL contact at setup). Not built. The alert route is later (rec 14). |
-| 4 | No retention period, no erasure and no subject-access export. | recommended | [09](09-safety-ethics.md) recs 5–6 (`delete-student`, `export-student`, a written retention default). Not built. |
+| 4 | No retention period, no erasure and no subject-access export. | recommended | [09](09-safety-ethics.md) recs 5–6 (`delete-student`, `export-student`, a written retention default). Not built. Wave 3: w3-09 writes a retention schedule (end of course plus one term, our choice). Delete and export are still unbuilt. |
 | 5 | Profiling of minors. `text/style.md`'s "use what you already know about the student" pulls in vendor memory. AI-literacy levels in a teacher view must be off by default. | partly | The teacher-view rule is decided (coordinator decision above; w2-05t spec). Deleting the `style.md` line ([09](09-safety-ethics.md) rec 1) is recommended; the line is still on `main`. |
 
 **Q&A, with the answer wanted:**
@@ -125,9 +126,9 @@ Statuses below were re-checked in wave 2 against the new key. Wave 1 had called 
 |---|---|---|---|
 | 1 | This is a revision tutor, not an AI-literacy entry. | partly | 05e is built on its branch, not merged. [01](01-competition-fit.md) rec 2 and [demo plan](demo-plan.md) recs 1, 4 (merge; a 72-s literacy episode) are not filmed. |
 | 2 | Where is your definition? | answered | [02](02-ai-literacy-assessment.md) rec 1 and [01](01-competition-fit.md) recs 3–4 (definition, rubric and crosswalk, documented). |
-| 3 | Why believe a "secure" Verify? Self-report, unvalidated labels, and 11–16% of students without the skill end "secure" under label noise. | partly | [02](02-ai-literacy-assessment.md) recs 5, 6, 8, 9, 12; [demo plan](demo-plan.md) rec 10; w2-02 recs 1, 7 (settings and a minimum-moments rule, simulation only). Nothing changed on the branch. |
+| 3 | Why believe a "secure" Verify? Self-report, unvalidated labels, and 11–16% of students without the skill end "secure" under label noise. | partly | [02](02-ai-literacy-assessment.md) recs 5, 6, 8, 9, 12; [demo plan](demo-plan.md) rec 10; w2-02 recs 1, 7 (settings and a minimum-moments rule, simulation only). Nothing changed on the branch. Wave 3: reporting a dead link *lowers* Verify (w3-07-c5 ✓). |
 | 4 | Your students can't legally use the chatbot you filmed. | partly | [05](05-product-features.md) recs 1–2 and [demo plan](demo-plan.md) rec 3 (works-with line, adult-account caption) are wording. The K-12 Copilot route is documented, not tested (w2-05). |
-| 5 | Your assessment gives the answer away (the correct option differs in form). | recommended | [04](04-economics-education.md) rec 1, [02](02-ai-literacy-assessment.md) rec 3 and [demo plan](demo-plan.md) rec 2 (pack edits, S). Not made; needs an owner on Wednesday. |
+| 5 | Your assessment gives the answer away (the correct option differs in form). | recommended | [04](04-economics-education.md) rec 1, [02](02-ai-literacy-assessment.md) rec 3 and [demo plan](demo-plan.md) rec 2 (pack edits, S). Not made; needs an owner on Wednesday. Wave 3: the correct option is the longest in 7 of 9 parts (w3-05-08 ~); w3-05 recs 1 and 4. |
 
 **Q&A, with the answer wanted:**
 1. *Define AI literacy in one sentence.* "Knowing when and how far to trust a chatbot, shown in what students do when it is wrong."
@@ -144,6 +145,8 @@ Re-checked against the wave-2 key, the 30 objections stand at 1 answered (judges
 - **Gameable or weak literacy evidence.** Raised by the teacher, researcher, student and judges. The fixes are small settings and pack edits. None is made yet.
 - **No teacher view.** Raised by the teacher and judges. Wave 2 specified one, and the coordinator settled what it shows.
 
+Wave 3 changed no wave-1 status. It added evidence to five wave-1 rows (marked "Wave 3:").
+
 ---
 
 ## Wave 2
@@ -156,7 +159,7 @@ Sources: w2-02, w2-02h, w2-03, w2-04, w2-05, w2-05t, w2-08, w2-09 and verifier s
 
 | # | Objection | Status | By |
 |---|---|---|---|
-| 1 | The cost story contradicts itself. The business plan defends £8 with "no model calls", but on Copilot Studio the school pays about US$84 per student per year in credits (our estimate, on an unopened US$0.01 rate; w2-05-06 ~). Whether an MCP call bills as an agent action is unconfirmed. At 125% enforcement, agents stop mid-term. | partly | w2-05 recs 5 and 10 flag it and ask Microsoft. Business plan §3 still claims a cost advantage. |
+| 1 | The cost story contradicts itself. The business plan defends £8 with "no model calls", but on Copilot Studio the school pays about US$84 per student per year in credits (our estimate, on an unopened US$0.01 rate; w2-05-06 ~). Whether an MCP call bills as an agent action is unconfirmed. At 125% enforcement, agents stop mid-term. | partly | w2-05 recs 5 and 10 flag it and ask Microsoft. Business plan §3 still claims a cost advantage. Wave 3: w3-08m recomputes the cost at about £22.50 per student per year (central), with a range of £11–108 (our estimate; w3-08m-13). It replaces US$84. Billing for unlicensed students is still contested (w3-08m-05 ~). |
 | 2 | The market has shrunk to one channel. Google schools are out and get tracking free (w2-08-01, -02 ✓). ChatGPT and Claude have no under-18 route. Le Chat is a consumer account. Microsoft K-12 tenants must switch Copilot on for 13–17s, and it is off by default (w2-05-04 ✓). | partly | w2-05 recs 1, 2, 4 and w2-08 rec 3: wording plus an adult test. |
 | 3 | Both moats are weaker. Gemini ends the "one conversation" line. EU AI Act Article 4 needs no measurement or certificate (w2-08-09 ✓), so the compliance buyer is gone. | partly | w2-08 recs 1, 2, 7 give honest "head start" wording. No buyer. |
 | 4 | Funded rivals sit inside the programme. The Pioneer Programme gave £300k each to eight suppliers, including Pearson, Eedi and Google (w2-08-08 ✓). It targets Years 9–10, not A level. | partly | w2-08 rec 6 (text only). |
@@ -176,9 +179,9 @@ Sources: w2-02, w2-02h, w2-03, w2-04, w2-05, w2-05t, w2-08, w2-09 and verifier s
 | # | Objection | Status | By |
 |---|---|---|---|
 | 1 | Le Chat can't go in any DPIA. It is a consumer contract for personal use, with parental permission "where required" and no school controller (w2-05-01 ~). Putting it on a pupil-facing slide invites families to sign up outside the school's contract. | open | w2-05 rec 2 puts it on the slide. The fix wanted: drop it as an under-18 route, or say "adults only". |
-| 2 | Copilot: who processes what, under which contract? Messages leave Microsoft through a connector to eduX. Do Microsoft's 13–17 protections (w2-05-13 ✓) cover custom agents and third-party MCP? | partly | w2-05 rec 1; business plan rec 9 (DPIA template). No processor diagram or DPA. |
+| 2 | Copilot: who processes what, under which contract? Messages leave Microsoft through a connector to eduX. Do Microsoft's 13–17 protections (w2-05-13 ✓) cover custom agents and third-party MCP? | partly | w2-05 rec 1; business plan rec 9 (DPIA template). No processor diagram or DPA. Wave 3: w3-09 adds a DPIA outline and a roles line. Microsoft makes connector traffic the agent maker's responsibility (w3-09-05 ✓), and its Product Terms are still unread. |
 | 3 | The child still holds a long-lived secret. A bearer header beats a URL, but a 16-year-old still pastes a password-equivalent into Copilot until Entra sign-in. Keeping `?key=` for ChatGPT goes against RFC 6750 (w2-05-10 ✓). | recommended | w2-05 recs 3 and 8; [09](09-safety-ethics.md) recs 3–4. None built. |
-| 4 | Teacher view: minimisation, not anonymity. k = 6, bands and the "never anonymous" wording are good, but class AI-literacy aggregates need a lawful basis and pupils must be told. The new `offered_misconception_ids` log must be shown to be necessary. | partly | w2-05t recs 2, 5, 6; the coordinator decision (opt-in, bands, k ≥ 6). No privacy-notice line or retention period for the new column. |
+| 4 | Teacher view: minimisation, not anonymity. k = 6, bands and the "never anonymous" wording are good, but class AI-literacy aggregates need a lawful basis and pupils must be told. The new `offered_misconception_ids` log must be shown to be necessary. | partly | w2-05t recs 2, 5, 6; the coordinator decision (opt-in, bands, k ≥ 6). No privacy-notice line or retention period for the new column. Wave 3: w3-09 rec 8 rests class AI literacy on public task only if the school teaches AI literacy, recorded in its DPIA. Unbuilt. |
 | 5 | Wave-1 fixes are unbuilt. Delete, export, retention and the DSL route were marked "answered", but the code has none of them. | recommended | [09](09-safety-ethics.md) recs 5, 6, 8, 10. Wave-1 statuses corrected above. |
 
 **Q&A, with the answer wanted:**
@@ -194,10 +197,10 @@ Sources: w2-02, w2-02h, w2-03, w2-04, w2-05, w2-05t, w2-08, w2-09 and verifier s
 
 | # | Objection | Status | By |
 |---|---|---|---|
-| 1 | Your demo corrects a true belief. Shot 4c marks "searched a source database and picked the wrong entry" as wrong. With search on, about 25–30% of citations or statements aren't backed by their source (w2-02-33 ~, -34 ✓). | recommended | w2-02h recs 1–2; coordinator decision (search off for the video, m2 not taught). Storyboard shots 4c–4d and the seed are not yet rewritten. |
+| 1 | Your demo corrects a true belief. Shot 4c marks "searched a source database and picked the wrong entry" as wrong. With search on, about 25–30% of citations or statements aren't backed by their source (w2-02-33 ~, -34 ✓). | recommended | w2-02h recs 1–2; coordinator decision (search off for the video, m2 not taught). Storyboard shots 4c–4d and the seed are not yet rewritten. Wave 3: m2 is still in all 26 fabrication option sets on the branch (w3-07-c7 ✓). |
 | 2 | "Why not Gemini?" Study notebooks track objectives across sessions, and Classroom gives teachers progress insights, piloted in UK schools (w2-08-01, -02 ✓). | partly | w2-08 recs 1–3; coordinator fact (lead with AI-literacy evidence plus a school-owned model across chatbots). The deck doesn't use it yet. |
 | 3 | Only the student sees the assessment. The teacher-view mock shows no AI-literacy levels. | recommended | w2-05t recs 1, 6; coordinator decision allows one opt-in, banded, k ≥ 6 class row per skill. Not in the mock yet. |
-| 4 | Cost contradicts the pitch. On the only school-managed under-18 route, the school pays about US$0.07 a turn and about US$84 per student per year (our estimates, ~). | partly | w2-05 rec 5 (business plan only, not the pitch). |
+| 4 | Cost contradicts the pitch. On the only school-managed under-18 route, the school pays about US$0.07 a turn and about US$84 per student per year (our estimates, ~). | partly | w2-05 rec 5 (business plan only, not the pitch). Wave 3: about £22.50 per student per year (central), £11–108 (our estimate; w3-08m-13). |
 | 5 | How much of the 2:30 is real? Teacher view, C1/C3 items and some shots are mock-ups. | partly | [demo plan](demo-plan.md) rec 1 (cap mocks at about 15 s, labelled; Plan B if the gate fails). |
 
 **Q&A, with the answer wanted:**
@@ -215,7 +218,7 @@ Sources: w2-02, w2-02h, w2-03, w2-04, w2-05, w2-05t, w2-08, w2-09 and verifier s
 |---|---|---|---|
 | 1 | The triggers are a biased sample. `web_access` records a capability, not an action; models falsely claim tool use (w2-02-43 ✓). `conflict_flagged` under-fires on confident errors (w2-02-41 ✓, -42 ~). Opportunities differ by host. | partly | w2-02h recs 3 and 6 (a deployment-level `searched` setting; a scripted audit), both "maybe" before Thursday. No per-host opportunity rates. |
 | 2 | New moments add more self-labels. `summarise`, `ai_output_pasted` and `draft` are classified by the chatbot. Summarise does check against our notes, which answers wave-1 "Verify measures restating". | partly | w2-09 recs 2–4; include the new labels in the w2-02h rec 6 audit before scoring them. |
-| 3 | Mixed bases and self-report in the motivation. The 52% weekly figure is a share of AI users (w2-09-01 ~). The deck calls self-report weak, then motivates the problem with self-reported checking. | open | Fix wanted: lead with Ofcom's performance result (a quarter of confident teens failed; w2-09-04 ✓) and give each NLT base. |
+| 3 | Mixed bases and self-report in the motivation. The 52% weekly figure is a share of AI users (w2-09-01 ~). The deck calls self-report weak, then motivates the problem with self-reported checking. | partly | Fix wanted: lead with Ofcom's performance result (a quarter of confident teens failed; w2-09-04 ✓) and give each NLT base. Wave 3 (open → partly): frame D now leads with that result (w3-01). The caption must say it was an AI-image test, not fact-checking (wave-3 judges #3). |
 | 4 | Bastani is used beyond its reach. It is Turkish high-school maths. The guarded tutor caused no harm and no gain. The "about −0.2 SD" figure is our calculation. | partly | w2-09 rec 1 wording; use it only for "guarded beats unguarded". |
 | 5 | Missing data and evidence counts aren't changed. Ignored task = 0 is still on the branch. A 3-moment minimum (our choice) is low against the 8–12 that w1-02-31 ✓ suggests. | recommended | w2-02 recs 2, 7 and w2-09 rec 5 (S, unbuilt); NAEP and PISA not-reached handling backs ignored = missing (w2-02-11, -12 ~). |
 
@@ -268,7 +271,7 @@ Wording problems she flagged: w2-09 rec 8 says "stealth", which pitch-notes bans
 
 ### Wave 2 at a glance
 
-Of 30 objections, 0 are answered, 6 recommended, 21 partly and 3 open (DPO #1, Le Chat on a pupil slide; researcher #3, self-report and mixed bases in the motivation; student #5, no tested route). Coordinator decisions move four objections up a step from the panel's own rating (judges #1 and #3, teacher #5, student #3). Themes:
+Of 30 objections, 0 are answered, 6 recommended, 22 partly and 2 open (DPO #1, Le Chat on a pupil slide; student #5, no tested route). At wave 2 the count was 21 partly and 3 open. Wave 3 moved researcher #3 from open to partly (frame D). Coordinator decisions move four objections up a step from the panel's own rating (judges #1 and #3, teacher #5, student #3). Themes:
 
 - **One school route, untested and costly.** Raised by the investor, DPO, judges and student. Copilot Studio in a K-12 tenant is documented; credit cost and teen protections for custom agents are unconfirmed.
 - **The moat is gone; lead with AI-literacy evidence.** Raised by the investor and judges.
@@ -277,40 +280,195 @@ Of 30 objections, 0 are answered, 6 recommended, 21 partly and 3 open (DPO #1, L
 
 ---
 
-## Open questions for wave 3
+## Wave 3
 
-Merged and deduplicated from the six wave-2 personas (20 questions, 19 after merging). Tags: [I] investor, [D] DPO, [J] judges, [R] researcher, [T] teacher, [S] student. Wave-2 questions are in [README.md](README.md#open-questions).
+Sources: w3-01, w3-02e, w3-05, w3-06, w3-07 (our Plan A rehearsal by simulation), w3-08c, w3-08m and w3-09, with verifier sets K–P. One finding is ✗ and not used: w3-02e-14 (preregistration templates). Two personas per panel file (`work/w3/panel-*.md`).
+- Two of the panel files were written before verify-L, -O and -P came in, so they call w3-02e, w3-05 and w3-07 unverified. Their claims are cited here with the current marks: w3-07-c1 to -c7 (simulation: synthetic students, example pack), w3-05-08 ~ and w3-02e-04 ~.
+- Some panel ratings are regraded to the status key. A fix that is only recommended is *recommended* even where a panel said "yes" or "no". This applies to teacher #2 and #3, researcher #2 and #4, student #2, investor #3 and DPO #5.
 
-**Routes, cost and contracts**
+### EduX judges (Challenge 1)
 
-1. [I] How many English sixth forms and colleges run Microsoft 365 A3/A5 with learner Copilot enabled for 13–17s?
-2. [I, J] Does an MCP tool call in Copilot Studio bill as an agent action, and does an Agent Builder agent avoid it?
-3. [I] Have Gemini study notebooks reached UK under-18 school accounts?
-4. [D] Do Microsoft's 13–17 Copilot protections (MC1509805) apply to Copilot Studio custom agents and their MCP tools?
-5. [D] Is there a DfE or ICO template DPA for an MCP plug-in behind a school's Microsoft 365 tenant?
-6. [D] What lawful basis do UK schools use for pupil-level analytics shared with teachers? The coordinator decision narrows this to opt-in per-student *completion* only, plus banded class-level AI literacy (k ≥ 6). Levels, AI-literacy scores, offloading and draft counts are never shown per student.
+**Verdict:** Shortlist, not winner. The video is choreographed around scoring that punishes the behaviour it assesses. Fix that, not the slides.
 
-**Market**
+**Re-scores (1–5).** Criteria are inferred from the rules page; the brief is still not pasted. Each line runs from the wave-2 plan, to wave-3 "before Thursday: yes" recs only, to those recs plus the "maybe" build fixes:
+- problem fit 4 → 4 → 4 (5 if the brief matches frame D);
+- definition 4 → 4 → 4;
+- prototype on video 3 → 3 (2 live at the expo) → 4;
+- educational value 4 → 3 → 4;
+- who it helps 3 → 3 → 3;
+- how it works in practice 4 → 3 → 4.
 
-7. [I] Do any trusts or awarding bodies buy AI-literacy assessment, and at what price?
-8. [J] What do the brief's Desired Outcomes say about who uses the assessment? (The team must paste the brief into the repo on Wednesday.)
+| # | Objection | Status | By |
+|---|---|---|---|
+| 1 | Catching a fake link lowers Verify. A dead page ticks 2 of 4 points, so Verify falls from .30 to .14. Moving on also scores 0. A mismatch raises it to .748, but only with a rewritten option set (w3-07-c5 ✓). An assessment that penalises its target behaviour is invalid, not noisy. | partly | Filming workaround: the mismatch line, or no Verify record after a dead-page take ([demo plan](demo-plan.md); w3-07 recs 2, 5). The scoring fix (w3-07 rec 5, 02 rec 6) is unbuilt and marked "maybe". Wave 4 is redesigning Verify scoring. |
+| 2 | The demo works only if we avoid ordinary words. On example-mini, "give", "link", "ONS", "first", "cost", "different" and "shows" each pull a course part into focus. "Give me sources" turns the episode into a PED quiz (w3-07-c3 ✓). The expo demo is unscripted. | partly | w3-07 rec 1 (focus-safe lines) is a workaround. The fix, "literacy turns never set a course focus" (w3-07 rec 4), is unbuilt; wave 4 is working on it. |
+| 3 | The slide-1 evidence doesn't match the claim. Ofcom tested spotting AI-made images, not checking a chatbot's claim. And "nobody can see the difference" applies to us too, because Verify is partly self-report on labels the chatbot assigns. | partly | w3-01 (frame D) flags both points. A caption reading "AI-made images" is recommended, not yet on the slide. The brief is still unpasted. |
+| 4 | The record misreads. How AI works shows "new" straight after the lesson (w3-07-c7 ✓). In economics, a part answered right once reads below one answered wrong and never right after 8.5 days (w3-06-01 ✓). Pooled AUC against truth is 0.48–0.59 (w3-06-08 ✓; simulation: synthetic students, example pack). | recommended | w3-06 recs 1–2 (decay towards the prior, plus "not yet shown"); [demo plan](demo-plan.md) rec 13 (per-part counts). Unbuilt; the decay fix is in progress in wave 4. |
+| 5 | The economics checks still give the answer away. In 7 of 9 parts the correct option is the node description (a topic label), and in 7 of 9 it is the longest option (w3-05-08 ~). | recommended | w3-05 rec 1 (an exemplar as the key) and rec 4 (three options). Unbuilt, "yes"; wave 4 is fixing it. |
+
+**Q&A, with the answer wanted:**
+1. *"Type 'give me sources on the cost of living'."* It stays on the literacy task, live.
+2. *"A student reports a dead link. What happens to Verify?"* "It counts as checking."
+3. *"Your κ: who wrote the messages and who labelled them?"* "We rewrote half of them, and Claude labelled. It's a screen, not validation. Our rule passes a chatbot with true κ .6 only 38–50% of the time (w3-02e-06 ✓)."
+4. *"Why does an image test show this?"* "It shows that confidence isn't competence. It is not a fact-checking test."
+5. *"Why does it say 'new' after the lesson?"* "One answer is thin evidence. Here's the count."
+
+### Student (Year 13, Edexcel Economics, uses ChatGPT)
+
+**Verdict:** Still no. He can't log in (he's 17 and his school uses Google), and most of wave 3 is about making the video look right. The accessibility fixes are the first changes aimed at him.
+
+| # | Objection | Status | By |
+|---|---|---|---|
+| 1 | My normal words break it. I type "give me sources" and "what's the cost of…" every day. You've banned those words from your own demo because they turn my question into an elasticity quiz (w3-07-c3 ✓). | partly | w3-07 rec 4 is unbuilt and marked "maybe"; wave 4 is working on the focus fix. |
+| 2 | Being honest lowers my score. Reporting a dead link lowers Verify, and saying "ok" scores 0 (w3-07-c5 ✓). So I'll learn to type "yeah it matched". | recommended | w3-07 rec 5 and 02 rec 6 (unbuilt). Wave 4 is redesigning Verify scoring. |
+| 3 | "Shorter replies" doesn't reach the teaching. I ask for 50 words and the teaching step still says 80. | recommended | w3-05 rec 2 (S, "yes"), unbuilt. A student-chosen "plain words" option is w3-05 rec 3 (M, needs a migration). |
+| 4 | The right answer sounds like the spec heading and is usually the longest, so I'd pick it without reading (w3-05-08 ~). | recommended | w3-05 recs 1 and 4, unbuilt; wave 4 is fixing it. |
+| 5 | The levels feel random. Right once, and three days later it's "new" again. Chat with no check, and it says "secure" for months (14 exchanges give .763; w3-06-06 ~). After the lesson, How AI works still says "new". | recommended | w3-06 recs 1–3, unbuilt; the decay fix is in progress. |
+
+**Q&A, with the answer wanted:**
+1. *If I ask for sources on the cost of living, do I get quizzed on PED?* "No. Here it is."
+2. *If I catch a fake link, does my score go up?* "Yes. Catching it is the skill."
+3. *Who wrote your test messages?* "An AI drafted them and we rewrote half. The pilot uses real messages, including pasted text and screenshots."
+4. *Does it time me?* "Never. Speed is never evidence" (w3-05 rec 7). That matters with 25% extra time.
+5. *What do I log in with this term?* A named school route that has been tested.
+
+He liked three things: no timers, "plain words" as his own choice (never inferred and never shown to the teacher), and three options instead of four.
+
+### Teacher (Head of Economics, state sixth form)
+
+**Verdict:** Not yet. The record misreads the pupils she worries about most: the honest checker and the fluent talker. She'd trial it in Year 12 once fix (b) and the Verify scoring are in.
+
+| # | Objection | Status | By |
+|---|---|---|---|
+| 1 | "Give me sources" turns into an indirect-tax lesson: OBR and IFS as sources, then a PED prerequisite MCQ (w3-07-c3 ✓). This is a classroom bug, and the demo's word ban hides it. | partly | w3-07 rec 1 is a workaround; rec 4 is "maybe". Wave 4 is working on the focus fix. |
+| 2 | The record punishes honest checking and rewards chat. A dead page lowers Verify from .30 to .14, and moving on scores 0 (w3-07-c5 ✓). Fourteen talk-only exchanges reach .763 (w3-06-06 ~). An `untested` review is queued, but does it ever fire? | recommended | Fix (b) (w3-06 rec 2) covers talk-only. w3-07 rec 5 is "maybe", and ignored = missing (02 rec 4) is unbuilt. None is built or tested. |
+| 3 | A prerequisite gets skipped where the calculation marks are. Six right answers on `ped_values` lift a never-answered `ped_formula` to .527 for good, so its prerequisite check never fires (w3-06-05 ✓). | recommended | w3-06 rec 2, unbuilt. |
+| 4 | The pilot's cost to her department isn't counted. Who rates 100 real messages, maps mock items to parts, writes the DPIA and the consent letters, and runs the think-alouds? January to March is mock marking. | open | w3-02e §2 logs her time (RQ6) but gives no hours per task. |
+| 5 | The items still don't look like her subject. E07 turns "evaluate a pollution tax" into a 3-point checklist. The MCQ key is a topic label and is the longest option in 7 of 9 parts (w3-05-08 ~). "Shorter replies" sends two word caps. | partly | w3-05 recs 1, 2 (with 04 rec 1) cover the MCQ key and the cap. Nothing addresses E07 (drop it or mark it "illustrative"). |
+
+**Q&A, with the answer wanted:**
+1. *A pupil catches a fake link. Does the record go up?* "Yes. Here is the test."
+2. *Can a pupil chat their way to secure?* "No. Nothing counts until it's answered right; until then it says 'not yet shown'."
+3. *My student types "give me sources on inflation". What does it teach?* "Inflation, with ONS sources. Research turns never set a course focus. Built and tested."
+4. *Which pupils, which term, who rates?* "Year 12, spring; the team rates; under 15 minutes a week for you."
+5. *Does extra time matter?* "No. Nothing is timed, and a test keeps it so."
+
+She liked "not yet shown" (it is how she talks to pupils), the "never say eduX raised grades" rule, and no timers. Between 16.6% and 25.5% of candidates have 25% extra time (w3-05-01 to -03).
+
+### AI-literacy researcher (measurement)
+
+**Verdict:** The best-specified agreement study she has seen from a student team, but agreement is not validity. As captured, the Verify rule penalises the behaviour it claims to measure. She'd back the protocol, not yet the scores.
+
+| # | Objection | Status | By |
+|---|---|---|---|
+| 1 | Agreement would certify an invalid rule. Item V06 (page not found) is in the study. Bot and humans can agree perfectly on ticks a and d, which then *lower* Verify (w3-07-c5 ✓). Also, 3/4 and 4/4 score the same, because scoring is binary at .67. | partly | w3-07 rec 5 is "maybe"; 02 rec 5 is a redesign. Wave 4 is redesigning Verify scoring. Reporting the server's decision, not only the ticks, is not yet in the protocol. |
+| 2 | The study skips the self-labels that wave 2 attacked. `conflict_flagged` and `pushback_changed` are dropped, and `source_conflict` is descriptive only, with 2 positives (w2-02-41 ✓). | recommended | 02 rec 19 (scripted audit with per-host trigger rates), unbuilt. w3-02e doesn't cover it. |
+| 3 | The study is too weak to show much. The pass rule passes a κ = .6 chatbot only 38–50% of the time (w3-02e-06 ✓). Verify rests on 8 message clusters, which is too few for a stable cluster bootstrap. The items are Claude-drafted and tested on Claude. | partly | w3-02e recs 1–5 (call it "screening", rewrite half the messages, fix the pass rule in advance). Cold-written Verify items and a second host are not planned. |
+| 4 | The decay asymmetry may explain why How AI works ranks backwards (AUC .40 on the branch). Fix (c) raises economics AUC from 0.48–0.59 to 0.62–0.71, but it redefines p (w3-06-08 ✓; simulation: synthetic students, example pack). Spacing hides the asymmetry only within about 30 days of the exam, not 14 (w3-06-02 ~). | recommended | w3-06 rec 7 (re-run the literacy AUC under the fix), "maybe". Wave 4 is running it. |
+| 5 | The pilot can progress without validity evidence. Only RQ1, RQ3 and RQ9 must be green, and RQ4 isn't required. RQ5's rise in Ask features may be compliance with prompts. RQ3 uses only consented or donated messages. | open | Wanted: RQ4 as a progression criterion; RQ5 scored on first drafts and unprompted questions only. |
+
+**Q&A, with the answer wanted:**
+1. *Is a reported dead link evidence for or against Verify?* "For. The rule is fixed and tested."
+2. *Which scoring labels does your study not test?* "The self-labels on the bot's own replies. Here is the per-host audit plan."
+3. *Your rule passes κ = .6 about half the time. What will you claim?* "Screening only: n, CI and the human ceiling."
+4. *What is one Verify task worth?* "One piece of evidence. Below 3 moments we show 'not enough evidence' (02 rec 12)."
+5. *How is RQ5 not prompt compliance?* "We score only unprompted first questions."
+
+### Investor (UK/EU edtech seed)
+
+**Verdict:** Still no, but this is the first wave with numbers he can model, and they are not good. Microsoft takes about £22.50 per student and we take £5. The channel may have no door for custom agents, and a free Microsoft tutor is already preselected inside it.
+
+| # | Objection | Status | By |
+|---|---|---|---|
+| 1 | Microsoft earns about 4.5 times what we do from our own customer: about £22.50 against a £5 licence, and up to £108 (w3-08m-13, our estimate on 600 turns, our choice). Pay-as-you-go is off by default, so adopting us is a finance-office decision. | partly | w3-08m recs 1, 2, 5 (cost table, cap). No measured turn count. |
+| 2 | The "free route" rests on contested pages. "No charge only when licensed" is too strong (w3-08m-05 ~), and Microsoft's pages disagree on billing unlicensed students (w3-08m-09 ✓). Until tested, the cost is £11–108, not "maybe zero". | partly | w3-08m recs 3, 7, 8 (tenant test); none done. |
+| 3 | The channel may not exist for us. The learner Copilot page lists only Microsoft's own experiences, and custom agents for under-18 learners are undocumented (w3-08m-04 ✓). "Four in five teachers on Outlook" is a proxy (w3-08m-03 ~). | recommended | w3-08m rec 8: ask Microsoft in writing, or test with a 17-year-old account. Not sent. |
+| 4 | Copyright removes the content moat as well as the risk. The lawful spine is DfE OGL content plus our own words (w3-08c-05 ✓), which anyone can build. AQA bans AI use of its material (w3-08c-10 ✓). | partly | w3-08c recs 6–9. No cost per pack. |
+| 5 | Evidence takes too long for a seed runway. The pilot shows feasibility, not learning. Learning needs an efficacy trial of about 100 schools (w3-02e rec 7): 2028 at best. | partly | w3-02e rec 8 (RAG thresholds registered in advance). |
+
+**Q&A, with the answer wanted:**
+1. *Total cost per student, all in?* "£5 to us plus about £22.50 to Microsoft, capped at £X per class per month."
+2. *Can a 16-year-old reach a custom agent?* "Microsoft confirmed it on [date]", or "a test account did".
+3. *Why pay twice when Study and Learn is free?* "It doesn't know 9EC0 and doesn't report AI literacy to the school."
+4. *What stops Pearson copying the pack?* Hours per pack, and host-neutrality.
+5. *What does spring prove?* "Feasibility and use against criteria we registered in advance. Not learning."
+
+### DPO (multi-academy trust)
+
+**Verdict:** On paper, the first pack she could take to her board: public task, an Art 28 checklist, a retention schedule and a signpost that stores nothing. Still not approvable. None of it is in code, and the pilot brings back stored messages and a second purpose.
+
+| # | Objection | Status | By |
+|---|---|---|---|
+| 1 | Still unbuilt after three waves. Delete, export, key hashing and the bearer header are absent. Free text in `call_log` isn't fixed (w3-09-17 ✓). The retention period has no job to run it. | recommended | w3-09 recs 2–4, 9 (plans). |
+| 2 | The pilot's RQ3 brings back stored messages (consented or donated), links mock results and runs a GLAT/AILIT-S test. Who controls the research data, on what basis? Public task doesn't obviously cover a student team's research. | partly | w3-02e §2 treats research as a non-core use, but names no controller and no basis. |
+| 3 | The Art 9 condition falls on the school. The wellbeing label is health data in transit, which needs Sch 1 para 18 (w3-09-20 ✓) and possibly an appropriate policy document (w3-09-13 ✓). | partly | w3-09 rec 5. No drafted policy paragraph, and no test that nothing persists. |
+| 4 | The connector is hers to answer for. Microsoft makes connector traffic the agent maker's responsibility, and the agent maker is the school (w3-09-05 ✓). Nobody has read the Product Terms, and teen protections for custom agents are still unknown. | partly | w3-09 rec 1 and the DPIA outline. No processor-chain diagram naming the hosting sub-processor. |
+| 5 | AI literacy under public task depends on the school's curriculum, but the switch is a setup tick-box. | recommended | w3-09 rec 8 (default off, plus a DPIA line), unbuilt. |
+
+**Q&A, with the answer wanted:**
+1. *Show me the delete.* "Live: `delete-student 42`. Events, derived tables and `call_log` go now; backups age out in 35 days."
+2. *Who controls the pilot research data?* A named institution, under its ethics approval, with a separate notice.
+3. *What is stored when a pupil discloses?* "Nothing. Here's the database diff for that turn."
+4. *Who is the hosting sub-processor, and where?* A name and a UK or EU region.
+5. *Is the export "portability"?* "No. Under public task it's an access export."
+
+### Wave 3 at a glance
+
+Of 30 objections, 0 are answered, 13 recommended, 15 partly and 2 open (teacher #4, the pilot's cost to a department; researcher #5, progression without validity evidence). Nothing new is built, so no objection is answered. Wave 3 changed one earlier status (wave-2 researcher #3, open → partly) and added evidence to eleven earlier rows (five from wave 1, six from wave 2). Themes:
+
+- **The Verify rule penalises honest checking.** Raised by the judges, student, teacher and researcher (w3-07-c5 ✓). This is the top fix before any agreement figure is quoted. Wave 4 is redesigning Verify scoring.
+- **Ordinary words take over the literacy episode.** Raised by the judges, student and teacher (w3-07-c3 ✓). The line card is a workaround; the build fix is in progress.
+- **The record misreads.** Decay ranks right-once below never-right, talk alone reaches secure, and the MCQ key gives itself away. Raised by all four non-business personas. All are recommended and unbuilt; the decay and MCQ fixes are in progress.
+- **Cost and channel are now numbers, and the numbers are weak.** The investor's points: £22.50 to Microsoft per student, and an undocumented door for custom agents.
+- **Paper compliance, no code.** The DPO's point: the documents are approvable in shape, but delete and export are still plans, and the pilot needs a named research controller.
+
+---
+
+## Open questions for wave 4
+
+Merged and deduplicated from the six wave-3 personas: 20 questions, 18 after merging. Tags: [I] investor, [D] DPO, [J] judges, [R] researcher, [T] teacher, [S] student.
+
+Wave 4 is already working on five streams:
+- literacy turns that don't set a course focus;
+- a Verify scoring redesign;
+- the MCQ testwise fix;
+- the crash and decay fixes, including How AI works AUC under the decay fix;
+- a word-for-word pitch script.
+
+Questions those streams answer are marked **in progress**.
+
+**Demo and labels**
+
+1. [J] In a claude.ai dry run, which labels does Claude send on the four Plan A lines?
+2. [S, T] How often do real 16–18 research questions contain the resolver's trigger words? On 100 real student messages, how often does the resolver pick the wrong course part? *(The in-progress focus fix stops literacy turns setting a focus. The frequency question stays open.)*
+3. [J] Whom do the brief's Desired Outcomes name as the user of the assessment? (The team must paste the brief into the repo on Wednesday.)
 
 **AI-literacy measurement**
 
-9. [J] How often does claude.ai with search on misattribute citations on UK economic data?
-10. [R] What is per-host agreement between `source_conflict` / `pushback_changed` and a script, across the five scripted failure modes?
-11. [R] How many literacy moments does a typical student generate per week, per host?
-12. [R] Do NLT's checking items have a published base and wording that allow the 58.5% to be quoted correctly?
-13. [S] Do 16–18s disclose pasted AI text less when disclosing it triggers a task?
+4. [J, R] Under the decay fix, does How AI works AUC on the 05e branch rise above 0.5 (from .40)? **In progress.**
+5. [S] When reporting a failed check lowers a score, do students report fewer failures? (Literature on incentives in self-report.) **In progress** (Verify scoring redesign).
+6. [R] With 8–16 message clusters, how well does a cluster-bootstrap CI for κ keep its coverage? (Simulation.)
+7. [R] What published LLM-vs-human κ figures exist for question-quality features, as an external benchmark?
+8. [R] Does an unprompted-feature Ask score separate novice and practised personas (02 rec 10)?
 
-**Economics content and checks**
+**Learner model and checks**
 
-14. [T] Across past 9EC0 8- and 12-markers, how often would a monopsony or "depends on elasticity" answer conflict with a C1 or C4 key?
-15. [T] Do faded-chain tasks raise blind-levelled analysis marks on economics essays?
-16. [T] How long does reviewing one C4 item take, and how often is its key disputed?
-17. [S] Can chatbot image input reliably label a photographed diagram's shift and direction for server scoring?
+9. [T] After fix (b), does the `untested` review fire, and does it pull a talk-only part back down? **In progress** (decay fixes).
+10. [S] Does a three-option, plain-claim MCQ cut how often students pick the right answer without knowing the economics? **In progress** (MCQ testwise fix).
 
-**Teacher view and student experience**
+**Routes, cost and contracts**
 
-18. [T] What flag rate does the alarm rule give if pooled across 2–4 sets of 10–16 students?
-19. [S] Does a skippable within-session re-ask keep accuracy gains without cutting return use?
+11. [I] Can K-12 learners in "not adult" accounts invoke custom or third-party declarative agents in Copilot Chat?
+12. [I] Do any UK schools switch on Copilot pay-as-you-go for students, and under what cap?
+13. [D] Do Microsoft's Product Terms or DPA cover traffic from Copilot Studio custom connectors to third-party MCP servers?
+14. [D] Does a school relying on DPA 2018 Sch 1 para 18 for a chatbot signpost need an appropriate policy document?
+
+**Market**
+
+15. [I] What share of A level Economics entries in England go to Edexcel (9EC0)?
+16. [I] How many turns a week do sixth-formers send to a course tutor, according to published usage data (Sparx, Seneca, Khanmigo)?
+
+**Pilot**
+
+17. [D] When a university student team runs research in a school pilot, who is the data controller, and which Art 6 basis applies?
+18. [T] How many teacher-hours do the pilot's RQ3, RQ8 and DPIA steps take per school?

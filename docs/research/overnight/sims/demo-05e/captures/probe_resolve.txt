@@ -1,0 +1,78 @@
+"what's happening with inflation?"
+   -> parts [] candidates []; words that match: {}
+'What happened to UK CPI inflation in 2025, and why? Please give me sources I can check.'
+   -> parts ['tax_supply_shift'] candidates []; words that match: {'give': ['tax_supply_shift']}
+"That ONS link doesn't work."
+   -> parts ['tax_incidence_split'] candidates []; words that match: {'ONS': ['tax_incidence_split'], 'link': ['ped_values']}
+"That link doesn't work."
+   -> parts ['ped_values'] candidates []; words that match: {'link': ['ped_values']}
+'That ONS link is broken.'
+   -> parts ['tax_incidence_split'] candidates []; words that match: {'ONS': ['tax_incidence_split'], 'link': ['ped_values']}
+'The ONS link is dead.'
+   -> parts ['tax_incidence_split'] candidates []; words that match: {'ONS': ['tax_incidence_split'], 'link': ['ped_values']}
+'That ONS link goes nowhere.'
+   -> parts ['tax_incidence_split'] candidates []; words that match: {'ONS': ['tax_incidence_split'], 'link': ['ped_values']}
+'That link is dead.'
+   -> parts ['ped_values'] candidates []; words that match: {'link': ['ped_values']}
+"The link's dead."
+   -> parts ['ped_values'] candidates []; words that match: {"link's": ['ped_values']}
+'What was UK CPI inflation in 2025, and why? Give me sources I can check.'
+   -> parts ['tax_supply_shift'] candidates []; words that match: {'Give': ['tax_supply_shift']}
+'What was UK CPI inflation in 2025 and why did it change? Sources please.'
+   -> parts [] candidates ['elasticities', 'indirect_taxes']; words that match: {}
+'Why did UK CPI inflation change in 2025? Give sources.'
+   -> parts ['tax_supply_shift'] candidates []; words that match: {'Give': ['tax_supply_shift']}
+'What was UK inflation in 2025?'
+   -> parts [] candidates []; words that match: {}
+'how much does petrol cost?'
+   -> parts ['externality_tax_eval'] candidates []; words that match: {'cost': ['externality_tax_eval']}
+'What was UK CPI inflation in 2025, and why did it change? Sources please.'
+   -> parts [] candidates ['elasticities', 'indirect_taxes']; words that match: {}
+'What was UK CPI inflation in 2025, and why? Sources please.'
+   -> parts [] candidates []; words that match: {}
+'What was UK CPI inflation in 2025 and why? Please show sources.'
+   -> parts [] candidates []; words that match: {}
+"That page doesn't exist."
+   -> parts [] candidates []; words that match: {}
+"That web address doesn't open."
+   -> parts [] candidates []; words that match: {}
+"That address doesn't open."
+   -> parts [] candidates []; words that match: {}
+"I tried that ONS page and it doesn't exist."
+   -> parts ['tax_incidence_split'] candidates []; words that match: {'ONS': ['tax_incidence_split']}
+"I clicked it and the page doesn't exist."
+   -> parts [] candidates []; words that match: {}
+"I clicked the first source and the page doesn't exist."
+   -> parts ['ped_formula'] candidates []; words that match: {'first': ['ped_formula']}
+"The first source doesn't open."
+   -> parts ['ped_formula'] candidates []; words that match: {'first': ['ped_formula']}
+"I checked: that page doesn't exist."
+   -> parts [] candidates []; words that match: {}
+"That ONS page doesn't give that figure."
+   -> parts [] candidates ['tax_supply_shift', 'tax_incidence_split']; words that match: {'ONS': ['tax_incidence_split'], 'give': ['tax_supply_shift']}
+"That page doesn't say that."
+   -> parts [] candidates []; words that match: {}
+'I checked that page and it shows a different figure.'
+   -> parts ['tax_supply_shift'] candidates []; words that match: {'shows': ['tax_supply_shift'], 'different': ['ped_definition']}
+'I checked: the page says something different.'
+   -> parts ['ped_definition'] candidates []; words that match: {'different': ['ped_definition']}
+'I opened it and the number on the page is different.'
+   -> parts ['ped_definition'] candidates []; words that match: {'different': ['ped_definition']}
+'tell me about inflation'
+   -> parts [] candidates []; words that match: {}
+'is inflation bad?'
+   -> parts [] candidates []; words that match: {}
+'why does inflation matter?'
+   -> parts [] candidates []; words that match: {}
+'what does inflation do?'
+   -> parts [] candidates []; words that match: {}
+'what was inflation like?'
+   -> parts [] candidates []; words that match: {}
+'I opened it and the page says 9.1%, not 11.1%.'
+   -> parts [] candidates []; words that match: {}
+'I opened it, but the page says 9.1% for that month, not 11.1%.'
+   -> parts [] candidates []; words that match: {}
+'I opened it and that page says 9.1%, not 11.1%.'
+   -> parts [] candidates []; words that match: {}
+'what was inflation?'
+   -> parts [] candidates []; words that match: {}
