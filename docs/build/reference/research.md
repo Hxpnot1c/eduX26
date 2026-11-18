@@ -139,7 +139,7 @@ The evidence behind Synapse's teaching and modelling decisions. Effect sizes are
 
 | Decision | Source | What it shows | Caveat |
 |---|---|---|---|
-| Don't withhold answers | Khanmigo trial (team research doc); Bastani et al. (2025), *PNAS* (w2-09-08, w2-09-09) | Students stopped using it when it refused answers; unrestricted GPT access harmed later unaided performance, while a guarded tutor didn't | Verify the Khanmigo citation before using it in the white paper |
+| Don't withhold answers | Our reasoning; Oreopoulos & Low (2026), NBER WP 35620, for context; Bastani et al. (2025), *PNAS* (w2-09-08, w2-09-09) | Refusing an answer doesn't stop a student asking another chatbot. The Khanmigo trial does not show students left when refused: use of the tutor was thin from the start (median student messaged in 17% of mistake sessions), with small gains similar to Khan Academy practice alone. Unrestricted GPT access harmed later unaided performance, while a guarded tutor didn't | Not evidence that refusing answers drives students away (`docs/research/personalisation.md` §4) |
 | Question templates | Fu & Choe (2022); item-model literature | Templates can produce comparable items, but many need revision | |
 | Context stays small | Anthropic docs on compaction | Long chats are summarised only near the limit; quality degrades as context grows | Product behaviour may change |
 | Instructions capped (900 words, at most 950 if cuts can't make room) | Same as above | The instructions sit in context for the whole chat, beside the school's own instructions and every result | Our own budget, not an external limit |
@@ -159,7 +159,7 @@ Each value that comes from one of these is labelled "from our simulation" in `se
 
 ## Considered and not adopted
 
-- **FSRS scheduling.** It needs many graded reviews per user to fit, and it targets a constant level of recall with no exam date. Our model is a simpler version of the same idea (difficulty, half-life, `p_now`). Revisit only with real review data.
+- **FSRS scheduling.** It targets a constant level of recall with no exam date. It no longer needs hundreds of reviews per user: the current optimiser uses default parameters below 64 reviews and pulls a full fit towards the defaults (FSRS-7; FSRS-6 also fitted only the initial stabilities from 8 reviews; `docs/research/personalisation.md` §4, finding 8-10). Our model is a simpler version of the same idea (difficulty, half-life, `p_now`). Revisit with real review data.
 - **A hard gate that blocks progress.** The chatbot's interface can't enforce it, and students would go round it. Graduated choices are used instead.
 - **Ending sessions.** The server can't end them. It offers stopping and protects the learner model instead.
 - **`on_success_immediate = 1.0`.** In simulation it left 1.6 of 9 parts secure instead of 6.2, because 59–80% of evidence counts as immediate (w1-06-07 ✓).
