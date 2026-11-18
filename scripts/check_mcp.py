@@ -627,9 +627,10 @@ async def engagement_rules(url: str) -> None:
         extend = await turn("a harder one", {"choice": "extend", "engagement": "active"})
         stop = await turn("let's stop there", {"choice": "stop", "engagement": "active"})
         check(offer[0].get("move") == "offer_choice" and offer[0]["data"].get("reason") == "passive"
-              and offer[0]["data"].get("options") == ["quiz", "extend", "stop"] and "offer_choice" not in moves(again)
-              and moves(quiz) == ["ask_mcq"] and moves(extend) == ["extend"] and moves(stop) == [],
-              "a passive streak is offered quiz, extend or stop once a session, and each pick is planned",
+              and offer[0]["data"].get("options") == ["quiz", "stop"] and "offer_choice" not in moves(again)
+              and moves(quiz) == ["ask_mcq"] and moves(extend) == ["extend"] and moves(stop) == ["session_summary"]
+              and "covered" in stop["plan"][0]["data"],
+              "a passive streak is offered quiz and stop (extend only when earned) once a session, and each pick is planned; stop returns a session summary",
               " | ".join(json.dumps(moves(t)) for t in (*streak, again, quiz, extend, stop)))
     finally:
         drop_student(student)
@@ -641,8 +642,11 @@ async def engagement_rules(url: str) -> None:
         third = (shows[-1].get("plan") or [{}])[0]
         chosen, _ = letter(student, True)
         before = max_evidence_id()
-        await turn(chosen, {"engagement": "active"}, answer={"part_id": PART, "type": "mcq", "choice": chosen})
+        answered = await turn(chosen, {"engagement": "active"}, answer={"part_id": PART, "type": "mcq", "choice": chosen})
         rows = evidence(student, before)
+        check(moves(answered) == ["feedback", "show", "ask_mcq"] and third["data"].get("then_show") is True,
+              "the repeated show's 2-option question comes first; its answer gets feedback, then the full show and its check",
+              json.dumps(moves(answered)))
         check([moves(t) for t in shows[:2]] == [["show", "ask_mcq"]] * 2 and moves(shows[-1]) == ["ask_mcq"]
               and len(third["data"].get("options", [])) + bool(third["data"].get("extra_option")) == 2
               and [(r["evidence_type"], r["n_options"]) for r in rows] == [("mcq_check", 2)],
@@ -659,6 +663,8 @@ async def engagement_rules(url: str) -> None:
         for i, part in enumerate([*prereqs, PART] * 3):   # known well, two days ago, so no prequestion or prereq check
             learner.record_evidence(student, part, "explain_back", 1.0, apply="now",
                                     ts=learner._event_ts(now - timedelta(days=2, minutes=60 - i)))
+        # coasting needs at least engagement.coasting_min_messages messages: one passive message came just before
+        learner.record_exchange(student, [PART], "surface", "passive", ts=learner._event_ts(now - timedelta(minutes=2)), apply="now")
         got = await turn("ok")
         step = next((s for s in got.get("plan", []) if s["move"] == "explain_back"), {})
         ids = [p["id"] for p in graph.score_points(PART)]
