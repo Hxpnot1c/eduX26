@@ -124,16 +124,16 @@ low_share = 0.5            # passive or "just show me" share of the last session
 [show]                     # "just show me" (engagement-rules)
 max_per_part_session = 2   # after this many shows of one part in a session, the next first asks a 2-option question on the point
 
-[personalisation]          # per-student learning rate (personal-learning-rate; docs/research/personalisation.md section 7)
-enabled = true             # on for the demo; EDUX_PERSONALISATION=0 turns it off without editing this file
-learn_rate_k = 20          # shrinkage: the offset is n / (n + k) of the evidence's mean surprise
-min_observations = 10      # pieces of evidence (earlier sessions, not fatigued, immediate or untaught) before any offset
-min_parts = 3              # and across at least this many parts
-recency_half_life = 20     # a piece of evidence counts half as much this many pieces later
-surprise_scale = 2.0       # log-odds of learn-rate change per unit of shrunk mean surprise
-learn_rate_weight_bounds = [0.5, 1.5]   # odds multiplier on bkt.learn_rate; narrow on purpose (over-crediting locks errors in)
-max_change_per_session = 0.25   # log-odds the offset may rise from one session to the next
-down_change_factor = 2.0   # it may fall this many times faster: under-crediting is the safer mistake
+[personalisation]          # per-student learning rate (05h, recalibrated in 05m). Not the starting-point adjustments (05q), which are core and always on
+enabled = false            # judgement call: off by default (Children's Code Standard 12, profiling off by default; the recalibrated offset barely moves); EDUX_PERSONALISATION=1 turns it on without editing this file
+learn_rate_k = 400         # from research spread plus our simulation: shrinkage, the offset is n / (n + k) of the evidence's mean surprise
+min_observations = 10      # judgement call, starting value: pieces of evidence (earlier sessions, not fatigued, immediate, untaught or a part's first answer) before any offset
+min_parts = 3              # judgement call, starting value: and across at least this many parts
+recency_half_life = 100    # judgement call: the rate is treated as a stable trait, so a piece of evidence counts half as much 100 pieces later
+surprise_scale = 1.0       # from our simulation's regression slope: log-odds of learn-rate change per unit of shrunk mean surprise
+learn_rate_weight_bounds = [0.7, 1.3]   # from research: about +-2 SD of the replicated spread (Koedinger et al., 2023; Simpson et al., 2024); odds multiplier on bkt.learn_rate
+max_change_per_session = 0.25   # judgement call, starting value: log-odds the offset may rise from one session to the next
+down_change_factor = 2.0   # direction from Doroudi & Brunskill (2019); size is a judgement call: it may fall this many times faster, since under-crediting is the safer mistake
 
 [priorities]               # which add-on step Synapse picks, by expected marks (priorities); starting guesses, to be learned from pilot data
 weight_homework = 0.3      # how much a test of each kind counts
