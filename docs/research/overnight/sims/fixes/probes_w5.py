@@ -8,7 +8,8 @@ A. stuck: a student who misses every check and every explain-back on ped_formula
    30 turns; after a plan with nothing to answer they say "OK, let's keep going." Reports each plan, the longest run
    of plans with no multiple-choice question, the longest run of bare reteaches (feedback + reteach only), and the turn
    of the first stop-or-switch offer. Also a recovering student (misses until the step back, then right) and a
-   student who misses only open answers (no MCQs missed).
+   student who misses only open answers (no MCQs missed), and a strong student who misses only the harder
+   (extend) questions, who should never get the ladder.
 B. review requests: 30 messages in our own words (18 asking for the due reviews, 12 that don't), each to a fresh
    student who studied two parts 5 days ago and YED just before. Conditions: due + request_type concept; due +
    request_type other; due, 2 minutes after a pending check (same session); nothing due.
@@ -114,7 +115,7 @@ def main(data_dir: str, out_json: str | None = None) -> None:
                 letter = next(k for k, o in sorted(options.items()) if (o["id"] == "correct") != wrong)
                 out = turn(letter, answer={"part_id": m["part_id"], "type": "mcq", "choice": letter})
             elif ask:
-                letters = [] if miss_open() else [p["id"] for p in service.plan.lettered(ask["part_id"])]
+                letters = [] if miss_open(ask["data"]["answer_type"]) else [p["id"] for p in service.plan.lettered(ask["part_id"])]
                 out = turn("I think it is about price.", answer={"part_id": ask["part_id"], "type": ask["data"]["answer_type"],
                                                                   "points_met": letters})
             else:
@@ -141,9 +142,11 @@ def main(data_dir: str, out_json: str | None = None) -> None:
                 "worked_examples": sum("show:" in p for p in plans)}
 
     runs = {
-        "always_misses": stuck_run("a1", 30, lambda n: True, lambda: True),
-        "recovers_after_step_back": stuck_run("a2", 20, lambda n: n <= 3, lambda: False),
-        "misses_open_only": stuck_run("a3", 20, lambda n: False, lambda: True),
+        "always_misses": stuck_run("a1", 30, lambda n: True, lambda a: True),
+        "recovers_after_step_back": stuck_run("a2", 20, lambda n: n <= 3, lambda a: False),
+        "misses_open_only": stuck_run("a3", 20, lambda n: False, lambda a: True),
+        # strong student: every check and explain-back right, every harder (extend) question missed -> no ladder
+        "strong_misses_extend": stuck_run("a4", 10, lambda n: False, lambda a: a == "extend"),
     }
     for name, r in runs.items():
         print(f"A. {name}: longest run with no MCQ {r['longest_no_mcq_run']}, longest bare-reteach run "

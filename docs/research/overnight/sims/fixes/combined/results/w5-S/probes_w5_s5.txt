@@ -1,0 +1,209 @@
+A. always_misses: longest run with no MCQ 24, longest bare-reteach run 23, first stop/switch offer at turn None, 6/30 plans with an MCQ, 0 worked examples
+   turn 1: feedback:ped_formula:intuition/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 2: feedback:ped_formula:check/reteach:ped_formula/ask_mcq:ped_formula:check#1
+   turn 3: feedback:ped_formula:check/ask_mcq:ped_definition:stuck:prereq
+   turn 4: feedback:ped_definition:prereq/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 5: feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2
+   turn 6: feedback:ped_formula:check/reteach:ped_formula/ask_mcq:ped_formula:check#2
+   turn 7: feedback:ped_formula:check/explain_back:ped_formula
+   turn 8: feedback:ped_formula/reteach:ped_formula
+   turn 9: feedback:ped_formula/reteach:ped_formula
+   turn 10: feedback:ped_formula/reteach:ped_formula
+   turn 11: feedback:ped_formula/reteach:ped_formula
+   turn 12: feedback:ped_formula/reteach:ped_formula
+   turn 13: feedback:ped_formula/reteach:ped_formula
+   turn 14: feedback:ped_formula/reteach:ped_formula
+   turn 15: feedback:ped_formula/reteach:ped_formula
+   turn 16: feedback:ped_formula/reteach:ped_formula
+   turn 17: feedback:ped_formula/reteach:ped_formula
+   turn 18: feedback:ped_formula/reteach:ped_formula
+   turn 19: feedback:ped_formula/reteach:ped_formula
+   turn 20: feedback:ped_formula/reteach:ped_formula
+   turn 21: feedback:ped_formula/reteach:ped_formula
+   turn 22: feedback:ped_formula/reteach:ped_formula
+   turn 23: feedback:ped_formula/reteach:ped_formula
+   turn 24: feedback:ped_formula/reteach:ped_formula
+   turn 25: feedback:ped_formula/reteach:ped_formula
+   turn 26: feedback:ped_formula/reteach:ped_formula
+   turn 27: feedback:ped_formula/reteach:ped_formula
+   turn 28: feedback:ped_formula/reteach:ped_formula
+   turn 29: feedback:ped_formula/reteach:ped_formula
+   turn 30: feedback:ped_formula/reteach:ped_formula
+A. recovers_after_step_back: longest run with no MCQ 15, longest bare-reteach run 0, first stop/switch offer at turn None, 5/20 plans with an MCQ, 0 worked examples
+   turn 1: feedback:ped_formula:intuition/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 2: feedback:ped_formula:check/reteach:ped_formula/ask_mcq:ped_formula:check#1
+   turn 3: feedback:ped_formula:check/ask_mcq:ped_definition:stuck:prereq
+   turn 4: feedback:ped_definition:prereq/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 5: feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2
+   turn 6: feedback:ped_formula:check/explain_back:ped_formula
+   turn 7: feedback:ped_formula/extend:ped_formula
+   turn 8: feedback:ped_formula/extend:ped_formula
+   turn 9: feedback:ped_formula/extend:ped_formula
+   turn 10: feedback:ped_formula/extend:ped_formula
+   turn 11: feedback:ped_formula/extend:ped_formula
+   turn 12: feedback:ped_formula/extend:ped_formula
+   turn 13: feedback:ped_formula/extend:ped_formula
+   turn 14: feedback:ped_formula/extend:ped_formula
+   turn 15: feedback:ped_formula/extend:ped_formula
+   turn 16: feedback:ped_formula/extend:ped_formula
+   turn 17: feedback:ped_formula/extend:ped_formula
+   turn 18: feedback:ped_formula/extend:ped_formula
+   turn 19: feedback:ped_formula/extend:ped_formula
+   turn 20: feedback:ped_formula/extend:ped_formula
+A. misses_open_only: longest run with no MCQ 12, longest bare-reteach run 11, first stop/switch offer at turn None, 5/20 plans with an MCQ, 0 worked examples
+   turn 1: feedback:ped_formula:intuition/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 2: feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2
+   turn 3: feedback:ped_formula:check/explain_back:ped_formula
+   turn 4: feedback:ped_formula/reteach:ped_formula
+   turn 5: feedback:ped_formula/reteach:ped_formula
+   turn 6: feedback:ped_formula/ask_mcq:ped_definition:stuck:prereq
+   turn 7: feedback:ped_definition:prereq/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 8: feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2
+   turn 9: feedback:ped_formula:check/explain_back:ped_formula
+   turn 10: feedback:ped_formula/reteach:ped_formula
+   turn 11: feedback:ped_formula/reteach:ped_formula
+   turn 12: feedback:ped_formula/reteach:ped_formula
+   turn 13: feedback:ped_formula/reteach:ped_formula
+   turn 14: feedback:ped_formula/reteach:ped_formula
+   turn 15: feedback:ped_formula/reteach:ped_formula
+   turn 16: feedback:ped_formula/reteach:ped_formula
+   turn 17: feedback:ped_formula/reteach:ped_formula
+   turn 18: feedback:ped_formula/reteach:ped_formula
+   turn 19: feedback:ped_formula/reteach:ped_formula
+   turn 20: feedback:ped_formula/reteach:ped_formula
+A. strong_misses_extend: longest run with no MCQ 3, longest bare-reteach run 1, first stop/switch offer at turn None, 5/10 plans with an MCQ, 0 worked examples
+   turn 1: feedback:ped_formula:intuition/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 2: feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2
+   turn 3: feedback:ped_formula:check/explain_back:ped_formula
+   turn 4: feedback:ped_formula/extend:ped_formula
+   turn 5: feedback:ped_formula/reteach:ped_formula
+   turn 6: feedback:ped_formula/ask_mcq:ped_definition:stuck:prereq
+   turn 7: feedback:ped_definition:prereq/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 8: feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2
+   turn 9: feedback:ped_formula:check/explain_back:ped_formula
+   turn 10: feedback:ped_formula/extend:ped_formula
+B. due_concept: review asks answered with a review 1/18; ordinary messages turned into a review 0/12; as expected 13/30
+   unexpected: 'quiz me' (concept) -> focus:yed_definition
+   unexpected: 'Can you test me on my reviews?' (concept) -> focus:yed_definition
+   unexpected: 'What should I revise?' (concept) -> focus:yed_definition
+   unexpected: 'do my reviews' (concept) -> focus:yed_definition
+   unexpected: "Let's do some revision" (concept) -> focus:yed_definition
+   unexpected: 'Test me!' (concept) -> focus:yed_definition
+   unexpected: "What's due today?" (concept) -> focus:yed_definition
+   unexpected: 'anything due?' (concept) -> focus:yed_definition
+   unexpected: 'Can we go through my reviews please' (concept) -> focus:tax_incidence_split
+   unexpected: 'what needs revising' (concept) -> focus:yed_definition
+   unexpected: 'help me revise' (concept) -> focus:yed_definition
+   unexpected: "quiz me on stuff I've done before" (concept) -> focus:yed_definition
+   unexpected: 'I want to revise, what should I work on?' (concept) -> focus:yed_definition
+   unexpected: 'drill me on older topics' (concept) -> focus:yed_definition
+   unexpected: 'Time for a revision session' (concept) -> focus:pes_definition
+   unexpected: 'start my reviews' (concept) -> focus:yed_definition
+   unexpected: 'Give me some practice questions on what’s due' (concept) -> focus:tax_supply_shift
+B. due_other: review asks answered with a review 0/18; ordinary messages turned into a review 0/12; as expected 12/30
+   unexpected: "Quiz me on what's due." (other) -> empty
+   unexpected: 'quiz me' (other) -> empty
+   unexpected: 'Can you test me on my reviews?' (other) -> empty
+   unexpected: 'What should I revise?' (other) -> empty
+   unexpected: 'do my reviews' (other) -> empty
+   unexpected: "Let's do some revision" (other) -> empty
+   unexpected: 'Test me!' (other) -> empty
+   unexpected: "What's due today?" (other) -> empty
+   unexpected: 'anything due?' (other) -> empty
+   unexpected: 'Can we go through my reviews please' (other) -> empty
+   unexpected: 'what needs revising' (other) -> empty
+   unexpected: 'help me revise' (other) -> empty
+   unexpected: "quiz me on stuff I've done before" (other) -> empty
+   unexpected: 'I want to revise, what should I work on?' (other) -> empty
+   unexpected: 'drill me on older topics' (other) -> empty
+   unexpected: 'Time for a revision session' (other) -> empty
+   unexpected: 'start my reviews' (other) -> empty
+   unexpected: 'Give me some practice questions on what’s due' (other) -> empty
+B. pending: review asks answered with a review 0/18; ordinary messages turned into a review 0/12; as expected 12/30
+   unexpected: "Quiz me on what's due." (concept) -> reask
+   unexpected: 'quiz me' (concept) -> reask
+   unexpected: 'Can you test me on my reviews?' (concept) -> reask
+   unexpected: 'What should I revise?' (concept) -> reask
+   unexpected: 'do my reviews' (concept) -> reask
+   unexpected: "Let's do some revision" (concept) -> reask
+   unexpected: 'Test me!' (concept) -> reask
+   unexpected: "What's due today?" (concept) -> reask
+   unexpected: 'anything due?' (concept) -> reask
+   unexpected: 'Can we go through my reviews please' (concept) -> focus:tax_incidence_split
+   unexpected: 'what needs revising' (concept) -> reask
+   unexpected: 'help me revise' (concept) -> reask
+   unexpected: "quiz me on stuff I've done before" (concept) -> reask
+   unexpected: 'I want to revise, what should I work on?' (concept) -> reask
+   unexpected: 'drill me on older topics' (concept) -> reask
+   unexpected: 'Time for a revision session' (concept) -> focus:pes_definition
+   unexpected: 'start my reviews' (concept) -> reask
+   unexpected: 'Give me some practice questions on what’s due' (concept) -> focus:tax_supply_shift
+B. none_due: review asks answered with a review 0/18; ordinary messages turned into a review 0/12; as expected 29/30
+   unexpected: "Quiz me on what's due." (concept) -> empty
+B. holdout (due, concept): review asks answered with a review 0/10; ordinary messages turned into a review 0/6
+   unexpected: 'Ask me some questions on the old stuff' -> focus:yed_definition
+   unexpected: 'can you give me my spaced repetition questions' -> focus:tax_supply_shift
+   unexpected: 'What have I forgotten?' -> focus:yed_definition
+   unexpected: "I've got 10 minutes, test me on something" -> focus:yed_definition
+   unexpected: "Let's practise what I learned last week" -> focus:yed_definition
+   unexpected: 'Which topics should I go over today?' -> focus:yed_definition
+   unexpected: 'hit me with a review question' -> focus:yed_definition
+   unexpected: 'Quiz me pls' -> focus:yed_definition
+   unexpected: "Can you check what I've remembered?" -> focus:yed_definition
+   unexpected: 'Is there anything I should review?' -> focus:yed_definition
+B. label_perfect (due, all 46): review asks answered with a review 1/28; ordinary messages turned into a review 0/18
+   unexpected: 'quiz me' -> focus:yed_definition
+   unexpected: 'Can you test me on my reviews?' -> focus:yed_definition
+   unexpected: 'What should I revise?' -> focus:yed_definition
+   unexpected: 'do my reviews' -> focus:yed_definition
+   unexpected: "Let's do some revision" -> focus:yed_definition
+   unexpected: 'Test me!' -> focus:yed_definition
+   unexpected: "What's due today?" -> focus:yed_definition
+   unexpected: 'anything due?' -> focus:yed_definition
+   unexpected: 'Can we go through my reviews please' -> focus:tax_incidence_split
+   unexpected: 'what needs revising' -> focus:yed_definition
+   unexpected: 'help me revise' -> focus:yed_definition
+   unexpected: "quiz me on stuff I've done before" -> focus:yed_definition
+   unexpected: 'I want to revise, what should I work on?' -> focus:yed_definition
+   unexpected: 'drill me on older topics' -> focus:yed_definition
+   unexpected: 'Time for a revision session' -> focus:pes_definition
+   unexpected: 'start my reviews' -> focus:yed_definition
+   unexpected: 'Give me some practice questions on what’s due' -> focus:tax_supply_shift
+   unexpected: 'Ask me some questions on the old stuff' -> focus:yed_definition
+   unexpected: 'can you give me my spaced repetition questions' -> focus:tax_supply_shift
+   unexpected: 'What have I forgotten?' -> focus:yed_definition
+   unexpected: "I've got 10 minutes, test me on something" -> focus:yed_definition
+   unexpected: "Let's practise what I learned last week" -> focus:yed_definition
+   unexpected: 'Which topics should I go over today?' -> focus:yed_definition
+   unexpected: 'hit me with a review question' -> focus:yed_definition
+   unexpected: 'Quiz me pls' -> focus:yed_definition
+   unexpected: "Can you check what I've remembered?" -> focus:yed_definition
+   unexpected: 'Is there anything I should review?' -> focus:yed_definition
+B. label_always_true (due, all 46): review asks answered with a review 1/28; ordinary messages turned into a review 0/18
+   unexpected: 'quiz me' -> focus:yed_definition
+   unexpected: 'Can you test me on my reviews?' -> focus:yed_definition
+   unexpected: 'What should I revise?' -> focus:yed_definition
+   unexpected: 'do my reviews' -> focus:yed_definition
+   unexpected: "Let's do some revision" -> focus:yed_definition
+   unexpected: 'Test me!' -> focus:yed_definition
+   unexpected: "What's due today?" -> focus:yed_definition
+   unexpected: 'anything due?' -> focus:yed_definition
+   unexpected: 'Can we go through my reviews please' -> focus:tax_incidence_split
+   unexpected: 'what needs revising' -> focus:yed_definition
+   unexpected: 'help me revise' -> focus:yed_definition
+   unexpected: "quiz me on stuff I've done before" -> focus:yed_definition
+   unexpected: 'I want to revise, what should I work on?' -> focus:yed_definition
+   unexpected: 'drill me on older topics' -> focus:yed_definition
+   unexpected: 'Time for a revision session' -> focus:pes_definition
+   unexpected: 'start my reviews' -> focus:yed_definition
+   unexpected: 'Give me some practice questions on what’s due' -> focus:tax_supply_shift
+   unexpected: 'Ask me some questions on the old stuff' -> focus:yed_definition
+   unexpected: 'can you give me my spaced repetition questions' -> focus:tax_supply_shift
+   unexpected: 'What have I forgotten?' -> focus:yed_definition
+   unexpected: "I've got 10 minutes, test me on something" -> focus:yed_definition
+   unexpected: "Let's practise what I learned last week" -> focus:yed_definition
+   unexpected: 'Which topics should I go over today?' -> focus:yed_definition
+   unexpected: 'hit me with a review question' -> focus:yed_definition
+   unexpected: 'Quiz me pls' -> focus:yed_definition
+   unexpected: "Can you check what I've remembered?" -> focus:yed_definition
+   unexpected: 'Is there anything I should review?' -> focus:yed_definition

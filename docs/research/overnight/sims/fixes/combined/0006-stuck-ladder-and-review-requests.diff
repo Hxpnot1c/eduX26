@@ -1,0 +1,308 @@
+--- a/edux/plan.py
++++ b/edux/plan.py
+@@ -10,7 +10,9 @@
+                      intuition answer, teaching; after a check, the next point (or the same point re-taught)
+   question instead of the pending answer -> answer_brief, then reask the same question (fatigue and stuck first)
+   fatigued        -> offer_stop (once a session; also replaces reteach's re-ask, as do stuck moves)
+-  stuck on focus  -> ask_mcq on the weakest prerequisite (prereq, stuck) / reteach of the whole part (through the anchor)
++  stuck on focus  -> ask_mcq on the weakest prerequisite (prereq, stuck) / reteach of the whole part (through the anchor);
++                     each later miss on it that session climbs the stuck ladder (stuck_ladder): a worked example and
++                     its check, an easier prerequisite check, an offer to stop or switch, then worked examples
+   ambiguous focus -> ask_which (no focus at all: the top due review, as ask_mcq)
+   just_show_me    -> show the current point, then its check; skip_point ("I know this") -> its check only
+   intuition       -> ask_mcq (intuition), once per part
+@@ -32,7 +34,8 @@
+ import re
+ 
+ from edux import graph, learner
+-from edux.context_blocks import Turn, core_idea, held_misconceptions, intuition_source, known_parts, known_terms
++from edux.context_blocks import (Turn, _quick_parts, core_idea, held_misconceptions, intuition_source, known_parts,
++                                 known_terms)
+ from edux.settings import TEXT_DIR, Settings, SettingsError, read_text
+ 
+ log = logging.getLogger(__name__)
+@@ -63,6 +66,8 @@
+     "reask": ({"asked"}, {"answer_type", "skill"}),
+     "reteach": (set(), {"missing", "anchor", "point", "level", "answer_type"}),
+     "show": ({"point"}, {"note"}),
++    "show_stuck": ({"point"}, {"note", "stuck"}),
++    "offer_stop_stuck": ({"minutes", "quick_parts", "stuck"}, set()),
+     "explain_back": ({"answer_type"}, set()),
+     "teach_point": ({"index", "total", "point", "exemplar", "level", "max_words"}, set()),
+     "answer_with_sources": ({"trusted_sources"}, set()),
+@@ -363,6 +368,7 @@
+         session_id = (learner.session_state(turn.student_id, turn.at) or {}).get("session_id") if stuck else None
+         if stuck and handled.get(focus) != session_id:
+             handled[focus] = session_id
++            progress.pop("_misses", None)   # the stuck ladder counts misses from this step back on
+             back = stuck["step_back_to"]
+             stepped = prereq_check(turn, back["id"], focus, settings, stuck=True) if back else None
+             if stepped:
+@@ -528,6 +534,115 @@
+     return review_check(turn, reviews[0], settings) if reviews else None
+ 
+ 
++# --- the stuck ladder ----------------------------------------------------------------
++
++# What a miss on the focus part gets once its step back has been done this session (misses counted from the step
++# back): 1 a worked example and its check, 2 an easier prerequisite check, 3 an offer to stop or switch, 4+ a worked
++# example of the next point (round the part's points), so it is never the same item again and again. Without a step
++# back, a second miss in a row on an open answer gets the worked example instead of a second bare reteach. A right
++# check straight after a worked example doesn't reset the count (they had just been shown it). Our choice; a rung that
++# can't be built (no prerequisite, stopping already offered) falls through to the next.
++LADDER = ("worked_example", "easier_prereq", "offer_stop")
++OPEN_RETEACHES_IN_A_ROW = 1
++
++
++def _misses(turn: Turn, progress: dict, evidence: dict, retry: dict | None, last_plan: list[dict]) -> int:
++    """Count consecutive misses on the focus part this session in progress["_misses"] (kept under its own key, as
++    teach() drops a part's own progress): a wrong check or an open answer with points missing adds one, a right
++    check (unless just after a worked example) or a complete open answer resets it. A harder (extend) question
++    neither counts nor resets: missing a stretch question isn't being stuck. Returns the count (0 when the evidence
++    isn't on the focus or isn't a miss)."""
++    focus = turn.parts[0] if turn.parts else None
++    if evidence["type"] == "extend":
++        return 0
++    open_answer = evidence["type"] not in ("mcq_check", "prequestion", "ail_how") and "correct" not in evidence
++    if focus is None or evidence["part_id"] != focus or not (open_answer or evidence.get("purpose") == "check"):
++        return 0
++    session_id = (learner.session_state(turn.student_id, turn.at) or {}).get("session_id")
++    state = progress.get("_misses")
++    if not state or state.get("part") != focus or state.get("session") != session_id:
++        state = progress["_misses"] = {"part": focus, "session": session_id, "n": 0}
++    missed = retry is not None if open_answer else not evidence["correct"]
++    just_shown = any(s.get("key") == "show_stuck" for s in last_plan)
++    state["n"] = state["n"] + 1 if missed else (state["n"] if just_shown and not open_answer else 0)
++    return state["n"] if missed else 0
++
++
++def _point_index(part_id: str, point_id: str | None = None, text: str | None = None) -> int:
++    """The 1-based index of a point of the part, by id or wording (1 if not found)."""
++    for i, p in enumerate(_points(part_id), 1):
++        if (point_id and p["id"] == point_id) or (text and p["point"] == text):
++            return i
++    return 1
++
++
++def worked_example(turn: Turn, part_id: str, index: int, settings: Settings, progress: dict,
++                   avoid: list[str] | None = None) -> list[dict]:
++    """show (stuck): the point as a worked example, then its check (the point loop carries on from it); a part with
++    no mark points: the worked points, then its explain-back."""
++    if not mcq_points(part_id):
++        progress.pop(part_id, None)
++        return [_step("show", part_id, {"point": "; ".join(p["point"] for p in _points(part_id)), "stuck": True},
++                      key="show_stuck"), _step("explain_back", part_id)]
++    _progress(progress, part_id)["index"] = index
++    data = {"point": _points(part_id)[index - 1]["point"], "stuck": True}
++    source = intuition_source(turn, part_id)
++    if source:
++        data["note"] = source["note"]
++    return [_step("show", part_id, data, key="show_stuck"), check(turn, part_id, index, settings, avoid)]
++
++
++def easier_prereq(turn: Turn, part_id: str, settings: Settings, last_plan: list[dict]) -> dict | None:
++    """A prerequisite check (stuck) on the weakest prerequisite of the part not yet checked this session (else the
++    weakest one); None when the part has no prerequisite with mark points."""
++    pres = sorted({pre for edge in graph.prerequisites(part_id, 1) for pre in graph.parts_of(edge["other"])
++                   if mcq_points(pre)}, key=lambda p: (turn.p(p), p))
++    if not pres:
++        return None
++    fresh = [p for p in pres if not _checked_this_session(turn, p, last_plan)]
++    return prereq_check(turn, (fresh or pres)[0], part_id, settings, stuck=True)
++
++
++def stop_or_switch(turn: Turn, part_id: str, settings: Settings) -> dict:
++    """offer_stop (stuck): stopping, or switching to a few developing parts other than the one they're stuck on."""
++    session = learner.session_state(turn.student_id, turn.at) or {}
++    return _step("offer_stop", None, {"minutes": round(session.get("minutes") or 0),
++                                      "quick_parts": _quick_parts(turn, settings, {part_id}), "stuck": True},
++                 key="offer_stop_stuck")
++
++
++def stuck_ladder(turn: Turn, settings: Settings, evidence: dict, retry: dict | None, progress: dict,
++                 offered_stop: bool, last_plan: list[dict], last_mcq: dict | None, misses: int) -> list[dict] | None:
++    """The steps for a miss on the focus part instead of another reteach (see LADDER), or None to carry on as
++    before. misses is the count _misses returned this turn."""
++    if not misses:
++        return None
++    part = evidence["part_id"]
++    session_id = (learner.session_state(turn.student_id, turn.at) or {}).get("session_id")
++    stepped_back = (progress.get("_stuck_handled") or {}).get(part) == session_id
++    if retry is not None:
++        index = _point_index(part, text=(retry["data"].get("missing") or [None])[0])
++    else:
++        index = _point_index(part, point_id=evidence.get("point_id"))
++    avoid = [o["id"] for _, o in sorted((last_mcq or {}).get("options", {}).items())] or None
++    if not stepped_back:   # not stuck yet: cap bare reteaches of an open answer
++        if retry is not None and misses > OPEN_RETEACHES_IN_A_ROW:
++            return worked_example(turn, part, index, settings, progress, avoid)
++        return None
++    for rung in LADDER[misses - 1:]:   # empty past the last rung
++        if rung == "worked_example":
++            return worked_example(turn, part, index, settings, progress, avoid)
++        if rung == "easier_prereq":
++            asked = easier_prereq(turn, part, settings, last_plan)
++            if asked:
++                return [asked]
++        if rung == "offer_stop" and not offered_stop:
++            return [stop_or_switch(turn, part, settings)]
++    if misses > len(LADDER):   # past the ladder: the next point's worked example
++        index = index % len(_points(part)) + 1
++    return worked_example(turn, part, index, settings, progress, avoid)
++
++
+ # --- the plan -----------------------------------------------------------------------
+ 
+ 
+@@ -584,6 +699,7 @@
+     if pending and not answer:
+         urgent = main()
+         return urgent if _urgent(urgent) else reask(pending)
++    misses = 0
+     if answer and evidence:
+         first, retry = feedback(answer, evidence)
+         steps.append(first)
+@@ -591,12 +707,19 @@
+         if answer["type"] == "prequestion" or evidence.get("purpose") == "intuition":
+             answered_prequestion = evidence["part_id"]
+             _progress(progress, evidence["part_id"])["intuition_asked"] = True
++        misses = _misses(turn, progress, evidence, retry, last_plan)
+         if retry:   # reteach ends the plan, unless they're tired or stuck: then say what's missing and do that instead
+             urgent = main()
++            if not _urgent(urgent):   # missed again: the next rung of the stuck ladder, not another reteach
++                urgent = stuck_ladder(turn, settings, evidence, retry, progress, offered_stop, last_plan, last_mcq,
++                                      misses) or urgent
+             if _urgent(urgent):
+-                return [_refill({**first, "data": {**first["data"], "missing": retry["data"]["missing"]}}), urgent[0]]
++                return ([_refill({**first, "data": {**first["data"], "missing": retry["data"]["missing"]}})]
++                        + urgent)[:MAX_STEPS]
+             return [first, retry]
+     rest = main()
++    if misses and not _urgent(rest):   # a missed check after the step back: the ladder, not the reteach loop
++        rest = stuck_ladder(turn, settings, evidence, None, progress, offered_stop, last_plan, last_mcq, misses) or rest
+     # all points met on an explain-back or a harder question (a retry returned above): the part is done for now
+     finished = bool(answer and evidence and answer["type"] in ("explain_back", "extend"))
+     if not _urgent(rest):
+--- a/edux/server.py
++++ b/edux/server.py
+@@ -46,6 +46,7 @@
+     web_access: bool | None = Field(None, description="research only: can you search the web in this chat")
+     asks_recent: bool = Field(False, description="research only: the question is about recent data or events")
+     pushback_changed: bool = Field(False, description="true when the student challenged your last answer and you are changing it")
++    asks_for_reviews: bool = Field(False, description="true when they ask to be quizzed or to revise without naming a topic: quiz me, what should I revise, do my reviews")
+ 
+ 
+ class Answer(BaseModel):
+--- a/edux/service.py
++++ b/edux/service.py
+@@ -317,11 +317,52 @@
+             "interests": (row and row["interests"]) or "", "format": _format_for(client)}
+ 
+ 
+-def _asks_for_reviews(message: str) -> bool:
+-    """The message is the review_due prompt ("Quiz me on what's due."), in any case or punctuation: it names no
+-    part, but it asks for the due reviews, not the last turn's focus."""
+-    words = lambda m: " " + re.sub(r"[^a-z]+", " ", m.lower()).strip() + " "
+-    return words(read_text("prompts/review_due.md")) in words(message)
++# Asking for the due reviews in other words than the review_due prompt. Only consulted for a message that names
++# no course part, and only acted on when a review is due. Matched on lower-case words with punctuation removed.
++_REVIEW_ASKS = [re.compile(p) for p in (
++    r"\b(quiz|test|drill|grill|check) (me|us)\b",                              # quiz me / test me (on ...)
++    r"\b(do|start|begin|go through|run through|work through|get through|catch up on|lets do|can we do) "
++    r"(a |my |some |the |todays |today s )?(reviews?|review questions|revision|flashcards|due ones)\b",
++    r"\bwhat (should|shall|do|can|could) (i|we) (revise|review|go over|practise|practice|work on|study)\b",
++    r"\bwhat (needs|need) (revising|reviewing|revision|a review)\b",
++    r"\b(whats|what s|what is|anything|something|any reviews|reviews|is anything) (due|up for review)\b(?! to\b)",
++    r"\bhelp me (revise|review)\b",
++    r"\b(revise|revision|review) (time|session)\b",
++)]
++# The same words about the current topic, or about how revising works, stay on the topic.
++_NOT_REVIEW_ASKS = [re.compile(p) for p in (
++    r"\b(on|about|with) (this|that|it|these|those|what we (just )?(did|covered|went over|looked at|have done)|"
++    r"what you (just )?(said|explained|taught)|the last (one|bit|point|question))\b",
++    r"\bhow (should|do|can|could|would|does|do the|do my) (i|we|you|reviews|review|revision|my reviews)\b",
++    r"\breview (of|for) (this|that|my|the|an?)\b",
++)]
++
++
++def _words(message: str) -> str:
++    return " " + re.sub(r"[^a-z]+", " ", message.lower().replace("'", "")).strip() + " "
++
++
++def _asks_for_reviews(message: str, labelled: bool = False) -> bool:
++    """The message asks for the due reviews: the review_due prompt ("Quiz me on what's due.") in any case or
++    punctuation, or the chatbot's asks_for_reviews label, or a common paraphrase ("test me on my reviews", "what
++    should I revise", "do my reviews"); but not the same words about the current topic ("quiz me on this") or about
++    how to revise."""
++    said = _words(message)
++    if _words(read_text("prompts/review_due.md")) in said:
++        return True
++    return ((labelled or any(p.search(said) for p in _REVIEW_ASKS))
++            and not any(p.search(said) for p in _NOT_REVIEW_ASKS))
++
++
++def _names_course_topic(message: str) -> bool:
++    """The message names a course node (name, alias or description; not the notes, whose everyday words like "time"
++    or "practice questions" match by chance)."""
++    return any(not graph.is_literacy(node_id) for node_id, _ in graph.search_nodes(message, 5))
++
++
++def _reviews_waiting(student_id: str, at: str) -> bool:
++    """A course review with multiple-choice points is due (what a review request can be answered with)."""
++    return any(plan.mcq_points(r["part_id"]) for r in learner.due_reviews(student_id, 10_000, at))
+ 
+ 
+ REQUEST_LABELS = ("request_type", "question_features", "source_conflict", "web_access", "asks_recent", "pushback_changed")
+@@ -377,7 +418,16 @@
+     # its matches serve this turn only (trusted sources), and the focus stays where it was
+     side_turn = not node_ids and this_message.get("request_type") in ("research", "other")
+     resolution = graph.resolve(message or "", node_ids)
+-    if not resolution["parts"] and not resolution["candidates"] and last["focus"] and not _asks_for_reviews(message or ""):
++    # "quiz me on what's due" and its paraphrases name no course topic: the due reviews, not the last focus or a
++    # chance match in the notes (when one is due; with none due the message stays on the last focus). A research
++    # question is never one.
++    wants_reviews = (not node_ids and not answer and this_message.get("request_type") != "research"
++                     and _asks_for_reviews(message or "", bool(this_message.get("asks_for_reviews")))
++                     and not _names_course_topic(message or "")
++                     and _reviews_waiting(student["id"], at))
++    if wants_reviews:
++        resolution = {"parts": [], "candidates": [], "matched": None, "unknown": resolution["unknown"]}
++    if not resolution["parts"] and not resolution["candidates"] and last["focus"] and not wants_reviews:
+         resolution = {**graph.resolve("", last["focus"]), "unknown": resolution["unknown"]}
+     # a research question is Ask evidence; a verify answer is AI-literacy evidence, not an answer on the course
+     recorded = ([evidence] if evidence else []) + (
+@@ -403,14 +453,14 @@
+     blocks = context_blocks.assemble(profile, turn, s, _context())
+     config = _context().profiles.get(profile, _context().profiles[_context().default_profile])
+     corrected, offered_stop = _this_session(student["id"], last, at)
+-    pending = _open_question(last, parts, answer, choice, at)
++    pending = None if wants_reviews else _open_question(last, parts, answer, choice, at)   # they asked to move on
+     points = dict(last["points"] or {})
+     again = last.get("pending") if lost else None
+     if again and not (again["move"] == "ask_mcq" and again["part_id"] == answer["part_id"] and again.get("question")):
+         again = None
+     request = this_message.get("request_type") or "concept"
+     course_answer = None if lost or literacy_answer else answer
+-    if not config.plan or (request == "other" and not course_answer):
++    if not config.plan or (request == "other" and not course_answer and not wants_reviews):
+         steps = []
+     elif again:   # the letter can't be scored: the same question, freshly shuffled
+         steps = plan.add_terms(turn, [plan.ask_again(turn, again)])
+--- /dev/null
++++ b/text/moves/offer_stop_stuck.cue.md
+@@ -0,0 +1 @@
++Stuck, not tired: offer to stop, or to switch to a quick part; never push.
+--- /dev/null
++++ b/text/moves/show_stuck.cue.md
+@@ -0,0 +1 @@
++Stuck, so try a worked example: the point, one worked line, why; then the check.
+--- a/text/tools/tutor_turn.md
++++ b/text/tools/tutor_turn.md
+@@ -1,6 +1,6 @@
+ Call this at the start of every reply, before writing anything (research questions about the world too). It records the student's message and answer, then returns the plan for your reply.
+ - message: the student's message, word for word.
+-- this_message: honest labels for the student's message; choice is skip_point when they say "I know this". request_type is research for a factual or current question about the world, with its question_features, web_access (can you search the web here) and asks_recent (about recent data or events). Set source_conflict when they say a link failed or didn't say what was claimed, and pushback_changed when they challenged your last answer and you are changing it.
++- this_message: honest labels for the student's message; choice is skip_point when they say "I know this". request_type is research for a factual or current question about the world, with its question_features, web_access (can you search the web here) and asks_recent (about recent data or events). Set source_conflict when they say a link failed or didn't say what was claimed, and pushback_changed when they challenged your last answer and you are changing it. Set asks_for_reviews when they ask to be quizzed or to revise without naming a topic.
+ - node_ids: optional part ids from the last plan or focus, when the message continues that topic.
+ - answer: only when the message answers what you asked last turn (see the server instructions); for a multiple-choice question, type mcq and choice, the letter picked. Never score it yourself.
+ - client: your name, e.g. claude, chatgpt or gemini.

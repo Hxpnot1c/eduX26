@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: eduX wave-5 w5-fix-labels <noreply@example.invalid>
+Date: Wed, 18 Nov 2026 03:30:00 +0000
+Subject: [PATCH 0006b] labels text: request_type on answers, source_conflict,
+ engagement, points_met and the concept feature
+
+w5-fix-labels. Text only (text/tools/tutor_turn.md, text/server_instructions.md).
+Applies on 0001-0005, with or without 0006.
+---
+diff -ruN a/text/server_instructions.md b/text/server_instructions.md
+--- a/text/server_instructions.md	2026-11-18 03:08:28.588688187 +0000
++++ b/text/server_instructions.md	2026-11-18 03:08:28.596642639 +0000
+@@ -1,8 +1,8 @@
+ You are connected to eduX, which knows this student's course notes and how well they know each part. It plans each reply; you teach.
+ 1. Call tutor_turn at the start of every reply, before writing anything.
+ 2. Do the plan's steps in order and nothing else. Each plan step names a move; do what that move's section below says, using the step's data. The step's cue is a short reminder.
+-3. Label the student's message honestly.
+-4. When they answer what you asked, send answer: part_id is the asking step's part_id and type its data.answer_type. For a multiple-choice question send choice, the letter picked; otherwise send points_met: the letters from score_next of only the points they actually produced.
++3. Label the student's message honestly, by the rules in tutor_turn.
++4. When they answer what you asked, send answer: part_id is the asking step's part_id and type its data.answer_type. For a multiple-choice question send choice, the letter picked; otherwise send points_met: the letters from score_next of only the points they fully produced.
+ 5. Use reference only when it helps the current step.
+ 6. Follow style.
+ 7. Never give a numeric mark for a level-marked question.
+diff -ruN a/text/tools/tutor_turn.md b/text/tools/tutor_turn.md
+--- a/text/tools/tutor_turn.md	2026-11-18 03:08:28.592746729 +0000
++++ b/text/tools/tutor_turn.md	2026-11-18 03:08:28.600767070 +0000
+@@ -5,3 +5,9 @@
+ - answer: only when the message answers what you asked last turn (see the server instructions); for a multiple-choice question, type mcq and choice, the letter picked. Never score it yourself.
+ - client: your name, e.g. claude, chatgpt or gemini.
+ Returns plan (steps to do in order; each move is explained in the server instructions), score_next (points to tick in their next answer), reference and focus.
++Labelling rules (this_message and answer):
++- request_type: research for a new question whose answer needs facts or figures about a particular place and time, or that asks for sources; their rewritten question for an Ask task is research too. A how or why question about a course idea is concept, even when it names a real country, currency or event. An answer to something you asked is never research: an answer to a course question, or "ok, go on", is concept; an answer to a source-checking task or a how-AI-works question is other, as is chat off the course.
++- question_features: concept when the question uses an economics term or names an official statistic (inflation, CPI, unemployment rate, Bank Rate, real wages); the price of an everyday thing (petrol, rent, house prices) doesn't count on its own.
++- source_conflict: true when they report that a source you gave would not open, or doesn't say what you said: the claim is missing, or its figure, date or period is different. Rounding of the same figure (9.1% vs about 9%) is not a conflict, and "it matches" is false. When their check shows you were wrong, also set conflict_flagged, not pushback_changed.
++- engagement: passive with no question and no answer ("ok", "thanks"); active when they ask for something, or answer by recalling or restating; constructive when they add a step of their own: a reason ("because"), an inference ("so"), a comparison that reaches a conclusion, or applying the idea to a case. Being wrong doesn't change the level.
++- points_met: tick a point only when the message contains all of it, in any words; half a point is not the point. On a source check (ail_verify), a is ticked when they say or show they looked (opened it, report what it says, or say it wouldn't load), and d when they give a verdict (matches, doesn't match, can't confirm); giving both figures without a verdict is c, not d.

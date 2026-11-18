@@ -96,3 +96,220 @@ Every skip below was tested: the remaining series applies and check_mcp passes 7
   page, which is the opposite of the story. Not recommended.
 - **Skip 0001 (core).** Plan A is unaffected. Off camera: a crash after long right-answer runs, the step-back loop,
   and quiz-me going to the old focus. Cheap enough to keep.
+
+## 0006: stuck ladder and review requests (wave 5, w5-fix-residual)
+
+`0006-stuck-ladder-and-review-requests.diff` fixes the first two caveats above. It touches `edux/plan.py`, `edux/service.py`, `edux/server.py`,
+`text/tools/tutor_turn.md`, and adds two cue files, `text/moves/show_stuck.cue.md` and `text/moves/offer_stop_stuck.cue.md`. It needs no migration, and
+settings and the server instructions are unchanged (still 889/900 words; cue variants don't count).
+
+**Applies:**
+- **With w5-fix-labels' 0006b and 0006c:** they apply on top of 0006, and that tree (s6bc) also passes 74/74 with the same probe numbers. Server instructions go to 894 words because of 0006b.
+- **On top of 0005:** cleanly with `patch -p1` and `git apply --check`, and the tree is byte-identical to the tested copy. It also applies
+**without 0005** (export + 0001–0004 + 0006): clean, check_mcp 74/74, and the same probe numbers. It does not apply
+without 0001: the service.py hunks sit on fix3's `_asks_for_reviews`.
+
+**1. Stuck ladder (plan.py).** Before: after the one step back, a student who keeps failing an explain-back got
+feedback + reteach with no question, without end (`choose()`'s `if retry:` branch). The MCQ path was already capped
+by `reteach_limit`. Now consecutive misses on the focus part are counted in `progress["_misses"]`, which is reset by a right
+check or a complete explanation, a new session or another part. Once the step back has been done this session, each further miss
+climbs one rung (a missed harder `extend` question neither counts nor resets):
+1. a worked example (`show`, cue `show_stuck`) and its check MCQ;
+2. an easier prerequisite check (`ask_mcq` prereq, stuck; preferring a prerequisite not checked this session);
+3. an offer to stop or switch (`offer_stop`, cue `offer_stop_stuck`, `quick_parts` = developing parts other than this one);
+4. beyond that, worked examples moving round the part's points, each with a check.
+
+A rung that can't be built falls through to the next: no prerequisite with mark points, or stopping already offered this session.
+Before any step back, a second miss in a row on an open answer gets the worked example instead of a second bare reteach. A right
+check straight after a worked example doesn't reset the count. All numbers are our choice (`LADDER`, `OPEN_RETEACHES_IN_A_ROW`).
+
+**2. Review requests (service.py, server.py).** Before: only the exact `review_due` prompt wording was detected
+(substring match, fix3). Now three signals count:
+- that wording;
+- a new optional label, `this_message.asks_for_reviews`, with one sentence added to `text/tools/tutor_turn.md`;
+- a few paraphrase patterns (`_REVIEW_ASKS`).
+
+Same-topic and revision-advice wordings are excluded (`_NOT_REVIEW_ASKS`: "quiz me on this", "how should I revise").
+A request is honoured only when:
+- the message names no course node by name, alias or description (`graph.search_nodes`, not the notes, whose everyday words matched by chance: "Can we go through my reviews please" resolved to tax_incidence_split);
+- it isn't a research question;
+- a review with MCQ points is due.
+
+With nothing due, the message stays on the last focus instead of returning an empty plan. A detected request also skips the `request_type = "other"` early-out and drops a pending question (same session).
+
+| measure (scripts: `sims/fixes/probes_w5.py`; outputs `results/w5/`) | s5 = 0001–0005 | s6 = + 0006 |
+|---|---|---|
+| check_mcp | 74/74 | 74/74 (no expectation changed) |
+| | | One harness run while other servers were running failed the "server time under 100 ms" check on **both** s5 and s6 (median about 150 ms). On a quiet rerun, both medians were 27 ms, so this is load, not 0006. |
+| wave-4 probe 3 (the residual as reported): reteach-only plans after the step back | 7 (turns 8–14) | **0** |
+| always-failing student, 30 turns: longest run of plans with no MCQ | 24 | **1** |
+| … longest run of bare reteaches | 23 | **0** |
+| … first stop-or-switch offer | never | **turn 8** |
+| … plans with an MCQ | 6/30 | 29/30 |
+| fails open answers only, 20 turns: longest bare-reteach run / no-MCQ run | 11 / 12 | **1 / 2** |
+| recovers after the step back: ladder fires on correct answers | – | no (1 worked example, on the one miss) |
+| strong student who misses only the harder (extend) questions: worked examples | 0 | 0 (extend never counts as a miss) |
+| 30-message set (18 review asks / 12 not), due, request_type concept: asks answered with a review / ordinary messages stolen | 1/18 / 0/12 | **18/18 / 0/12** |
+| same, request_type other | 0/18 (empty plan) / 0/12 | **18/18 / 0/12** |
+| same, 2 min after a pending check | 0/18 (re-ask) / 0/12 | **18/18 / 0/12** |
+| same, nothing due: stays on the topic (not an empty plan) | 29/30 | **30/30** |
+| 16-message holdout written after the patterns were frozen, patterns only | 0/10 / 0/6 | **2/10** / 0/6 |
+| all 46 messages with a perfect `asks_for_reviews` label | 1/28 / 0/18 | **28/28 / 0/18** |
+| label end to end through the real MCP server (`sims/fixes/label_smoke_w5.py`, demo-showme after a YED turn, "hit me with a review question", which the patterns miss) | – | label true → `ask_mcq` review; label false → re-ask of the pending YED question |
+| all 46 with a careless label (always true) | 1/28 / 0/18 | 28/28 / **8/18 stolen** |
+| Plan A (6 takes) | – | identical to s5 |
+| wave-4 probes (`probes_w4.py`) | – | 1, 4 and 5 unchanged; probe 2: "Can you test me on my reviews?" now gives a review; probe 3 now shows the ladder (turn 3 step back, 5 worked example, 6 easier prerequisite, 8 stop-or-switch). Its "4 of 8 step-back" count counts every `:stuck` step |
+
+**Read the paraphrase numbers with care.** I wrote the 30-message set and the patterns together, so 18/18 is
+in-sample. On the holdout the patterns alone get 2/10. The label is the real fix and the patterns are a fallback. The
+label numbers measure the plumbing only. How well Claude or ChatGPT actually sets the label is untested: try it on Wednesday with the real chatbot (5 min).
+
+**Time (student team):** about 2–2.5 h in total.
+- Apply and read the diff: 0.5 h.
+- Rerun check_mcp, the probes and Plan A with `harness/run_w5.sh`: 0.5 h.
+- Try 10 review wordings and 3 stuck turns in the real chatbot: 0.5–1 h.
+- Re-shoot nothing: Plan A is unchanged.
+
+**If short of time:**
+- Keep the plan.py part (stuck ladder).
+- In service.py, the label is the part that matters; the patterns can be cut.
+- Cut it all and the cost is only off camera: a failing student loops on reteaches, and "quiz me" paraphrases teach the old topic.
+
+## 0006b / 0006c: labelling rules (wave 5, w5-fix-labels)
+
+The notes are in `work/w5/w5-fix-labels.md`. The probe is `sims/fixes/labels_probe.py`, and the outputs are in `results/w5-labels/`.
+
+**The problem.** A student answers a Verify task, or any question, and the chatbot labels it `request_type: research`.
+- `service.py:383–385` then records Ask evidence from the empty `question_features`: `ail_question` scores **0/4 = 0.0**.
+- `service.py:416–418` routes the turn to `plan.research`, which gives `answer_with_sources` and a new Ask task.
+- The turn is also logged as research for the progress question-feature shares (`service.py:559`).
+- In the Plan A "final" take, labelling the 4c line `research` drops Ask from **developing to new** in the progress shot.
+
+A new finding: labelling that answer **`concept`** pulls the course focus. Even a plain "the ONS page says 9.1%…" answer set the focus to
+`tax_incidence_split` and produced a course MCQ. So answers to source-checking and how-AI-works tasks should be **`other`**, as the Plan A
+labels already are. Course answers and "ok, go on" stay `concept`.
+
+**0006b (text only):** `text/tools/tutor_turn.md` and `text/server_instructions.md`.
+- It adds 5 "Labelling rules" bullets in our own words: request_type for answers and acknowledgements, and concept vs research for theory about a real event; the `concept` question feature; source_conflict; engagement; points_met, including partial points and Verify ticks a and d.
+- **source_conflict: our choice.** A different figure, date or period counts, and so does a missing claim. Rounding the same figure doesn't. This is w5-02s Option A, and the team should confirm it.
+- Instructions: rule 3 now ends "by the rules in tutor_turn", and rule 4 says "fully produced".
+
+**0006c (optional, `edux/service.py`, 3 lines):** an answer object sent with `request_type: research` and no `question_features` is turned into `other` (on an AI-literacy part) or `concept` (on a course part). This happens before anything is recorded or routed. A real new question sent with an answer keeps research, and its Ask evidence still counts. A research label with **no** answer object is fixed by the text only.
+
+| measure | s5 = 0001–0005 | + 0006b | + 0006b + 0006c | + 0006 + 0006b + 0006c |
+|---|---|---|---|---|
+| check_mcp (load avg < 4) | 74/74 | 74/74 | 74/74 (0006c alone on s5: 74/74 too) | 74/74 |
+| server instructions (cap 900) | 889 | 894 | 894 | 894 |
+| move sections changed (sentence cap 2, cue cap 15) | – | none | none | none |
+| `tools/tutor_turn.md` words (no cap) | 195 | 522 | 522 | 537 (0006 adds a sentence) |
+| probe: answers labelled research that write Ask 0.0 (3 cases with an answer object) | 3/3 | 3/3 (the text acts on the bot, not the server) | **0/3** | – |
+| probe: answer + new question with 4 features keeps Ask 1.0 | yes | yes | yes | – |
+| Plan A final_research (4c labelled research): Ask at turn 5 | **new** | new | **developing** (= final) | – |
+| Plan A takes final, final_concept, clean, plan_now, recommended, final_ticks_ad, then_ped | – | – | levels identical to s5 | – |
+
+Under load (load average about 16, other agents running), the timing check failed: median 127–158 ms against a 100 ms limit. Everything passed on a quiet rerun, s5 included.
+
+**Conflicts with 0006.** Both patches touch `text/tools/tutor_turn.md` and 0006c touches `edux/service.py`, but the hunks don't overlap:
+- 0006 edits line 3 of tutor_turn.md, and 0006b appends after line 7;
+- in service.py, 0006 has one hunk above the 0006c guard and two below it, and none of them overlap.
+
+`patch -p1` in either order (0006 → b → c, or b → c → 0006) gives byte-identical trees, with offsets only and no fuzz.
+They don't clash in meaning either:
+- 0006's review detection needs `not answer`;
+- its probe sends "OK, let's keep going." as concept, which 0006b also says;
+- 0006 adds no words to the instructions.
+
+**Behaviour change to know about.** A *matched* Verify answer (no source_conflict) now gets `other` and so an **empty plan**: no feedback
+step on the check. Before, it defaulted to concept and got a stray course MCQ. The Verify evidence is still recorded. Plan A is unchanged
+because every 4c turn there sets source_conflict.
+
+**Applying.** 0006b and 0006c carry `git format-patch` headers. `git apply --check` and `git am` on a scratch repo of s5 both succeeded,
+and the result is identical to the tested tree. 0006 has no mail header, so `git am 000*.diff` stops at 0006: use `git apply` or `patch -p1`
+for that file. 0006c is optional, but the `000*` glob picks it up.
+
+**Time:** about 1 h. Agree the source_conflict rule (15 min), apply both and rerun check_mcp (10 min), check in the real chatbot that the
+4c line and an explain-back get `other` and `concept` (10 min), and re-key the 02a items (20 min). **If short:** keep 0006c and the
+request_type bullet.
+
+## Wave 5: renumbered series 0006–0010 (blind integration check, verifier S)
+
+I worked from the diffs, scripts and READMEs in `combined/` and `sims/gaming/` only. Fresh copies are under
+`/tmp/claude-1000/w5-verifyS/`: s5 = export + 0001–0005, and each later sN adds one patch. Outputs are in
+`results/w5-S/` and the claim marks are in `work/w5/verify-S.json`. `harness/run_w5s.sh` is transcribed from the commands
+I ran, step by step. It has not been run end to end as one script.
+
+### Apply order
+The original `0006`, `0006b` and `0006c` files are kept for reference. **Don't use the `000*.diff` glob any more.** It
+picks up both 0006 files and the b/c files, and it misses 0010. Name the files explicitly:
+
+| # | file | was | touches |
+|---|---|---|---|
+| 1–5 | `0001-…` to `0005-…` (as above) | – | – |
+| 6 | `0006-w5-stuck-ladder-and-review-requests.diff` | `0006-stuck-ladder-and-review-requests.diff` | plan.py, service.py, server.py, tools/tutor_turn.md, 2 new cue files |
+| 7 | `0007-w5-labels-text.diff` | `0006b-labels-text.diff` | text/tools/tutor_turn.md, text/server_instructions.md |
+| 8 | `0008-w5-ask-guard.diff` | `0006c-ask-guard.diff` | service.py (3 lines) |
+| 9 | `0009-w5-broken-link-counter.diff` | `sims/gaming/counters/c2.diff` | learner.py `found_problem`, service.py |
+| 10 | `0010-w5-show-then-answer-counter.diff` | `sims/gaming/counters/c1.diff` | learner.py `_apply_evidence` cap |
+
+```bash
+cd <repo on the 05e branch>
+C=docs/research/overnight/sims/fixes/combined
+for p in $C/000[1-5]-*.diff $C/00{06,07,08,09,10}-w5-*.diff; do patch -p1 < "$p"; done
+# or: git am --keep-cr $C/000[1-5]-*.diff $C/00{06,07,08,09,10}-w5-*.diff
+```
+I regenerated each new file as `diff -ruN a b` between consecutive tested trees and gave it a mail header. The
+originals applied in order with offsets only: 0006c at +41 lines, c2's service.py hunks at +53 and c1 at +9. There was
+no fuzz, no reject and **no conflict to resolve by hand**. The new files apply at offset 0.
+
+How I checked the series:
+- `patch -p1` of 0001–0010 onto a fresh export gives a tree byte-identical to s10.
+- `git am --keep-cr` gives the same tree. Plain `git am` strips the CRs from 0004's two CSVs.
+
+On meaning, I read the interactions:
+- 0008 rewrites `request_type` before 0009's `_found_problem` runs.
+- 0009 adds `reported=` so that a bare report still closes the verify task.
+- 0010 caps `immediate` evidence, and 0006's ladder check after a worked example is `immediate`.
+
+### Results per step
+- check_mcp: one tree at a time on a quiet machine (load average under 1), on the copy's own localhost server.
+- Plan A: `run_episode.py` with 8 takes, the usual 6 plus 2 I added. **final_research** is final with the 4c answer labelled `research`. **clean_ticks_ad** is the dead-page line sent as the verify answer with a,d ticked, which is what 0007's rule asks for.
+
+| step | check_mcp | Plan A, Verify level at 4d (p) | measured |
+|---|---|---|---|
+| s5 (0001–0005) | 74/74 (timing median 26 ms) | developing (0.748) in all 8; final_research Ask **new** (0.256) | always-failing student: longest bare-reteach run 23, no-MCQ run 24, no stop offer in 30 turns; review asks 1/18 (concept), 0/18 (other or pending) |
+| +0006 stuck/reviews | 74/74 | identical to s5 (moves and levels) | bare-reteach run **0**, no-MCQ run **1**, stop/switch offer at **turn 8**, 29/30 plans with an MCQ; open-only failer 11/12 → **1/2**; strong student who misses only extend questions: no ladder (0 worked examples). Reviews: patterns 18/18 asks, 0/12 stolen (in-sample); holdout **2/10**; perfect label **28/28**, 0/18 stolen; careless always-true label 28/28 but **8/18 stolen**. Real MCP server, "hit me with a review question": label true → review MCQ, label false → re-ask (on s10). Server instructions unchanged. |
+| +0007 labels text | 74/74 | identical to s6 | text only, so the server can't act on it: answers labelled research still write Ask 0.0 (3/3) |
+| +0008 ask guard | 74/74 | final_research Ask new → **developing (0.528)**, its plan now has no research steps; the other 7 identical | answers labelled research that write Ask 0.0: 3/3 → **0/3**; answer + real new question keeps Ask 1.0; research label with **no** answer object still writes Ask 0.0 (text-only territory) |
+| +0009 broken-link counter (c2) | 74/74 | final and recommended (a,c,d): **developing (0.636)**. **final_ticks_ad, clean, plan_now, then_ped, clean_ticks_ad: new (0.300)** | gaming, N=30: L1 ("link is broken") Verify secure 100% → **0%**; L1d (copies publisher and date) 100% → 100% (literal labeller), 0% (skeptical). Honest L0 Verify secure, N=100 on the same seeds: 65% → **59%**; L0s 100% → 100%. Course strategies unchanged |
+| +0010 show-then-answer counter (c1) | 74/74 | identical to s9 (all 8) | gaming, N=30: C3 (show me + match) 9 → **0** parts secure; C2m 4.4 → 2.2; C1 false-secure 57% → 17%; C5 2.0 → 0.6. **Honest C0 (N=100): 3.6 → 1.4 parts secure in session, first secure 2.4 → 12.0 min, at +7 days 2.5 → 0.9.** The stuck ladder still holds (same probe numbers), except the student who fails only open answers: **no stop/switch offer in 40 turns** (was turn 15; `results/w5-S/probes_w5long_s{8,10}.txt`), because a later right check resets the miss count; worked examples and MCQs continue, with no bare-reteach runs |
+
+**The Plan A "final" take still ends Verify developing after the whole series, but only at 0.636 and only because the
+chatbot ticks c as well as a,d.**
+- If it ticks only a,d (final_ticks_ad), or the student says only that the page is dead or wrong (clean, plan_now, then_ped), Verify ends **new** under 0009.
+- plan_now is `demo-plan.md`'s current 4c line, so it needs the final wording.
+- 0007's own `points_met` rule tells the chatbot to tick a for "wouldn't load" and d for a verdict. So a chatbot that follows it on a dead link sends exactly a,d, which 0009 treats as no evidence (clean_ticks_ad: new).
+- 0007's rule and 0009 pull against each other on dead links. Either accept that a dead link alone earns nothing, or shoot only the "the page says 9.1%, not 11.1%" line. Check in the real chatbot that it ticks c on that line.
+
+The 100 ms timing check passed on every tree (medians 26–27 ms) and on every skip tree, so there was no rerun.
+
+### Hours (student team)
+- 0006: about 2–2.5 h.
+- 0007 + 0008: about 1 h.
+- 0009: 0.5 h to apply, plus 0.5 h to re-check the demo lines (re-shoot any take whose 4c line doesn't state what the page shows).
+- 0010: 0.5 h to apply and rerun, plus 0.5 h to re-check any secure progress shot.
+- Total for 0006–0010: **about 5 h** on top of the 4–5 h for 0001–0005. Each check_mcp run takes about 1 min and each Plan A pass about 3–4 min.
+
+### What can be skipped, and what that means
+Each of 0006–0010 left out on its own: the rest of the series still applies (offsets only) and check_mcp passes 74/74
+(`results/w5-S/check_skip*.txt`). One exception: the first run without 0007 failed one check, "MCQ options are shuffled
+differently for different students" (1 order for 3 students). That check draws one shuffle per student at the current time,
+so it is a chance clash. 0007 is text only and doesn't touch the shuffle. Three reruns all passed 74/74 (`check_skip0007_rerun*.txt`).
+- **Skip 0010 (c1).** Plan A is unchanged. Off camera, "just show me" and then picking the matching option reaches secure on every part in about 7 minutes (C3: 9/9 parts). Keeping it costs honest students: secure comes much later (C0 secure parts 3.6 → 1.4 in a session). In the demo, a part only reaches secure after a review or a later session. It also stops the stop/switch offer reaching students who fail only explain-backs. Keep it only if the pitch claims "cheap tricks don't reach secure". Otherwise this is the first cut.
+- **Skip 0009 (c2).** Plan A keeps 0.748 in every take. Off camera, "the link is broken" makes Verify secure for 100% of the simulated gamers in under a minute (L1). If you keep it, use the final 4c wording and confirm the chatbot ticks c. The honest cost is small (L0 65% → 59%), but a student who genuinely finds a dead link and only says so gets nothing. The
+  skeptical-labeller results (L1d, L2 and L3 at 0%) depend on a text sentence that is **in neither 0007 nor 0009**: tick a
+  verify point only for what the student found on the source itself, never for what repeats your reply or its citation.
+  Without it, L1d (copies the publisher and date from the citation) still reaches Verify secure in 100% of runs on s10.
+  Append that sentence to 0007's `points_met` bullet if you keep 0009.
+- **Skip 0008.** If the chatbot labels the 4c answer `research`, Ask drops to **new** in the progress shot. Cheap (3 lines): keep it.
+- **Skip 0007.** The server is unchanged. The chatbot gets no rules for labelling answers, source_conflict or ticks.
+- **Skip 0006.** Plan A is unchanged. Off camera, a failing student gets up to 23 bare reteaches in a row, and "quiz me" paraphrases go to the old focus.

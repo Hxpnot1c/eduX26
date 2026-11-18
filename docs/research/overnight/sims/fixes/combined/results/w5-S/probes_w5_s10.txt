@@ -1,0 +1,107 @@
+A. always_misses: longest run with no MCQ 1, longest bare-reteach run 0, first stop/switch offer at turn 8, 29/30 plans with an MCQ, 22 worked examples
+   turn 1: feedback:ped_formula:intuition/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 2: feedback:ped_formula:check/reteach:ped_formula/ask_mcq:ped_formula:check#1
+   turn 3: feedback:ped_formula:check/ask_mcq:ped_definition:stuck:prereq
+   turn 4: feedback:ped_definition:prereq/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 5: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 6: feedback:ped_formula:check/ask_mcq:ped_definition:stuck:prereq
+   turn 7: feedback:ped_definition:prereq/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 8: feedback:ped_formula:check/offer_stop:None:stuck
+   turn 9: feedback:ped_formula/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 10: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2
+   turn 11: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 12: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2
+   turn 13: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 14: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2
+   turn 15: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 16: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2
+   turn 17: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 18: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2
+   turn 19: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 20: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2
+   turn 21: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 22: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2
+   turn 23: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 24: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2
+   turn 25: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 26: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2
+   turn 27: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 28: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2
+   turn 29: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 30: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2
+A. recovers_after_step_back: longest run with no MCQ 14, longest bare-reteach run 0, first stop/switch offer at turn None, 6/20 plans with an MCQ, 1 worked examples
+   turn 1: feedback:ped_formula:intuition/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 2: feedback:ped_formula:check/reteach:ped_formula/ask_mcq:ped_formula:check#1
+   turn 3: feedback:ped_formula:check/ask_mcq:ped_definition:stuck:prereq
+   turn 4: feedback:ped_definition:prereq/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 5: feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 6: feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2
+   turn 7: feedback:ped_formula:check/explain_back:ped_formula
+   turn 8: feedback:ped_formula/extend:ped_formula
+   turn 9: feedback:ped_formula/extend:ped_formula
+   turn 10: feedback:ped_formula/extend:ped_formula
+   turn 11: feedback:ped_formula/extend:ped_formula
+   turn 12: feedback:ped_formula/extend:ped_formula
+   turn 13: feedback:ped_formula/extend:ped_formula
+   turn 14: feedback:ped_formula/extend:ped_formula
+   turn 15: feedback:ped_formula/extend:ped_formula
+   turn 16: feedback:ped_formula/extend:ped_formula
+   turn 17: feedback:ped_formula/extend:ped_formula
+   turn 18: feedback:ped_formula/extend:ped_formula
+   turn 19: feedback:ped_formula/extend:ped_formula
+   turn 20: feedback:ped_formula/extend:ped_formula
+A. misses_open_only: longest run with no MCQ 2, longest bare-reteach run 1, first stop/switch offer at turn None, 13/20 plans with an MCQ, 4 worked examples
+   turn 1: feedback:ped_formula:intuition/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 2: feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2
+   turn 3: feedback:ped_formula:check/explain_back:ped_formula
+   turn 4: feedback:ped_formula/reteach:ped_formula
+   turn 5: feedback:ped_formula/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 6: feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2
+   turn 7: feedback:ped_formula:check/explain_back:ped_formula
+   turn 8: feedback:ped_formula/ask_mcq:ped_definition:stuck:prereq
+   turn 9: feedback:ped_definition:prereq/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 10: feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2
+   turn 11: feedback:ped_formula:check/explain_back:ped_formula
+   turn 12: feedback:ped_formula/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 13: feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2
+   turn 14: feedback:ped_formula:check/explain_back:ped_formula
+   turn 15: feedback:ped_formula/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 16: feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2
+   turn 17: feedback:ped_formula:check/explain_back:ped_formula
+   turn 18: feedback:ped_formula/show:ped_formula:stuck/ask_mcq:ped_formula:check#1
+   turn 19: feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2
+   turn 20: feedback:ped_formula:check/explain_back:ped_formula
+A. strong_misses_extend: longest run with no MCQ 3, longest bare-reteach run 1, first stop/switch offer at turn None, 5/10 plans with an MCQ, 0 worked examples
+   turn 1: feedback:ped_formula:intuition/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 2: feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2
+   turn 3: feedback:ped_formula:check/explain_back:ped_formula
+   turn 4: feedback:ped_formula/extend:ped_formula
+   turn 5: feedback:ped_formula/reteach:ped_formula
+   turn 6: feedback:ped_formula/ask_mcq:ped_definition:stuck:prereq
+   turn 7: feedback:ped_definition:prereq/teach_point:ped_formula/ask_mcq:ped_formula:check#1
+   turn 8: feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2
+   turn 9: feedback:ped_formula:check/explain_back:ped_formula
+   turn 10: feedback:ped_formula/extend:ped_formula
+B. due_concept: review asks answered with a review 18/18; ordinary messages turned into a review 0/12; as expected 30/30
+B. due_other: review asks answered with a review 18/18; ordinary messages turned into a review 0/12; as expected 30/30
+B. pending: review asks answered with a review 18/18; ordinary messages turned into a review 0/12; as expected 30/30
+B. none_due: review asks answered with a review 0/18; ordinary messages turned into a review 0/12; as expected 30/30
+B. holdout (due, concept): review asks answered with a review 2/10; ordinary messages turned into a review 0/6
+   unexpected: 'Ask me some questions on the old stuff' -> focus:yed_definition
+   unexpected: 'can you give me my spaced repetition questions' -> focus:tax_supply_shift
+   unexpected: 'What have I forgotten?' -> focus:yed_definition
+   unexpected: "Let's practise what I learned last week" -> focus:yed_definition
+   unexpected: 'Which topics should I go over today?' -> focus:yed_definition
+   unexpected: 'hit me with a review question' -> focus:yed_definition
+   unexpected: "Can you check what I've remembered?" -> focus:yed_definition
+   unexpected: 'Is there anything I should review?' -> focus:yed_definition
+B. label_perfect (due, all 46): review asks answered with a review 28/28; ordinary messages turned into a review 0/18
+B. label_always_true (due, all 46): review asks answered with a review 28/28; ordinary messages turned into a review 8/18
+   unexpected: 'Can you explain that again?' -> review
+   unexpected: "I did my revision yesterday but I still don't get it" -> review
+   unexpected: 'Can you check my working?' -> review
+   unexpected: 'Why is that the answer?' -> review
+   unexpected: 'Can you test my understanding of this graph?' -> review
+   unexpected: 'Is revision better in the morning or evening?' -> review
+   unexpected: 'Can you mark my answer?' -> review
+   unexpected: "That's due on Friday, can you help me plan the essay?" -> review

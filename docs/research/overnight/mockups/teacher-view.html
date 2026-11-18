@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eduX teacher view (mock-up)</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#16191d;--muted:#4a525c;--line:#d5d9df;--accent:#1f5fa8;--flag:#9a3412;--flagbg:#fff4ed;--tag:#5b2a86;--tagbg:#f3ecfa;--ok:#1d6b3a;--chip:#eef1f5}
+@media (prefers-color-scheme:dark){:root{--bg:#121417;--card:#1c1f24;--ink:#eceff3;--muted:#b3bac4;--line:#363c45;--accent:#8fbcf2;--flag:#fdba8c;--flagbg:#2c1d14;--tag:#d8b8f5;--tagbg:#2a2035;--ok:#86d9a3;--chip:#262a31}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:14px 16px 20px}
+.mock{display:inline-block;background:var(--tagbg);color:var(--tag);border:1px solid var(--tag);border-radius:4px;padding:2px 10px;font-weight:700;font-size:13px;letter-spacing:.02em}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline;margin:8px 0 4px}
+h1{font-size:21px;margin:0}
+.sub{color:var(--muted);margin:0 0 12px}
+.grid{display:grid;grid-template-columns:1.15fr 1fr;gap:14px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+section{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+h2{font-size:15px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}
+.rule{color:var(--muted);font-size:13px;margin:0 0 8px}
+.flag{border-left:4px solid var(--flag);background:var(--flagbg);border-radius:4px;padding:8px 10px;margin:0 0 10px}
+.flag b.q{color:var(--flag)}
+.meta{color:var(--muted);font-size:13px}
+details{margin-top:6px}
+summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:14px}
+ol.opts{margin:6px 0 0;padding-left:22px;font-size:14px}
+ol.opts li{margin:2px 0}
+.key{font-size:13px;color:var(--muted);margin-top:4px}
+.btn{display:inline-block;border:1px solid var(--accent);color:var(--accent);border-radius:4px;padding:1px 8px;font-size:13px;margin-right:6px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.chip{background:var(--chip);border-radius:10px;padding:0 8px;white-space:nowrap}
+.sup{color:var(--muted);font-style:italic}
+.note{font-size:13px;color:var(--muted);margin:8px 0 0}
+.state{font-weight:700;font-size:12px;border-radius:4px;padding:1px 6px;border:1px solid currentColor}
+.on{color:var(--ok)}.off{color:var(--muted)}
+footer{margin-top:12px;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="mock" role="note">Mock-up · illustrative data · not a live feature</p>
+<header>
+  <h1>eduX · Class 12X Economics · last 14 days</h1>
+  <span class="meta">18 students linked · updated weekly (Sunday) · one fixed window, no date picker</span>
+</header>
+<p class="sub">You see class patterns only: no names, no chats, no per-student levels, no AI-literacy scores. Small groups (5 students or fewer) are never shown.</p>
+
+<div class="grid">
+<section aria-labelledby="h-mis">
+  <h2 id="h-mis">1 · Misconceptions to tackle</h2>
+  <p class="rule">Flagged when at least 6 students <em>and</em> at least 40% of those offered this option picked it on their first attempt, over 14 days.</p>
+
+  <div class="flag">
+    <b class="q">“A tax on a polluting good gets rid of the external cost completely.”</b><br>
+    <span class="meta">Part: Negative externalities and indirect taxes · about half of those offered picked it · 6–9 students (low evidence)</span>
+    <details open>
+      <summary>Starter MCQ for the next lesson</summary>
+      <p style="margin:6px 0 0;font-size:14px">A tax equal to the external cost is put on a polluting good. What happens to pollution?</p>
+      <ol class="opts" type="A">
+        <li>It falls to zero, because the tax covers the full external cost</li>
+        <li>It falls to the social optimum, where some pollution is still made</li>
+        <li>It stays the same, because firms pass all of the tax to buyers</li>
+        <li>It rises, because the government spends the tax revenue on output</li>
+      </ol>
+      <p class="key">Answer B. A, C and D each come from a wrong idea students hold.</p>
+    </details>
+    <p style="margin:6px 0 0"><span class="btn">Print starter</span><span class="btn">Mark as addressed</span></p>
+  </div>
+
+  <div class="flag">
+    <b class="q">“Price elasticity of demand is the slope of the demand curve.”</b><br>
+    <span class="meta">Part: Price elasticity of demand · most of those offered picked it · 10–14 students</span>
+    <details>
+      <summary>Starter MCQ for the next lesson</summary>
+      <p style="margin:6px 0 0;font-size:14px">Along a straight, downward-sloping demand curve, how does PED change?</p>
+      <ol class="opts" type="A">
+        <li>It stays the same, because the slope is the same all along it</li>
+        <li>It is more elastic at high prices and less elastic at low prices</li>
+        <li>It is unit elastic all along it, because the line is straight</li>
+        <li>It is more elastic at low prices, where people buy more of it</li>
+      </ol>
+      <p class="key">Answer B. A, C and D each come from a wrong idea students hold.</p>
+    </details>
+    <p style="margin:6px 0 0"><span class="btn">Print starter</span><span class="btn">Mark as addressed</span></p>
+  </div>
+
+  <p class="note"><b>Nothing flagged does not mean no problems.</b> With 18 students, only misconceptions held by about half the class are reliably caught. Misconceptions below the rule are not listed.</p>
+</section>
+
+<div style="display:grid;gap:14px;align-content:start">
+<section aria-labelledby="h-weak">
+  <h2 id="h-weak">2 · Five weakest parts</h2>
+  <p class="rule">Share of students who worked on the part and are not yet secure. Not a grade prediction.</p>
+  <table>
+    <thead><tr><th scope="col">Part</th><th scope="col">Not yet secure</th><th scope="col">Students</th></tr></thead>
+    <tbody>
+      <tr><td>Negative externalities and indirect taxes</td><td><span class="chip">most</span></td><td>10–14</td></tr>
+      <tr><td>PED and total revenue</td><td><span class="chip">about half</span></td><td>15+</td></tr>
+      <tr><td>How interest rates reach spending</td><td><span class="chip">about half</span></td><td>6–9 <span class="meta">(low evidence)</span></td></tr>
+      <tr><td>The multiplier</td><td><span class="chip">some</span></td><td>10–14</td></tr>
+      <tr><td>Price discrimination by firms</td><td colspan="2" class="sup">too few students (5 or fewer) worked on it</td></tr>
+    </tbody>
+  </table>
+  <p class="note">Bands: some = 40–49%, about half = 50–69%, most = 70% or more. Counts: 6–9, 10–14, 15+.</p>
+</section>
+
+<section aria-labelledby="h-ail">
+  <h2 id="h-ail">3 · AI literacy, whole class <span class="state on">School opt-in: on</span></h2>
+  <p class="rule">Class bands only, groups of 6 or more. Never per student.</p>
+  <table>
+    <thead><tr><th scope="col">Skill</th><th scope="col">Not yet secure</th><th scope="col">Students</th></tr></thead>
+    <tbody>
+      <tr><td>Ask: precise questions to a chatbot</td><td><span class="chip">about half</span></td><td>10–14</td></tr>
+      <tr><td>Verify: checking a chatbot’s claims</td><td><span class="chip">most</span></td><td>6–9 <span class="meta">(low evidence)</span></td></tr>
+      <tr><td>How AI works: made-up sources</td><td><span class="chip">some</span> picked a wrong idea</td><td>6–9</td></tr>
+      <tr><td>How AI works: other parts</td><td colspan="2" class="sup">too few students (5 or fewer) checked</td></tr>
+    </tbody>
+  </table>
+  <p class="note">How AI works has no level: only per-part results.</p>
+</section>
+
+<section aria-labelledby="h-comp">
+  <h2 id="h-comp">4 · Completion this week <span class="state off">School opt-in: off</span></h2>
+  <p class="rule" style="margin:0">Off by default. If your school turns it on, you see only whether each student did checks this week (yes / no), never scores.</p>
+</section>
+</div>
+</div>
+
+<footer>Never shown: chats, per-student levels or AI-literacy scores, time on task, fatigue, confidence, how often a student asked AI to write for them. Minimised personal data, used by your school.</footer>
+</div>
+</body>
+</html>
