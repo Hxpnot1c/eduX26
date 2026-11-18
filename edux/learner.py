@@ -638,7 +638,7 @@ def _fatigued(conn: sqlite3.Connection, event: dict, part_id: str, session_id: s
 
 def apply_evidence_event(event: dict) -> None:
     """Apply one evidence event: score -> correct, the immediate-recall discount for chat evidence,
-    surprise against the model's expectation (stored in evidence_derived), misconception activation
+    surprise against the expected success p(1 - slip) + (1 - p) guess (stored in evidence_derived), misconception activation
     on wrong evidence, then the BKT update (_apply_evidence)."""
     s, conn = _settings(), _conn()
     student_id, ts = event["student_id"], event["ts"]
@@ -656,7 +656,8 @@ def apply_evidence_event(event: dict) -> None:
         immediate = event["origin"] == "chat" and _recently_taught(conn, student_id, part_id, ts)
     slip, guess = slip_guess(evidence_type, event.get("n_options"), immediate)
     p_before = _p_at(_load_state(conn, student_id, part_id, ts), ts)
-    surprise = weight * (event["score"] - p_before)
+    expected = p_before * (1 - slip) + (1 - p_before) * guess   # chance of a correct answer under this type's slip and guess
+    surprise = weight * (event["score"] - expected)
     session_id = session_start(conn, student_id, ts)
     fatigued = _fatigued(conn, event, part_id, session_id, surprise, weight)
     conn.execute(
