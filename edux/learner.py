@@ -8,6 +8,7 @@ Every rule runs at the event's own timestamp, so replaying gives the same state.
 from __future__ import annotations
 
 import functools
+import hashlib
 import json
 import math
 import os
@@ -88,31 +89,108 @@ def parse_ts(ts: str | datetime) -> datetime:
 # --- students --------------------------------------------------------------
 
 
-def add_student(display_name: str, course_id: str, profile: str | None = None, student_id: str | None = None) -> dict:
-    """Create a student with a secret key and an empty profile; returns {"id", "key"}.
-    student_id fixes the id (used for demo students); by default it is made from the name."""
+def key_hash(key: str) -> str:
+    """What is stored for a student's key: its SHA-256. The key is a random 128-bit secret, so a plain hash is enough;
+    only the student's link holds the key."""
+    return hashlib.sha256(key.encode()).hexdigest()
+
+
+def add_student(display_name: str, course_id: str, profile: str | None = None, student_id: str | None = None,
+                key: str | None = None) -> dict:
+    """Create a student with a secret key and an empty profile; returns {"id", "key"}. The key is shown once, here:
+    only its hash is stored. The id is opaque (s-<random>), never made from the name; student_id fixes it (demo
+    students) and key fixes the key (a demo reset keeps keys, so connector URLs keep working). The display name, if
+    given, is stored in the student row and nowhere else."""
     conn = _conn()
     if not conn.execute("SELECT 1 FROM content.course WHERE id = ?", (course_id,)).fetchone():
         raise ValueError(f"unknown course {course_id!r}; load its pack first")
     if profile is not None and profile not in _context().profiles:
         raise ValueError(f"unknown context profile {profile!r}")
-    slug = re.sub(r"[^a-z0-9]+", "-", display_name.lower()).strip("-") or "student"
-    student_id, key = student_id or f"{slug}-{secrets.token_hex(2)}", secrets.token_urlsafe(16)
+    student_id, key = student_id or f"s-{secrets.token_hex(4)}", key or secrets.token_urlsafe(16)
     with conn:
-        conn.execute("INSERT INTO student (id, key, display_name, course_id, profile, created) VALUES (?, ?, ?, ?, ?, ?)",
-                     (student_id, key, display_name, course_id, profile, now_iso()))
+        conn.execute("INSERT INTO student (id, key_hash, display_name, course_id, profile, created) VALUES (?, ?, ?, ?, ?, ?)",
+                     (student_id, key_hash(key), display_name, course_id, profile, now_iso()))
         conn.execute("INSERT INTO student_profile (student_id) VALUES (?)", (student_id,))
     return {"id": student_id, "key": key}
 
 
 def get_student(student_id: str) -> dict | None:
     row = _conn().execute("SELECT * FROM student WHERE id = ?", (student_id,)).fetchone()
-    return dict(row) if row else None
+    return {k: v for k, v in dict(row).items() if k not in ("key", "key_hash")} if row else None
+
+
+# --- retention, export and deletion (step 05x) ---------------------------------------------------------------
+
+
+def _student_tables(conn: sqlite3.Connection) -> list[str]:
+    """Every table in learner.db that holds rows about a student (a student_id column), found rather than listed, so
+    a table added later is covered by delete_student and export_student without anyone remembering to add it."""
+    names = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' "
+                                       "AND name != 'student' ORDER BY name")]
+    return [n for n in names if any(c["name"] == "student_id" for c in conn.execute(f"PRAGMA table_info({n})"))]
+
+
+def delete_student(student_id: str) -> dict[str, int]:
+    """Delete every row about the student, in every table, including the call log and the student row itself. Returns
+    the rows deleted per table. Raises ValueError for an unknown student."""
+    conn = _conn()
+    if conn.execute("SELECT 1 FROM student WHERE id = ?", (student_id,)).fetchone() is None:
+        raise ValueError(f"unknown student {student_id!r}")
+    counts: dict[str, int] = {}
+    with conn:
+        for table in _student_tables(conn):
+            counts[table] = conn.execute(f"DELETE FROM {table} WHERE student_id = ?", (student_id,)).rowcount
+        counts["student"] = conn.execute("DELETE FROM student WHERE id = ?", (student_id,)).rowcount
+    return counts
+
+
+def export_student(student_id: str) -> dict:
+    """Everything stored about the student, as plain data: the student row (never the key or its hash) and every row
+    in every table that holds rows about a student. Raises ValueError for an unknown student."""
+    conn = _conn()
+    student = get_student(student_id)
+    if student is None:
+        raise ValueError(f"unknown student {student_id!r}")
+    return {"student": student, "exported": now_iso(),
+            "tables": {t: [dict(r) for r in conn.execute(f"SELECT * FROM {t} WHERE student_id = ? ORDER BY rowid", (student_id,))]
+                       for t in _student_tables(conn)}}
+
+
+def leave_student(student_id: str, on: str | None = None) -> None:
+    """Mark the student as having left (today, or on a given date): all their data is deleted retention.after_leaving_days
+    later by purge. Raises ValueError for an unknown student."""
+    conn = _conn()
+    with conn:
+        if conn.execute("UPDATE student SET left_on = ? WHERE id = ?", ((on or now_iso())[:10], student_id)).rowcount == 0:
+            raise ValueError(f"unknown student {student_id!r}")
+
+
+def purge(now: str | datetime | None = None) -> dict:
+    """Apply the retention settings: delete call-log rows older than retention.call_log_days, and every student who
+    left more than retention.after_leaving_days ago. Returns {"call_log": rows deleted, "students": [ids deleted]}."""
+    r, conn = _settings().retention, _conn()
+    at = parse_ts(now) if now else parse_ts(now_iso())
+    cutoff = (at - timedelta(days=r.call_log_days)).isoformat(timespec="seconds")
+    with conn:
+        removed = conn.execute("DELETE FROM call_log WHERE ts < ?", (cutoff,)).rowcount
+    left_before = (at - timedelta(days=r.after_leaving_days)).date().isoformat()
+    gone = [row["id"] for row in conn.execute("SELECT id FROM student WHERE left_on IS NOT NULL AND left_on < ? ORDER BY id", (left_before,))]
+    for student_id in gone:
+        delete_student(student_id)
+    return {"call_log": removed, "students": gone}
 
 
 def student_by_key(key: str) -> dict | None:
-    row = _conn().execute("SELECT * FROM student WHERE key = ?", (key,)).fetchone()
-    return dict(row) if row else None
+    """The student with this key, found by its hash. A student from before step 05x still has a plaintext key: it is
+    matched once and replaced with its hash."""
+    conn = _conn()
+    row = conn.execute("SELECT * FROM student WHERE key_hash = ?", (key_hash(key),)).fetchone()
+    if row is None:
+        row = conn.execute("SELECT * FROM student WHERE key = ?", (key,)).fetchone()
+        if row is not None:
+            with conn:
+                conn.execute("UPDATE student SET key_hash = ?, key = NULL WHERE id = ?", (key_hash(key), row["id"]))
+    return {k: v for k, v in dict(row).items() if k not in ("key", "key_hash")} if row else None
 
 
 def set_profile(student_id: str, profile: str | None) -> None:
@@ -325,7 +403,6 @@ def record_exchange(
     choice_taken: str | None = None,
     misconception_ids: list[str] | None = None,
     conflict_flagged: bool = False,
-    prompt_text: str | None = None,
     client: str | None = None,
     ts: str | None = None,
     evidence: list[dict] | None = None,
@@ -337,7 +414,7 @@ def record_exchange(
     evidence is a list of {part_id, type, score, misconception_ids?}: what the student produced in this turn,
     scored 0–1. Concept ids expand to their parts with the score unchanged. All rows share the exchange's ts.
     apply is "background" (queue for the worker thread), "now" (apply before returning) or "none".
-    prompt_text is stored only when STORE_PROMPTS=1. request holds the step 05e labels (request_type,
+    The student's message text is never stored. request holds the step 05e labels (request_type,
     question_features, source_conflict, web_access, asks_recent, pushback_changed); features, web_access and
     asks_recent are kept for research questions only, and source_conflict also sets conflict_flagged.
     """
@@ -358,18 +435,17 @@ def record_exchange(
     req = _request_labels(request or {})
     conflict_flagged = conflict_flagged or bool(req["source_conflict"])
     evidence_rows = _evidence_rows(evidence or [])
-    store_prompt = os.environ.get("STORE_PROMPTS", "0") == "1"
     ts = _event_ts(ts)
     conn = _conn()
     with conn:
         cur = conn.execute(
             """INSERT INTO exchange_log (student_id, ts, client, node_ids, question_depth, engagement, offloading,
-                 support_given, choice_taken, misconception_ids, conflict_flagged, protocol, settings_hash, prompt_text,
+                 support_given, choice_taken, misconception_ids, conflict_flagged, protocol, settings_hash,
                  request_type, question_features, source_conflict, web_access, asks_recent, pushback_changed)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (student_id, ts, client, ";".join(node_ids), question_depth, engagement, int(offloading), support_given,
              choice_taken, ";".join(misconception_ids or []), int(conflict_flagged), protocol_label(s, profile_of(student)),
-             settings_hash(), prompt_text if store_prompt else None, req["request_type"], req["question_features"],
+             settings_hash(), req["request_type"], req["question_features"],
              req["source_conflict"], req["web_access"], req["asks_recent"], req["pushback_changed"]),
         )
         exchange_id = cur.lastrowid

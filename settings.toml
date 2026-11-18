@@ -188,6 +188,10 @@ max_words = 120            # default length of a reply's explanation (MCQ option
 length_known_share = 0.5   # a review or check on a part at developing or above: this share of the ceiling (reply-style)
 length_fatigued_share = 0.4   # every step while fatigued; neither shrinks a student's own answer_length
 
+[retention]                # how long data is kept (step 05x). Judgement calls, starting values: schools set their own; run `purge` to apply them
+call_log_days = 30         # call-log detail (timing, sizes, errors per call) is deleted after this many days
+after_leaving_days = 90    # a student marked as having left has all their data deleted this many days later (a window for appeals and questions)
+
 [results]                  # size of a tool result, in characters of compact JSON as sent (steps 05c, 05w). Engineering budgets, not from research
 max_chars = 2400           # about 600 tokens, every tool; over this, reference blocks (tutor_turn) or the lowest-ranked list items (get_my_progress) are dropped, then the call is logged as over budget
 max_chars_full_progress = 4000   # the same for get_my_progress with include_parts (every part listed): the one view allowed to be larger

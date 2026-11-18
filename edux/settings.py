@@ -250,6 +250,12 @@ class Style:
 
 
 @dataclass(frozen=True)
+class Retention:
+    call_log_days: int
+    after_leaving_days: int
+
+
+@dataclass(frozen=True)
 class Results:
     max_chars: int
     max_chars_full_progress: int
@@ -294,6 +300,7 @@ class Settings:
     blocks: Blocks
     style: Style
     results: Results
+    retention: Retention
     instructions: Instructions
 
 
