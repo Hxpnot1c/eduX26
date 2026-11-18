@@ -66,6 +66,10 @@ Checks and tests come after the base works end to end; the step files say where 
 <decisions, follow-ups>
 ```
 
+**Decision records**
+- A change that alters the learner model, a setting, what a student or teacher sees, or what is stored about a student comes with a record in [`docs/decisions`](../decisions/README.md), written in the same pull request. It states the research behind the change and how well established that is.
+- The pull request description ends with "Docs updated: …" and names the record.
+
 **Code**
 - Python 3.11+, SQLite, MCP Python SDK `mcp>=1.30,<2`.
 - Every teaching or scoring number lives in `settings.toml`. What the chatbot sees is configured in `context.toml` and the `text/` folder. Nothing else hard-codes them.
