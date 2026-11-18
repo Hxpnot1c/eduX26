@@ -810,9 +810,16 @@ async def reply_style(url: str) -> None:
                                     ts=learner._event_ts(learner.parse_ts(learner.now_iso()) - timedelta(days=3)))
         own = service.reply_style([review("ped_definition"), teach("ped_definition")], learner.get_student(student),
                                   turn_for(student), {"session": {"state": "fatigued"}})
-        check(all((s["data"].get("max_words") or 200) >= 200 for s in own),
-              "with answer_length set, no step carries a smaller max_words",
+        cap = load_settings().points.max_words_requested
+        check(all((s["data"].get("max_words") or 200) >= 200 for s in own if s["move"] != "teach_point")
+              and all(s["data"].get("max_words") == min(200, cap) for s in own if s["move"] == "teach_point"),
+              f"with answer_length 200, no step carries a smaller max_words, and teach_point carries {cap} (one point per message)",
               json.dumps([s["data"].get("max_words") for s in own]))
+        service.update_profile(learner.get_student(student), answer_length=50)
+        short = service.reply_style([teach("ped_definition")], learner.get_student(student), turn_for(student), {})
+        check(short[0]["data"].get("max_words") == 50, "with answer_length 50, teach_point carries 50",
+              json.dumps([s["data"].get("max_words") for s in short]))
+        service.update_profile(learner.get_student(student), answer_length=200)
         got = await call(keyed, "tutor_turn", {"message": "How does a tax shift supply?", "client": "check_mcp",
                                                "node_ids": ["tax_supply_shift"],
                                                "this_message": {"question_depth": "mechanism", "engagement": "active"}})
