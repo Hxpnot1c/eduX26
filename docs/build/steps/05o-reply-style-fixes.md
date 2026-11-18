@@ -22,6 +22,8 @@ Branch `build/fix-reply-style`, from `main`. Follow-up to step [05j](05j-reply-s
 - `edux/service.py`: `reply_style`, `teach_point` under `answer_length`.
 - `settings.toml`: `points.max_words_requested`.
 - `scripts/check_mcp.py`: the `reply_style` run, with `answer_length` of 50 (teach_point 50) and of 200 (teach_point 120).
+- `tests/test_reply_style.py`: 50 gives 50, 100 gives 100, 200 gives 120, and the setting is at least `points.max_words`.
+- `edux/settings.py`: `Points.max_words_requested`, checked to be at least `points.max_words`.
 - **Docs:** this file; `docs/build/steps/05j-reply-style.md` (a note pointing here); `reference/settings.md`; `reference/research.md` (the "One point per message" row already names 120).
 
 ## Settings
