@@ -65,9 +65,23 @@ def test_a_progress_view_that_already_fits_is_left_alone():
     assert service.fit_progress(dict(small)) == small
 
 
-def test_over_budget_covers_progress_as_well_as_turns():
+def test_over_budget_covers_every_tool():
     limit = service._settings().results.max_chars
-    assert service.over_budget("get_my_progress", limit + 1)
-    assert service.over_budget("tutor_turn", limit + 1)
-    assert not service.over_budget("update_my_profile", limit + 1)
-    assert not service.over_budget("get_my_progress", limit)
+    for tool in ("tutor_turn", "get_my_progress", "update_my_profile"):
+        assert service.over_budget(tool, limit + 1)
+        assert not service.over_budget(tool, limit)
+
+
+def test_the_every_part_progress_view_has_its_own_larger_limit():
+    results = service._settings().results
+    assert results.max_chars_full_progress > results.max_chars
+    assert not service.over_budget("get_my_progress", results.max_chars + 1, full_progress=True)
+    assert service.over_budget("get_my_progress", results.max_chars_full_progress + 1, full_progress=True)
+    assert service.over_budget("tutor_turn", results.max_chars + 1, full_progress=True)    # only progress gets the larger limit
+
+
+def test_the_every_part_view_is_trimmed_to_its_own_limit():
+    limit = service._settings().results.max_chars_full_progress
+    fitted = service.fit_progress(_progress(40), limit)
+    assert service.result_size(fitted) <= limit
+    assert len(fitted["levers"]) > 0 or len(fitted["reviews_due"]) > 0 or len(fitted["weak_links"]) > 0

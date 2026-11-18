@@ -918,6 +918,10 @@ async def main(url: str, key: str, student: str) -> None:
     progress = await call(keyed, "get_my_progress", {})
     check({"tree", "levers", "reviews_due", "trends"} <= set(progress) and "p_now" not in json.dumps(progress),
           "get_my_progress (levels only)", f"{len(progress.get('levers', []))} levers")
+    full = await call(keyed, "get_my_progress", {"include_parts": True})
+    check(service.result_size(full) <= load_settings().results.max_chars_full_progress,
+          f"get_my_progress with include_parts is at most {load_settings().results.max_chars_full_progress} characters",
+          f"{service.result_size(full)} characters")
     check(service.result_size(progress) <= load_settings().results.max_chars,
           f"get_my_progress (levels only) is at most {load_settings().results.max_chars} characters",
           f"{service.result_size(progress)} characters")

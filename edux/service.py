@@ -728,17 +728,17 @@ def my_progress(student: dict, include_parts: bool = False, at: str | None = Non
         "ai_literacy": _ai_literacy(student_id, at),
         "study_pattern": _study_pattern(student_id),
     }
-    return out if include_parts else fit_progress(out)
+    return fit_progress(out, result_limit(include_parts))
 
 
 PROGRESS_TRIM_ORDER = ("weak_links", "reviews_due", "levers")   # lowest-ranked item first: each list is ranked best first
 
 
-def fit_progress(out: dict) -> dict:
-    """Keep the levels-only get_my_progress within results.max_chars by dropping the last, lowest-ranked item of
-    weak_links, then reviews_due, then levers, until it fits. The tree, trends, ai_literacy and study_pattern are
-    never cut, and the every-part view (include_parts) is left as it is: the student asked for it."""
-    limit = _settings().results.max_chars
+def fit_progress(out: dict, limit: int | None = None) -> dict:
+    """Keep get_my_progress within its limit (results.max_chars, or max_chars_full_progress for the every-part
+    view) by dropping the last, lowest-ranked item of weak_links, then reviews_due, then levers, until it fits.
+    The tree, trends, ai_literacy and study_pattern are never cut."""
+    limit = limit or result_limit()
     for name in PROGRESS_TRIM_ORDER:
         while out.get(name) and result_size(out) > limit:
             out[name] = out[name][:-1]
@@ -859,10 +859,15 @@ def log_call(student_id: str | None, tool: str, started: datetime, ms: float, re
                       result_chars, int(ok), error, int(over_budget)))
 
 
-def over_budget(tool: str, result_chars: int) -> bool:
-    """A tutor_turn or get_my_progress result over results.max_chars, after fit_budget or fit_progress dropped what
-    they could. (The every-part view of get_my_progress is over by design and is flagged.)"""
-    return tool in ("tutor_turn", "get_my_progress") and result_chars > _settings().results.max_chars
+def result_limit(full_progress: bool = False) -> int:
+    """results.max_chars for every tool, or results.max_chars_full_progress for get_my_progress with include_parts."""
+    results = _settings().results
+    return results.max_chars_full_progress if full_progress else results.max_chars
+
+
+def over_budget(tool: str, result_chars: int, full_progress: bool = False) -> bool:
+    """Any tool's result over its limit (result_limit), after fit_budget or fit_progress dropped what they could."""
+    return result_chars > result_limit(full_progress and tool == "get_my_progress")
 
 
 def _percentile(values: list[float], share: float) -> float:

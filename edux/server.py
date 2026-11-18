@@ -195,7 +195,7 @@ def timed(name: str, fn: Callable[..., dict]) -> Callable[..., CallToolResult]:
                 chars = service.result_size(result) if result is not None else 0
                 ctx = kwargs.get("ctx") or next((a for a in args if isinstance(a, Context)), None)
                 student_id = _student_id(ctx)
-                over = service.over_budget(name, chars)
+                over = service.over_budget(name, chars, bool(kwargs.get("include_parts")))
                 service.log_call(student_id, name, started, ms, chars, error is None, error, over)
                 print(f"{name} {student_id or '-'} {ms:.0f}ms {chars / 1000:.1f}k chars "
                       f"{'ok' if error is None else 'error: ' + error}{' OVER BUDGET' if over else ''}", flush=True)
