@@ -258,7 +258,7 @@ def _evidence(value: str) -> dict:
 
 def main(argv: list[str] | None = None) -> None:
     """Parse arguments and run a command."""
-    parser = argparse.ArgumentParser(prog="python -m edux.cli")
+    parser = argparse.ArgumentParser(prog="python -m edux.cli", description="Synapse command line: load a course pack, manage students, inspect and rebuild the learner model, run the server.")
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("load", help="load a course pack into content.db")
     p.add_argument("pack", type=Path)

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Load a course pack, (re)create the three demo students and start the MCP server.
+# Synapse demo: load a course pack, (re)create the three demo students and start the MCP server.
 #   scripts/demo.sh [pack folder]     default: coursepacks/example-mini
 # Reads .env if there is one (EDUX_DATA_DIR, HOST, PORT, ALLOWED_HOSTS).
 set -euo pipefail
@@ -9,7 +9,7 @@ PY=python3
 [ -x .venv/bin/python ] && PY=.venv/bin/python
 PACK="${1:-coursepacks/example-mini}"
 
-echo "== loading $PACK"
+echo "== Synapse demo: loading $PACK"
 "$PY" -m edux.cli load "$PACK"
 echo
 echo "== seeding demo students"
