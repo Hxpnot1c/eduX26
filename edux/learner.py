@@ -253,6 +253,8 @@ def found_problem(kind: str = "ail_task", points_met: list[str] | None = None) -
     """Verify evidence for a reported dead or mismatched source (research fixes, 0003): finding the problem is a
     successful check, so it scores 1 whatever was ticked (a dead page has no publisher, date or figure to tick)."""
     return {"part_id": AIL_VERIFY, "type": kind, "score": 1.0, "misconception_ids": [], "points_met": list(points_met or [])}
+# A report can't be told apart from a made-up one, so apply_evidence_event limits it: until the student has done one
+# successful check of their own on Verify, reports reach developing at most (research fixes, 0009b).
 
 
 def record_skip(student_id: str, part_id: str, ts: str | None = None) -> None:
@@ -782,6 +784,21 @@ def learning_offset(student_id: str, before: str | datetime | None = None) -> di
     return {"offset": offset, "n": used, "weight": math.exp(offset)}
 
 
+def _reported(conn: sqlite3.Connection, event: dict) -> bool:
+    """The evidence came with an exchange labelled source_conflict (a dead or mismatched source reported)."""
+    row = conn.execute("SELECT source_conflict FROM exchange_log WHERE id = ?", (event.get("exchange_id"),)).fetchone()
+    return bool(row and row["source_conflict"])
+
+
+def _checked_before(conn: sqlite3.Connection, event: dict) -> bool:
+    """The student has done one successful check of their own on Verify: a correct Verify answer that was not a
+    report."""
+    return conn.execute(
+        """SELECT 1 FROM evidence_log e LEFT JOIN exchange_log x ON x.id = e.exchange_id WHERE e.student_id = ?
+           AND e.part_id = ? AND e.id < ? AND e.score >= ? AND COALESCE(x.source_conflict, 0) = 0 LIMIT 1""",
+        (event["student_id"], AIL_VERIFY, event["id"], _settings().bkt.correct_share)).fetchone() is not None
+
+
 def apply_evidence_event(event: dict) -> None:
     """Apply one evidence event: score -> correct, the immediate-recall discount for chat evidence,
     surprise against the expected success p(1 - slip) + (1 - p) guess (stored in evidence_derived), misconception activation
@@ -801,6 +818,12 @@ def apply_evidence_event(event: dict) -> None:
         weight = 1.0
         immediate = event["origin"] == "chat" and _recently_taught(conn, student_id, part_id, ts)
     slip, guess = slip_guess(evidence_type, event.get("n_options"), immediate)
+    cap = None
+    if part_id == AIL_VERIFY and _reported(conn, event) and not _checked_before(conn, event):
+        # a reported dead or mismatched source counts as a check (a dead page has nothing else to tick), but it can't
+        # be told apart from a made-up one: until the student has done one successful check of their own on Verify,
+        # reports can't make Verify secure
+        cap = s.levels.secure - 0.01
     p_before = _p_at(_load_state(conn, student_id, part_id, ts), ts)
     expected = p_before * (1 - slip) + (1 - p_before) * guess   # chance of a correct answer under this type's slip and guess
     surprise = weight * (event["score"] - expected)
@@ -818,7 +841,7 @@ def apply_evidence_event(event: dict) -> None:
             weight *= event["score"]
         learn_rate = personal_learn_rate(s.bkt.learn_rate, learning_offset(student_id, session_id)["offset"])
         _apply_evidence(conn, student_id, part_id, slip, guess, correct, ts, weight=weight, slip_add=slip_add,
-                        learn_rate=learn_rate)
+                        learn_rate=learn_rate, cap=cap)
 
 
 def slip_guess(evidence_type: str, n_options: int | None = None, immediate: bool = False) -> tuple[float, float]:
@@ -838,7 +861,8 @@ def slip_guess(evidence_type: str, n_options: int | None = None, immediate: bool
 
 
 def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, slip: float, guess: float, correct: bool,
-                    ts: str, weight: float = 1.0, slip_add: float = 0.0, learn_rate: float | None = None) -> None:
+                    ts: str, weight: float = 1.0, slip_add: float = 0.0, learn_rate: float | None = None,
+                    cap: float | None = None) -> None:
     """The BKT update on one part with the evidence's slip and guess (slip_guess); weight (0–1) scales how far
     p_known moves towards the BKT result. slip_add raises slip (capped at session.slip_cap) while the session is
     fatigued. learn_rate is the student's own (learning_offset), else bkt.learn_rate."""
@@ -859,6 +883,8 @@ def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, sli
         p = before * slip / (before * slip + (1 - before) * (1 - guess))
     p += (1 - p) * (s.bkt.learn_rate if learn_rate is None else learn_rate)
     p = before + weight * (p - before)
+    if cap is not None and p > cap:   # cap: p_known rises no higher than this (or than where it was)
+        p = max(before, cap)
 
     factor = s.decay.on_success if correct else s.decay.on_failure
     state["half_life_days"] = max(s.decay.min_half_life_days, state["half_life_days"] * factor)
