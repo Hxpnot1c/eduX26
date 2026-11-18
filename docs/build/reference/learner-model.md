@@ -63,7 +63,9 @@ Evidence types from chat, each with its own slip and guess in `[bkt.evidence]`:
 
 The result counts as correct if `score ≥ bkt.correct_share`. Wrong evidence that carries misconception ids activates them.
 
-**Immediate recall.** Performance straight after teaching overstates learning. Evidence on a part within `evidence.immediate_window_minutes` of an exchange on that part with `support_given` = `worked_example` or `hint` (including the exchange it was sent with) is applied as type `immediate`, which has a higher guess. Evidence later in the session, or in a later session, uses its own type. The type is stored as sent and the rule applied when replaying, so changing the window re-scores old evidence.
+**Multiple-choice guess.** With `bkt.mcq_guess_from_options`, a multiple-choice answer (`mcq_check`, `ail_how`, an intuition `prequestion`) guesses `1 / n_options`, the options it showed, stored on the row (migration 010). Rows written before that have no `n_options` and keep the type's guess.
+
+**Immediate recall.** Performance straight after teaching overstates learning. Evidence on a part within `evidence.immediate_window_minutes` of an exchange on that part with `support_given` = `worked_example` or `hint` (including the exchange it was sent with) is applied as `immediate`: `immediate`'s slip, and the larger of `immediate`'s guess and the type's own (so a 2- or 3-option question is never discounted less). A correct immediate answer grows the half-life by the normal `decay.on_success` (a half-life multiplier of 1.0 for immediate evidence left 1.6 of 9 parts secure instead of 6.2 in the overnight simulation, report 06, finding w1-06-07, so it isn't used). Evidence later in the session, or in a later session, uses its own type. The type is stored as sent and the rule applied when replaying, so changing the window re-scores old evidence.
 
 Standard BKT with the slip and guess for the evidence type:
 
@@ -146,7 +148,7 @@ gap = share × days_to_exam
 - The gap is floored at `min_gap_days`.
 - `due = now + gap`, with reason `scheduled`
 
-Shares are adapted from Cepeda et al. (2008): the optimal gap shrinks as the test gets closer. With no exam date, `base_half_life_days` is used as the gap.
+Shares are adapted from Cepeda et al. (2008): the optimal gap shrinks as the test gets closer, but it is a larger share of the time left (0.10 far, 0.19 mid, 0.30 near; tune-from-research). With no exam date, `base_half_life_days` is used as the gap.
 
 `reviews_due` returns up to `max_reviews_per_reply` due parts, ordered by importance.
 

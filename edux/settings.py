@@ -40,6 +40,7 @@ class Bkt:
     prior: float
     learn_rate: float
     correct_share: float
+    mcq_guess_from_options: bool
     evidence: dict[str, SlipGuess]
 
 

@@ -99,8 +99,10 @@ def _how_ai_works(turn: context_blocks.Turn, blocks: dict, last: dict, steps: li
             if pending["followups"] < s.literacy.max_followups:
                 return (plan.with_check(steps, plan.reask(pending["step"])[1]),
                         {**pending, "followups": pending["followups"] + 1})
+            asked = pending["step"].get("question") or {}
             learner.record_evidence(sid, pending["part_id"], "ail_how", 0.0, ts=turn.at, apply="now",
-                                    point_id=(pending["step"].get("question") or {}).get("point_id"))
+                                    point_id=asked.get("point_id"),
+                                    n_options=(1 + len(asked["wrong"]) + int(asked["extra"])) if asked else None)
     session = learner.session_state(sid, turn.at)
     start = session["session_id"] if session else turn.at
     conn = learner._conn()

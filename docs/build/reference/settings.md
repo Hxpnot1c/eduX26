@@ -17,17 +17,18 @@ secure = 0.75              # at or above this = secure; between = developing
 prior = 0.30               # p_known before any evidence
 learn_rate = 0.10          # chance of learning from one piece of evidence
 correct_share = 0.67       # share of a link/check score that counts as "correct"
+mcq_guess_from_options = true   # a multiple-choice guess is 1 / the options shown (mcq_check, ail_how, an intuition question; tune-from-research)
 
 [bkt.evidence]             # slip / guess per evidence type
-explain_back = { slip = 0.10, guess = 0.10 }
-past_question = { slip = 0.10, guess = 0.10 }
-link = { slip = 0.10, guess = 0.10 }
+explain_back = { slip = 0.10, guess = 0.20 }    # open answers 0.20 from tune-from-research: one reply can't reach secure
+past_question = { slip = 0.10, guess = 0.20 }
+link = { slip = 0.10, guess = 0.20 }
 review = { slip = 0.10, guess = 0.15 }
 find_error = { slip = 0.15, guess = 0.25 }
 prequestion = { slip = 0.20, guess = 0.20 }
 mcq = { slip = 0.10, guess = 0.25 }
-extend = { slip = 0.10, guess = 0.10 }      # an answer to a harder, extending question
-immediate = { slip = 0.10, guess = 0.30 }   # chat evidence straight after a worked example or hint
+extend = { slip = 0.10, guess = 0.20 }      # an answer to a harder, extending question
+immediate = { slip = 0.10, guess = 0.30 }   # chat evidence straight after a worked example or hint; guess is at least the type's own
 ail_question = { slip = 0.15, guess = 0.20 }     # a research question, scored by its features (step 05e)
 ail_task = { slip = 0.10, guess = 0.15 }         # the answer to a verify task, or 0 for an ignored task
 ail_unprompted = { slip = 0.05, guess = 0.10 }   # checking a claim without being asked: counts more
@@ -70,9 +71,9 @@ textbook = 2
 ours = 1
 
 [scheduling]               # review gap as a share of days left to the exam
-share_far = 0.25           # > 60 days to the exam
-share_mid = 0.15           # 14–60 days
-share_near = 0.08          # < 14 days
+share_far = 0.10           # > 60 days to the exam (tune-from-research: was 0.25)
+share_mid = 0.19           # 14–60 days (was 0.15)
+share_near = 0.30          # < 14 days (was 0.08)
 min_gap_days = 1
 just_show_me_gap_days = 1.5
 max_reviews_per_reply = 3

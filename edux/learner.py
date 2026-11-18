@@ -135,9 +135,10 @@ def _event_ts(ts: str | datetime | None) -> str:
     return parse_ts(ts).astimezone(timezone.utc).isoformat(timespec="seconds") if ts else now_iso()
 
 
-def _evidence_rows(evidence: list[dict]) -> list[tuple[str, str, float, list[str], str | None]]:
+def _evidence_rows(evidence: list[dict]) -> list[tuple[str, str, float, list[str], str | None, int | None]]:
     """Validate evidence items and expand concept ids to their parts: (part_id, type, score, misconception_ids,
-    point_id). point_id is the one point a multiple-choice question asked; it is kept only on a part's own item."""
+    point_id, n_options). point_id is the one point a multiple-choice question asked and n_options how many options
+    it showed; both are kept only on a part's own item."""
     s = _settings()
     rows = []
     for item in evidence:
@@ -156,7 +157,11 @@ def _evidence_rows(evidence: list[dict]) -> list[tuple[str, str, float, list[str
         if not parts:
             raise ValueError(f"evidence: {node['id']!r} has no parts")
         point_id = item.get("point_id") if node["level"] == "part" else None
-        rows += [(part, item["type"], score, list(item.get("misconception_ids") or []), point_id) for part in parts]
+        n_options = item.get("n_options") if node["level"] == "part" else None
+        if n_options is not None and (isinstance(n_options, bool) or not isinstance(n_options, int) or n_options < 2):
+            raise ValueError(f"evidence n_options must be a whole number of at least 2, got {n_options!r}")
+        rows += [(part, item["type"], score, list(item.get("misconception_ids") or []), point_id, n_options)
+                 for part in parts]
     return rows
 
 
@@ -200,7 +205,7 @@ def score_answer(answer: dict, mcq: dict | None = None) -> dict:
         kind = {"intuition": "prequestion", "how_ai_works": "ail_how"}.get(mcq["purpose"], "mcq_check")
         return {"part_id": part_id, "type": kind,
                 "score": 1.0 if correct else 0.0, "misconception_ids": misconception_ids, "purpose": mcq["purpose"],
-                "correct": correct, "picked": picked, "point_id": mcq.get("point_id"),
+                "correct": correct, "picked": picked, "point_id": mcq.get("point_id"), "n_options": len(mcq["options"]),
                 "correct_option": next((o["text"] for o in mcq["options"].values() if o["id"] == "correct"), "")}
     if kind in LITERACY_ANSWERS and part_id != AIL_VERIFY:
         raise ValueError(f"answer.type {kind} is for {AIL_VERIFY}, the verify ticks")
@@ -245,12 +250,13 @@ def _write_evidence(conn: sqlite3.Connection, student: dict, ts: str, rows: list
                     exchange_id: int | None = None, check_id: str | None = None) -> list[int]:
     s = _settings()
     ids = []
-    for part_id, evidence_type, score, misconception_ids, point_id in rows:
+    for part_id, evidence_type, score, misconception_ids, point_id, n_options in rows:
         cur = conn.execute(
             """INSERT INTO evidence_log (student_id, ts, part_id, evidence_type, score, origin, exchange_id, check_id,
-                 misconception_ids, point_id, protocol, settings_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                 misconception_ids, point_id, n_options, protocol, settings_hash)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (student["id"], ts, part_id, evidence_type, score, origin, exchange_id, check_id, ";".join(misconception_ids),
-             point_id, protocol_label(s, profile_of(student)), settings_hash()))
+             point_id, n_options, protocol_label(s, profile_of(student)), settings_hash()))
         ids.append(cur.lastrowid)
     return ids
 
@@ -355,16 +361,18 @@ def record_evidence(
     check_id: str | None = None,
     apply: str = "background",
     point_id: str | None = None,
+    n_options: int | None = None,
 ) -> list[int]:
     """Write evidence with no exchange (demo seeding, checks, an ignored task or check), then apply it; return the
-    evidence ids (one per part). point_id is the one point a question asked, if it asked one."""
+    evidence ids (one per part). point_id is the one point a question asked, if it asked one, and n_options how
+    many options a multiple-choice question showed."""
     student = get_student(student_id)
     if student is None:
         raise ValueError(f"unknown student {student_id!r}")
     if origin not in ("chat", "check"):
         raise ValueError("origin must be chat or check")
     rows = _evidence_rows([{"part_id": part_id, "type": evidence_type, "score": score, "misconception_ids": misconception_ids,
-                            "point_id": point_id}])
+                            "point_id": point_id, "n_options": n_options}])
     conn = _conn()
     with conn:
         ids = _write_evidence(conn, student, _event_ts(ts), rows, origin, check_id=check_id)
@@ -640,12 +648,13 @@ def apply_evidence_event(event: dict) -> None:
     part_id = node["id"]
     correct = event["score"] >= s.bkt.correct_share
     evidence_type = event["evidence_type"]
+    immediate = False
     if evidence_type == "prequestion":
         weight = prequestion_weight(conn, student_id, part_id, ts)
     else:
         weight = 1.0
-        if event["origin"] == "chat" and _recently_taught(conn, student_id, part_id, ts):
-            evidence_type = "immediate"
+        immediate = event["origin"] == "chat" and _recently_taught(conn, student_id, part_id, ts)
+    slip, guess = slip_guess(evidence_type, event.get("n_options"), immediate)
     p_before = _p_at(_load_state(conn, student_id, part_id, ts), ts)
     surprise = weight * (event["score"] - p_before)
     session_id = session_start(conn, student_id, ts)
@@ -658,16 +667,31 @@ def apply_evidence_event(event: dict) -> None:
         _activate_misconceptions(conn, student_id, split(event.get("misconception_ids")), ts)
     if weight > 0:  # an untaught pre-question is diagnostic only
         slip_add = _settings().session.fatigue_slip_add if fatigued else 0.0
-        _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts, weight=weight, slip_add=slip_add)
+        _apply_evidence(conn, student_id, part_id, slip, guess, correct, ts, weight=weight, slip_add=slip_add)
 
 
-def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, evidence_type: str, correct: bool, ts: str,
-                    weight: float = 1.0, slip_add: float = 0.0) -> None:
-    """The BKT update on one part; weight (0–1) scales how far p_known moves towards the BKT result.
-    slip_add raises slip (capped at session.slip_cap) while the session is fatigued."""
+def slip_guess(evidence_type: str, n_options: int | None = None, immediate: bool = False) -> tuple[float, float]:
+    """Slip and guess for a piece of evidence. With bkt.mcq_guess_from_options, a multiple-choice question that
+    recorded how many options it showed guesses 1 / n_options (older rows keep the type's guess). Immediate
+    evidence (straight after a worked example or hint) takes immediate's slip and the larger of immediate's guess
+    and the type's own, so a question with few options is never discounted less."""
     s = _settings()
     if evidence_type not in s.bkt.evidence:
         raise ValueError(f"evidence_type must be one of {', '.join(s.bkt.evidence)}")
+    slip, guess = s.bkt.evidence[evidence_type].slip, s.bkt.evidence[evidence_type].guess
+    if s.bkt.mcq_guess_from_options and n_options:
+        guess = 1 / n_options
+    if immediate:
+        slip, guess = s.bkt.evidence["immediate"].slip, max(s.bkt.evidence["immediate"].guess, guess)
+    return slip, guess
+
+
+def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, slip: float, guess: float, correct: bool,
+                    ts: str, weight: float = 1.0, slip_add: float = 0.0) -> None:
+    """The BKT update on one part with the evidence's slip and guess (slip_guess); weight (0–1) scales how far
+    p_known moves towards the BKT result. slip_add raises slip (capped at session.slip_cap) while the session is
+    fatigued."""
+    s = _settings()
     node = graph.get_node(part_id)
     if node is None or node["level"] != "part":
         raise ValueError(f"{part_id!r} is not a part")
@@ -676,7 +700,6 @@ def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, evi
 
     state = _load_state(conn, student_id, part_id, ts)
     before = _p_at(state, ts)
-    slip, guess = s.bkt.evidence[evidence_type].slip, s.bkt.evidence[evidence_type].guess
     if slip_add:
         slip = max(slip, min(s.session.slip_cap, slip + slip_add))
     if correct:

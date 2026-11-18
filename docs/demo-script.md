@@ -44,8 +44,8 @@ Optionally show the plans side by side (`python -m edux.cli context --student <i
 
 ## 4. Reviews: recall and transfer (demo-secure, about 1 minute)
 Ask **"Quiz me on what's due"** (the `review_due` prompt). Three reviews are due:
-- `tax_incidence_split`, weak: a **recall** question ("who bears an indirect tax, and what decides the split?")
-- `pes_definition` and `tax_supply_shift`, developing: **transfer** questions in a new context, e.g. a linked idea from the graph
+- `tax_incidence_split` and `tax_supply_shift`, weak (below `levels.new`): **recall** questions ("who bears an indirect tax, and what decides the split?")
+- `pes_definition`, developing: a **transfer** question in a new context, e.g. a linked idea from the graph
 
 Whether the answer is right or wrong, the feedback should explain why.
 

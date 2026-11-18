@@ -165,3 +165,9 @@ ALTER TABLE exchange_log ADD COLUMN web_access INTEGER;             -- research 
 ALTER TABLE exchange_log ADD COLUMN asks_recent INTEGER NOT NULL DEFAULT 0;   -- research only: about recent data or events
 ALTER TABLE exchange_log ADD COLUMN pushback_changed INTEGER NOT NULL DEFAULT 0;  -- the chatbot changed its answer after pushback
 ```
+
+`migrations/010_evidence_options.sql` (tune-from-research) adds how many options a multiple-choice question showed. With `bkt.mcq_guess_from_options` its guess is `1 / n_options`. It is null for open answers and for older rows, which keep the type's guess.
+
+```sql
+ALTER TABLE evidence_log ADD COLUMN n_options INTEGER;
+```

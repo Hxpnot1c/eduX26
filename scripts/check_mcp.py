@@ -704,6 +704,14 @@ async def main(url: str, key: str, student: str) -> None:
     check(minimal.get("plan") == [] and set(minimal.get("reference", {})) == {"notes"},
           "the minimal profile returns notes only and no plan", ", ".join(minimal.get("reference", {})))
 
+    rows = learner._conn().execute(
+        """SELECT evidence_type, n_options FROM evidence_log WHERE student_id IN (?, 'demo-secure', 'demo-showme')
+           AND origin = 'chat' AND evidence_type IN ('mcq_check', 'ail_how')""", (student,)).fetchall()
+    kinds = {r["evidence_type"] for r in rows}
+    check(kinds == {"mcq_check", "ail_how"} and all((r["n_options"] or 0) >= 2 for r in rows),
+          "multiple-choice answers from chat store how many options they showed",
+          f"{len(rows)} rows, types {sorted(kinds)}, n_options {sorted({r['n_options'] for r in rows}, key=str)}")
+
     for who in sorted({student, "demo-secure", "demo-weak", "demo-showme"}):   # every student the run wrote events for
         before_rebuild = state(who)
         cli("rebuild", "--student", who)
