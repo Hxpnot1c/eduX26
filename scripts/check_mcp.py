@@ -25,6 +25,7 @@ example-mini pack loaded and the demo students seeded. It:
   no saved plan, and that another part's point is refused;
 - checks a bad answer is refused and records nothing, get_my_progress, update_my_profile, that a wrong or
   missing key is refused with 401, and that the minimal profile returns no plan;
+- checks the engagement rules (a passive streak and its picks, a repeated show, a coasting explain-back) with throwaway students;
 - checks rebuild gives identical state for every demo student and tutor_turn's median server time is under 100 ms;
 - resets the demo students again, so the demo is left as seeded (--keep leaves the run's events).
 Exits non-zero if any check fails. The key is read from the database when --key is not given.
@@ -599,6 +600,79 @@ async def waiting_task(url: str) -> None:
         drop_student(student)
 
 
+async def engagement_rules(url: str) -> None:
+    """In-session engagement rules (engagement-rules): a passive streak gets offer_choice once a session, and each
+    pick is planned; a third "just show me" on a part first gets a 2-option check; a coasting student's
+    explain-back asks for their weakest point only and is scored on it."""
+    from edux import plan
+    labels = {"question_depth": "surface", "engagement": "passive"}
+
+    def turner(student: str, keyed: str):
+        async def turn(message: str, extra: dict | None = None, **more) -> dict:
+            time.sleep(1.1)
+            return await call(keyed, "tutor_turn", {"message": message, "client": "check_mcp", "node_ids": [PART],
+                                                    "this_message": {**labels, **(extra or {})}, **more})
+        return turn
+
+    student = "check-passive"
+    turn = turner(student, f"{url}?key={new_student(student)}")
+    try:
+        streak = [await turn("ok") for _ in range(4)]
+        offer = streak[-1].get("plan") or [{}]
+        again = await turn("ok")
+        quiz = await turn("a quick question please", {"choice": "quiz"})
+        extend = await turn("a harder one", {"choice": "extend", "engagement": "active"})
+        stop = await turn("let's stop there", {"choice": "stop", "engagement": "active"})
+        check(offer[0].get("move") == "offer_choice" and offer[0]["data"].get("reason") == "passive"
+              and offer[0]["data"].get("options") == ["quiz", "extend", "stop"] and "offer_choice" not in moves(again)
+              and moves(quiz) == ["ask_mcq"] and moves(extend) == ["extend"] and moves(stop) == [],
+              "a passive streak is offered quiz, extend or stop once a session, and each pick is planned",
+              " | ".join(json.dumps(moves(t)) for t in (*streak, again, quiz, extend, stop)))
+    finally:
+        drop_student(student)
+
+    student = "check-shows"
+    turn = turner(student, f"{url}?key={new_student(student)}")
+    try:
+        shows = [await turn("just show me", {"choice": "just_show_me"}) for _ in range(3)]
+        third = (shows[-1].get("plan") or [{}])[0]
+        chosen, _ = letter(student, True)
+        before = max_evidence_id()
+        await turn(chosen, {"engagement": "active"}, answer={"part_id": PART, "type": "mcq", "choice": chosen})
+        rows = evidence(student, before)
+        check([moves(t) for t in shows[:2]] == [["show", "ask_mcq"]] * 2 and moves(shows[-1]) == ["ask_mcq"]
+              and len(third["data"].get("options", [])) + bool(third["data"].get("extra_option")) == 2
+              and [(r["evidence_type"], r["n_options"]) for r in rows] == [("mcq_check", 2)],
+              f"after {load_settings().show.max_per_part_session} shows of a part, the next first gets a 2-option check (guess 1/2)",
+              " | ".join(json.dumps(moves(t)) for t in shows) + f" {[(r['evidence_type'], r['n_options']) for r in rows]}")
+    finally:
+        drop_student(student)
+
+    student = "check-coasting"
+    turn = turner(student, f"{url}?key={new_student(student)}")
+    try:
+        now = learner.parse_ts(learner.now_iso())
+        prereqs = [p for e in graph.prerequisites(PART, 1) for p in graph.parts_of(e["other"])]
+        for i, part in enumerate([*prereqs, PART] * 3):   # known well, two days ago, so no prequestion or prereq check
+            learner.record_evidence(student, part, "explain_back", 1.0, apply="now",
+                                    ts=learner._event_ts(now - timedelta(days=2, minutes=60 - i)))
+        got = await turn("ok")
+        step = next((s for s in got.get("plan", []) if s["move"] == "explain_back"), {})
+        ids = [p["id"] for p in graph.score_points(PART)]
+        point_id = step.get("data", {}).get("point_id")
+        letters = [p["id"] for p in got.get("score_next", {}).get(PART, [])]
+        before = max_evidence_id()
+        mine = graph.point_letter(ids.index(point_id)) if point_id in ids else "a"
+        await turn("my answer", {"engagement": "constructive"},
+                   answer={"part_id": PART, "type": "explain_back", "points_met": [mine]})
+        rows = evidence(student, before)
+        check(point_id in ids and letters == [mine] and [(r["score"], r["point_id"]) for r in rows] == [(1.0, point_id)],
+              "a coasting student's explain-back asks for their weakest point only, and is scored on it",
+              f"{json.dumps(moves(got))} point {point_id} letters {letters} {[(r['score'], r['point_id']) for r in rows]}")
+    finally:
+        drop_student(student)
+
+
 def shuffles() -> None:
     """MCQ options are shuffled differently for different students."""
     from edux import plan
@@ -671,6 +745,7 @@ async def main(url: str, key: str, student: str) -> None:
     await how_ai_works(url)
     await fatigued_student(url)
     await waiting_task(url)
+    await engagement_rules(url)
     shuffles()
 
     before = max_evidence_id()
