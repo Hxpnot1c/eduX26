@@ -99,7 +99,8 @@ With the current values the tightest case is a 2-option question while fatigued:
   - The target is 0 until there are `min_observations` pieces across `min_parts` parts.
 - **Steps:** the offset moves once per session, towards the target. It rises at most `max_change_per_session` log-odds and falls at most `down_change_factor` times that, so under-crediting is the more likely error.
 - **Rebuild:** it is a pure function of earlier events, so rebuild gives the same state.
-- **Switching it on and off:** `personalisation.enabled = true` by default. `EDUX_PERSONALISATION=0` turns it off without editing the file, and changing either then needs a rebuild to re-score.
+- **Switching it on and off:** `personalisation.enabled = false` by default (Children's Code Standard 12: profiling off unless there is a compelling reason; after the 05m recalibration the offset barely moves). `EDUX_PERSONALISATION=1` turns it on and `=0` off without editing the file, and changing either then needs a rebuild to re-score. This switch covers the learning-rate offset only. The starting-point adjustments (step 05q) stay on: they use the student's own pre-teaching answers, for their own teaching only.
+- **Left out of the offset:** a part's first answer (it belongs to the starting-point adjustment), AI-literacy evidence, and fatigued, immediate or untaught evidence. AI-literacy parts learn at the population rate.
 - **Who sees it:** it is never a label and is never shown to students or teachers. Only the CLI student view (`python -m edux.cli state`) prints the offset and `n`.
 - **What isn't personal:** slip and guess stay per evidence type.
 
