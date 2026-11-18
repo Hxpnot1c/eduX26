@@ -7,7 +7,7 @@ Every number the system uses lives in `settings.toml`. Everything about what the
 ## settings.toml
 
 ```toml
-protocol = "v0.2"          # bump when the meaning of labels or scoring changes (v0.2: labels describe the student's message; scores come from points met)
+protocol = "v0.3"          # bump when the meaning of labels or scoring changes (v0.2: labels describe the student's message; scores come from points met; v0.3: an exchange alone can't lift a part past nudges.ceiling)
 
 [levels]                   # part levels shown to students
 new = 0.40                 # p_known below this = new
@@ -35,9 +35,10 @@ ail_unprompted = { slip = 0.05, guess = 0.10 }   # checking a claim without bein
 ail_how = { slip = 0.10, guess = 0.25 }          # a how-AI-works check: 4-option multiple choice
 mcq_check = { slip = 0.10, guess = 0.25 }   # a multiple-choice check on one point (step 05d); guess about 1 in 4 options
 
-[nudges]                   # small odds multipliers from an ordinary exchange
+[nudges]                   # small odds multipliers from an ordinary exchange. Judgement calls, starting values (no study gives them); ceiling: decision 0003
 depth = { surface = 1.0, mechanism = 1.0, transfer = 1.1 }   # a basic question doesn't lower the estimate; evidence does that
 engagement = { passive = 1.0, active = 1.0, constructive = 1.05 }
+ceiling = 0.40             # an exchange alone never lifts a part above this p_known; at most levels.new
 concept_tag_strength = 0.5 # a nudge on a concept tag reaches its parts at this strength
 
 [evidence]
