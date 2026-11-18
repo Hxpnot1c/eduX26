@@ -163,6 +163,8 @@ class Session:
 class Engagement:
     passive_run: int
     low_share: float
+    weakest_last_n: int
+    coasting_min_messages: int
 
 
 @dataclass(frozen=True)

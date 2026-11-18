@@ -1140,6 +1140,34 @@ def session_state(student_id: str, at: str | datetime | None = None) -> dict | N
     }
 
 
+def session_parts(student_id: str, at: str | datetime | None = None) -> list[str]:
+    """The course parts the student worked on this session (answered, or asked about), in the order they first
+    came up. AI-literacy parts are left out. Empty with no session. For the summary when they stop."""
+    conn, at_ts = _conn(), _event_ts(at)
+    state = session_state(student_id, at_ts)
+    if state is None:
+        return []
+    start = state["session_id"]
+    found: dict[str, None] = {}
+    rows = conn.execute("""SELECT ts, node_ids AS ids FROM exchange_log WHERE student_id = ? AND ts >= ? AND ts <= ?
+                           UNION ALL SELECT ts, part_id FROM evidence_log WHERE student_id = ? AND ts >= ? AND ts <= ?
+                           ORDER BY ts""", (student_id, start, at_ts, student_id, start, at_ts)).fetchall()
+    for row in rows:
+        for node in split(row["ids"]):
+            node = graph.canonical(node)
+            if not graph.is_literacy(node) and (graph.get_node(node) or {}).get("level") == "part":
+                found.setdefault(node)
+    return list(found)
+
+
+def next_review(student_id: str) -> dict | None:
+    """The student's next review, {part_id, due} (due may be in the past), or None. AI-literacy parts are left out."""
+    for row in _conn().execute("SELECT part_id, due FROM review_queue WHERE student_id = ? ORDER BY due", (student_id,)):
+        if not graph.is_literacy(row["part_id"]):
+            return {"part_id": row["part_id"], "due": row["due"]}
+    return None
+
+
 def passive_streak(student_id: str, at: str | datetime | None = None) -> int:
     """How many of the student's latest messages in the current session were labelled passive, in a row, up to
     engagement.passive_run (engagement-rules). Read from exchange_log, never stored."""
@@ -1157,23 +1185,31 @@ def passive_streak(student_id: str, at: str | datetime | None = None) -> int:
 
 def coasting_share(student_id: str, at: str | datetime | None = None) -> float | None:
     """The share of the student's last session.signal_window messages this session that were passive or asked to
-    be shown ("just show me", or labelled offloading), or None with no messages (engagement-rules)."""
+    be shown ("just show me", or labelled offloading), or None with fewer than engagement.coasting_min_messages
+    messages, so one passive first message is not coasting (engagement-rules)."""
     conn, at_ts = _conn(), _event_ts(at)
     start = session_start(conn, student_id, at_ts)
     rows = conn.execute("""SELECT engagement, offloading, choice_taken FROM exchange_log WHERE student_id = ? AND ts >= ?
                            AND ts <= ? ORDER BY ts DESC, id DESC LIMIT ?""",
                         (student_id, start, at_ts, _settings().session.signal_window)).fetchall()
-    if not rows:
+    if len(rows) < _settings().engagement.coasting_min_messages:
         return None
     return sum(1 for r in rows if r["engagement"] == "passive" or r["offloading"] or r["choice_taken"] == "just_show_me") / len(rows)
 
 
 def weakest_point(student_id: str, part_id: str, point_ids: list[str]) -> str:
-    """The point the student has done worst on: the lowest mean score of evidence that asked that point
-    (point_id), with a point never asked counting as 0.5; the earlier point on a tie."""
-    rows = _conn().execute("SELECT point_id, AVG(score) AS mean FROM evidence_log WHERE student_id = ? AND part_id = ? "
-                           "AND point_id IS NOT NULL GROUP BY point_id", (student_id, graph.canonical(part_id))).fetchall()
-    means = {r["point_id"]: r["mean"] for r in rows}
+    """The point the student has done worst on: the lowest mean score of each point's last engagement.weakest_last_n
+    pieces of evidence (point_id), so early misses that were later put right don't count; a point never asked
+    counts as 0.5; the earlier point on a tie."""
+    last_n = _settings().engagement.weakest_last_n
+    rows = _conn().execute("SELECT point_id, score FROM evidence_log WHERE student_id = ? AND part_id = ? "
+                           "AND point_id IS NOT NULL ORDER BY ts DESC, id DESC",
+                           (student_id, graph.canonical(part_id))).fetchall()
+    recent: dict[str, list[float]] = {}
+    for r in rows:   # newest first: keep each point's last weakest_last_n scores
+        if len(recent.setdefault(r["point_id"], [])) < last_n:
+            recent[r["point_id"]].append(r["score"])
+    means = {p: sum(v) / len(v) for p, v in recent.items()}
     return min(point_ids, key=lambda p: (means.get(p, 0.5), point_ids.index(p)))
 
 
