@@ -25,6 +25,7 @@ example-mini pack loaded and the demo students seeded. It:
   no saved plan, and that another part's point is refused;
 - checks a bad answer is refused and records nothing, get_my_progress, update_my_profile, that a wrong or
   missing key is refused with 401, and that the minimal profile returns no plan;
+- checks priorities (a mock beats an extend, no cramming, gaps, add/remove/rebuild, unmatched topics, considered);
 - checks the engagement rules (a passive streak and its picks, a repeated show, a coasting explain-back) with throwaway students;
 - checks the personal learning rate (within bounds, earlier sessions only, never shown);
 - checks rebuild gives identical state for every demo student and tutor_turn's median server time is under 100 ms;
@@ -519,7 +520,7 @@ async def how_ai_works(url: str) -> None:
           json.dumps(lit.get("how_ai_works")))
 
 
-THROWAWAY_TABLES = ("student_profile", "exchange_log", "part_state", "student_misconception", "approach_record",
+THROWAWAY_TABLES = ("student_profile", "student_assessment", "exchange_log", "part_state", "student_misconception", "approach_record",
                     "review_queue", "evidence_derived", "evidence_log", "call_log", "issued_plan")
 
 
@@ -674,6 +675,103 @@ async def engagement_rules(url: str) -> None:
         drop_student(student)
 
 
+async def priorities(url: str) -> None:
+    """Add-on steps by expected marks (priorities): a due review covered by a mock in 3 days beats an earned extend
+    on a part with only the final ahead, and loses to it without the mock; a part not yet due is never reviewed; a
+    mock shortens the review gap until it has passed; adding then removing a test and rebuilding changes nothing;
+    an unmatched topic adds nothing and returns the topics; considered is stored and never sent."""
+    from edux import context_blocks, plan, service
+    settings = load_settings()
+    student = "check-priorities"
+    keyed = f"{url}?key={new_student(student)}"
+    extend_part, review_part, later_part = "ped_definition", "tax_supply_shift", "externality_tax_eval"
+    topic = next(t["name"] for t in graph.topics() if review_part in graph.parts_of(t["id"]))
+    now = learner.parse_ts(learner.now_iso())
+
+    def iso(days: float) -> str:
+        return learner._event_ts(now + timedelta(days=days))
+
+    def assess(days: int) -> dict:
+        return service.update_profile(learner.get_student(student), add_assessment={
+            "name": "Mock", "kind": "mock", "date": (now + timedelta(days=days)).date().isoformat(), "topics": [topic]})
+
+    def clear() -> None:
+        for a in learner.assessments(student):
+            service.update_profile(learner.get_student(student), remove_assessment=a["id"])
+
+    def addon() -> tuple[dict | None, dict]:
+        turn = context_blocks.Turn(student=learner.get_student(student), parts=[extend_part], message="",
+                                   at=learner.now_iso(), limits={"reviews_due": 3}, resolution={})
+        blocks = {"support": {"part_id": extend_part, "extend": True},
+                  "reviews_due": context_blocks.reviews_due(turn, settings)}
+        return plan._second_step(turn, blocks, settings), blocks
+
+    def picked(step: dict | None) -> str:
+        return "-" if step is None else f"{step['move']}:{step['part_id']}"
+
+    try:
+        with learner._conn() as conn:   # hand-set state: the extend part fades by the final, the review part holds
+            for part, p_known, half_life in ((extend_part, 0.6, 1.0), (review_part, 0.6, 400.0), (later_part, 0.6, 400.0)):
+                conn.execute("INSERT INTO part_state (student_id, part_id, p_known, half_life_days, last_seen, n_evidence, "
+                             "clock_start, last_correct) VALUES (?, ?, ?, ?, ?, 3, ?, ?)",
+                             (student, part, p_known, half_life, iso(-1), iso(-1), iso(-1)))
+            conn.execute("INSERT INTO review_queue (student_id, part_id, due, reason) VALUES (?, ?, ?, 'scheduled')",
+                         (student, review_part, iso(-0.1)))
+            conn.execute("INSERT INTO review_queue (student_id, part_id, due, reason) VALUES (?, ?, ?, 'scheduled')",
+                         (student, later_part, iso(5)))
+        without, _ = addon()
+        added = assess(3)
+        with_mock, blocks = addon()
+        due_parts = [r["part_id"] for r in blocks["reviews_due"]["items"]]
+        check(picked(without) == f"extend:{extend_part}" and picked(with_mock) == f"ask_mcq:{review_part}"
+              and "mock" in with_mock["data"].get("reason", "") and with_mock.get("considered"),
+              "a due review covered by a mock in 3 days beats an earned extend; with no mock it loses to it",
+              f"without: {picked(without)}, with: {picked(with_mock)} {json.dumps((with_mock or {}).get('data', {}).get('reason'))}")
+        check(later_part not in due_parts and picked(with_mock) != f"ask_mcq:{later_part}",
+              "a part not yet due is never reviewed, whatever tests are coming", json.dumps(due_parts))
+        clear()
+        assess(5)
+        before_mock = learner.review_gap_days(student, review_part, now)
+        after_mock = learner.review_gap_days(student, review_part, now + timedelta(days=6))
+        clear()
+        plain_now = learner.review_gap_days(student, review_part, now)
+        plain_after = learner.review_gap_days(student, review_part, now + timedelta(days=6))
+        check(before_mock < plain_now and abs(after_mock - plain_after) < 1e-9,
+              "a mock in 5 days shortens the review gap; after it, the gap is the final-exam one again",
+              f"with mock {before_mock:.2f} vs {plain_now:.2f} days; after it {after_mock:.2f} vs {plain_after:.2f}")
+
+        drop_student(student)   # with events this time: add, remove, rebuild = never added
+        keyed = f"{url}?key={new_student(student)}"
+        for i, part in enumerate([review_part, extend_part, review_part]):
+            learner.record_evidence(student, part, "explain_back", 1.0, ts=iso(-3 + i), apply="now")
+        cli("rebuild", "--student", student)
+        untouched = state(student)
+        assess(5)
+        cli("rebuild", "--student", student)
+        clear()
+        cli("rebuild", "--student", student)
+        check(state(student) == untouched, "adding then removing an assessment and rebuilding gives the same state")
+
+        rows = lambda: learner._conn().execute("SELECT COUNT(*) FROM student_assessment WHERE student_id = ?",
+                                               (student,)).fetchone()[0]
+        got = await call(keyed, "update_my_profile", {"add_assessment": {
+            "name": "Mock", "kind": "mock", "date": (now + timedelta(days=9)).date().isoformat(), "topics": ["astrophysics"]}})
+        check(got.get("ok") is False and {t["name"] for t in got.get("topics", [])} == {t["name"] for t in graph.topics()}
+              and rows() == 0, "an unmatched topic returns the pack's topics and adds nothing", json.dumps(got)[:200])
+        check(added.get("ok") is True and added["added"]["parts"] == len(graph.parts_of(
+            next(t["id"] for t in graph.topics() if t["name"] == topic))),
+              "a matched topic is confirmed with its part count", json.dumps(added.get("added")))
+    finally:
+        drop_student(student)
+
+    key = learner._conn().execute("SELECT key FROM student WHERE id = 'demo-secure'").fetchone()[0]
+    got = await call(f"{url}?key={key}", "tutor_turn", {"message": "Quiz me on what's due", "client": "check_mcp",
+                                                       "this_message": {"question_depth": "surface", "engagement": "active"}})
+    stored = plan_json("demo-secure").get("considered")
+    check(bool(stored) and "considered" not in json.dumps(got) and all("value" in c for c in stored),
+          "considered add-on candidates are stored with their values and never sent", json.dumps(stored)[:200])
+
+
 def shuffles() -> None:
     """MCQ options are shuffled differently for different students."""
     from edux import plan
@@ -747,6 +845,7 @@ async def main(url: str, key: str, student: str) -> None:
     await fatigued_student(url)
     await waiting_task(url)
     await engagement_rules(url)
+    await priorities(url)
     shuffles()
 
     before = max_evidence_id()
