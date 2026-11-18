@@ -126,6 +126,8 @@ pattern_min_sessions = 3   # sessions with a fatigue onset before study_pattern 
 passive_run = 4            # passive messages in a row before offer_choice offers ways on (once a session, never when fatigued)
 low_share = 0.5            # passive or "just show me" share of the last session.signal_window messages at or above which the
                            # explain-back asks for the weakest point only
+weakest_last_n = 5          # from research: Galyardt & Goldin (2015), 75-93% of predictive weight on the last 5 attempts
+coasting_min_messages = 2   # judgement call, starting value: messages in the window before a student can count as coasting
 
 [show]                     # "just show me" (engagement-rules)
 max_per_part_session = 2   # after this many shows of one part in a session, the next first asks a 2-option question on the point

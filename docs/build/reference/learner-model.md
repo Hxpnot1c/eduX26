@@ -231,7 +231,7 @@ Derived from both event logs at read and rebuild time. There are no session even
   It lasts until the session ends. Evidence while fatigued uses the raised slip above, so errors count for less and correct answers still count fully. The "just show me" share and the `surface` share over the last `session.signal_window` exchanges are reported but never trigger fatigue.
 - **Engagement (engagement-rules):**
   - `learner.passive_streak` counts the latest messages in the session labelled `passive`, in a row. It drives a one-off `offer_choice`.
-  - `learner.coasting_share` is the share of the last `session.signal_window` messages that were `passive` or "just show me". At `engagement.low_share` or above, the explain-back asks for the weakest point only (`learner.weakest_point`).
+  - `learner.coasting_share` is the share of the last `session.signal_window` messages that were `passive` or "just show me", and needs at least `engagement.coasting_min_messages` (2) messages, so one passive first message is not coasting. At `engagement.low_share` or above, the explain-back asks for the weakest point only (`learner.weakest_point`: the lowest mean of each point's last `engagement.weakest_last_n` (5) answers; a point never asked counts as 0.5).
   - `learner.shows_this_session` counts "just show me" on a part. After `show.max_per_part_session`, a 2-option check comes first.
 
   See `tools-and-context.md` for the plans these give. Like fatigue, these signals are in-session only, read from the events each turn, and never stored as a trait of the student.

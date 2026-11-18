@@ -45,7 +45,9 @@ Only if the cuts can't make room, raise `instructions.max_words` to at most 950,
 - `edux/service.py`: stop in `_literacy_followup` and `_how_ai_works`.
 - `text/moves/session_summary.md` and `session_summary.cue.md`; `text/moves/offer_choice.md`.
 - `settings.toml`: `engagement.weakest_last_n`, `engagement.coasting_min_messages`.
-- `scripts/check_mcp.py`: the engagement run, extended.
+- `scripts/check_mcp.py`: the engagement run, extended (passive offer without extend, stop gives a summary, the repeated show's feedback-then-show, coasting after two messages).
+- `tests/test_engagement_rules.py`: weakest point from the last five answers; coasting needs two messages; the wrong-option order; the passive offer's options; the session summary.
+- `edux/learner.py`: also `session_parts` and `next_review`, for the summary.
 - **Docs:** this file; 05g is written to match; `reference/tools-and-context.md` (`session_summary`, choice values); `reference/settings.md` (the two settings, labelled); `reference/research.md` rows if anything ends up different.
 
 ## Settings

@@ -99,9 +99,9 @@ At most two steps (three from step 05d, for feedback, `teach_point` and `ask_mcq
 
    It is honoured only when the message names no course node, isn't a research question and has no answer, and a review with mark points is due. Same-topic wordings ("quiz me on this") and questions about how to revise are excluded. A recognised request also skips the `other` early-out and drops a pending question.
 4. `choice == just_show_me` → `show`: a short worked example. Nothing else follows it.
-   - After `show.max_per_part_session` shows of the part this session (engagement-rules), the next "just show me" first gets a 2-option `ask_mcq` (`check`) on the current point **(stop)**: the point plus the part's first misconception (or one the chatbot writes, when it has none). Its guess is 1/2, from the options shown. The answer's feedback gives the point either way; a wrong answer re-teaches it as for any check.
-   - A pick from `offer_choice`, sent back as `this_message.choice` (engagement-rules): `quiz` → the current point's check (as `skip_point`), `extend` → `extend` **(stop)**, `stop` → an empty plan (the chatbot wraps up with a one-line summary).
-5. Passive streak (engagement-rules): the student's last `engagement.passive_run` messages this session were all labelled `passive`, they aren't fatigued, and it hasn't been offered this session → `offer_choice` (`reason = passive`, `options` quiz, extend and stop) **(stop)**. It's read from `exchange_log` each turn and never stored as a trait.
+   - After `show.max_per_part_session` shows of the part this session (engagement-rules), the next "just show me" first gets a 2-option `ask_mcq` (`check`) on the current point **(stop)**: the point plus one wrong option: a misconception the student holds on the part, else a watch-for one, else the first in pack order (or one the chatbot writes, when the part has none). Its guess is 1/2, from the options shown. The step carries `data.then_show`: the answer gets `feedback`, then the full `show` and its check (step 05l), whether the answer was right or wrong.
+   - A pick from `offer_choice`, sent back as `this_message.choice` (engagement-rules): `quiz` → the current point's check (as `skip_point`), `extend` → `extend` **(stop)**, `stop` → `session_summary` **(stop)**: `data.covered` (the parts worked on this session, by name) and `data.next_review` (the next review's name and date, or none); its section is two sentences. A pending literacy task or how-AI-works check is dropped unscored, not re-asked (stop is treated like fatigue).
+5. Passive streak (engagement-rules): the student's last `engagement.passive_run` messages this session were all labelled `passive`, they aren't fatigued, and it hasn't been offered this session → `offer_choice` (`reason = passive`, `options` quiz and stop, plus extend only when it is earned: `blocks.support.extend`, as for the extend move) **(stop)**. It's read from `exchange_log` each turn and never stored as a trait.
 6. Pre-question eligible → `prequestion` **(stop)**.
    - Eligible means the part has no evidence yet, its level is below `support.worked_example_below`, it has enough misconceptions and there was no "just show me" this session.
    - It is never asked twice: not on the turn its answer arrives, and not again when the last plan already asked it.
@@ -179,6 +179,7 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
 | `answer_brief` | no | 05c | | | notes | 20 |
 | `reask` | yes **(stop)** | 05c | `literacy_followup` (05e) | `pending` | none | 20 |
 | `offer_choice` | yes **(stop)** | 05b | `offer_stop` (engagement-rules) | `reason` (`fatigued` / `passive`), `options` (from `stop`, `quick`, `quiz`, `extend`), `quick_parts` | none | 45 |
+| `session_summary` | yes **(stop)** | 05l | none | `covered`, `next_review` | none | 23 |
 | `ask_which` | yes **(stop)** | 05b | | `candidates` | none | 20 |
 | `answer_with_sources` | no | 05e | | `trusted_sources` | notes | 40 |
 | `literacy_task` | yes **(stop)** when `data.task` | 05e | | `skill`, `level`, `task`, `features`, `pattern` | none | 35 |
