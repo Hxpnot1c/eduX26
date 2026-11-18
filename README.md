@@ -1,19 +1,23 @@
-# eduX26
+# Synapse
 
-A learning service for school chatbots. It is an MCP server that:
+Synapse is a learning service for school chatbots. It is an MCP server that:
 - holds a course as a knowledge graph built from exam material (specification, past papers, mark schemes, notes)
 - keeps a learner model for each student, built from what they do in their chatbot
 - tells the chatbot how to teach that student on each turn, as a short ordered plan of one or two steps: what to check first, how much help to give, which misconception to correct, what is due for review
 
 Students connect their own chatbot (claude.ai or ChatGPT) with a personal link. The chatbot calls one tool, `tutor_turn`, at the start of each reply. The server never calls an LLM itself. The chatbot labels the student's message and ticks the points their answer made. The server scores that with fixed rules from `settings.toml` and returns the plan for the reply.
 
+Synapse is our entry to Cambridge EduX 2026 (Track 1, *Beneath the Surface: Defining and Assessing AI Literacy*). "eduX" is the competition's name, not the product's. The GitHub repository is `synapse-eduX26`.
+
 The build plan and reference design are in [`docs/build`](docs/build/README.md).
+
+**Names.** Everything a student, teacher or judge sees says Synapse. The internal identifiers keep their old spelling until after the competition, so existing set-ups keep working: the Python package `edux`, the `EDUX_*` environment variables and the `python -m edux.cli` command.
 
 ## Quick demo (about ten minutes)
 You need Python 3.11+ and a tunnel tool (Cloudflare Tunnel or ngrok), because claude.ai and ChatGPT reach the server from the internet, not from your computer.
 
 ```bash
-git clone git@github.com:Hxpnot1c/eduX26.git && cd eduX26
+git clone git@github.com:Hxpnot1c/synapse-eduX26.git && cd synapse-eduX26
 python3 -m venv .venv && .venv/bin/pip install -e .   # or: uv venv && uv pip install -e .
 cp .env.example .env
 scripts/demo.sh            # loads example-mini, creates three demo students, starts the server
@@ -90,7 +94,7 @@ The connector URL is `https://<tunnel-host>/mcp?key=<key>`, including `/mcp` and
 
 **claude.ai**
 1. Open Customize → Connectors (Settings → Connectors on older layouts) and choose **Add custom connector**.
-2. Give it a name (e.g. eduX) and paste the URL. Leave the OAuth fields under Advanced settings empty.
+2. Give it a name (e.g. Synapse) and paste the URL. Leave the OAuth fields under Advanced settings empty.
 3. In a chat, turn the connector on from the tools menu.
 
 The free plan allows one custom connector.

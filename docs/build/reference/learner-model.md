@@ -176,7 +176,7 @@ Shares are adapted from Cepeda et al. (2008): the optimal gap shrinks as the tes
 `reviews_due` returns up to `max_reviews_per_reply` due parts, ordered by importance.
 
 ## Priorities: the add-on step by expected marks
-The student's message still sets the main step. The value score orders only the choices eduX makes itself:
+The student's message still sets the main step. The value score orders only the choices Synapse makes itself:
 - the add-on step (`plan._second_step`): an earned `extend`, the best due review, or nothing;
 - the order of due reviews (`reviews_due`);
 - the order of prerequisite repairs (`weak_prerequisites`).

@@ -3,7 +3,7 @@
 Branch `build/priorities`.
 
 ## What
-The student's message still sets the main step. This step changes only the choices eduX makes itself:
+The student's message still sets the main step. This step changes only the choices Synapse makes itself:
 - the add-on step in `plan._second_step`: an earned extend, the best due review, or nothing;
 - the order of due reviews (`context_blocks.reviews_due`);
 - the order of prerequisite repairs (`context_blocks.weak_prerequisites`).

@@ -141,7 +141,7 @@ learn_rate_weight_bounds = [0.5, 1.5]   # odds multiplier on bkt.learn_rate; nar
 max_change_per_session = 0.25   # log-odds the offset may rise from one session to the next
 down_change_factor = 2.0   # it may fall this many times faster: under-crediting is the safer mistake
 
-[priorities]               # which add-on step eduX picks, by expected marks (priorities). These are starting guesses, to be learned
+[priorities]               # which add-on step Synapse picks, by expected marks (priorities). These are starting guesses, to be learned
                            # from pilot data (the considered logs in issued_plan)
 weight_homework = 0.3      # how much a test of each kind counts
 weight_class_test = 0.6
