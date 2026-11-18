@@ -83,7 +83,8 @@ At most two steps (three from step 05d, for feedback, `teach_point` and `ask_mcq
 2. Stuck on the focus part:
    - `step_back` to its weakest prerequisite **(stop)**;
    - or, when it has no prerequisite, `reteach` of the whole part (through the anchor, or a different example; `switch_approach` before 05c).
-3. Focus ambiguous → `ask_which` with the candidates **(stop)**. No focus at all (e.g. "quiz me on what's due") → the top due `review`, if any.
+   - Once per stuck part per session (research fixes, 0001): the session it was done in is kept in `issued_plan` (`points._stuck_handled`), and after that teaching carries on.
+3. Focus ambiguous → `ask_which` with the candidates **(stop)**. No focus at all (e.g. "quiz me on what's due") → the top due `review`, if any. The `review_due` prompt's wording (any case or punctuation) never falls back to the last turn's focus (research fixes, 0001).
 4. `choice == just_show_me` → `show`: a short worked example. Nothing else follows it.
    - After `show.max_per_part_session` shows of the part this session (engagement-rules), the next "just show me" first gets a 2-option `ask_mcq` (`check`) on the current point **(stop)**: the point plus the part's first misconception (or one the chatbot writes, when it has none). Its guess is 1/2, from the options shown. The answer's feedback gives the point either way; a wrong answer re-teaches it as for any check.
    - A pick from `offer_choice`, sent back as `this_message.choice` (engagement-rules): `quiz` → the current point's check (as `skip_point`), `extend` → `extend` **(stop)**, `stop` → an empty plan (the chatbot wraps up with a one-line summary).

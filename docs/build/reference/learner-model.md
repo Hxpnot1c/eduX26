@@ -67,6 +67,8 @@ The result counts as correct if `score ≥ bkt.correct_share`. Wrong evidence th
 
 **Immediate recall.** Performance straight after teaching overstates learning. Evidence on a part within `evidence.immediate_window_minutes` of an exchange on that part with `support_given` = `worked_example` or `hint` (including the exchange it was sent with) is applied as `immediate`: `immediate`'s slip, and the larger of `immediate`'s guess and the type's own (so a 2- or 3-option question is never discounted less). A correct immediate answer grows the half-life by the normal `decay.on_success` (a half-life multiplier of 1.0 for immediate evidence left 1.6 of 9 parts secure instead of 6.2 in the overnight simulation, report 06, finding w1-06-07, so it isn't used). Evidence later in the session, or in a later session, uses its own type. The type is stored as sent and the rule applied when replaying, so changing the window re-scores old evidence.
 
+`p_known` is saved clamped to [0.001, 0.999] (research fixes, 0001): a long run of right answers can otherwise round it to exactly 1.0, which breaks the exchange nudge's odds, p / (1 − p).
+
 Standard BKT with the slip and guess for the evidence type:
 
 ```
