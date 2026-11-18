@@ -1,0 +1,313 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: eduX wave-4 integration <noreply@example.invalid>
+Date: Wed, 18 Nov 2026 02:34:28 +0000
+Subject: [PATCH 3/5] verify scoring: a found dead or mismatched source scores
+ Verify 1; ignored tasks and checks are skips, not 0 (migration 010)
+
+---
+ edux/demo.py                     |  2 +-
+ edux/learner.py                  | 25 ++++++++++++++++++
+ edux/service.py                  | 45 +++++++++++++++++++++++---------
+ migrations/010_literacy_skip.sql |  5 ++++
+ scripts/check_mcp.py             | 30 ++++++++++-----------
+ settings.toml                    |  4 +--
+ text/tools/get_my_progress.md    |  2 +-
+ 7 files changed, 82 insertions(+), 31 deletions(-)
+ create mode 100644 migrations/010_literacy_skip.sql
+
+diff --git a/edux/demo.py b/edux/demo.py
+index 1eb6ac9..b91303a 100644
+--- a/edux/demo.py
++++ b/edux/demo.py
+@@ -274,7 +274,7 @@ def remove_students() -> dict[str, str]:
+     ids = list(keys)
+     with conn:
+         for sid in ids:
+-            for table in ("exchange_log", "evidence_log", "student_profile", "issued_plan", *learner.DERIVED_TABLES):
++            for table in ("exchange_log", "evidence_log", "literacy_skip", "student_profile", "issued_plan", *learner.DERIVED_TABLES):
+                 conn.execute(f"DELETE FROM {table} WHERE student_id = ?", (sid,))
+             conn.execute("DELETE FROM student WHERE id = ?", (sid,))
+     return keys
+diff --git a/edux/learner.py b/edux/learner.py
+index 9700198..7744be8 100644
+--- a/edux/learner.py
++++ b/edux/learner.py
+@@ -241,6 +241,29 @@ def question_evidence(features: list[str] | None) -> dict:
+     return {"part_id": AIL_ASK, "type": "ail_question", "score": len(shown) / len(QUESTION_FEATURES), "misconception_ids": []}
+ 
+ 
++def found_problem(kind: str = "ail_task", points_met: list[str] | None = None) -> dict:
++    """Verify evidence for a reported dead or mismatched source (step 05e): finding the problem is a successful
++    check, so it scores 1 whatever was ticked (a dead page has no publisher, date or figure to tick)."""
++    return {"part_id": AIL_VERIFY, "type": kind, "score": 1.0, "misconception_ids": [],
++            "points_met": list(points_met or [])}
++
++
++def record_skip(student_id: str, part_id: str, ts: str | None = None) -> None:
++    """An AI-literacy task or check left unanswered after its re-ask (step 05e): missing, not wrong, so no evidence
++    is written; the skip is counted for the progress view."""
++    conn = _conn()
++    with conn:
++        conn.execute("INSERT INTO literacy_skip (student_id, ts, part_id) VALUES (?, ?, ?)",
++                     (student_id, _event_ts(ts), part_id))
++
++
++def skips(student_id: str, part_ids: list[str], at: str | None = None) -> int:
++    """How many literacy tasks or checks on part_ids the student skipped up to at (default now)."""
++    marks = ", ".join("?" * len(part_ids))
++    return _conn().execute(f"SELECT COUNT(*) FROM literacy_skip WHERE student_id = ? AND part_id IN ({marks}) AND ts <= ?",
++                           (student_id, *part_ids, _event_ts(at))).fetchone()[0]
++
++
+ def _write_evidence(conn: sqlite3.Connection, student: dict, ts: str, rows: list, origin: str,
+                     exchange_id: int | None = None, check_id: str | None = None) -> list[int]:
+     s = _settings()
+@@ -665,6 +688,8 @@ def apply_evidence_event(event: dict) -> None:
+         _activate_misconceptions(conn, student_id, split(event.get("misconception_ids")), ts)
+     if weight > 0:  # an untaught pre-question is diagnostic only
+         slip_add = _settings().session.fatigue_slip_add if fatigued else 0.0
++        if part_id == AIL_VERIFY and correct:   # Verify is graded: 3 of 4 ticks moves it 3/4 as far as 4 of 4
++            weight *= event["score"]
+         _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts, weight=weight, slip_add=slip_add)
+ 
+ 
+diff --git a/edux/service.py b/edux/service.py
+index c9cd5fe..e419634 100644
+--- a/edux/service.py
++++ b/edux/service.py
+@@ -86,7 +86,7 @@ def _how_ai_works(turn: context_blocks.Turn, blocks: dict, last: dict, steps: li
+ 
+     Nothing while the student is fatigued (a pending check is dropped unscored). A pending check not answered this
+     turn is re-asked (reask, with the same options and letter map) up to literacy.max_followups times; not answered
+-    after that, it is recorded as ail_how with score 0. Otherwise the first trigger in this turn's labels
++    after that, it is counted as a skip (missing, not wrong: no evidence). Otherwise the first trigger in this turn's labels
+     (plan.HOW_TRIGGERS) adds the check as the plan's last step, unless its part already had a check this session, or, with the part at secure, the trigger count isn't a multiple of
+     literacy.how_secure_every. The check wins over the plan's own question and any literacy task."""
+     s, sid = _settings(), turn.student_id
+@@ -100,8 +100,7 @@ def _how_ai_works(turn: context_blocks.Turn, blocks: dict, last: dict, steps: li
+             if pending["followups"] < s.literacy.max_followups:
+                 return (plan.with_check(steps, plan.reask(pending["step"])[1]),
+                         {**pending, "followups": pending["followups"] + 1})
+-            learner.record_evidence(sid, pending["part_id"], "ail_how", 0.0, ts=turn.at, apply="now",
+-                                    point_id=(pending["step"].get("question") or {}).get("point_id"))
++            learner.record_skip(sid, pending["part_id"], ts=turn.at)   # missing, not wrong
+     session = learner.session_state(sid, turn.at)
+     start = session["session_id"] if session else turn.at
+     conn = learner._conn()
+@@ -122,14 +121,30 @@ def _how_ai_works(turn: context_blocks.Turn, blocks: dict, last: dict, steps: li
+     return steps, None
+ 
+ 
++def _found_problem(last: dict, evidence: dict | None, at: str) -> dict | None:
++    """The student reported a dead or mismatched source (source_conflict) as a Verify answer, or while a verify task
++    is pending this session: finding the problem is a successful check (learner.found_problem), always as ail_task
++    so that one report can't make Verify secure (ail_unprompted's low slip would). Any other answer is kept as it
++    is, and a report with no verify task or answer is left to the how-AI-works check."""
++    if evidence is not None:
++        if evidence["part_id"] == learner.AIL_VERIFY and evidence["type"] in learner.LITERACY_ANSWERS:
++            return learner.found_problem("ail_task", evidence.get("points_met"))
++        return evidence
++    task = last.get("literacy")
++    if task and task["skill"] == "verify" and last["ts"] is not None and (
++            (learner.parse_ts(at) - learner.parse_ts(last["ts"])).total_seconds() / 60 <= _settings().session.gap_minutes):
++        return learner.found_problem()
++    return None
++
++
+ def _literacy_followup(student_id: str, last: dict, steps: list[dict], evidence: dict | None, request: str,
+                        at: str) -> tuple[list[dict], dict | None]:
+     """Follow up the literacy task set last turn (step 05e); returns (steps, the task still pending).
+ 
+     The task is done when a verify task is answered (ail_task) or, for an ask task, when this message is a research
+     question (its ail_question is the score). Not done:
+-    - re-asked already (literacy.max_followups times) and still not done: recorded as ail_task with score 0 on its
+-      skill's part, and dropped;
++    - re-asked already (literacy.max_followups times) and still not done: counted as a skip on its skill's part
++      (missing, not wrong: no evidence), and dropped;
+     - the plan doesn't end in a question: reask re-asks it in one line;
+     - the plan ends in a question: it waits; after literacy.max_waits replies waiting, it takes the next reply's
+       question slot in place of the course question (never a how-AI-works check's), and the course resumes after.
+@@ -145,8 +160,8 @@ def _literacy_followup(student_id: str, last: dict, steps: list[dict], evidence:
+         has_room = not any(plan.is_stop(step) for step in steps) and len(steps) < plan.MAX_STEPS
+         if done or gap > _settings().session.gap_minutes:
+             task = None
+-        elif task["followups"] >= s.max_followups:
+-            learner.record_evidence(student_id, task["part_id"], "ail_task", 0.0, ts=at, apply="now")
++        elif task["followups"] >= s.max_followups:   # missing, not wrong: counted as a skip, no evidence
++            learner.record_skip(student_id, task["part_id"], ts=at)
+             task = None
+         elif has_room:
+             steps = steps + [plan.literacy_reask(task)]
+@@ -354,6 +369,8 @@ def tutor_turn(
+     if not node_ids and (evidence or lost):   # an answer continues the last turn's topic (after a prereq check or review too)
+         # an AI-literacy part never becomes the course focus
+         node_ids = last["focus"] or ([] if graph.is_literacy(answer["part_id"]) else [answer["part_id"]])
++    if this_message.get("source_conflict") and not lost:   # a dead or mismatched source found while checking
++        evidence = _found_problem(last, evidence, at)
+     # a research question or other message (not an answer, no ids given) never sets or changes the course focus:
+     # its matches serve this turn only (trusted sources), and the focus stays where it was
+     side_turn = not node_ids and this_message.get("request_type") in ("research", "other")
+@@ -544,11 +561,15 @@ def _ai_literacy(student_id: str, at: str) -> dict:
+         return sum(feature in r["question_features"].split(";") for r in chosen) / len(chosen) if chosen else None
+ 
+     recent, before = [r for r in rows if r["ts"] > cut], [r for r in rows if r["ts"] <= cut]
+-    held = [m["wrong_idea"] for m in context_blocks.held_misconceptions(student_id, graph.parts_of(learner.AIL_HOW))]
+-    return {
+-        "ask": {"level": learner.level(learner.part_p(student_id, learner.AIL_ASK, at))},
+-        "verify": {"level": learner.level(learner.part_p(student_id, learner.AIL_VERIFY, at))},
+-        "how_ai_works": {"level": learner.level(learner.rollup(student_id, learner.AIL_HOW, at)), "held": held},
++    how_parts = graph.parts_of(learner.AIL_HOW)
++    held = [m["wrong_idea"] for m in context_blocks.held_misconceptions(student_id, how_parts)]
++    return {   # skipped: tasks or checks left unanswered, which count as missing, not wrong
++        "ask": {"level": learner.level(learner.part_p(student_id, learner.AIL_ASK, at)),
++                "skipped": learner.skips(student_id, [learner.AIL_ASK], at)},
++        "verify": {"level": learner.level(learner.part_p(student_id, learner.AIL_VERIFY, at)),
++                   "skipped": learner.skips(student_id, [learner.AIL_VERIFY], at)},
++        "how_ai_works": {"level": learner.level(learner.rollup(student_id, learner.AIL_HOW, at)), "held": held,
++                         "skipped": learner.skips(student_id, how_parts, at)},
+         "question_features": {f: _trend(share(f, recent), share(f, before)) for f in learner.QUESTION_FEATURES},
+     }
+ 
+diff --git a/migrations/010_literacy_skip.sql b/migrations/010_literacy_skip.sql
+new file mode 100644
+index 0000000..14a9f9d
+--- /dev/null
++++ b/migrations/010_literacy_skip.sql
+@@ -0,0 +1,5 @@
++-- An AI-literacy task or how-AI-works check left unanswered after its re-ask (step 05e). It is missing, not wrong:
++-- no evidence row is written; this event only counts the skips shown beside the level. Append-only (an event).
++CREATE TABLE literacy_skip (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT NOT NULL, ts TEXT NOT NULL,
++  part_id TEXT NOT NULL);                -- the skill's part (ail_ask, ail_verify) or the how-AI-works part
++CREATE INDEX idx_literacy_skip_student ON literacy_skip(student_id, part_id);
+diff --git a/scripts/check_mcp.py b/scripts/check_mcp.py
+index e5bd688..55d0cd1 100644
+--- a/scripts/check_mcp.py
++++ b/scripts/check_mcp.py
+@@ -16,9 +16,9 @@ example-mini pack loaded and the demo students seeded. It:
+   due review as MCQs (demo-weak, demo-showme), a step back when the same point is missed again after its
+   re-teach (demo-showme), and that options are shuffled differently per student;
+ - runs research questions (demo-weak): answer_with_sources and a literacy task, an ignored task re-asked once then
+-  scored 0, Ask and Verify raised, no task on a course question; a task only every literacy.secure_every research
++  counted as a skip with no evidence, Ask and Verify raised, no task on a course question; a task only every literacy.secure_every research
+   questions at secure (demo-showme); and how-AI-works checks (demo-secure): cutoff only without web access, a bad
+-  link's fabrication check with 4 options, one per part per session, an ignored check re-asked then scored 0, a
++  link's fabrication check with 4 options, one per part per session, an ignored check re-asked then skipped, a
+   self-correction's check, and the AI-literacy section of get_my_progress; and, with throwaway students that are
+   removed after, no check or task for a fatigued student, and a literacy task taking the question slot after waiting;
+ - checks the server instructions' length, that points_met scores the same as letters, full ids, a mix or with
+@@ -354,7 +354,7 @@ async def stuck_on_point(url: str) -> None:
+ 
+ async def research_questions(url: str) -> None:
+     """Research questions and the literacy task (step 05e, demo-weak): answer_with_sources then literacy_task, an
+-    ignored task re-asked once then scored 0, Ask and Verify raised by a well-phrased question and an answered
++    ignored task re-asked once then counted as a skip (missing, not 0), Ask and Verify raised by a well-phrased question and an answered
+     verify task, and no literacy task on a course question."""
+     student = "demo-weak"
+     keyed = f"{url}?key={learner.get_student(student)['key']}"
+@@ -387,11 +387,12 @@ async def research_questions(url: str) -> None:
+     got = await turn("ok thanks", {"request_type": "other"})
+     check(moves(got) == ["reask"] and got["plan"][0]["data"].get("asked") == "literacy_task",
+           "an ignored literacy task is re-asked once", json.dumps(moves(got)))
+-    before = max_evidence_id()
++    before, skipped = max_evidence_id(), learner.skips(student, ["ail_ask"])
+     got = await turn("nice", {"request_type": "other"})
+     zero = [(e["part_id"], e["evidence_type"], e["score"]) for e in evidence(student, before)]
+-    check(moves(got) == [] and zero == [("ail_ask", "ail_task", 0.0)] and plan_json(student).get("literacy") is None,
+-          "still ignored, it is recorded as ail_task 0 and dropped", f"{moves(got)} {json.dumps(zero)}")
++    check(moves(got) == [] and zero == [] and learner.skips(student, ["ail_ask"]) == skipped + 1
++          and plan_json(student).get("literacy") is None,
++          "still ignored, it is counted as a skip (no evidence) and dropped", f"{moves(got)} {json.dumps(zero)}")
+ 
+     ask_before = p("ail_ask")
+     sharp = {"request_type": "research", "question_features": ["concept", "context", "asks_sources", "asks_reasoning"],
+@@ -440,7 +441,7 @@ async def secure_every(url: str) -> None:
+ async def how_ai_works(url: str) -> None:
+     """How-AI-works checks (step 05e, demo-secure): cutoff only with asks_recent and no web access; a bad link
+     gets the correction then a 4-option check on fabrication (a right letter raises it, a wrong one activates the
+-    misconception); one check per part per session; an ignored check re-asked once then scored 0; a
++    misconception); one check per part per session; an ignored check re-asked once then skipped (no evidence); a
+     self-correction gets a check on confidence and is stored."""
+     student = "demo-secure"
+     keyed = f"{url}?key={learner.get_student(student)['key']}"
+@@ -496,11 +497,11 @@ async def how_ai_works(url: str) -> None:
+           json.dumps(moves(got)))
+     got = await turn("ok", {"request_type": "other"})
+     check(moves(got) == ["reask"], "an ignored check is re-asked once", json.dumps(moves(got)))
+-    before = max_evidence_id()
++    before, skipped = max_evidence_id(), learner.skips(student, ["ail_how_agreement"])
+     await turn("fine", {"request_type": "other"})
+     zero = [(e["part_id"], e["evidence_type"], e["score"], e["point_id"]) for e in evidence(student, before)]
+-    check(zero == [("ail_how_agreement", "ail_how", 0.0, "ail_how_agreement_p1")],
+-          "still not answered, it is recorded as ail_how 0", json.dumps(zero))
++    check(zero == [] and learner.skips(student, ["ail_how_agreement"]) == skipped + 1,
++          "still not answered, it is counted as a skip, with no evidence", json.dumps(zero))
+ 
+     got = await turn("Sorry, which formula was it?", {"request_type": "concept", "conflict_flagged": True})
+     flagged = learner._conn().execute("SELECT conflict_flagged FROM exchange_log WHERE student_id = ? ORDER BY id DESC LIMIT 1",
+@@ -518,7 +519,7 @@ async def how_ai_works(url: str) -> None:
+ 
+ 
+ THROWAWAY_TABLES = ("student_profile", "exchange_log", "part_state", "student_misconception", "approach_record",
+-                    "review_queue", "evidence_derived", "evidence_log", "call_log", "issued_plan")
++                    "review_queue", "evidence_derived", "evidence_log", "call_log", "issued_plan", "literacy_skip")
+ 
+ 
+ def drop_student(student: str) -> None:
+@@ -563,7 +564,7 @@ async def fatigued_student(url: str) -> None:
+ 
+ async def waiting_task(url: str) -> None:
+     """A literacy task behind course questions waits two replies, then takes the next reply's question slot; the
+-    course check it displaced comes alone in the reply after, and the ignored re-ask scores 0 (step 05e)."""
++    course check it displaced comes alone in the reply after, and the ignored re-ask is a skip (step 05e)."""
+     student = "check-waiting"
+     keyed = f"{url}?key={new_student(student)}"
+     labels = {"question_depth": "surface", "engagement": "active", "request_type": "concept"}
+@@ -588,11 +589,10 @@ async def waiting_task(url: str) -> None:
+         second = await right()                                           # waits: 2
+         third = await right()                                            # takes the question slot
+         fourth = await turn("Sorry, can we carry on?")                   # the displaced check, alone
+-        zero = learner._conn().execute("SELECT evidence_type, score FROM evidence_log WHERE student_id = ? "
+-                                       "ORDER BY id DESC LIMIT 1", (student,)).fetchone()
++        skipped = learner.skips(student, ["ail_ask", "ail_verify"])
+         check(purposes(first)[-1].startswith("ask_mcq") and purposes(second)[-1] == "ask_mcq:check"
+               and purposes(third)[-1] == "reask:literacy_task" and purposes(fourth) == ["ask_mcq:check"]
+-              and tuple(zero) == ("ail_task", 0.0),
++              and skipped == 1,
+               "a waiting literacy task takes the question slot after 2 replies; the skipped check comes next, alone",
+               " | ".join(", ".join(purposes(t)) for t in (first, second, third, fourth)))
+     finally:
+diff --git a/settings.toml b/settings.toml
+index 4d44e9c..b378e8e 100644
+--- a/settings.toml
++++ b/settings.toml
+@@ -20,7 +20,7 @@ mcq_check = { slip = 0.10, guess = 0.25 }   # a multiple-choice check, prerequis
+ extend = { slip = 0.10, guess = 0.10 }      # an answer to a harder, extending question
+ immediate = { slip = 0.10, guess = 0.30 }   # chat evidence straight after a worked example or hint
+ ail_question = { slip = 0.15, guess = 0.20 }     # a research question, scored by its features (step 05e)
+-ail_task = { slip = 0.10, guess = 0.15 }         # the answer to a verify task, or 0 for an ignored task
++ail_task = { slip = 0.10, guess = 0.15 }         # the answer to a verify task (a reported dead or mismatched source scores 1)
+ ail_unprompted = { slip = 0.05, guess = 0.10 }   # checking a claim without being asked: counts more
+ ail_how = { slip = 0.10, guess = 0.25 }          # a how-AI-works check: 4-option multiple choice
+ 
+@@ -93,7 +93,7 @@ min_distractors = 2        # fewer misconceptions than this: the chatbot may wri
+ 
+ [literacy]                 # AI-literacy coaching (step 05e)
+ secure_every = 3           # at secure, a task every this many research questions (others: the feedback line only)
+-max_followups = 1          # re-asks of an ignored literacy task before it scores 0
++max_followups = 1          # re-asks of an ignored literacy task or check before it counts as skipped (missing, not 0)
+ max_waits = 2              # replies a literacy task waits behind a course question before it takes the question slot
+ ask_min_features = 2       # fewer question features than this: coach the question (Ask), else Verify
+ how_secure_every = 3       # at secure, a how-AI-works check every this many triggers for that part
+diff --git a/text/tools/get_my_progress.md b/text/tools/get_my_progress.md
+index c110e47..66aabe4 100644
+--- a/text/tools/get_my_progress.md
++++ b/text/tools/get_my_progress.md
+@@ -6,7 +6,7 @@ Returns:
+ - weak_links: pairs of related ideas where one side is still new.
+ - reviews_due: what is due for review.
+ - trends: how their use of the chatbot is changing: deeper questions, their own reasoning, and how often they ask to be shown answers.
+-- ai_literacy: how well they ask a chatbot precise questions (ask), check its claims (verify) and understand how chatbots work (how_ai_works, with the wrong ideas they still hold), and which question features they use more or less than before.
++- ai_literacy: how well they ask a chatbot precise questions (ask), check its claims (verify) and understand how chatbots work (how_ai_works, with the wrong ideas they still hold), how many tasks they skipped (skipped never lowers a level), and which question features they use more or less than before.
+ - study_pattern: when they tend to tire, once there is enough data.
+ 
+ Explain it in plain words and suggest one next step. Don't read out the numbers.

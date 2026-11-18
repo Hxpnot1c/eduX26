@@ -1,0 +1,4 @@
+branch          mcar: how AUC none-strong 0.77 (tied 0.00), partial-strong 0.71, gamer-strong 0.82; means {'none': 0.269, 'partial': 0.288, 'strong': 0.331, 'improver': 0.309, 'gamer': 0.26}; ask AUC 1.00, verify AUC 0.94
+branch          mnar: how AUC none-strong 0.90 (tied 0.00), partial-strong 0.79, gamer-strong 0.88; means {'none': 0.251, 'partial': 0.288, 'strong': 0.354, 'improver': 0.326, 'gamer': 0.26}; ask AUC 1.00, verify AUC 0.99
+branch_missing  mcar: how AUC none-strong 0.85 (tied 0.00), partial-strong 0.73, gamer-strong 0.88; means {'none': 0.288, 'partial': 0.318, 'strong': 0.365, 'improver': 0.34, 'gamer': 0.283}; ask AUC 1.00, verify AUC 0.99
+branch_missing  mnar: how AUC none-strong 0.88 (tied 0.00), partial-strong 0.75, gamer-strong 0.89; means {'none': 0.296, 'partial': 0.318, 'strong': 0.371, 'improver': 0.352, 'gamer': 0.283}; ask AUC 1.00, verify AUC 1.00

@@ -1,0 +1,811 @@
+
+## after_m2_ok
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      None [] focus=[] sources=[]
+      None [] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      None [] focus=[] sources=[]
+      None [] focus=[] sources=[]
+  gate   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      None [] focus=[] sources=[]
+      None [] focus=[] sources=[]
+  both   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      None [] focus=[] sources=[]
+      None [] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      None [] focus=[] sources=[]
+      None [] focus=[] sources=[]
+
+## as_written
+  base   course-question turns in the literacy episode: 1
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['tax_supply_shift'] sources=['IFS', 'OBR']
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=['tax_incidence_split'] sources=['IFS', 'OBR']
+      4c'  ['feedback:ail_how_fabrication', 'ask_mcq:ped_values'] focus=['tax_incidence_split'] sources=[]
+  svc    <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['tax_supply_shift'] sources=['IFS', 'OBR']
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=['tax_incidence_split'] sources=['IFS', 'OBR']
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  gate   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  both   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=[] sources=['OBR', 'ONS']
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+
+## as_written_conflict_other
+  base   course-question turns in the literacy episode: 1
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['tax_supply_shift'] sources=['IFS', 'OBR']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=['tax_incidence_split'] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'ask_mcq:ped_values'] focus=['tax_incidence_split'] sources=[]
+  svc    <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['tax_supply_shift'] sources=['IFS', 'OBR']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=['tax_incidence_split'] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  gate   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  both   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+
+## as_written_then_ped
+  base   course-question turns in the literacy episode: 1
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['tax_supply_shift'] sources=['IFS', 'OBR']
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=['tax_incidence_split'] sources=['IFS', 'OBR']
+      4c'  ['feedback:ail_how_fabrication', 'ask_mcq:ped_values'] focus=['tax_incidence_split'] sources=[]
+      5    ['reask:ail_verify'] focus=['ped_formula'] sources=[]
+  svc    <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['tax_supply_shift'] sources=['IFS', 'OBR']
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=['tax_incidence_split'] sources=['IFS', 'OBR']
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      5    ['ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+  gate   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      5    ['ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+  both   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      5    ['ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=[] sources=['OBR', 'ONS']
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      5    ['ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+
+## clean
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  gate   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  both   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+
+## clean_candidates
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  gate   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  both   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+
+## clean_conflict_research
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  gate   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  both   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=[] sources=['OBR', 'ONS']
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+
+## clean_m1
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  gate   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  both   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+
+## clean_right_pick
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  gate   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  both   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+
+## conflict_as_verify_answer
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  gate   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  both   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+
+## final
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  gate   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  both   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+
+## final_ticks_ad
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  gate   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  both   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+
+## no_source_conflict_label
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['reask:ail_verify'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['reask:ail_verify'] focus=[] sources=[]
+  gate   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['reask:ail_verify'] focus=[] sources=[]
+  both   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['reask:ail_verify'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['reask:ail_verify'] focus=[] sources=[]
+
+## one_feature_rewrite
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  gate   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  both   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+
+## ped_first
+  base   course-question turns in the literacy episode: 1
+      5    ['ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=['ped_formula'] sources=['ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['ped_formula'] sources=['ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=['ped_formula'] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+  all3   course-question turns in the literacy episode: 1
+      5    ['ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=['ped_formula'] sources=['ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['ped_formula'] sources=['ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=['ped_formula'] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+
+## ped_first_as_written
+  base   course-question turns in the literacy episode: 1
+      5    ['ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=['ped_formula'] sources=['ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['tax_supply_shift'] sources=['IFS', 'OBR']
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=['tax_incidence_split'] sources=['IFS', 'OBR']
+      4c'  ['feedback:ail_how_fabrication', 'ask_mcq:ped_values'] focus=['tax_incidence_split'] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 1
+      5    ['ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=['ped_formula'] sources=['ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['ped_formula'] sources=['ONS']
+      4c   ['source_conflict', 'answer_with_sources', 'ask_mcq:ail_how_fabrication'] focus=['ped_formula'] sources=['ONS']
+      4c'  ['feedback:ail_how_fabrication', 'ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+
+## petrol
+  base   course-question turns in the literacy episode: 1
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=['externality_tax_eval'] sources=['IFS', 'OBR']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['ped_formula', 'ped_values', 'ped_definition'] sources=['ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=['ped_values', 'ped_formula', 'ped_definition'] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'teach_point:ped_values', 'ask_mcq:ped_values'] focus=['ped_values', 'ped_formula', 'ped_definition'] sources=[]
+  svc    <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=['externality_tax_eval'] sources=['IFS', 'OBR']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['ped_formula', 'ped_definition', 'ped_values'] sources=['ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  gate   <-- differs  course-question turns in the literacy episode: 1
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['ped_formula', 'ped_values', 'ped_definition'] sources=['ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=['ped_values', 'ped_formula', 'ped_definition'] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'teach_point:ped_values', 'ask_mcq:ped_values'] focus=['ped_values', 'ped_formula', 'ped_definition'] sources=[]
+  both   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['ped_formula', 'ped_definition', 'ped_values'] sources=['ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['ped_formula', 'ped_definition', 'ped_values'] sources=['ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+
+## plan_now
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['tax_supply_shift'] sources=['IFS', 'OBR']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=['tax_supply_shift'] sources=['IFS', 'OBR']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  gate   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  both   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+
+## recent_t1
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'ask_mcq:ail_how_cutoff'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'reask:ail_how_cutoff'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'ask_mcq:ail_how_cutoff'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'reask:ail_how_cutoff'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  gate   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'ask_mcq:ail_how_cutoff'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'reask:ail_how_cutoff'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  both   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'ask_mcq:ail_how_cutoff'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'reask:ail_how_cutoff'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'ask_mcq:ail_how_cutoff'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'reask:ail_how_cutoff'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+
+## recent_t2
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'ask_mcq:ail_how_cutoff'] focus=[] sources=[]
+      4c   ['source_conflict', 'reask:ail_how_cutoff'] focus=[] sources=[]
+      4c'  [] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'ask_mcq:ail_how_cutoff'] focus=[] sources=[]
+      4c   ['source_conflict', 'reask:ail_how_cutoff'] focus=[] sources=[]
+      4c'  [] focus=[] sources=[]
+  gate   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'ask_mcq:ail_how_cutoff'] focus=[] sources=[]
+      4c   ['source_conflict', 'reask:ail_how_cutoff'] focus=[] sources=[]
+      4c'  [] focus=[] sources=[]
+  both   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'ask_mcq:ail_how_cutoff'] focus=[] sources=[]
+      4c   ['source_conflict', 'reask:ail_how_cutoff'] focus=[] sources=[]
+      4c'  [] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'ask_mcq:ail_how_cutoff'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'reask:ail_how_cutoff'] focus=[] sources=[]
+      4c'  [] focus=[] sources=[]
+
+## recommended
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  gate   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  both   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+
+## recommended_no_verify_answer
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  gate   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  both   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+
+## recommended_right
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  gate   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  both   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication'] focus=[] sources=[]
+
+## retake_same_session
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'reask:ail_verify'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'reask:ail_verify'] focus=[] sources=[]
+  gate   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'reask:ail_verify'] focus=[] sources=[]
+  both   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'reask:ail_verify'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'reask:ail_verify'] focus=[] sources=[]
+
+## search_on
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  gate   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  both   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+
+## skip_4b
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_ask'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_ask'] focus=[] sources=[]
+  gate   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_ask'] focus=[] sources=[]
+  both   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_ask'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_ask'] focus=[] sources=[]
+
+## t1_concept
+  base   course-question turns in the literacy episode: 0
+      4a   [] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   [] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  gate   <-- differs  course-question turns in the literacy episode: 0
+      4a   [] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  both   <-- differs  course-question turns in the literacy episode: 0
+      4a   [] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  all3   course-question turns in the literacy episode: 0
+      4a   [] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+
+## t1p_concept
+  base   course-question turns in the literacy episode: 0
+      4a   [] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   [] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  gate   <-- differs  course-question turns in the literacy episode: 0
+      4a   [] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  both   <-- differs  course-question turns in the literacy episode: 0
+      4a   [] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  all3   course-question turns in the literacy episode: 0
+      4a   [] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+
+## then_ped
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      5    ['ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      5    ['ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+  gate   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      5    ['ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+  both   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      5    ['ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+      5    ['ask_mcq:ped_definition'] focus=['ped_formula'] sources=[]
+
+## three_feature_rewrite
+  base   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  svc    course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  gate   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  both   course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=[]
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=[]
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+  all3   <-- differs  course-question turns in the literacy episode: 0
+      4a   ['answer_with_sources', 'literacy_task:ail_ask'] focus=[] sources=['OBR', 'ONS']
+      4b   ['answer_with_sources', 'literacy_task:ail_verify'] focus=[] sources=['OBR', 'ONS']
+      4c   ['source_conflict', 'ask_mcq:ail_how_fabrication'] focus=[] sources=[]
+      4c'  ['feedback:ail_how_fabrication', 'reask:ail_verify'] focus=[] sources=[]
+
+course-question turns inside literacy episodes (the 28 demo-05e scenarios; excluding shot 5 = the PED question and the ped_first* extras): {'base': 4, 'svc': 0, 'gate': 1, 'both': 0, 'all3': 0}

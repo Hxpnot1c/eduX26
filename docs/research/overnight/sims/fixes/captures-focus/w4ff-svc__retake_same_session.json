@@ -1,0 +1,1486 @@
+{
+ "scenario": "retake_same_session",
+ "label": "w4ff-svc",
+ "about": "a second take without reset, in the same session",
+ "student": "demo-weak",
+ "load": [
+  "Teacher feedback not applied (0)",
+  "",
+  "Suggested links (0)"
+ ],
+ "turns": [
+  {
+   "n": 1,
+   "shot": "4a",
+   "tool": "tutor_turn",
+   "sent": {
+    "message": "what's happening with inflation?",
+    "client": "claude",
+    "this_message": {
+     "question_depth": "surface",
+     "engagement": "active",
+     "request_type": "research",
+     "question_features": [
+      "concept"
+     ],
+     "web_access": false,
+     "asks_recent": false
+    }
+   },
+   "moves": [
+    "answer_with_sources",
+    "literacy_task"
+   ],
+   "told": [
+    {
+     "move": "answer_with_sources",
+     "part_id": null,
+     "cue": "Answer fully with sources and links; mark figures to check.",
+     "trusted_sources": []
+    },
+    {
+     "move": "literacy_task",
+     "part_id": "ail_ask",
+     "cue": "One feedback line on ask; one task if data.task is true.",
+     "skill": "ask",
+     "level": "new",
+     "task": true,
+     "features": [
+      "concept"
+     ],
+     "pattern": "Feedback: model a precise version of their question, e.g. \"I read your question as: UK petrol prices, 2025, effect on demand.\"\nTask: \"Rewrite your question adding <the missing feature, e.g. a time period>, then I'll answer the sharper version.\""
+    }
+   ],
+   "result_chars": 1358,
+   "console": [
+    "[11/18/26 02:08:34] INFO     Terminating session: None    streamable_http.py:831",
+    "                    INFO     Processing request of type            server.py:733",
+    "                             CallToolRequest",
+    "serving MCP at http://127.0.0.1:8782/mcp?key=<student key>",
+    "tutor_turn demo-weak 11ms 1.4k chars ok",
+    "                    INFO     Terminating session: None    streamable_http.py:831",
+    "                    INFO     Processing request of type            server.py:733",
+    "                             ListToolsRequest",
+    "                    INFO     Terminating session: None    streamable_http.py:831"
+   ],
+   "wall_ms": 21.9,
+   "evidence": [
+    {
+     "part_id": "ail_ask",
+     "evidence_type": "ail_question",
+     "score": 0.25,
+     "point_id": null
+    }
+   ],
+   "before": {
+    "p": {
+     "ail_ask": 0.33,
+     "ail_verify": 0.3,
+     "ail_how_fabrication": 0.33,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "new",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.33,
+    "held_ail": [],
+    "pending_literacy": null,
+    "pending_how": null,
+    "mcq_map": {}
+   },
+   "after": {
+    "p": {
+     "ail_ask": 0.176,
+     "ail_verify": 0.3,
+     "ail_how_fabrication": 0.33,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "new",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.33,
+    "held_ail": [],
+    "pending_literacy": {
+     "skill": "ask",
+     "part_id": "ail_ask",
+     "followups": 0,
+     "waited": 0
+    },
+    "pending_how": null,
+    "mcq_map": {}
+   },
+   "result": {
+    "ok": true,
+    "plan": [
+     {
+      "move": "answer_with_sources",
+      "part_id": null,
+      "cue": "Answer fully with sources and links; mark figures to check.",
+      "data": {
+       "trusted_sources": []
+      }
+     },
+     {
+      "move": "literacy_task",
+      "part_id": "ail_ask",
+      "cue": "One feedback line on ask; one task if data.task is true.",
+      "data": {
+       "skill": "ask",
+       "level": "new",
+       "task": true,
+       "features": [
+        "concept"
+       ],
+       "pattern": "Feedback: model a precise version of their question, e.g. \"I read your question as: UK petrol prices, 2025, effect on demand.\"\nTask: \"Rewrite your question adding <the missing feature, e.g. a time period>, then I'll answer the sharper version.\""
+      }
+     }
+    ],
+    "score_next": {
+     "ail_verify": [
+      {
+       "id": "a",
+       "point": "Opens the source the claim came from."
+      },
+      {
+       "id": "b",
+       "point": "Names who published the source and when."
+      },
+      {
+       "id": "c",
+       "point": "Compares the claim with what the source says."
+      },
+      {
+       "id": "d",
+       "point": "Says whether the claim matched the source."
+      }
+     ]
+    },
+    "reference": {},
+    "focus": [],
+    "style": {
+     "max_words": 120,
+     "interests": "",
+     "format": "Write formulas in LaTeX between $$…$$, e.g. $$PED = \\frac{\\%\\Delta Q_d}{\\%\\Delta P}$$. Write money as £5, or escape a dollar sign as \\$, because $ starts maths. For a diagram part, or when the student asks for one, draw the diagram inline as an SVG visual with labelled axes, the curves, the shift and P1→P2 / Q1→Q2 marked; never use ASCII art. Don't draw otherwise: drawing is slow."
+    }
+   }
+  },
+  {
+   "n": 2,
+   "shot": "4b",
+   "tool": "tutor_turn",
+   "sent": {
+    "message": "What was UK CPI inflation in 2025, and why? Sources please.",
+    "client": "claude",
+    "this_message": {
+     "question_depth": "mechanism",
+     "engagement": "active",
+     "request_type": "research",
+     "question_features": [
+      "concept",
+      "context",
+      "asks_sources",
+      "asks_reasoning"
+     ],
+     "web_access": false,
+     "asks_recent": false
+    }
+   },
+   "moves": [
+    "answer_with_sources",
+    "literacy_task"
+   ],
+   "told": [
+    {
+     "move": "answer_with_sources",
+     "part_id": null,
+     "cue": "Answer fully with sources and links; mark figures to check.",
+     "trusted_sources": []
+    },
+    {
+     "move": "literacy_task",
+     "part_id": "ail_verify",
+     "cue": "One feedback line on verify; one task if data.task is true.",
+     "skill": "verify",
+     "level": "new",
+     "task": true,
+     "features": [
+      "asks_reasoning",
+      "asks_sources",
+      "concept",
+      "context"
+     ],
+     "pattern": "Feedback: model how to check this kind of claim, e.g. \"Figures like this come from the ONS; the page says which month they're for.\"\nTask: \"Open the <source> link: what month is that figure for?\"",
+     "answer_type": "ail_task"
+    }
+   ],
+   "result_chars": 942,
+   "console": [
+    "[11/18/26 02:08:35] INFO     Processing request of type            server.py:733",
+    "                             CallToolRequest",
+    "tutor_turn demo-weak 3ms 1.0k chars ok",
+    "                    INFO     Terminating session: None    streamable_http.py:831"
+   ],
+   "wall_ms": 7.6,
+   "evidence": [
+    {
+     "part_id": "ail_ask",
+     "evidence_type": "ail_question",
+     "score": 1.0,
+     "point_id": null
+    }
+   ],
+   "before": {
+    "p": {
+     "ail_ask": 0.176,
+     "ail_verify": 0.3,
+     "ail_how_fabrication": 0.33,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "new",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.33,
+    "held_ail": [],
+    "pending_literacy": {
+     "skill": "ask",
+     "part_id": "ail_ask",
+     "followups": 0,
+     "waited": 0
+    },
+    "pending_how": null,
+    "mcq_map": {}
+   },
+   "after": {
+    "p": {
+     "ail_ask": 0.528,
+     "ail_verify": 0.3,
+     "ail_how_fabrication": 0.33,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "developing",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.33,
+    "held_ail": [],
+    "pending_literacy": {
+     "skill": "verify",
+     "part_id": "ail_verify",
+     "followups": 0,
+     "waited": 0
+    },
+    "pending_how": null,
+    "mcq_map": {}
+   },
+   "result": {
+    "ok": true,
+    "plan": [
+     {
+      "move": "answer_with_sources",
+      "part_id": null,
+      "cue": "Answer fully with sources and links; mark figures to check.",
+      "data": {
+       "trusted_sources": []
+      }
+     },
+     {
+      "move": "literacy_task",
+      "part_id": "ail_verify",
+      "cue": "One feedback line on verify; one task if data.task is true.",
+      "data": {
+       "skill": "verify",
+       "level": "new",
+       "task": true,
+       "features": [
+        "asks_reasoning",
+        "asks_sources",
+        "concept",
+        "context"
+       ],
+       "pattern": "Feedback: model how to check this kind of claim, e.g. \"Figures like this come from the ONS; the page says which month they're for.\"\nTask: \"Open the <source> link: what month is that figure for?\"",
+       "answer_type": "ail_task"
+      }
+     }
+    ],
+    "score_next": {
+     "ail_verify": [
+      {
+       "id": "a",
+       "point": "Opens the source the claim came from."
+      },
+      {
+       "id": "b",
+       "point": "Names who published the source and when."
+      },
+      {
+       "id": "c",
+       "point": "Compares the claim with what the source says."
+      },
+      {
+       "id": "d",
+       "point": "Says whether the claim matched the source."
+      }
+     ]
+    },
+    "reference": {},
+    "focus": []
+   }
+  },
+  {
+   "n": 3,
+   "shot": "4c",
+   "tool": "tutor_turn",
+   "sent": {
+    "message": "I clicked it and the page doesn't exist.",
+    "client": "claude",
+    "this_message": {
+     "question_depth": "surface",
+     "engagement": "active",
+     "request_type": "other",
+     "source_conflict": true
+    }
+   },
+   "moves": [
+    "source_conflict",
+    "ask_mcq:how_ai_works"
+   ],
+   "told": [
+    {
+     "move": "source_conflict",
+     "part_id": null,
+     "cue": "Checking found a problem: say that's the point, then correct it."
+    },
+    {
+     "move": "ask_mcq",
+     "part_id": "ail_how_fabrication",
+     "cue": "Ask how chatbots work: show the options as given; wait for a letter.",
+     "purpose": "how_ai_works",
+     "options": [
+      {
+       "letter": "A",
+       "text": "It copied a page that was later deleted from the internet"
+      },
+      {
+       "letter": "B",
+       "text": "It searched a source database and picked the wrong entry"
+      },
+      {
+       "letter": "C",
+       "text": "It invents links on purpose when it can't find an answer"
+      },
+      {
+       "letter": "D",
+       "text": "It predicts likely text, so it can make up real-looking links"
+      }
+     ],
+     "answer_type": "mcq"
+    }
+   ],
+   "result_chars": 952,
+   "console": [
+    "[11/18/26 02:08:36] INFO     Processing request of type            server.py:733",
+    "                             CallToolRequest",
+    "tutor_turn demo-weak 3ms 1.0k chars ok",
+    "                    INFO     Terminating session: None    streamable_http.py:831"
+   ],
+   "wall_ms": 7.2,
+   "evidence": [],
+   "before": {
+    "p": {
+     "ail_ask": 0.528,
+     "ail_verify": 0.3,
+     "ail_how_fabrication": 0.33,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "developing",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.33,
+    "held_ail": [],
+    "pending_literacy": {
+     "skill": "verify",
+     "part_id": "ail_verify",
+     "followups": 0,
+     "waited": 0
+    },
+    "pending_how": null,
+    "mcq_map": {}
+   },
+   "after": {
+    "p": {
+     "ail_ask": 0.528,
+     "ail_verify": 0.3,
+     "ail_how_fabrication": 0.33,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "developing",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.33,
+    "held_ail": [],
+    "pending_literacy": {
+     "waited": 1,
+     "skill": "verify",
+     "part_id": "ail_verify",
+     "followups": 0
+    },
+    "pending_how": {
+     "part_id": "ail_how_fabrication",
+     "followups": 0
+    },
+    "mcq_map": {
+     "A": "ail_how_fabrication_m1",
+     "B": "ail_how_fabrication_m2",
+     "C": "ail_how_fabrication_m3",
+     "D": "correct"
+    }
+   },
+   "result": {
+    "ok": true,
+    "plan": [
+     {
+      "move": "source_conflict",
+      "part_id": null,
+      "cue": "Checking found a problem: say that's the point, then correct it.",
+      "data": {}
+     },
+     {
+      "move": "ask_mcq",
+      "part_id": "ail_how_fabrication",
+      "cue": "Ask how chatbots work: show the options as given; wait for a letter.",
+      "data": {
+       "purpose": "how_ai_works",
+       "options": [
+        {
+         "letter": "A",
+         "text": "It copied a page that was later deleted from the internet"
+        },
+        {
+         "letter": "B",
+         "text": "It searched a source database and picked the wrong entry"
+        },
+        {
+         "letter": "C",
+         "text": "It invents links on purpose when it can't find an answer"
+        },
+        {
+         "letter": "D",
+         "text": "It predicts likely text, so it can make up real-looking links"
+        }
+       ],
+       "answer_type": "mcq"
+      }
+     }
+    ],
+    "score_next": {},
+    "reference": {
+     "misconceptions": {
+      "watch_for": [
+       {
+        "id": "ail_how_fabrication_m1",
+        "wrong_idea": "It copied a page that was later deleted from the internet"
+       },
+       {
+        "id": "ail_how_fabrication_m2",
+        "wrong_idea": "It searched a source database and picked the wrong entry"
+       }
+      ]
+     }
+    },
+    "focus": []
+   }
+  },
+  {
+   "n": 4,
+   "shot": "4c'",
+   "tool": "tutor_turn",
+   "sent": {
+    "message": "B",
+    "client": "claude",
+    "this_message": {
+     "question_depth": "surface",
+     "engagement": "active",
+     "request_type": "other"
+    },
+    "answer": {
+     "part_id": "ail_how_fabrication",
+     "type": "mcq",
+     "choice": "B"
+    }
+   },
+   "moves": [
+    "feedback",
+    "reask"
+   ],
+   "told": [
+    {
+     "move": "feedback",
+     "part_id": "ail_how_fabrication",
+     "cue": "One line on their answer; correct each listed wrong idea in one line.",
+     "purpose": "how_ai_works",
+     "correct": false,
+     "correct_option": "It predicts likely text, so it can make up real-looking links",
+     "misconceptions": [
+      {
+       "id": "ail_how_fabrication_m2",
+       "wrong_idea": "It searched a source database and picked the wrong entry",
+       "correction": "Without a search it looks nothing up; it writes likely-looking text."
+      }
+     ],
+     "intuition": "A chatbot predicts likely words, and a citation is just more likely-looking words."
+    },
+    {
+     "move": "reask",
+     "part_id": "ail_verify",
+     "cue": "Ask your last question again, word for word, and wait.",
+     "skill": "verify",
+     "asked": "literacy_task",
+     "answer_type": "ail_task"
+    }
+   ],
+   "result_chars": 1331,
+   "console": [
+    "[11/18/26 02:08:37] INFO     Processing request of type            server.py:733",
+    "                             CallToolRequest",
+    "tutor_turn demo-weak 4ms 1.4k chars ok",
+    "                    INFO     Terminating session: None    streamable_http.py:831"
+   ],
+   "wall_ms": 7.5,
+   "evidence": [
+    {
+     "part_id": "ail_how_fabrication",
+     "evidence_type": "ail_how",
+     "score": 0.0,
+     "point_id": "ail_how_fabrication_p1"
+    }
+   ],
+   "before": {
+    "p": {
+     "ail_ask": 0.528,
+     "ail_verify": 0.3,
+     "ail_how_fabrication": 0.33,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "developing",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.33,
+    "held_ail": [],
+    "pending_literacy": {
+     "waited": 1,
+     "skill": "verify",
+     "part_id": "ail_verify",
+     "followups": 0
+    },
+    "pending_how": {
+     "part_id": "ail_how_fabrication",
+     "followups": 0
+    },
+    "mcq_map": {
+     "A": "ail_how_fabrication_m1",
+     "B": "ail_how_fabrication_m2",
+     "C": "ail_how_fabrication_m3",
+     "D": "correct"
+    }
+   },
+   "after": {
+    "p": {
+     "ail_ask": 0.528,
+     "ail_verify": 0.3,
+     "ail_how_fabrication": 0.155,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "developing",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.286,
+    "held_ail": [
+     "ail_how_fabrication_m2"
+    ],
+    "pending_literacy": {
+     "waited": 1,
+     "skill": "verify",
+     "part_id": "ail_verify",
+     "followups": 1
+    },
+    "pending_how": null,
+    "mcq_map": {}
+   },
+   "result": {
+    "ok": true,
+    "plan": [
+     {
+      "move": "feedback",
+      "part_id": "ail_how_fabrication",
+      "cue": "One line on their answer; correct each listed wrong idea in one line.",
+      "data": {
+       "type": "mcq",
+       "purpose": "how_ai_works",
+       "correct": false,
+       "correct_option": "It predicts likely text, so it can make up real-looking links",
+       "misconceptions": [
+        {
+         "id": "ail_how_fabrication_m2",
+         "wrong_idea": "It searched a source database and picked the wrong entry",
+         "correction": "Without a search it looks nothing up; it writes likely-looking text."
+        }
+       ],
+       "intuition": "A chatbot predicts likely words, and a citation is just more likely-looking words."
+      }
+     },
+     {
+      "move": "reask",
+      "part_id": "ail_verify",
+      "cue": "Ask your last question again, word for word, and wait.",
+      "data": {
+       "asked": "literacy_task",
+       "skill": "verify",
+       "answer_type": "ail_task"
+      }
+     }
+    ],
+    "score_next": {
+     "ail_verify": [
+      {
+       "id": "a",
+       "point": "Opens the source the claim came from."
+      },
+      {
+       "id": "b",
+       "point": "Names who published the source and when."
+      },
+      {
+       "id": "c",
+       "point": "Compares the claim with what the source says."
+      },
+      {
+       "id": "d",
+       "point": "Says whether the claim matched the source."
+      }
+     ]
+    },
+    "reference": {
+     "misconceptions": {
+      "held": [
+       {
+        "id": "ail_how_fabrication_m2",
+        "part_id": "ail_how_fabrication",
+        "wrong_idea": "It searched a source database and picked the wrong entry",
+        "correction": "Without a search it looks nothing up; it writes likely-looking text."
+       }
+      ]
+     }
+    },
+    "focus": []
+   }
+  },
+  {
+   "n": 5,
+   "shot": "4a",
+   "tool": "tutor_turn",
+   "sent": {
+    "message": "what's happening with inflation?",
+    "client": "claude",
+    "this_message": {
+     "question_depth": "surface",
+     "engagement": "active",
+     "request_type": "research",
+     "question_features": [
+      "concept"
+     ],
+     "web_access": false,
+     "asks_recent": false
+    }
+   },
+   "moves": [
+    "answer_with_sources",
+    "literacy_task"
+   ],
+   "told": [
+    {
+     "move": "answer_with_sources",
+     "part_id": null,
+     "cue": "Answer fully with sources and links; mark figures to check.",
+     "trusted_sources": []
+    },
+    {
+     "move": "literacy_task",
+     "part_id": "ail_ask",
+     "cue": "One feedback line on ask; one task if data.task is true.",
+     "skill": "ask",
+     "level": "new",
+     "task": true,
+     "features": [
+      "concept"
+     ],
+     "pattern": "Feedback: model a precise version of their question, e.g. \"I read your question as: UK petrol prices, 2025, effect on demand.\"\nTask: \"Rewrite your question adding <the missing feature, e.g. a time period>, then I'll answer the sharper version.\""
+    }
+   ],
+   "result_chars": 916,
+   "console": [
+    "[11/18/26 02:08:39] INFO     Processing request of type            server.py:733",
+    "                             CallToolRequest",
+    "tutor_turn demo-weak 3ms 1.0k chars ok",
+    "                    INFO     Terminating session: None    streamable_http.py:831"
+   ],
+   "wall_ms": 7.1,
+   "evidence": [
+    {
+     "part_id": "ail_ask",
+     "evidence_type": "ail_question",
+     "score": 0.25,
+     "point_id": null
+    },
+    {
+     "part_id": "ail_verify",
+     "evidence_type": "ail_task",
+     "score": 0.0,
+     "point_id": null
+    }
+   ],
+   "before": {
+    "p": {
+     "ail_ask": 0.528,
+     "ail_verify": 0.3,
+     "ail_how_fabrication": 0.155,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "developing",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.286,
+    "held_ail": [
+     "ail_how_fabrication_m2"
+    ],
+    "pending_literacy": {
+     "waited": 1,
+     "skill": "verify",
+     "part_id": "ail_verify",
+     "followups": 1
+    },
+    "pending_how": null,
+    "mcq_map": {}
+   },
+   "after": {
+    "p": {
+     "ail_ask": 0.256,
+     "ail_verify": 0.143,
+     "ail_how_fabrication": 0.155,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "new",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.286,
+    "held_ail": [
+     "ail_how_fabrication_m2"
+    ],
+    "pending_literacy": {
+     "skill": "ask",
+     "part_id": "ail_ask",
+     "followups": 0,
+     "waited": 0
+    },
+    "pending_how": null,
+    "mcq_map": {}
+   },
+   "result": {
+    "ok": true,
+    "plan": [
+     {
+      "move": "answer_with_sources",
+      "part_id": null,
+      "cue": "Answer fully with sources and links; mark figures to check.",
+      "data": {
+       "trusted_sources": []
+      }
+     },
+     {
+      "move": "literacy_task",
+      "part_id": "ail_ask",
+      "cue": "One feedback line on ask; one task if data.task is true.",
+      "data": {
+       "skill": "ask",
+       "level": "new",
+       "task": true,
+       "features": [
+        "concept"
+       ],
+       "pattern": "Feedback: model a precise version of their question, e.g. \"I read your question as: UK petrol prices, 2025, effect on demand.\"\nTask: \"Rewrite your question adding <the missing feature, e.g. a time period>, then I'll answer the sharper version.\""
+      }
+     }
+    ],
+    "score_next": {
+     "ail_verify": [
+      {
+       "id": "a",
+       "point": "Opens the source the claim came from."
+      },
+      {
+       "id": "b",
+       "point": "Names who published the source and when."
+      },
+      {
+       "id": "c",
+       "point": "Compares the claim with what the source says."
+      },
+      {
+       "id": "d",
+       "point": "Says whether the claim matched the source."
+      }
+     ]
+    },
+    "reference": {},
+    "focus": []
+   }
+  },
+  {
+   "n": 6,
+   "shot": "4b",
+   "tool": "tutor_turn",
+   "sent": {
+    "message": "What was UK CPI inflation in 2025, and why? Sources please.",
+    "client": "claude",
+    "this_message": {
+     "question_depth": "mechanism",
+     "engagement": "active",
+     "request_type": "research",
+     "question_features": [
+      "concept",
+      "context",
+      "asks_sources",
+      "asks_reasoning"
+     ],
+     "web_access": false,
+     "asks_recent": false
+    }
+   },
+   "moves": [
+    "answer_with_sources",
+    "literacy_task"
+   ],
+   "told": [
+    {
+     "move": "answer_with_sources",
+     "part_id": null,
+     "cue": "Answer fully with sources and links; mark figures to check.",
+     "trusted_sources": []
+    },
+    {
+     "move": "literacy_task",
+     "part_id": "ail_verify",
+     "cue": "One feedback line on verify; one task if data.task is true.",
+     "skill": "verify",
+     "level": "new",
+     "task": true,
+     "features": [
+      "asks_reasoning",
+      "asks_sources",
+      "concept",
+      "context"
+     ],
+     "pattern": "Feedback: model how to check this kind of claim, e.g. \"Figures like this come from the ONS; the page says which month they're for.\"\nTask: \"Open the <source> link: what month is that figure for?\"",
+     "answer_type": "ail_task"
+    }
+   ],
+   "result_chars": 942,
+   "console": [
+    "[11/18/26 02:08:40] INFO     Processing request of type            server.py:733",
+    "                             CallToolRequest",
+    "tutor_turn demo-weak 3ms 1.0k chars ok",
+    "                    INFO     Terminating session: None    streamable_http.py:831"
+   ],
+   "wall_ms": 7.0,
+   "evidence": [
+    {
+     "part_id": "ail_ask",
+     "evidence_type": "ail_question",
+     "score": 1.0,
+     "point_id": null
+    }
+   ],
+   "before": {
+    "p": {
+     "ail_ask": 0.256,
+     "ail_verify": 0.143,
+     "ail_how_fabrication": 0.155,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "new",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.286,
+    "held_ail": [
+     "ail_how_fabrication_m2"
+    ],
+    "pending_literacy": {
+     "skill": "ask",
+     "part_id": "ail_ask",
+     "followups": 0,
+     "waited": 0
+    },
+    "pending_how": null,
+    "mcq_map": {}
+   },
+   "after": {
+    "p": {
+     "ail_ask": 0.635,
+     "ail_verify": 0.143,
+     "ail_how_fabrication": 0.155,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "developing",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.286,
+    "held_ail": [
+     "ail_how_fabrication_m2"
+    ],
+    "pending_literacy": {
+     "skill": "verify",
+     "part_id": "ail_verify",
+     "followups": 0,
+     "waited": 0
+    },
+    "pending_how": null,
+    "mcq_map": {}
+   },
+   "result": {
+    "ok": true,
+    "plan": [
+     {
+      "move": "answer_with_sources",
+      "part_id": null,
+      "cue": "Answer fully with sources and links; mark figures to check.",
+      "data": {
+       "trusted_sources": []
+      }
+     },
+     {
+      "move": "literacy_task",
+      "part_id": "ail_verify",
+      "cue": "One feedback line on verify; one task if data.task is true.",
+      "data": {
+       "skill": "verify",
+       "level": "new",
+       "task": true,
+       "features": [
+        "asks_reasoning",
+        "asks_sources",
+        "concept",
+        "context"
+       ],
+       "pattern": "Feedback: model how to check this kind of claim, e.g. \"Figures like this come from the ONS; the page says which month they're for.\"\nTask: \"Open the <source> link: what month is that figure for?\"",
+       "answer_type": "ail_task"
+      }
+     }
+    ],
+    "score_next": {
+     "ail_verify": [
+      {
+       "id": "a",
+       "point": "Opens the source the claim came from."
+      },
+      {
+       "id": "b",
+       "point": "Names who published the source and when."
+      },
+      {
+       "id": "c",
+       "point": "Compares the claim with what the source says."
+      },
+      {
+       "id": "d",
+       "point": "Says whether the claim matched the source."
+      }
+     ]
+    },
+    "reference": {},
+    "focus": []
+   }
+  },
+  {
+   "n": 7,
+   "shot": "4c",
+   "tool": "tutor_turn",
+   "sent": {
+    "message": "I clicked it and the page doesn't exist.",
+    "client": "claude",
+    "this_message": {
+     "question_depth": "surface",
+     "engagement": "active",
+     "request_type": "other",
+     "source_conflict": true
+    }
+   },
+   "moves": [
+    "source_conflict",
+    "reask"
+   ],
+   "told": [
+    {
+     "move": "source_conflict",
+     "part_id": null,
+     "cue": "Checking found a problem: say that's the point, then correct it."
+    },
+    {
+     "move": "reask",
+     "part_id": "ail_verify",
+     "cue": "Ask your last question again, word for word, and wait.",
+     "skill": "verify",
+     "asked": "literacy_task",
+     "answer_type": "ail_task"
+    }
+   ],
+   "result_chars": 631,
+   "console": [
+    "[11/18/26 02:08:41] INFO     Processing request of type            server.py:733",
+    "                             CallToolRequest",
+    "tutor_turn demo-weak 2ms 0.7k chars ok",
+    "                    INFO     Terminating session: None    streamable_http.py:831"
+   ],
+   "wall_ms": 6.1,
+   "evidence": [],
+   "before": {
+    "p": {
+     "ail_ask": 0.635,
+     "ail_verify": 0.143,
+     "ail_how_fabrication": 0.155,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "developing",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.286,
+    "held_ail": [
+     "ail_how_fabrication_m2"
+    ],
+    "pending_literacy": {
+     "skill": "verify",
+     "part_id": "ail_verify",
+     "followups": 0,
+     "waited": 0
+    },
+    "pending_how": null,
+    "mcq_map": {}
+   },
+   "after": {
+    "p": {
+     "ail_ask": 0.635,
+     "ail_verify": 0.143,
+     "ail_how_fabrication": 0.155,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "developing",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.286,
+    "held_ail": [
+     "ail_how_fabrication_m2"
+    ],
+    "pending_literacy": {
+     "waited": 0,
+     "skill": "verify",
+     "part_id": "ail_verify",
+     "followups": 1
+    },
+    "pending_how": null,
+    "mcq_map": {}
+   },
+   "result": {
+    "ok": true,
+    "plan": [
+     {
+      "move": "source_conflict",
+      "part_id": null,
+      "cue": "Checking found a problem: say that's the point, then correct it.",
+      "data": {}
+     },
+     {
+      "move": "reask",
+      "part_id": "ail_verify",
+      "cue": "Ask your last question again, word for word, and wait.",
+      "data": {
+       "asked": "literacy_task",
+       "skill": "verify",
+       "answer_type": "ail_task"
+      }
+     }
+    ],
+    "score_next": {
+     "ail_verify": [
+      {
+       "id": "a",
+       "point": "Opens the source the claim came from."
+      },
+      {
+       "id": "b",
+       "point": "Names who published the source and when."
+      },
+      {
+       "id": "c",
+       "point": "Compares the claim with what the source says."
+      },
+      {
+       "id": "d",
+       "point": "Says whether the claim matched the source."
+      }
+     ]
+    },
+    "reference": {},
+    "focus": []
+   }
+  },
+  {
+   "n": 8,
+   "shot": "4d",
+   "tool": "get_my_progress",
+   "sent": {},
+   "moves": null,
+   "told": null,
+   "result_chars": 1602,
+   "console": [
+    "[11/18/26 02:08:42] INFO     Processing request of type            server.py:733",
+    "                             CallToolRequest",
+    "get_my_progress demo-weak 11ms 1.7k chars ok",
+    "                    INFO     Terminating session: None    streamable_http.py:831"
+   ],
+   "wall_ms": 14.7,
+   "evidence": [],
+   "before": {
+    "p": {
+     "ail_ask": 0.635,
+     "ail_verify": 0.143,
+     "ail_how_fabrication": 0.155,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "developing",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.286,
+    "held_ail": [
+     "ail_how_fabrication_m2"
+    ],
+    "pending_literacy": {
+     "waited": 0,
+     "skill": "verify",
+     "part_id": "ail_verify",
+     "followups": 1
+    },
+    "pending_how": null,
+    "mcq_map": {}
+   },
+   "after": {
+    "p": {
+     "ail_ask": 0.635,
+     "ail_verify": 0.143,
+     "ail_how_fabrication": 0.155,
+     "ail_how_confidence": 0.33,
+     "ail_how_cutoff": 0.33,
+     "ail_how_agreement": 0.33
+    },
+    "levels": {
+     "ail_ask": "developing",
+     "ail_verify": "new",
+     "ail_how_fabrication": "new",
+     "ail_how_confidence": "new",
+     "ail_how_cutoff": "new",
+     "ail_how_agreement": "new"
+    },
+    "how_rollup": 0.286,
+    "held_ail": [
+     "ail_how_fabrication_m2"
+    ],
+    "pending_literacy": {
+     "waited": 0,
+     "skill": "verify",
+     "part_id": "ail_verify",
+     "followups": 1
+    },
+    "pending_how": null,
+    "mcq_map": {}
+   },
+   "result": {
+    "tree": [
+     {
+      "id": "elasticities",
+      "name": "Elasticities",
+      "level": "new",
+      "children": [
+       {
+        "id": "ped",
+        "name": "Price elasticity of demand",
+        "level": "new"
+       },
+       {
+        "id": "pes",
+        "name": "Price elasticity of supply",
+        "level": "new"
+       },
+       {
+        "id": "yed",
+        "name": "Income elasticity of demand",
+        "level": "new"
+       }
+      ]
+     },
+     {
+      "id": "indirect_taxes",
+      "name": "Indirect taxes and market failure",
+      "level": "new",
+      "children": [
+       {
+        "id": "tax_incidence",
+        "name": "Incidence of an indirect tax",
+        "level": "new"
+       },
+       {
+        "id": "externality_tax",
+        "name": "Taxing negative externalities",
+        "level": "new"
+       }
+      ]
+     }
+    ],
+    "levers": [
+     {
+      "part_id": "ped_formula",
+      "name": "PED: formula and calculation",
+      "level": "new"
+     },
+     {
+      "part_id": "ped_values",
+      "name": "PED: interpreting values",
+      "level": "new"
+     },
+     {
+      "part_id": "ped_definition",
+      "name": "PED: definition",
+      "level": "new"
+     },
+     {
+      "part_id": "tax_incidence_split",
+      "name": "Indirect tax: splitting the burden",
+      "level": "new"
+     },
+     {
+      "part_id": "tax_supply_shift",
+      "name": "Indirect tax: shifting supply",
+      "level": "new"
+     }
+    ],
+    "weak_links": [],
+    "reviews_due": [],
+    "trends": {
+     "deep_questions": {
+      "recent": 0.43,
+      "before": null,
+      "direction": null
+     },
+     "constructive": {
+      "recent": 0.0,
+      "before": null,
+      "direction": null
+     },
+     "just_show_me": {
+      "recent": 0.0,
+      "before": null,
+      "direction": null
+     }
+    },
+    "ai_literacy": {
+     "ask": {
+      "level": "developing"
+     },
+     "verify": {
+      "level": "new"
+     },
+     "how_ai_works": {
+      "level": "new",
+      "held": [
+       "It searched a source database and picked the wrong entry"
+      ]
+     },
+     "question_features": {
+      "concept": {
+       "recent": 1.0,
+       "before": null,
+       "direction": null
+      },
+      "context": {
+       "recent": 0.5,
+       "before": null,
+       "direction": null
+      },
+      "asks_sources": {
+       "recent": 0.5,
+       "before": null,
+       "direction": null
+      },
+      "asks_reasoning": {
+       "recent": 0.5,
+       "before": null,
+       "direction": null
+      }
+     }
+    },
+    "study_pattern": null
+   }
+  }
+ ],
+ "server_instructions_words": 875,
+ "call_log": [
+  {
+   "tool": "tutor_turn",
+   "ms": 11.490413002320565,
+   "result_chars": 1435,
+   "over_budget": 0
+  },
+  {
+   "tool": "tutor_turn",
+   "ms": 3.4671339963097125,
+   "result_chars": 997,
+   "over_budget": 0
+  },
+  {
+   "tool": "tutor_turn",
+   "ms": 2.647314002388157,
+   "result_chars": 1005,
+   "over_budget": 0
+  },
+  {
+   "tool": "tutor_turn",
+   "ms": 3.6047670000698417,
+   "result_chars": 1401,
+   "over_budget": 0
+  },
+  {
+   "tool": "tutor_turn",
+   "ms": 2.9376150050666183,
+   "result_chars": 966,
+   "over_budget": 0
+  },
+  {
+   "tool": "tutor_turn",
+   "ms": 3.039309012820013,
+   "result_chars": 997,
+   "over_budget": 0
+  },
+  {
+   "tool": "tutor_turn",
+   "ms": 1.9122989906463772,
+   "result_chars": 676,
+   "over_budget": 0
+  },
+  {
+   "tool": "get_my_progress",
+   "ms": 10.575809996225871,
+   "result_chars": 1746,
+   "over_budget": 0
+  }
+ ]
+}

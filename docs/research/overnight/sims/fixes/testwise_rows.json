@@ -1,0 +1,1267 @@
+{
+ "summary": {
+  "economics": {
+   "questions": 28,
+   "mcqs": 28,
+   "open_fallback": 0,
+   "chance": 0.312,
+   "absolutes": 0.354,
+   "punct": 0.312,
+   "hedge": 0.277,
+   "longest": 0.179,
+   "shortest": 0.179,
+   "similar": 0.223,
+   "similar_desc": 0.375,
+   "testwise": 0.286,
+   "correct_no_full_stop_rate": 1,
+   "correct_longest_rate": 0.107,
+   "sets_with_absolute_distractor": 7,
+   "sets_with_absolute_correct": 0
+  },
+  "how_ai_works": {
+   "questions": 4,
+   "mcqs": 4,
+   "open_fallback": 0,
+   "chance": 0.25,
+   "absolutes": 0.25,
+   "punct": 0.25,
+   "hedge": 0.25,
+   "longest": 0.25,
+   "shortest": 0.25,
+   "similar": 0.375,
+   "similar_desc": 1.0,
+   "testwise": 0.25,
+   "correct_no_full_stop_rate": 1,
+   "correct_longest_rate": 0.25,
+   "sets_with_absolute_distractor": 0,
+   "sets_with_absolute_correct": 0
+  },
+  "all": {
+   "questions": 32,
+   "mcqs": 32,
+   "open_fallback": 0,
+   "chance": 0.305,
+   "absolutes": 0.341,
+   "punct": 0.305,
+   "hedge": 0.273,
+   "longest": 0.188,
+   "shortest": 0.188,
+   "similar": 0.242,
+   "similar_desc": 0.453,
+   "testwise": 0.281,
+   "correct_no_full_stop_rate": 1,
+   "correct_longest_rate": 0.125,
+   "sets_with_absolute_distractor": 7,
+   "sets_with_absolute_correct": 0
+  }
+ },
+ "questions": [
+  {
+   "kind": "check",
+   "part": "ped_definition",
+   "stem": "PED: definition",
+   "desc": "PED: definition. What PED measures and why it is a ratio of percentage changes.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "PED compares percentage changes in quantity demanded and in price",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "PED is the slope of the demand curve, so it is the same all along it",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "PED measures how much the price changes when demand changes",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.5,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.0,
+    "similar_desc": 0.0,
+    "testwise": 1.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "ped_definition",
+   "stem": "PED: definition",
+   "desc": "PED: definition. What PED measures and why it is a ratio of percentage changes.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "PED has no units, so it compares goods with very different prices",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "PED is the slope of the demand curve, so it is the same all along it",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "PED measures how much the price changes when demand changes",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.5,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.0,
+    "similar_desc": 0.0,
+    "testwise": 1.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "ped_definition",
+   "stem": "PED: definition",
+   "desc": "PED: definition. What PED measures and why it is a ratio of percentage changes.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "A price rise cuts quantity demanded, so PED has a minus sign",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "PED is the slope of the demand curve, so it is the same all along it",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "PED measures how much the price changes when demand changes",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.5,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.0,
+    "similar_desc": 0.0,
+    "testwise": 1.0
+   }
+  },
+  {
+   "kind": "intuition",
+   "part": "ped_definition",
+   "stem": "If the price of your usual snack went up, would you still buy as many?",
+   "desc": "PED: definition. What PED measures and why it is a ratio of percentage changes.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "PED compares percentage changes in quantity demanded and in price",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "PED is the slope of the demand curve, so it is the same all along it",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "PED measures how much the price changes when demand changes",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.5,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.0,
+    "similar_desc": 0.0,
+    "testwise": 1.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "ped_formula",
+   "stem": "PED: formula and calculation",
+   "desc": "PED: formula and calculation. Calculating PED from percentage changes in quantity demanded and price.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "Each percentage change is the change divided by the original value, times 100",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "Divide the change in price by the change in quantity",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "Work out the percentage changes from the new values",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "PED is the change in quantity divided by the change in price, with no percentages",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.25,
+   "hits": {
+    "absolutes": 0.25,
+    "punct": 0.25,
+    "hedge": 0.25,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.0,
+    "similar_desc": 0.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "ped_formula",
+   "stem": "PED: formula and calculation",
+   "desc": "PED: formula and calculation. Calculating PED from percentage changes in quantity demanded and price.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "Keep the minus sign, because price and quantity demanded move in opposite ways",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "Divide the change in price by the change in quantity",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "Work out the percentage changes from the new values",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "PED is the change in quantity divided by the change in price, with no percentages",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.25,
+   "hits": {
+    "absolutes": 0.25,
+    "punct": 0.25,
+    "hedge": 0.25,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.0,
+    "similar_desc": 0.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "intuition",
+   "part": "ped_formula",
+   "stem": "If a 10% price rise cut your snack buying by 20%, how strongly did you react?",
+   "desc": "PED: formula and calculation. Calculating PED from percentage changes in quantity demanded and price.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "Each percentage change is the change divided by the original value, times 100",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "Divide the change in price by the change in quantity",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "Work out the percentage changes from the new values",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "PED is the change in quantity divided by the change in price, with no percentages",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.25,
+   "hits": {
+    "absolutes": 0.25,
+    "punct": 0.25,
+    "hedge": 0.25,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.0,
+    "similar_desc": 0.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "ped_values",
+   "stem": "PED: interpreting values",
+   "desc": "PED: interpreting values. Reading a PED value as elastic, inelastic or unit elastic, and what that means for total revenue.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "Ignoring the sign, elastic means above 1 and inelastic means below 1",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "An elastic good has a PED below 1, because demand hardly changes",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "correct": false,
+     "synthetic": true
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.3333333333333333,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 1.0,
+    "shortest": 0.0,
+    "similar": 0.0,
+    "similar_desc": 1.0,
+    "testwise": 1.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "ped_values",
+   "stem": "PED: interpreting values",
+   "desc": "PED: interpreting values. Reading a PED value as elastic, inelastic or unit elastic, and what that means for total revenue.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "When demand is price inelastic, raising the price raises total revenue",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "An elastic good has a PED below 1, because demand hardly changes",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "correct": false,
+     "synthetic": true
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.3333333333333333,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 1.0,
+    "shortest": 0.0,
+    "similar": 0.0,
+    "similar_desc": 1.0,
+    "testwise": 1.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "pes_definition",
+   "stem": "PES: definition and determinants",
+   "desc": "PES: definition and determinants. What PES measures and what makes supply more or less elastic.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "PES shows how quantity supplied responds to a change in price",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "Supply is just as elastic in the short run as in the long run",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "Supply is price elastic when buyers have lots of substitutes to switch to",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.3333333333333333,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 0.0,
+    "shortest": 0.5,
+    "similar": 1.0,
+    "similar_desc": 0.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "pes_definition",
+   "stem": "PES: definition and determinants",
+   "desc": "PES: definition and determinants. What PES measures and what makes supply more or less elastic.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "Spare capacity lets firms raise output quickly, so supply is elastic",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "Supply is just as elastic in the short run as in the long run",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "Supply is price elastic when buyers have lots of substitutes to switch to",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.3333333333333333,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.3333333333333333,
+    "similar_desc": 0.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "intuition",
+   "part": "pes_definition",
+   "stem": "If strawberries suddenly sold for more, how fast could farmers grow extra?",
+   "desc": "PES: definition and determinants. What PES measures and what makes supply more or less elastic.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "PES shows how quantity supplied responds to a change in price",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "Supply is just as elastic in the short run as in the long run",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "Supply is price elastic when buyers have lots of substitutes to switch to",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.3333333333333333,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 0.0,
+    "shortest": 0.5,
+    "similar": 0.3333333333333333,
+    "similar_desc": 0.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "pes_formula",
+   "stem": "PES: formula and calculation",
+   "desc": "PES: formula and calculation. Calculating PES from percentage changes in quantity supplied and price.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "PES is the % change in quantity supplied divided by the % change in price",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "PES is usually negative, just like PED for most goods",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "PES is the % change in price divided by the % change in quantity supplied",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.3333333333333333,
+    "punct": 0.3333333333333333,
+    "hedge": 0.0,
+    "longest": 0.5,
+    "shortest": 0.0,
+    "similar": 0.5,
+    "similar_desc": 0.5,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "pes_formula",
+   "stem": "PES: formula and calculation",
+   "desc": "PES: formula and calculation. Calculating PES from percentage changes in quantity supplied and price.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "PES is positive, because firms supply more when the price rises",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "PES is usually negative, just like PED for most goods",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "PES is the % change in price divided by the % change in quantity supplied",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.3333333333333333,
+    "punct": 0.3333333333333333,
+    "hedge": 0.0,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.0,
+    "similar_desc": 0.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "intuition",
+   "part": "pes_formula",
+   "stem": "If a 10% higher price made a bakery bake 5% more bread, how strongly did it react?",
+   "desc": "PES: formula and calculation. Calculating PES from percentage changes in quantity supplied and price.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "PES is the % change in quantity supplied divided by the % change in price",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "PES is usually negative, just like PED for most goods",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "PES is the % change in price divided by the % change in quantity supplied",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.3333333333333333,
+    "punct": 0.3333333333333333,
+    "hedge": 0.0,
+    "longest": 0.5,
+    "shortest": 0.0,
+    "similar": 0.5,
+    "similar_desc": 0.5,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "yed_definition",
+   "stem": "YED: definition and sign",
+   "desc": "YED: definition and sign. What YED measures, and how its sign separates normal from inferior goods.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "YED divides % change in quantity demanded by % change in income",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "YED measures how demand responds to a change in the good's price",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "A necessity like bread has a negative income elasticity of demand",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.3333333333333333,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 0.0,
+    "shortest": 1.0,
+    "similar": 1.0,
+    "similar_desc": 0.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "yed_definition",
+   "stem": "YED: definition and sign",
+   "desc": "YED: definition and sign. What YED measures, and how its sign separates normal from inferior goods.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "Positive YED means a normal good; negative YED means an inferior good",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "YED measures how demand responds to a change in the good's price",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "A necessity like bread has a negative income elasticity of demand",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.3333333333333333,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 1.0,
+    "shortest": 0.0,
+    "similar": 0.5,
+    "similar_desc": 1.0,
+    "testwise": 1.0
+   }
+  },
+  {
+   "kind": "intuition",
+   "part": "yed_definition",
+   "stem": "If you got a pay rise, what would you buy more of, and what less?",
+   "desc": "YED: definition and sign. What YED measures, and how its sign separates normal from inferior goods.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "YED divides % change in quantity demanded by % change in income",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "YED measures how demand responds to a change in the good's price",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "A necessity like bread has a negative income elasticity of demand",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.3333333333333333,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 0.0,
+    "shortest": 1.0,
+    "similar": 0.3333333333333333,
+    "similar_desc": 0.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "tax_supply_shift",
+   "stem": "Indirect tax: shifting supply",
+   "desc": "Indirect tax: shifting supply. Showing a specific or ad valorem tax as a shift of the supply curve on a diagram.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "The tax raises firms' costs, so supply shifts up by the tax per unit",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "An indirect tax shifts the demand curve, because buyers now pay more",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "An ad valorem tax shifts supply by the same amount at every price",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.5,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 0.5,
+    "shortest": 0.0,
+    "similar": 0.5,
+    "similar_desc": 0.0,
+    "testwise": 1.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "tax_supply_shift",
+   "stem": "Indirect tax: shifting supply",
+   "desc": "Indirect tax: shifting supply. Showing a specific or ad valorem tax as a shift of the supply curve on a diagram.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "A specific tax gives a parallel shift and an ad valorem tax a pivot",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "An indirect tax shifts the demand curve, because buyers now pay more",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "An ad valorem tax shifts supply by the same amount at every price",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.5,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.0,
+    "similar_desc": 1.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "intuition",
+   "part": "tax_supply_shift",
+   "stem": "If a caf\u00e9 had to pay 50p to the government on every coffee, what would happen to its prices?",
+   "desc": "Indirect tax: shifting supply. Showing a specific or ad valorem tax as a shift of the supply curve on a diagram.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "The tax raises firms' costs, so supply shifts up by the tax per unit",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "An indirect tax shifts the demand curve, because buyers now pay more",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "An ad valorem tax shifts supply by the same amount at every price",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.5,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 0.5,
+    "shortest": 0.0,
+    "similar": 0.0,
+    "similar_desc": 0.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "tax_incidence_split",
+   "stem": "Indirect tax: splitting the burden",
+   "desc": "Indirect tax: splitting the burden. Why the share of a tax paid by consumers depends on the price elasticities of demand and supply.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "The more price inelastic demand is, the more of the tax consumers bear",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "Producers bear the tax, as they are the ones who hand it to the government",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "The more price inelastic demand is, the more of the tax producers bear",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.3333333333333333,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 0.0,
+    "shortest": 0.5,
+    "similar": 0.5,
+    "similar_desc": 1.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "tax_incidence_split",
+   "stem": "Indirect tax: splitting the burden",
+   "desc": "Indirect tax: splitting the burden. Why the share of a tax paid by consumers depends on the price elasticities of demand and supply.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "When demand is price elastic, producers bear the larger share of the tax",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "Producers bear the tax, as they are the ones who hand it to the government",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "The more price inelastic demand is, the more of the tax producers bear",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.3333333333333333,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.0,
+    "similar_desc": 0.5,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "intuition",
+   "part": "tax_incidence_split",
+   "stem": "If a tax goes on something people can't do without, who ends up paying it?",
+   "desc": "Indirect tax: splitting the burden. Why the share of a tax paid by consumers depends on the price elasticities of demand and supply.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "The more price inelastic demand is, the more of the tax consumers bear",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "Producers bear the tax, as they are the ones who hand it to the government",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "The more price inelastic demand is, the more of the tax producers bear",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.3333333333333333,
+   "hits": {
+    "absolutes": 0.3333333333333333,
+    "punct": 0.3333333333333333,
+    "hedge": 0.3333333333333333,
+    "longest": 0.0,
+    "shortest": 0.5,
+    "similar": 0.0,
+    "similar_desc": 1.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "externality_tax_eval",
+   "stem": "Evaluating taxes on negative externalities",
+   "desc": "Evaluating taxes on negative externalities. Weighing how well a tax corrects an externality against problems such as valuing the external cost.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "A tax equal to marginal external cost moves output to the social optimum",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "A pollution tax set at the right level brings pollution down to zero",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "Firms just pay a pollution tax and carry on, so output does not change",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "A tax on pollution shifts demand, while a tax on the product shifts supply",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.25,
+   "hits": {
+    "absolutes": 0.25,
+    "punct": 0.25,
+    "hedge": 0.25,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.25,
+    "similar_desc": 1.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "externality_tax_eval",
+   "stem": "Evaluating taxes on negative externalities",
+   "desc": "Evaluating taxes on negative externalities. Weighing how well a tax corrects an externality against problems such as valuing the external cost.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "Valuing the external cost in money is hard, so the tax rate is a guess",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "A pollution tax set at the right level brings pollution down to zero",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "Firms just pay a pollution tax and carry on, so output does not change",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "A tax on pollution shifts demand, while a tax on the product shifts supply",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.25,
+   "hits": {
+    "absolutes": 0.25,
+    "punct": 0.25,
+    "hedge": 0.25,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.25,
+    "similar_desc": 1.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "check",
+   "part": "externality_tax_eval",
+   "stem": "Evaluating taxes on negative externalities",
+   "desc": "Evaluating taxes on negative externalities. Weighing how well a tax corrects an externality against problems such as valuing the external cost.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "With price inelastic demand, the tax cuts output by a small amount",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "A pollution tax set at the right level brings pollution down to zero",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "Firms just pay a pollution tax and carry on, so output does not change",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "A tax on pollution shifts demand, while a tax on the product shifts supply",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.25,
+   "hits": {
+    "absolutes": 0.25,
+    "punct": 0.25,
+    "hedge": 0.25,
+    "longest": 0.0,
+    "shortest": 1.0,
+    "similar": 0.25,
+    "similar_desc": 0.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "intuition",
+   "part": "externality_tax_eval",
+   "stem": "If a factory had to pay for the smoke it makes, would it make less?",
+   "desc": "Evaluating taxes on negative externalities. Weighing how well a tax corrects an externality against problems such as valuing the external cost.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "A tax equal to marginal external cost moves output to the social optimum",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "A pollution tax set at the right level brings pollution down to zero",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "Firms just pay a pollution tax and carry on, so output does not change",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "A tax on pollution shifts demand, while a tax on the product shifts supply",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.25,
+   "hits": {
+    "absolutes": 0.25,
+    "punct": 0.25,
+    "hedge": 0.25,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.0,
+    "similar_desc": 1.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "how_ai_works",
+   "part": "ail_how_fabrication",
+   "stem": "Why chatbots invent sources",
+   "desc": "Why chatbots invent sources. Chatbots generate likely-looking text, so a citation or link can look real and not exist.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "It predicts plausible text, so it makes up links that look real",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "It copied a page that was later deleted from the internet",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "Its links are tested before you see them, so the site is down for now",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "It made up the link deliberately, to hide that it didn't know",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.25,
+   "hits": {
+    "absolutes": 0.25,
+    "punct": 0.25,
+    "hedge": 0.25,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.25,
+    "similar_desc": 1.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "how_ai_works",
+   "part": "ail_how_confidence",
+   "stem": "Why confidence isn't evidence",
+   "desc": "Why confidence isn't evidence. A chatbot's tone says nothing about whether its answer is right.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "Sounding confident doesn't show whether an answer is correct",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "A chatbot sounds sure once it has checked the facts behind it",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "Confident wording means the answer came from a trusted source",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "When a chatbot is unsure of a fact, it tells you before it answers",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.25,
+   "hits": {
+    "absolutes": 0.25,
+    "punct": 0.25,
+    "hedge": 0.25,
+    "longest": 0.0,
+    "shortest": 1.0,
+    "similar": 0.25,
+    "similar_desc": 1.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "how_ai_works",
+   "part": "ail_how_cutoff",
+   "stem": "Why chatbots miss recent events",
+   "desc": "Why chatbots miss recent events. Without a web search, a chatbot only knows what was in its training text, up to a date.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "Without searching, a chatbot's knowledge stops at its training date",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "A chatbot checks the live internet for news before it answers you",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "Chatbots are retrained on the news overnight, so they stay up to date",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "If its data were out of date, the chatbot would refuse to answer",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.25,
+   "hits": {
+    "absolutes": 0.25,
+    "punct": 0.25,
+    "hedge": 0.25,
+    "longest": 0.0,
+    "shortest": 0.0,
+    "similar": 0.0,
+    "similar_desc": 1.0,
+    "testwise": 0.0
+   }
+  },
+  {
+   "kind": "how_ai_works",
+   "part": "ail_how_agreement",
+   "stem": "Why chatbots agree with you",
+   "desc": "Why chatbots agree with you. Chatbots can change a right answer to agree with a user who pushes back.",
+   "mcq": true,
+   "options": [
+    {
+     "text": "Chatbots are trained to please, so pushback sways them even when right",
+     "correct": true,
+     "synthetic": false
+    },
+    {
+     "text": "It changed the answer because it has now checked the facts properly",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "A chatbot switches answers once it works out the new one is right",
+     "correct": false,
+     "synthetic": false
+    },
+    {
+     "text": "Disagreeing makes it go and look up a more reliable source",
+     "correct": false,
+     "synthetic": false
+    }
+   ],
+   "step_move": "ask_mcq",
+   "chance": 0.25,
+   "hits": {
+    "absolutes": 0.25,
+    "punct": 0.25,
+    "hedge": 0.25,
+    "longest": 1.0,
+    "shortest": 0.0,
+    "similar": 1.0,
+    "similar_desc": 1.0,
+    "testwise": 1.0
+   }
+  }
+ ]
+}

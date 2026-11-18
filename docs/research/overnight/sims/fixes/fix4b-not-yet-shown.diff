@@ -1,0 +1,30 @@
+--- a/edux/learner.py
++++ b/edux/learner.py
+@@ -739,6 +739,13 @@
+     return min(p, prior) if row["last_correct"] is None else p
+ 
+ 
++def shown(student_id: str, part_id: str) -> bool:
++    """Whether the student has ever answered the part right (until then its level reads "not yet shown")."""
++    row = _conn().execute("SELECT last_correct FROM part_state WHERE student_id = ? AND part_id = ?",
++                          (student_id, graph.canonical(part_id))).fetchone()
++    return bool(row and row["last_correct"])
++
++
+ def level(p: float) -> str:
+     """new, developing or secure from the thresholds in settings.toml."""
+     levels = _settings().levels
+--- a/edux/service.py
++++ b/edux/service.py
+@@ -431,7 +431,10 @@
+ 
+ def _node_entry(student_id: str, node: dict, at: str) -> dict:
+     p = learner.rollup(student_id, node["id"], at)
+-    return {"id": node["id"], "name": node["name"], "level": learner.level(p)}
++    entry = {"id": node["id"], "name": node["name"], "level": learner.level(p)}
++    if node["level"] == "part" and not learner.shown(student_id, node["id"]):
++        entry["not_yet_shown"] = True   # never answered right: the level is the starting estimate, not evidence
++    return entry
+ 
+ 
+ def _tree(student_id: str, at: str, include_parts: bool) -> list[dict]:

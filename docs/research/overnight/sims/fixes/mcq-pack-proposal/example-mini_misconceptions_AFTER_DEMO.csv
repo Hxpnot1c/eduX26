@@ -1,0 +1,2 @@
+id,node_id,wrong_idea,correction,source_ids,status,flag,updated_by,updated_at
+ped_values_m2,ped_values,"If PED goes from -0.3 to -0.6, demand has become price elastic","Both values are below 1 ignoring the sign, so demand is still inelastic, just less so.",tb_main,draft,,w4-fix-mcq proposal,

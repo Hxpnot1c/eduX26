@@ -7,8 +7,9 @@ Each wave, six personas attack eduX: investor, teacher, AI-literacy researcher, 
 - *recommended*: we recommend a fix, but it isn't built.
 - *partly*: part of the objection is met (by a document, a built piece or a recommendation), part is not.
 - *open*: nothing addresses it.
+- *recommended (tested diff ready)*: added in wave 4. A patch in `sims/fixes/combined/` (0001–0005, on the 05e export) fixes the objection and was tested by simulation or scripted turns, with `check_mcp` 74/74 after each step (w4-fix-combined-1 ✓). It isn't merged or built, so it is not *answered*. Where a tested diff covers only part of an objection, the status is unchanged and the row carries a "Wave 4:" note.
 
-"05 rec 6" means rank 6 in that report's Ranked recommendations. "w2-05 rec 3" means rank 3 in that wave-2 scout note, and "w3-07 rec 5" the same for a wave-3 note. Rows marked "Wave 3:" were refreshed after wave 3.
+"05 rec 6" means rank 6 in that report's Ranked recommendations. "w2-05 rec 3" means rank 3 in that wave-2 scout note, and "w3-07 rec 5" the same for a wave-3 note. Rows marked "Wave 3:" or "Wave 4:" were refreshed after that wave. "Patch 0003" means `sims/fixes/combined/0003-…diff`.
 
 **Coordinator facts.**
 - Step 05e (Ask, Verify, How AI works) is built on branch `build/05e-literacy-coaching`, 14 commits ahead of `main`, and not merged. Scout notes that say "not built" are stale.
@@ -49,7 +50,7 @@ Statuses below were re-checked in wave 2 against the new key. Wave 1 had called 
 | # | Objection | Status | By |
 |---|---|---|---|
 | 1 | It teaches recognition, not what the exam rewards: every check is a 4-option MCQ, and level-marked answers wait in unbuilt step 07. | partly | Wave 2 counts the marks (about 66% level-marked, MCQ about 3%; w2-04-02 ✓) and proposes chain checks C1–C5 (w2-04 recs 2–3). [05](05-product-features.md) rec 7 gives an honest essay answer. Step 07 is not built. |
-| 2 | It is easy to game. The correct option is a fragment and the distractors are full sentences. Distractors come from other points. Explain-backs can be pasted. | partly | [04](04-economics-education.md) rec 1 and [demo plan](demo-plan.md) rec 2 recommend option-form pack edits (not made). Pasted explain-backs are not addressed. Wave 3: worse than thought. The correct option is the longest in 7 of 9 parts (w3-05-08 ~). w3-05 rec 1 (an exemplar as the key) is unbuilt. |
+| 2 | It is easy to game. The correct option is a fragment and the distractors are full sentences. Distractors come from other points. Explain-backs can be pasted. | partly | [04](04-economics-education.md) rec 1 and [demo plan](demo-plan.md) rec 2 recommend option-form pack edits (not made). Pasted explain-backs are not addressed. Wave 3: worse than thought. The correct option is the longest in 7 of 9 parts (w3-05-08 ~). w3-05 rec 1 (an exemplar as the key) is unbuilt. Wave 4: the option-form fix is a tested diff (patch 0004; w4-fix-mcq-1 ✓). Pasted explain-backs are still not addressed. |
 | 3 | Content accuracy: every row is `draft`, one correction is already wrong (`externality_tax_eval_m1`), and there's no review step. | recommended | [04](04-economics-education.md) rec 2 corrects the row; rec 3 keeps new rows as drafts until a teacher signs off. No review queue or error rate yet. |
 | 4 | No teacher view, and usage reports are off by default. | recommended | Wave 2 specifies a one-screen, k = 6 class view (w2-05t recs 1, 4, 6) and a labelled mock-up. Not built. |
 | 5 | Doesn't fit lessons: no class focus topic or deadline, the chatbot will still write the 25-marker, and students can't use the demo chatbot. | partly | [05](05-product-features.md) rec 3 (route answer); [09](09-safety-ethics.md) rec 9 (light friction); w2-09 rec 4 ("your point first" before a draft). Class focus is Later. |
@@ -67,7 +68,7 @@ Statuses below were re-checked in wave 2 against the new key. Wave 1 had called 
 
 | # | Objection | Status | By |
 |---|---|---|---|
-| 1 | Scoring contradicts coaching. Ask 2/4 counts as wrong in BKT, yet `ask_min_features = 2` treats it as good enough. Precise questions fail without a prompt ritual. Ignored tasks are scored 0 when they should be missing data. | recommended | [02](02-ai-literacy-assessment.md) recs 2 and 4. The wave-2 simulation backs `ask_min_features = 3`, not `correct_share = 0.5` (w2-02-03 ~), and ignored = missing (w2-02 recs 1–2). Synthetic students only; not on the branch yet. |
+| 1 | Scoring contradicts coaching. Ask 2/4 counts as wrong in BKT, yet `ask_min_features = 2` treats it as good enough. Precise questions fail without a prompt ritual. Ignored tasks are scored 0 when they should be missing data. | recommended | [02](02-ai-literacy-assessment.md) recs 2 and 4. The wave-2 simulation backs `ask_min_features = 3`, not `correct_share = 0.5` (w2-02-03 ~), and ignored = missing (w2-02 recs 1–2). Synthetic students only; not on the branch yet. Wave 4: ignored = missing is a tested diff for literacy tasks and checks (patch 0003; w4-fix-verify-1 ✓). The Ask thresholds are unchanged, so the status stays. |
 | 2 | Verify measures restating, not checking. The "opened" tick can't be observed. Ticks 2–4 can be met by repeating the chatbot's reply. The source is one the chatbot proposed. | partly | [02](02-ai-literacy-assessment.md) recs 5–6; w2-09 rec 2 (check a summary against the course notes, which the reply doesn't contain). The "opened" tick stays unobservable. |
 | 3 | Items don't fit their triggers. `fabrication` fires even with `web_access`. `pushback_changed` fires when the student was right. Distractors carry absolute cues. One wrong click marks a misconception as "held". | partly | [02](02-ai-literacy-assessment.md) recs 3 and 7; w2-02h recs 1–4 rewrite fabrication and agreement points and split off misattribution. Two picks before "held" is later. |
 | 4 | The assessed system writes its own evidence. The chatbot self-labels `conflict_flagged`, `pushback_changed` and `web_access`. | recommended | [02](02-ai-literacy-assessment.md) rec 8 (κ study); w2-02h recs 5–6 (treat `conflict_flagged` as a biased sample; a scripted audit of five failure modes). Not run. |
@@ -107,7 +108,7 @@ Statuses below were re-checked in wave 2 against the new key. Wave 1 had called 
 |---|---|---|---|
 | 1 | I ask a question and get a quiz, and the same question is re-asked. | partly | [05](05-product-features.md) ("answer first when rushed") and [09](09-safety-ethics.md) rec 9. Wave 2 adds a within-session re-ask (w2-03 rec 3), which brings the complaint back (see wave-2 student #1). |
 | 2 | I'd never see the AI-literacy part: only research questions trigger it, and homework never does. | recommended | w2-09 recs 2–4 add homework moments (`summarise`, `ai_output_pasted`, `draft`). Not built. |
-| 3 | The MCQs are easy to game. The short option is the right one. "Yeah I checked" makes Verify secure. An ignored task scores 0. | recommended | [04](04-economics-education.md) rec 1, [02](02-ai-literacy-assessment.md) recs 3, 4, 6; w2-02 rec 1 (`ail_unprompted` guess 0.20). All S, none made. |
+| 3 | The MCQs are easy to game. The short option is the right one. "Yeah I checked" makes Verify secure. An ignored task scores 0. | recommended | [04](04-economics-education.md) rec 1, [02](02-ai-literacy-assessment.md) recs 3, 4, 6; w2-02 rec 1 (`ail_unprompted` guess 0.20). All S, none made. Wave 4: tested diffs cover the short-option cue (patch 0004; w4-fix-mcq-1 ✓) and ignored task = skip, not 0 (patch 0003; w4-fix-verify-1 ✓). "Yeah I checked" (self-report) is not addressed, so the status stays. Not merged. |
 | 4 | It feels like being watched ("answers drop after 35 minutes", my just-show-me share). | partly | "Decide" stays unscored; teacher reports off by default; per-student levels and draft counts never shown (coordinator decision). w2-05t rec 2 tells students what the teacher sees (not built). |
 | 5 | It doesn't help with 15- and 25-mark essays. | recommended | w2-04 proposes chain checks C1–C5 and a plan-skeleton step (recs 2, 3, 9). Step 07 is not built. |
 
@@ -126,9 +127,9 @@ Statuses below were re-checked in wave 2 against the new key. Wave 1 had called 
 |---|---|---|---|
 | 1 | This is a revision tutor, not an AI-literacy entry. | partly | 05e is built on its branch, not merged. [01](01-competition-fit.md) rec 2 and [demo plan](demo-plan.md) recs 1, 4 (merge; a 72-s literacy episode) are not filmed. |
 | 2 | Where is your definition? | answered | [02](02-ai-literacy-assessment.md) rec 1 and [01](01-competition-fit.md) recs 3–4 (definition, rubric and crosswalk, documented). |
-| 3 | Why believe a "secure" Verify? Self-report, unvalidated labels, and 11–16% of students without the skill end "secure" under label noise. | partly | [02](02-ai-literacy-assessment.md) recs 5, 6, 8, 9, 12; [demo plan](demo-plan.md) rec 10; w2-02 recs 1, 7 (settings and a minimum-moments rule, simulation only). Nothing changed on the branch. Wave 3: reporting a dead link *lowers* Verify (w3-07-c5 ✓). |
+| 3 | Why believe a "secure" Verify? Self-report, unvalidated labels, and 11–16% of students without the skill end "secure" under label noise. | partly | [02](02-ai-literacy-assessment.md) recs 5, 6, 8, 9, 12; [demo plan](demo-plan.md) rec 10; w2-02 recs 1, 7 (settings and a minimum-moments rule, simulation only). Nothing changed on the branch. Wave 3: reporting a dead link *lowers* Verify (w3-07-c5 ✓). Wave 4: a tested diff makes a reported dead page or mismatch raise Verify to .748 (developing) and makes an ignored task a skip (patch 0003; w4-fix-verify-1 ✓). It relies on the chatbot sending `source_conflict`. Self-report and label noise remain. |
 | 4 | Your students can't legally use the chatbot you filmed. | partly | [05](05-product-features.md) recs 1–2 and [demo plan](demo-plan.md) rec 3 (works-with line, adult-account caption) are wording. The K-12 Copilot route is documented, not tested (w2-05). |
-| 5 | Your assessment gives the answer away (the correct option differs in form). | recommended | [04](04-economics-education.md) rec 1, [02](02-ai-literacy-assessment.md) rec 3 and [demo plan](demo-plan.md) rec 2 (pack edits, S). Not made; needs an owner on Wednesday. Wave 3: the correct option is the longest in 7 of 9 parts (w3-05-08 ~); w3-05 recs 1 and 4. |
+| 5 | Your assessment gives the answer away (the correct option differs in form). | recommended (tested diff ready) | [04](04-economics-education.md) rec 1, [02](02-ai-literacy-assessment.md) rec 3 and [demo plan](demo-plan.md) rec 2 (pack edits, S). Not made; needs an owner on Wednesday. Wave 3: the correct option is the longest in 7 of 9 parts (w3-05-08 ~); w3-05 recs 1 and 4. Wave 4: patch 0004 (code plus pack) drops a testwise student who knows nothing from a 0.96 hit rate to 0.28 against chance 0.31 (w4-fix-mcq-1 ✓; simulation: synthetic students, example pack). The new pack rows need an economist's read. Not merged. |
 
 **Q&A, with the answer wanted:**
 1. *Define AI literacy in one sentence.* "Knowing when and how far to trust a chatbot, shown in what students do when it is wrong."
@@ -220,7 +221,7 @@ Sources: w2-02, w2-02h, w2-03, w2-04, w2-05, w2-05t, w2-08, w2-09 and verifier s
 | 2 | New moments add more self-labels. `summarise`, `ai_output_pasted` and `draft` are classified by the chatbot. Summarise does check against our notes, which answers wave-1 "Verify measures restating". | partly | w2-09 recs 2–4; include the new labels in the w2-02h rec 6 audit before scoring them. |
 | 3 | Mixed bases and self-report in the motivation. The 52% weekly figure is a share of AI users (w2-09-01 ~). The deck calls self-report weak, then motivates the problem with self-reported checking. | partly | Fix wanted: lead with Ofcom's performance result (a quarter of confident teens failed; w2-09-04 ✓) and give each NLT base. Wave 3 (open → partly): frame D now leads with that result (w3-01). The caption must say it was an AI-image test, not fact-checking (wave-3 judges #3). |
 | 4 | Bastani is used beyond its reach. It is Turkish high-school maths. The guarded tutor caused no harm and no gain. The "about −0.2 SD" figure is our calculation. | partly | w2-09 rec 1 wording; use it only for "guarded beats unguarded". |
-| 5 | Missing data and evidence counts aren't changed. Ignored task = 0 is still on the branch. A 3-moment minimum (our choice) is low against the 8–12 that w1-02-31 ✓ suggests. | recommended | w2-02 recs 2, 7 and w2-09 rec 5 (S, unbuilt); NAEP and PISA not-reached handling backs ignored = missing (w2-02-11, -12 ~). |
+| 5 | Missing data and evidence counts aren't changed. Ignored task = 0 is still on the branch. A 3-moment minimum (our choice) is low against the 8–12 that w1-02-31 ✓ suggests. | recommended | w2-02 recs 2, 7 and w2-09 rec 5 (S, unbuilt); NAEP and PISA not-reached handling backs ignored = missing (w2-02-11, -12 ~). Wave 4: ignored = missing is a tested diff (patch 0003; w4-fix-verify-1 ✓). The minimum-moments rule is not, so the status stays. |
 
 **Q&A, with the answer wanted:**
 1. *Your fabrication point: true with search on?* "We've rewritten it so it's true either way, and we're splitting misattribution off as its own part."
@@ -300,11 +301,11 @@ Sources: w3-01, w3-02e, w3-05, w3-06, w3-07 (our Plan A rehearsal by simulation)
 
 | # | Objection | Status | By |
 |---|---|---|---|
-| 1 | Catching a fake link lowers Verify. A dead page ticks 2 of 4 points, so Verify falls from .30 to .14. Moving on also scores 0. A mismatch raises it to .748, but only with a rewritten option set (w3-07-c5 ✓). An assessment that penalises its target behaviour is invalid, not noisy. | partly | Filming workaround: the mismatch line, or no Verify record after a dead-page take ([demo plan](demo-plan.md); w3-07 recs 2, 5). The scoring fix (w3-07 rec 5, 02 rec 6) is unbuilt and marked "maybe". Wave 4 is redesigning Verify scoring. |
-| 2 | The demo works only if we avoid ordinary words. On example-mini, "give", "link", "ONS", "first", "cost", "different" and "shows" each pull a course part into focus. "Give me sources" turns the episode into a PED quiz (w3-07-c3 ✓). The expo demo is unscripted. | partly | w3-07 rec 1 (focus-safe lines) is a workaround. The fix, "literacy turns never set a course focus" (w3-07 rec 4), is unbuilt; wave 4 is working on it. |
-| 3 | The slide-1 evidence doesn't match the claim. Ofcom tested spotting AI-made images, not checking a chatbot's claim. And "nobody can see the difference" applies to us too, because Verify is partly self-report on labels the chatbot assigns. | partly | w3-01 (frame D) flags both points. A caption reading "AI-made images" is recommended, not yet on the slide. The brief is still unpasted. |
-| 4 | The record misreads. How AI works shows "new" straight after the lesson (w3-07-c7 ✓). In economics, a part answered right once reads below one answered wrong and never right after 8.5 days (w3-06-01 ✓). Pooled AUC against truth is 0.48–0.59 (w3-06-08 ✓; simulation: synthetic students, example pack). | recommended | w3-06 recs 1–2 (decay towards the prior, plus "not yet shown"); [demo plan](demo-plan.md) rec 13 (per-part counts). Unbuilt; the decay fix is in progress in wave 4. |
-| 5 | The economics checks still give the answer away. In 7 of 9 parts the correct option is the node description (a topic label), and in 7 of 9 it is the longest option (w3-05-08 ~). | recommended | w3-05 rec 1 (an exemplar as the key) and rec 4 (three options). Unbuilt, "yes"; wave 4 is fixing it. |
+| 1 | Catching a fake link lowers Verify. A dead page ticks 2 of 4 points, so Verify falls from .30 to .14. Moving on also scores 0. A mismatch raises it to .748, but only with a rewritten option set (w3-07-c5 ✓). An assessment that penalises its target behaviour is invalid, not noisy. | recommended (tested diff ready) | Filming workaround: the mismatch line, or no Verify record after a dead-page take ([demo plan](demo-plan.md); w3-07 recs 2, 5). The scoring fix (w3-07 rec 5, 02 rec 6) is unbuilt and marked "maybe". Wave 4 is redesigning Verify scoring. Wave 4: patch 0003 scores a found dead page or mismatch as 1, so Verify goes .30 → .748 (developing) instead of .14; an ignored task is a skip; a matched check is graded (a,c,d .636 vs a,b,c,d .748) (w4-fix-verify-1 ✓). Verify now ends developing in all six Plan A takes (w4-fix-combined-1 ✓). Relies on the `source_conflict` label. Not merged. |
+| 2 | The demo works only if we avoid ordinary words. On example-mini, "give", "link", "ONS", "first", "cost", "different" and "shows" each pull a course part into focus. "Give me sources" turns the episode into a PED quiz (w3-07-c3 ✓). The expo demo is unscripted. | recommended (tested diff ready) | w3-07 rec 1 (focus-safe lines) is a workaround. The fix, "literacy turns never set a course focus" (w3-07 rec 4), is unbuilt; wave 4 is working on it. Wave 4: patch 0002 (a research or other turn never sets the focus) cuts false focus from 15/43 to 3/43 (holdout 9/18 → 3/18), at the cost of right focus 16/21 → 14/21 (w4-fix-focus-1 ✓; scripted turns, example pack). The 3 residual cases need the resolver name-gate, which is not in the series. Not merged. |
+| 3 | The slide-1 evidence doesn't match the claim. Ofcom tested spotting AI-made images, not checking a chatbot's claim. And "nobody can see the difference" applies to us too, because Verify is partly self-report on labels the chatbot assigns. | answered | w3-01 (frame D) flags both points. A caption reading "AI-made images" is recommended, not yet on the slide. The brief is still unpasted. Wave 4: [pitch script](pitch-script.md) (w4-01) always calls Ofcom an image test, says "a quarter of those confident", and drops "nobody can see the difference". The brief is still unpasted. |
+| 4 | The record misreads. How AI works shows "new" straight after the lesson (w3-07-c7 ✓). In economics, a part answered right once reads below one answered wrong and never right after 8.5 days (w3-06-01 ✓). Pooled AUC against truth is 0.48–0.59 (w3-06-08 ✓; simulation: synthetic students, example pack). | recommended (tested diff ready) | w3-06 recs 1–2 (decay towards the prior, plus "not yet shown"); [demo plan](demo-plan.md) rec 13 (per-part counts). Unbuilt; the decay fix is in progress in wave 4. Wave 4: patch 0005 (decay towards the prior; Ask and Verify floor 0) lifts week-8 How AI works AUC (none vs strong) from 0.51/0.31 to 0.85/0.88 (MCAR/MNAR, ignored = missing), and talk-only drops from .763 to .300 (w4-fix-core-4 ✓; simulation: synthetic students, example pack; prediction, not learning). "New straight after the lesson" was not re-tested. Optional; merge by 15:30 or after filming. |
+| 5 | The economics checks still give the answer away. In 7 of 9 parts the correct option is the node description (a topic label), and in 7 of 9 it is the longest option (w3-05-08 ~). | recommended (tested diff ready) | w3-05 rec 1 (an exemplar as the key) and rec 4 (three options). Unbuilt, "yes"; wave 4 is fixing it. Wave 4: patch 0004, 0.96 → 0.28 testwise hit rate against chance 0.31 (w4-fix-mcq-1 ✓). Not merged. |
 
 **Q&A, with the answer wanted:**
 1. *"Type 'give me sources on the cost of living'."* It stays on the literacy task, live.
@@ -319,11 +320,11 @@ Sources: w3-01, w3-02e, w3-05, w3-06, w3-07 (our Plan A rehearsal by simulation)
 
 | # | Objection | Status | By |
 |---|---|---|---|
-| 1 | My normal words break it. I type "give me sources" and "what's the cost of…" every day. You've banned those words from your own demo because they turn my question into an elasticity quiz (w3-07-c3 ✓). | partly | w3-07 rec 4 is unbuilt and marked "maybe"; wave 4 is working on the focus fix. |
-| 2 | Being honest lowers my score. Reporting a dead link lowers Verify, and saying "ok" scores 0 (w3-07-c5 ✓). So I'll learn to type "yeah it matched". | recommended | w3-07 rec 5 and 02 rec 6 (unbuilt). Wave 4 is redesigning Verify scoring. |
+| 1 | My normal words break it. I type "give me sources" and "what's the cost of…" every day. You've banned those words from your own demo because they turn my question into an elasticity quiz (w3-07-c3 ✓). | recommended (tested diff ready) | w3-07 rec 4 is unbuilt and marked "maybe"; wave 4 is working on the focus fix. Wave 4: patch 0002, false focus 15/43 → 3/43 (w4-fix-focus-1 ✓). Not merged. |
+| 2 | Being honest lowers my score. Reporting a dead link lowers Verify, and saying "ok" scores 0 (w3-07-c5 ✓). So I'll learn to type "yeah it matched". | recommended (tested diff ready) | w3-07 rec 5 and 02 rec 6 (unbuilt). Wave 4 is redesigning Verify scoring. Wave 4: patch 0003, a reported dead link now raises Verify to .748, and "ok" is a skip, not 0 (w4-fix-verify-1 ✓). Not merged. |
 | 3 | "Shorter replies" doesn't reach the teaching. I ask for 50 words and the teaching step still says 80. | recommended | w3-05 rec 2 (S, "yes"), unbuilt. A student-chosen "plain words" option is w3-05 rec 3 (M, needs a migration). |
-| 4 | The right answer sounds like the spec heading and is usually the longest, so I'd pick it without reading (w3-05-08 ~). | recommended | w3-05 recs 1 and 4, unbuilt; wave 4 is fixing it. |
-| 5 | The levels feel random. Right once, and three days later it's "new" again. Chat with no check, and it says "secure" for months (14 exchanges give .763; w3-06-06 ~). After the lesson, How AI works still says "new". | recommended | w3-06 recs 1–3, unbuilt; the decay fix is in progress. |
+| 4 | The right answer sounds like the spec heading and is usually the longest, so I'd pick it without reading (w3-05-08 ~). | recommended (tested diff ready) | w3-05 recs 1 and 4, unbuilt; wave 4 is fixing it. Wave 4: patch 0004 (w4-fix-mcq-1 ✓). Not merged. |
+| 5 | The levels feel random. Right once, and three days later it's "new" again. Chat with no check, and it says "secure" for months (14 exchanges give .763; w3-06-06 ~). After the lesson, How AI works still says "new". | recommended (tested diff ready) | w3-06 recs 1–3, unbuilt; the decay fix is in progress. Wave 4: patch 0005; talk-only reads .300 (new), not .763 (secure), at day 0 and day 90 (w4-fix-core-4 ✓). Not merged. |
 
 **Q&A, with the answer wanted:**
 1. *If I ask for sources on the cost of living, do I get quizzed on PED?* "No. Here it is."
@@ -340,11 +341,11 @@ He liked three things: no timers, "plain words" as his own choice (never inferre
 
 | # | Objection | Status | By |
 |---|---|---|---|
-| 1 | "Give me sources" turns into an indirect-tax lesson: OBR and IFS as sources, then a PED prerequisite MCQ (w3-07-c3 ✓). This is a classroom bug, and the demo's word ban hides it. | partly | w3-07 rec 1 is a workaround; rec 4 is "maybe". Wave 4 is working on the focus fix. |
-| 2 | The record punishes honest checking and rewards chat. A dead page lowers Verify from .30 to .14, and moving on scores 0 (w3-07-c5 ✓). Fourteen talk-only exchanges reach .763 (w3-06-06 ~). An `untested` review is queued, but does it ever fire? | recommended | Fix (b) (w3-06 rec 2) covers talk-only. w3-07 rec 5 is "maybe", and ignored = missing (02 rec 4) is unbuilt. None is built or tested. |
-| 3 | A prerequisite gets skipped where the calculation marks are. Six right answers on `ped_values` lift a never-answered `ped_formula` to .527 for good, so its prerequisite check never fires (w3-06-05 ✓). | recommended | w3-06 rec 2, unbuilt. |
+| 1 | "Give me sources" turns into an indirect-tax lesson: OBR and IFS as sources, then a PED prerequisite MCQ (w3-07-c3 ✓). This is a classroom bug, and the demo's word ban hides it. | recommended (tested diff ready) | w3-07 rec 1 is a workaround; rec 4 is "maybe". Wave 4 is working on the focus fix. Wave 4: patch 0002 (w4-fix-focus-1 ✓). Not merged. |
+| 2 | The record punishes honest checking and rewards chat. A dead page lowers Verify from .30 to .14, and moving on scores 0 (w3-07-c5 ✓). Fourteen talk-only exchanges reach .763 (w3-06-06 ~). An `untested` review is queued, but does it ever fire? | recommended (tested diff ready) | Fix (b) (w3-06 rec 2) covers talk-only. w3-07 rec 5 is "maybe", and ignored = missing (02 rec 4) is unbuilt. None is built or tested. Wave 4: patch 0003 (dead page .14 → .748; ignored = skip; w4-fix-verify-1 ✓) and patch 0005 (talk-only .763 → .300; w4-fix-core-4 ✓). Whether the `untested` review fires was not checked. Not merged. |
+| 3 | A prerequisite gets skipped where the calculation marks are. Six right answers on `ped_values` lift a never-answered `ped_formula` to .527 for good, so its prerequisite check never fires (w3-06-05 ✓). | recommended (tested diff ready) | w3-06 rec 2, unbuilt. Wave 4: patch 0005; a never-answered prerequisite reads .300 (new), not .440, and the next-day plan is a prerequisite check (w4-fix-core-4 ✓). Not merged. |
 | 4 | The pilot's cost to her department isn't counted. Who rates 100 real messages, maps mock items to parts, writes the DPIA and the consent letters, and runs the think-alouds? January to March is mock marking. | open | w3-02e §2 logs her time (RQ6) but gives no hours per task. |
-| 5 | The items still don't look like her subject. E07 turns "evaluate a pollution tax" into a 3-point checklist. The MCQ key is a topic label and is the longest option in 7 of 9 parts (w3-05-08 ~). "Shorter replies" sends two word caps. | partly | w3-05 recs 1, 2 (with 04 rec 1) cover the MCQ key and the cap. Nothing addresses E07 (drop it or mark it "illustrative"). |
+| 5 | The items still don't look like her subject. E07 turns "evaluate a pollution tax" into a 3-point checklist. The MCQ key is a topic label and is the longest option in 7 of 9 parts (w3-05-08 ~). "Shorter replies" sends two word caps. | partly | w3-05 recs 1, 2 (with 04 rec 1) cover the MCQ key and the cap. Nothing addresses E07 (drop it or mark it "illustrative"). Wave 4: the MCQ key is a tested diff (patch 0004; w4-fix-mcq-1 ✓). E07 and the double word cap are not addressed. |
 
 **Q&A, with the answer wanted:**
 1. *A pupil catches a fake link. Does the record go up?* "Yes. Here is the test."
@@ -361,10 +362,10 @@ She liked "not yet shown" (it is how she talks to pupils), the "never say eduX r
 
 | # | Objection | Status | By |
 |---|---|---|---|
-| 1 | Agreement would certify an invalid rule. Item V06 (page not found) is in the study. Bot and humans can agree perfectly on ticks a and d, which then *lower* Verify (w3-07-c5 ✓). Also, 3/4 and 4/4 score the same, because scoring is binary at .67. | partly | w3-07 rec 5 is "maybe"; 02 rec 5 is a redesign. Wave 4 is redesigning Verify scoring. Reporting the server's decision, not only the ticks, is not yet in the protocol. |
+| 1 | Agreement would certify an invalid rule. Item V06 (page not found) is in the study. Bot and humans can agree perfectly on ticks a and d, which then *lower* Verify (w3-07-c5 ✓). Also, 3/4 and 4/4 score the same, because scoring is binary at .67. | partly | w3-07 rec 5 is "maybe"; 02 rec 5 is a redesign. Wave 4 is redesigning Verify scoring. Reporting the server's decision, not only the ticks, is not yet in the protocol. Wave 4: the scoring part is a tested diff: V06 ticks now raise Verify, and 3/4 vs 4/4 on a matched check differ (.636 vs .748) (patch 0003; w4-fix-verify-1 ✓). Reporting the server's decision in the protocol is still not done. |
 | 2 | The study skips the self-labels that wave 2 attacked. `conflict_flagged` and `pushback_changed` are dropped, and `source_conflict` is descriptive only, with 2 positives (w2-02-41 ✓). | recommended | 02 rec 19 (scripted audit with per-host trigger rates), unbuilt. w3-02e doesn't cover it. |
 | 3 | The study is too weak to show much. The pass rule passes a κ = .6 chatbot only 38–50% of the time (w3-02e-06 ✓). Verify rests on 8 message clusters, which is too few for a stable cluster bootstrap. The items are Claude-drafted and tested on Claude. | partly | w3-02e recs 1–5 (call it "screening", rewrite half the messages, fix the pass rule in advance). Cold-written Verify items and a second host are not planned. |
-| 4 | The decay asymmetry may explain why How AI works ranks backwards (AUC .40 on the branch). Fix (c) raises economics AUC from 0.48–0.59 to 0.62–0.71, but it redefines p (w3-06-08 ✓; simulation: synthetic students, example pack). Spacing hides the asymmetry only within about 30 days of the exam, not 14 (w3-06-02 ~). | recommended | w3-06 rec 7 (re-run the literacy AUC under the fix), "maybe". Wave 4 is running it. |
+| 4 | The decay asymmetry may explain why How AI works ranks backwards (AUC .40 on the branch). Fix (c) raises economics AUC from 0.48–0.59 to 0.62–0.71, but it redefines p (w3-06-08 ✓; simulation: synthetic students, example pack). Spacing hides the asymmetry only within about 30 days of the exam, not 14 (w3-06-02 ~). | recommended (tested diff ready) | w3-06 rec 7 (re-run the literacy AUC under the fix), "maybe". Wave 4 is running it. Wave 4: re-run done. All the AUC gain comes from patch 0005: branch rule 0.44/0.40 → 0.77/0.90, ignored = missing 0.51/0.31 → 0.85/0.88; about ±0.05 at N = 60 (w4-fix-core-4 ✓; simulation: synthetic students, example pack). Not merged. |
 | 5 | The pilot can progress without validity evidence. Only RQ1, RQ3 and RQ9 must be green, and RQ4 isn't required. RQ5's rise in Ask features may be compliance with prompts. RQ3 uses only consented or donated messages. | open | Wanted: RQ4 as a progression criterion; RQ5 scored on first drafts and unprompted questions only. |
 
 **Q&A, with the answer wanted:**
@@ -380,9 +381,9 @@ She liked "not yet shown" (it is how she talks to pupils), the "never say eduX r
 
 | # | Objection | Status | By |
 |---|---|---|---|
-| 1 | Microsoft earns about 4.5 times what we do from our own customer: about £22.50 against a £5 licence, and up to £108 (w3-08m-13, our estimate on 600 turns, our choice). Pay-as-you-go is off by default, so adopting us is a finance-office decision. | partly | w3-08m recs 1, 2, 5 (cost table, cap). No measured turn count. |
+| 1 | Microsoft earns about 4.5 times what we do from our own customer: about £22.50 against a £5 licence, and up to £108 (w3-08m-13, our estimate on 600 turns, our choice). Pay-as-you-go is off by default, so adopting us is a finance-office decision. | partly | w3-08m recs 1, 2, 5 (cost table, cap). No measured turn count. Wave 4: the market ceiling is about 23,900 9EC0 candidates a cohort, about £143k–239k a year at £3–5 (w4-08-10 ✓, our estimate). |
 | 2 | The "free route" rests on contested pages. "No charge only when licensed" is too strong (w3-08m-05 ~), and Microsoft's pages disagree on billing unlicensed students (w3-08m-09 ✓). Until tested, the cost is £11–108, not "maybe zero". | partly | w3-08m recs 3, 7, 8 (tenant test); none done. |
-| 3 | The channel may not exist for us. The learner Copilot page lists only Microsoft's own experiences, and custom agents for under-18 learners are undocumented (w3-08m-04 ✓). "Four in five teachers on Outlook" is a proxy (w3-08m-03 ~). | recommended | w3-08m rec 8: ask Microsoft in writing, or test with a 17-year-old account. Not sent. |
+| 3 | The channel may not exist for us. The learner Copilot page lists only Microsoft's own experiences, and custom agents for under-18 learners are undocumented (w3-08m-04 ✓). "Four in five teachers on Outlook" is a proxy (w3-08m-03 ~). | recommended | w3-08m rec 8: ask Microsoft in writing, or test with a 17-year-old account. Not sent. Wave 4: still unconfirmed. Microsoft's K-12 pages don't mention custom agents for 13–17s (w4-08-02 ✓); admins can block or allow agents (w4-08-04, -06 ✓); the education addons page marks agent rows "employee-facing agents only" (w4-08-05 ✓, ambiguous); and a new admin opt-in mode limits students to Study and Learn (w4-08-01 ~, read on a mirror). |
 | 4 | Copyright removes the content moat as well as the risk. The lawful spine is DfE OGL content plus our own words (w3-08c-05 ✓), which anyone can build. AQA bans AI use of its material (w3-08c-10 ✓). | partly | w3-08c recs 6–9. No cost per pack. |
 | 5 | Evidence takes too long for a seed runway. The pilot shows feasibility, not learning. Learning needs an efficacy trial of about 100 schools (w3-02e rec 7): 2028 at best. | partly | w3-02e rec 8 (RAG thresholds registered in advance). |
 
@@ -424,51 +425,126 @@ Of 30 objections, 0 are answered, 13 recommended, 15 partly and 2 open (teacher 
 
 ---
 
-## Open questions for wave 4
+## Wave 4: the pitch script
 
-Merged and deduplicated from the six wave-3 personas: 20 questions, 18 after merging. Tags: [I] investor, [D] DPO, [J] judges, [R] researcher, [T] teacher, [S] student.
+Sources: the pitch panel (`work/w4/panel-pitch.md`) on [pitch-script.md](pitch-script.md) §1–3 (video, deck, leave-behind), checked against [demo plan](demo-plan.md) Plans A and B, the [Wednesday build list](wednesday-build-list.md) and the morning brief. Three personas: EduX judges, a sixth-form economics teacher and a Year 12–13 student. Also used: w4-08 (Microsoft channel and market; verify-R) and the fix series (w4-fix-*; integration verifier Q).
 
-Wave 4 is already working on five streams:
-- literacy turns that don't set a course focus;
-- a Verify scoring redesign;
-- the MCQ testwise fix;
-- the crash and decay fixes, including How AI works AUC under the decay fix;
-- a word-for-word pitch script.
+Word counts after all the line edits below: video about 310 (limit 360), deck 514, or 533 with the slide-6 add-on (limit 560), leave-behind 222, or 225 on Plan B (limit 250).
 
-Questions those streams answer are marked **in progress**.
+Every line edit below is **recommended**: the panel proposed it and the editor has not yet applied it to the script. A row becomes *answered* once [pitch-script.md](pitch-script.md) carries the edit.
 
-**Demo and labels**
+### EduX judges (Challenge 1), watching cold after many teams
 
-1. [J] In a claude.ai dry run, which labels does Claude send on the four Plan A lines?
-2. [S, T] How often do real 16–18 research questions contain the resolver's trigger words? On 100 real student messages, how often does the resolver pick the wrong course part? *(The in-progress focus fix stops literacy turns setting a focus. The frequency question stays open.)*
-3. [J] Whom do the brief's Desired Outcomes name as the user of the assessment? (The team must paste the brief into the repo on Wednesday.)
+**Verdict:** Shortlist on Plan A. It is the first version that opens on AI literacy and defines it inside 30 seconds. Two lines contradict the deck, and that costs trust. "Confidence isn't skill" plus "eduX assesses AI literacy where it happens" lands in the first 20 s, though the screen shows an inflation answer while the voice talks about images. Attention drops on slide 3 (two correlations back to back) and slide 5.
 
-**AI-literacy measurement**
+| # | Objection | Status | By (line edit) |
+|---|---|---|---|
+| 1 | "The sharper question counts as evidence" (4b): evidence of what? Slide 5 then turns to a maths RCT and exam mark splits, which reads as "a revision tutor again". | recommended | 4b → "That sharper question already scores as Ask." (6 → 7 words; the student's edit, student #2 below). |
+| 2 | Overclaim: video 4d says "Every moment is evidence", while slide 6 says "One moment is weak evidence". | recommended | 4d → "Each moment adds evidence." (4 → 4) |
+| 3 | Overclaim: "Each wrong option is a *known* wrong idea" (4c). The options are our design, not a published misconception inventory. | recommended | 4c → "Each wrong option names a wrong idea about chatbots." (10 → 9) |
+| 4 | Doubted number: the slide-6 add-on, "5% or fewer". w2-02-08 ✓ gives ≤ 5% only when ignored tasks are treated as MNAR; it was 7% and 6% in the MCAR lenient cell. As spoken, it is wrong in a cell we ran. | recommended | → "In our main simulation, 5% or fewer no-skill synthetic students were ever shown secure; 7% in one harsher setting." (16 → 19) |
+| 5 | Slide 4's "about 30% of GPT-4o's statements weren't backed by the pages it cited" drops the population. | recommended | Add "on medical questions" (+3 words; restores w2-02-34 ✓). |
 
-4. [J, R] Under the decay fix, does How AI works AUC on the 05e branch rise above 0.5 (from .40)? **In progress.**
-5. [S] When reporting a failed check lowers a score, do students report fewer failures? (Literature on incentives in self-report.) **In progress** (Verify scoring redesign).
-6. [R] With 8–16 message clusters, how well does a cluster-bootstrap CI for κ keep its coverage? (Simulation.)
-7. [R] What published LLM-vs-human κ figures exist for question-quality features, as an external benchmark?
-8. [R] Does an unprompted-feature Ask score separate novice and practised personas (02 rec 10)?
+### Sixth-form economics teacher
 
-**Learner model and checks**
+**Verdict:** Interested, not convinced. She'd want to see the teacher view and the mark-scheme fit working, and neither is shown. The Ofcom figure lands (she has seen it in the news), but "assesses AI literacy" sounds like one more thing to assess. Attention drops at shot 6's terminal montage and at slide 8's "0.17 of a standard deviation", unless that is framed as "we won't claim gains".
 
-9. [T] After fix (b), does the `untested` review fire, and does it pull a talk-only part back down? **In progress** (decay fixes).
-10. [S] Does a three-option, plain-claim MCQ cut how often students pick the right answer without knowing the economics? **In progress** (MCQ testwise fix).
+| # | Objection | Status | By (line edit) |
+|---|---|---|---|
+| 1 | "The server scores the letter itself" (4d): which letter? | recommended | → "Our server marks the student's answer, not the chatbot." (10 → 9) |
+| 2 | Slide 5 implies the opposite of the truth. The checks are MCQs, which serve the point-marked third, yet the line says they are "a way in" because two-thirds of marks are level-marked. A 9EC0 teacher spots it at once. | recommended | → "So eduX teaches one point, then checks. Those checks cover the point-marked third of Pearson Edexcel 9EC0; the level-marked two-thirds come next." (28 → 22; w2-04-02 ✓, 34% / 66%) |
+| 3 | Overclaim: slide 8, "46,365 … That's who we start with." The figure is all boards in England; eduX is built for 9EC0 only. | recommended | → "There were 46,365 A level Economics entries in England in 2026, across all boards. We start with Edexcel." (17 → 19). Wave 4 also has a 9EC0 figure: 21,005 certificates in 2024–25, 51.5% of the subject (w4-08-08 ✓). |
+| 4 | Doubted number: "Only 34% of secondary schools". The finding is England state schools, 2025 (w1-08-04 ✓), and "in England" isn't said. | recommended | Slide 7: add "in England" (+2). |
 
-**Routes, cost and contracts**
+### Year 12–13 student, 17
 
-11. [I] Can K-12 learners in "not adult" accounts invoke custom or third-party declarative agents in Copilot Chat?
-12. [I] Do any UK schools switch on Copilot pay-as-you-go for students, and under what cap?
-13. [D] Do Microsoft's Product Terms or DPA cover traffic from Copilot Studio custom connectors to third-party MCP servers?
-14. [D] Does a school relying on DPA 2018 Sch 1 para 18 for a chatbot signpost need an appropriate policy document?
+**Verdict:** "Would I use it? Only if it still answers me." The script never says plainly that it does. "Half of teens feel confident" lands ("that's me"); "image test" gets a shrug ("I don't use ChatGPT for images"). Attention drops from 1:46: the split-screen elasticity shot and the terminal montage are for adults.
 
-**Market**
+| # | Objection | Status | By (line edit) |
+|---|---|---|---|
+| 1 | The script never says it answers me first. | recommended | 4a: "The chatbot answers with sources…" → "The chatbot answers in full, with sources, then sets an Ask task" (+2; the plan really does answer first). |
+| 2 | "Ask task" and "Verify task" sound like homework on top of homework, and "counts as evidence" sounds like surveillance. | recommended | 4b → "That sharper question already scores as Ask." (same edit as judges #1). The "task" wording is not changed. |
+| 3 | Overclaim: "the student sees the wrong idea they still hold". It comes from one tap on one question and reads as a label on them. | recommended | 4d → "And the student sees which wrong idea to recheck." (10 → 9) |
+| 4 | Doubted number: "18% of references… in a 2023 study". "That's old GPT-4." | open | The panel proposes no edit. Wanted: say the model and year aloud, or pair it with a 2025–26 figure. |
+| 5 | Missing: "no time pressure" (w3-05-03 ✓) would land with students but isn't in the script. | recommended | Q&A only. |
 
-15. [I] What share of A level Economics entries in England go to Edexcel (9EC0)?
-16. [I] How many turns a week do sixth-formers send to a course tutor, according to published usage data (Sparx, Seneca, Khanmigo)?
+### Number check and Plan B
 
-**Pilot**
+Every number in §1–3 traces to a ✓ row; there are no ~ or ✗ ids. Five uses drift from the ✓ claim text, all **recommended**: the four edits above (judges #4 and #5, teacher #3 and #4), plus slide 5's "maths students", which w2-09-08's claim text doesn't say. Add "maths" to the claim or drop the word.
 
-17. [D] When a university student team runs research in a school pilot, who is the data controller, and which Art 6 basis applies?
-18. [T] How many teacher-hours do the pilot's RQ3, RQ8 and DPIA steps take per school?
+If the 18:00 gate fails and Plan B is filmed (all **recommended**):
+1. No Plan B words exist in the script; §1 is Plan A only. Splice: script shots 1–3 (0:00–0:40), Plan B 4a–4c (0:40–1:44), shot 5 (1:44–2:04), shots 6–7 unchanged.
+2. "This student now asks to be shown the answer three times out of four" is not a finding (a synthetic history). → "This synthetic student now mostly asks to be shown the answer".
+3. Delete "And it brings back what they were shown before" if reviews-due (build item 2(c)) was cut.
+4. Plan B 4c: "Each wrong option is a real misconception." → "Each wrong option names a wrong idea."
+5. Shot 7: "Now a slip becomes a lesson…" → "Next, …". Drop the 4d caption "How AI works: scored by our server". Shot 2's footer becomes "built on a branch, being merged".
+6. Deck: slide 4 shows the designed options card labelled "on our branch" ("On our branch, when a student reports…"); add "(on our branch)" to slide 6 and the leave-behind's How AI works row; drop the slide-6 add-on.
+7. If 05e is merged but the chatbot mislabels, "built on a branch" is false; say "built; filmed from captures".
+8. Expect the prototype score to stay at 3. Problem fit loses most, because no AI-literacy moment is shown live on video.
+
+### What wave 4 changed in earlier rows
+
+The fix series (`sims/fixes/combined/`, patches 0001–0005 on the 05e export) answers in testing several objections from waves 1 and 3. Nothing is merged or built, so none is *answered*.
+
+| Fix (finding) | Measured result (simulation or scripted turns, example pack) | Earlier rows now *recommended (tested diff ready)* |
+|---|---|---|
+| 0001 clamp, stuck once, quiz-me (w4-fix-core-1 ✓, -2 ✓, -3 ~) | No crash after 200 right answers (max p 0.999); stuck prerequisite plans 12/14 → 1/14; the exact "Quiz me on what's due" prompt gives the due review, but a paraphrase doesn't | none (no earlier panel row) |
+| 0002 focus side turn (w4-fix-focus-1 ✓) | False focus 15/43 → 3/43; holdout 9/18 → 3/18 | W3 judges #2, student #1, teacher #1 |
+| 0003 Verify scoring (w4-fix-verify-1 ✓) | Reported dead page or mismatch: Verify .143 → .748; ignored = skip | W3 judges #1, student #2, teacher #2 (with 0005) |
+| 0004 MCQ give-away (w4-fix-mcq-1 ✓) | Testwise hit rate 0.96 → 0.28 against chance 0.31 | W1 judges #5; W3 judges #5, student #4 |
+| 0005 decay (w4-fix-core-4 ✓) | Talk-only .763 → .300; How AI works AUC 0.51/0.31 → 0.85/0.88 | W3 judges #4, student #5, teacher #3, researcher #4 |
+
+- Thirteen earlier rows move to *recommended (tested diff ready)*: one from wave 1, twelve from wave 3.
+- One moves to *answered*: wave-3 judges #3 (slide-1 evidence), by a document. The pitch script calls Ofcom an image test and drops "nobody can see the difference".
+- Nine rows get a "Wave 4:" note but keep their status, because the tested diff covers only part of the objection or the evidence is still unconfirmed: W1 student #3, judges #3, teacher #2, researcher #1; W2 researcher #5; W3 teacher #5, researcher #1, investor #1 and #3.
+
+New caveats from the fixes, not yet raised by a persona:
+- A student who keeps failing now gets seven reteach-only plans in a row with no question (w4-fix-core-2 ✓).
+- The Verify fix does nothing if the chatbot leaves out `source_conflict` (w4-fix-verify-1 ✓).
+- Patches 0004 and 0005 change what is on camera: the m2 option text and the seeded demo levels (w4-fix-combined-1 ✓).
+
+### Wave 4 at a glance
+
+- **New pitch objections:** 14 from three personas (5 judges, 4 teacher, 5 student). Thirteen are *recommended* (line edits ready); one is *open* (student #4, the 2023 figure). There are also 8 Plan B items, all *recommended*.
+- **Pitch themes:** lines that contradict the deck ("every moment is evidence"); numbers whose population got dropped (England, medical questions, all boards, the MNAR condition); and the student's "does it still answer me?".
+- **Earlier rows:** the tested fix series moves 13 rows to *recommended (tested diff ready)*, and wave 4 answers one by a document. The biggest wave-3 theme, "the Verify rule penalises honest checking", now has a tested fix. It still needs merging, and the chatbot must send the `source_conflict` label.
+
+---
+
+## Open questions for wave 5
+
+**Status of the wave-4 list** (numbering as in wave 4):
+
+| # | Question (short) | Status |
+|---|---|---|
+| 1 | [J] Labels Claude sends on the four Plan A lines | open: Wednesday dry run (build item 9) |
+| 2 | [S, T] Trigger words in real research questions; wrong course part on 100 real messages | partly: the focus fix cuts false focus to 3/43 on scripted turns (w4-fix-focus-1 ✓); real-message frequency still open |
+| 3 | [J] Whom the brief names as the user of the assessment | open: paste the brief on Wednesday |
+| 4 | [J, R] How AI works AUC above 0.5 under the decay fix | **done**: 0.85/0.88 with ignored = missing (w4-fix-core-4 ✓; simulation) |
+| 5 | [S] Do students report fewer failures when reporting lowers a score? | **done (by design)**: reporting now raises Verify (w4-fix-verify-1 ✓). The incentives literature was not searched. |
+| 6 | [R] Cluster-bootstrap CI coverage for κ with 8–16 clusters | open |
+| 7 | [R] Published LLM-vs-human κ for question-quality features | open |
+| 8 | [R] Does an unprompted-feature Ask score separate novice and practised personas? | open |
+| 9 | [T] After fix (b), does `untested` fire and pull a talk-only part down? | partly: talk-only now reads .300 (w4-fix-core-4 ✓); the `untested` review was not checked |
+| 10 | [S] Does a plain-claim MCQ cut testwise success? | **done**: 0.96 → 0.28 against chance 0.31 (w4-fix-mcq-1 ✓; tested with four options, the three-option setting was not applied) |
+| 11 | [I] Can NotAdult learners invoke custom declarative agents? | partly: K-12 pages don't mention custom agents (w4-08-02 ✓); admin agent controls exist (w4-08-04, -06 ✓); the addons footnote is ambiguous (w4-08-05 ✓); unconfirmed |
+| 12 | [I] UK schools with Copilot pay-as-you-go for students | open |
+| 13 | [D] Do the Product Terms or DPA cover custom-connector traffic to third-party MCP? | open |
+| 14 | [D] Does a Sch 1 para 18 signpost need an appropriate policy document? | open |
+| 15 | [I] Edexcel 9EC0 share of A level Economics in England | **done**: 21,005 of 40,795 certificates, 51.5% (w4-08-07, -08 ✓) |
+| 16 | [I] Weekly turns per sixth-former, from published usage data | open |
+| 17 | [D] Data controller and Art 6 basis for a student team's pilot research | open |
+| 18 | [T] Teacher-hours per school for RQ3, RQ8 and the DPIA | open |
+
+**New for wave 5** (from the pitch panel, the fix verifiers and w4-08). Tags as before, plus [B] build verifier.
+
+19. [J, T, S] After the editor applies the wave-4 line edits, does every deliverable stay within its word limit, and does every number still match its ✓ claim text?
+20. [S] Is there a 2025–26 figure for fabricated or unsupported references that can replace or sit beside the 2023 "18%"?
+21. [B] Does `run_all.sh` reproduce the whole fix series end to end on a clean 05e checkout?
+22. [B, T] Fix the reteach-only loop for a student who keeps failing (seven plans in a row with no question after the explain-back). What should the plan do instead?
+23. [B, J] Should "quiz me" match paraphrases ("Can you test me on my reviews?"), and how, without matching too much?
+24. [B, S] Does the resolver name-gate (Fix 2) remove the last 3/43 false-focus cases without losing more right focus?
+25. [R, J] How often does Claude (and a second host) send `source_conflict` on a dead page or a mismatch? The Verify fix depends on it.
+26. [T] Does an economist sign off the new 9EC0 pack rows from patch 0004 (keys and misconceptions)?
+27. [I, D] What does MC1537656 ("Copilot access configuration for your education tenant") say? It needs a pilot school's admin to read it (w4-08-11 ~).
+28. [I] Does Microsoft confirm that the "employee-facing agents only" footnote (w4-08-05 ✓) does or doesn't bar school-built agents for students? And do schools turn on the Study and Learn-only mode (w4-08-01 ~)?

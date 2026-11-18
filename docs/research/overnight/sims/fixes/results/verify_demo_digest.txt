@@ -1,0 +1,72 @@
+## after_m2_ok
+  orig   Verify 0.300->0.143 (new); evidence [(4, 'ail_how_fabrication', 'ail_how', 0.0), (5, 'ail_verify', 'ail_task', 0.0)]
+  new    Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 1.0), (4, 'ail_how_fabrication', 'ail_how', 0.0)]
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "developing", "skipped": 0}, "how_ai_works": {"level": "new", "held": ["It searched a source database and picked the wrong entry"], "skipped": 0}}
+## clean
+  orig   Verify 0.300->0.300 (new); evidence [(4, 'ail_how_fabrication', 'ail_how', 0.0)]
+  new    Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 1.0), (4, 'ail_how_fabrication', 'ail_how', 0.0)]
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "developing", "skipped": 0}, "how_ai_works": {"level": "new", "held": ["It searched a source database and picked the wrong entry"], "skipped": 0}}
+## clean_m1
+  orig   Verify 0.300->0.300 (new); evidence [(4, 'ail_how_fabrication', 'ail_how', 0.0)]
+  new    Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 1.0), (4, 'ail_how_fabrication', 'ail_how', 0.0)]
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "developing", "skipped": 0}, "how_ai_works": {"level": "new", "held": ["It copied a page that was later deleted from the internet"], "skipped": 0}}
+## conflict_as_verify_answer
+  orig   Verify 0.300->0.143 (new); evidence [(3, 'ail_verify', 'ail_task', 0.5), (4, 'ail_how_fabrication', 'ail_how', 0.0)]
+  new    Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 1.0), (4, 'ail_how_fabrication', 'ail_how', 0.0)]
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "developing", "skipped": 0}, "how_ai_works": {"level": "new", "held": ["It searched a source database and picked the wrong entry"], "skipped": 0}}
+## dead_ad_then_ok
+  orig   Verify 0.300->0.143 (new); evidence [(3, 'ail_verify', 'ail_task', 0.5), (4, 'ail_how_fabrication', 'ail_how', 0.0)]
+  new    Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 1.0), (4, 'ail_how_fabrication', 'ail_how', 0.0)]
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "developing", "skipped": 0}, "how_ai_works": {"level": "new", "held": ["It searched a source database and picked the wrong entry"], "skipped": 0}}
+## dead_noanswer_then_ok
+  orig   Verify 0.300->0.143 (new); evidence [(4, 'ail_how_fabrication', 'ail_how', 0.0), (5, 'ail_verify', 'ail_task', 0.0)]
+  new    Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 1.0), (4, 'ail_how_fabrication', 'ail_how', 0.0)]
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "developing", "skipped": 0}, "how_ai_works": {"level": "new", "held": ["It searched a source database and picked the wrong entry"], "skipped": 0}}
+## final
+  orig   Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 0.75), (4, 'ail_how_fabrication', 'ail_how', 0.0)]
+  new    Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 1.0), (4, 'ail_how_fabrication', 'ail_how', 0.0)]
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "developing", "skipped": 0}, "how_ai_works": {"level": "new", "held": ["It copied a page that was later deleted from the internet"], "skipped": 0}}
+## final_ticks_abcd
+  orig   Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 1.0), (4, 'ail_how_fabrication', 'ail_how', 0.0)]
+  new    Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 1.0), (4, 'ail_how_fabrication', 'ail_how', 0.0)]
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "developing", "skipped": 0}, "how_ai_works": {"level": "new", "held": ["It copied a page that was later deleted from the internet"], "skipped": 0}}
+## final_ticks_ad
+  orig   Verify 0.300->0.143 (new); evidence [(3, 'ail_verify', 'ail_task', 0.5), (4, 'ail_how_fabrication', 'ail_how', 0.0)]
+  new    Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 1.0), (4, 'ail_how_fabrication', 'ail_how', 0.0)]
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "developing", "skipped": 0}, "how_ai_works": {"level": "new", "held": ["It copied a page that was later deleted from the internet"], "skipped": 0}}
+## matched_abc_d
+  orig   Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 1.0)]
+  new    Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 1.0)]
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "developing", "skipped": 0}, "how_ai_works": {"level": "new", "held": [], "skipped": 0}}
+## matched_acd
+  orig   Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 0.75)]
+  new    Verify 0.300->0.636 (developing); evidence [(3, 'ail_verify', 'ail_task', 0.75)]
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "developing", "skipped": 0}, "how_ai_works": {"level": "new", "held": [], "skipped": 0}}
+## no_source_conflict_label
+  orig   Verify 0.300->0.300 (new); evidence []
+  new    Verify 0.300->0.300 (new); evidence []
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "new", "skipped": 0}, "how_ai_works": {"level": "new", "held": [], "skipped": 0}}
+## recommended_no_verify_answer
+  orig   Verify 0.300->0.300 (new); evidence [(4, 'ail_how_fabrication', 'ail_how', 0.0)]
+  new    Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 1.0), (4, 'ail_how_fabrication', 'ail_how', 0.0)]
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "developing", "skipped": 0}, "how_ai_works": {"level": "new", "held": ["It copied a page that was later deleted from the internet"], "skipped": 0}}
+## retake_same_session
+  orig   Verify 0.300->0.143 (new); evidence [(4, 'ail_how_fabrication', 'ail_how', 0.0), (5, 'ail_verify', 'ail_task', 0.0)]
+  new    Verify 0.300->0.952 (secure); evidence [(3, 'ail_verify', 'ail_task', 1.0), (4, 'ail_how_fabrication', 'ail_how', 0.0), (7, 'ail_verify', 'ail_task', 1.0)]
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "secure", "skipped": 0}, "how_ai_works": {"level": "new", "held": ["It searched a source database and picked the wrong entry"], "skipped": 0}}
+## skip_4b
+  orig   Verify 0.300->0.300 (new); evidence [(3, 'ail_how_fabrication', 'ail_how', 0.0)]
+  new    Verify 0.300->0.300 (new); evidence [(3, 'ail_how_fabrication', 'ail_how', 0.0)]
+         progress after: {"ask": {"level": "new", "skipped": 0}, "verify": {"level": "new", "skipped": 0}, "how_ai_works": {"level": "new", "held": ["It searched a source database and picked the wrong entry"], "skipped": 0}}
+## unprompted_dead_no_task
+  orig   Verify 0.300->0.121 (new); evidence [(2, 'ail_verify', 'ail_unprompted', 0.25)]
+  new    Verify 0.300->0.748 (developing); evidence [(2, 'ail_verify', 'ail_task', 1.0)]
+         progress after: {"ask": {"level": "new", "skipped": 0}, "verify": {"level": "developing", "skipped": 0}, "how_ai_works": {"level": "new", "held": [], "skipped": 0}}
+## unprompted_dead_task_open
+  orig   Verify 0.300->0.121 (new); evidence [(3, 'ail_verify', 'ail_unprompted', 0.25)]
+  new    Verify 0.300->0.748 (developing); evidence [(3, 'ail_verify', 'ail_task', 1.0)]
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "developing", "skipped": 0}, "how_ai_works": {"level": "new", "held": [], "skipped": 0}}
+## verify_ignored
+  orig   Verify 0.300->0.143 (new); evidence [(4, 'ail_verify', 'ail_task', 0.0)]
+  new    Verify 0.300->0.300 (new); evidence []
+         progress after: {"ask": {"level": "developing", "skipped": 0}, "verify": {"level": "new", "skipped": 1}, "how_ai_works": {"level": "new", "held": [], "skipped": 0}}

@@ -1,0 +1,54 @@
+--- a/edux/graph.py	2026-11-18 02:03:41.189338595 +0000
++++ b/edux/graph.py	2026-11-18 02:05:18.938969712 +0000
+@@ -415,7 +415,20 @@
+     for word in re.findall(r"[a-z0-9]+", text.lower()):
+         if len(word) > 1 and word not in STOPWORDS and word not in words:
+             words.append(word)
+-    return " OR ".join(f'"{w}"' for w in words) or None
++    stems = _stems(words)   # the index stems words: "one" and "ONS" both become "on", a stop word
++    return " OR ".join(f'"{w}"' for w in words if stems.get(w) not in STOPWORDS) or None
++
++
++def _stems(words: list[str]) -> dict[str, str]:
++    """Each word's stem under the index's porter tokenizer."""
++    mem = sqlite3.connect(":memory:")
++    try:
++        mem.execute("CREATE VIRTUAL TABLE t USING fts5(w, tokenize = 'porter')")
++        mem.execute("CREATE VIRTUAL TABLE v USING fts5vocab(t, 'instance')")
++        mem.executemany("INSERT INTO t (rowid, w) VALUES (?, ?)", list(enumerate(words)))
++        return {words[doc]: term for term, doc in mem.execute("SELECT term, doc FROM v")}
++    finally:
++        mem.close()
+ 
+ 
+ def _search(table: str, node_column: str, join: str, text: str) -> dict[str, float]:
+@@ -448,6 +461,16 @@
+     return _top(_search("node_fts", "node_fts.id", "", text), limit)
+ 
+ 
++def _named(text: str) -> set[str]:
++    """Nodes whose name or aliases (not description or notes) share a word with the text."""
++    query = _fts_query(text)
++    if query is None:
++        return set()
++    rows = _conn().execute(f"{VISIBLE} SELECT node_fts.id FROM node_fts JOIN visible v ON v.id = node_fts.id "
++                           "WHERE node_fts MATCH ?", (f"{{name aliases}} : ({query})",))
++    return {row[0] for row in rows}
++
++
+ def search(text: str, limit: int) -> list[dict]:
+     """Course nodes matching free text: name/alias matches (weighted by resolve.name_boost) plus note matches.
+     AI-literacy nodes are never matched: a message about the course resolves to the course."""
+@@ -518,7 +541,12 @@
+ 
+     limit = limit or _context().limits.get("candidates", 3)
+     kept: list[dict] = []
++    named = _named(message)
+     for hit in search(message, 50):
++        # only a node named in the message (itself or an ancestor, by name or alias) can be the focus: an everyday
++        # word that only matches a note or description ("give", "link", "first") names nothing
++        if not named & ({hit["id"]} | {a["id"] for a in ancestors(hit["id"])}):
++            continue
+         if not any(_related(hit["id"], k["id"]) for k in kept):
+             kept.append(hit)
+     if not kept:

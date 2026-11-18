@@ -1,0 +1,33 @@
+--- a/edux/service.py
++++ b/edux/service.py
+@@ -4,6 +4,7 @@
+ 
+ import functools
+ import json
++import re
+ import statistics
+ from datetime import date, datetime, timedelta, timezone
+ 
+@@ -299,6 +300,13 @@
+             "interests": (row and row["interests"]) or "", "format": _format_for(client)}
+ 
+ 
++def _asks_for_reviews(message: str) -> bool:
++    """The message is the review_due prompt ("Quiz me on what's due."), in any case or punctuation: it names no
++    part, but it asks for the due reviews, not the last turn's focus."""
++    words = lambda m: " " + re.sub(r"[^a-z]+", " ", m.lower()).strip() + " "
++    return words(read_text("prompts/review_due.md")) in words(message)
++
++
+ REQUEST_LABELS = ("request_type", "question_features", "source_conflict", "web_access", "asks_recent", "pushback_changed")
+ 
+ 
+@@ -347,7 +355,7 @@
+         # an AI-literacy part never becomes the course focus
+         node_ids = last["focus"] or ([] if graph.is_literacy(answer["part_id"]) else [answer["part_id"]])
+     resolution = graph.resolve(message or "", node_ids)
+-    if not resolution["parts"] and not resolution["candidates"] and last["focus"]:
++    if not resolution["parts"] and not resolution["candidates"] and last["focus"] and not _asks_for_reviews(message or ""):
+         resolution = {**graph.resolve("", last["focus"]), "unknown": resolution["unknown"]}
+     # a research question is Ask evidence; a verify answer is AI-literacy evidence, not an answer on the course
+     recorded = ([evidence] if evidence else []) + (

@@ -1,0 +1,93 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: eduX wave-4 integration <noreply@example.invalid>
+Date: Wed, 18 Nov 2026 02:31:51 +0000
+Subject: [PATCH 1/5] core fixes: clamp p_known, one step-back per stuck part
+ per session, quiz me on what's due
+
+---
+ edux/learner.py |  9 ++++++++-
+ edux/plan.py    |  7 ++++++-
+ edux/service.py | 10 +++++++++-
+ 3 files changed, 23 insertions(+), 3 deletions(-)
+
+diff --git a/edux/learner.py b/edux/learner.py
+index 3955c70..9700198 100644
+--- a/edux/learner.py
++++ b/edux/learner.py
+@@ -446,7 +446,14 @@ def _load_state(conn: sqlite3.Connection, student_id: str, part_id: str, ts: str
+             "clock_start": None, "last_correct": None, "exchanges_since_evidence": 0}
+ 
+ 
++def _clamp(p: float) -> float:
++    """p_known kept inside [0.001, 0.999]: BKT can round to exactly 1.0 after a long run of right answers, and the
++    exchange nudge works in odds, p / (1 - p)."""
++    return min(0.999, max(0.001, p))
++
++
+ def _save_state(conn: sqlite3.Connection, state: dict) -> None:
++    state["p_known"] = _clamp(state["p_known"])
+     state["was_secure"] = int(state["was_secure"] or _p_at(state, state["last_seen"]) >= _settings().levels.secure)
+     columns = list(state)
+     conn.execute(f"INSERT OR REPLACE INTO part_state ({', '.join(columns)}) VALUES ({', '.join('?' * len(columns))})",
+@@ -503,7 +510,7 @@ def apply_exchange(event: dict) -> None:
+     for part, strength in _tagged_parts(split(event["node_ids"])).items():
+         state = _load_state(conn, student_id, part, ts)
+         if not offloaded:
+-            odds = state["p_known"] / (1 - state["p_known"])
++            odds = _clamp(state["p_known"]) / (1 - _clamp(state["p_known"]))   # also a 1.0 saved before the clamp
+             odds *= 1 + (multiplier - 1) * strength
+             state["p_known"] = odds / (1 + odds)
+         if state["clock_start"]:
+diff --git a/edux/plan.py b/edux/plan.py
+index fee9f48..9857adb 100644
+--- a/edux/plan.py
++++ b/edux/plan.py
+@@ -343,7 +343,12 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
+ 
+     if session and session["state"] == "stuck" and focus:
+         stuck = next((p for p in session["parts"] if p["part_id"] == focus), None)
+-        if stuck:
++        # the step back (or whole-part reteach) comes once per stuck part a session; then teaching carries on.
++        # Kept under its own key: a part's own progress is dropped when its explain_back is asked.
++        handled = progress.setdefault("_stuck_handled", {})
++        session_id = (learner.session_state(turn.student_id, turn.at) or {}).get("session_id") if stuck else None
++        if stuck and handled.get(focus) != session_id:
++            handled[focus] = session_id
+             back = stuck["step_back_to"]
+             if back:
+                 return [prereq_check(turn, back["id"], focus, settings, stuck=True)]
+diff --git a/edux/service.py b/edux/service.py
+index 02f6f2e..8b03604 100644
+--- a/edux/service.py
++++ b/edux/service.py
+@@ -4,6 +4,7 @@ from __future__ import annotations
+ 
+ import functools
+ import json
++import re
+ import statistics
+ from datetime import date, datetime, timedelta, timezone
+ 
+@@ -299,6 +300,13 @@ def style(student: dict, client: str | None) -> dict:
+             "interests": (row and row["interests"]) or "", "format": _format_for(client)}
+ 
+ 
++def _asks_for_reviews(message: str) -> bool:
++    """The message is the review_due prompt ("Quiz me on what's due."), in any case or punctuation: it names no
++    part, but it asks for the due reviews, not the last turn's focus."""
++    words = lambda m: " " + re.sub(r"[^a-z]+", " ", m.lower()).strip() + " "
++    return words(read_text("prompts/review_due.md")) in words(message)
++
++
+ REQUEST_LABELS = ("request_type", "question_features", "source_conflict", "web_access", "asks_recent", "pushback_changed")
+ 
+ 
+@@ -347,7 +355,7 @@ def tutor_turn(
+         # an AI-literacy part never becomes the course focus
+         node_ids = last["focus"] or ([] if graph.is_literacy(answer["part_id"]) else [answer["part_id"]])
+     resolution = graph.resolve(message or "", node_ids)
+-    if not resolution["parts"] and not resolution["candidates"] and last["focus"]:
++    if not resolution["parts"] and not resolution["candidates"] and last["focus"] and not _asks_for_reviews(message or ""):
+         resolution = {**graph.resolve("", last["focus"]), "unknown": resolution["unknown"]}
+     # a research question is Ask evidence; a verify answer is AI-literacy evidence, not an answer on the course
+     recorded = ([evidence] if evidence else []) + (

@@ -1,0 +1,179 @@
+diff -ru '--exclude=__pycache__' '--exclude=*.txt' before/edux/context_blocks.py after/edux/context_blocks.py
+--- before/edux/context_blocks.py	2026-11-18 01:59:40.605714829 +0000
++++ after/edux/context_blocks.py	2026-11-18 02:07:16.571025127 +0000
+@@ -220,7 +220,10 @@
+     if len(found) < settings.mcq.min_distractors or _session_offloaded(turn):
+         return None
+     found.sort(key=lambda m: "examiner_report" not in graph.source_types(m["source_ids"]))
+-    return {"part_id": part, "correct": core_idea(part), "source": intuition_source(turn, part),
++    keys = [mp for mp in graph.mark_points_for([part]) if mp["node_id"] == part]
++    if not keys:   # the key is a mark point, never key wording or the description (plan.mcq_points)
++        return None
++    return {"part_id": part, "correct": keys[0]["point"], "source": intuition_source(turn, part),
+             "distractors": [{"id": m["id"], "wrong_idea": m["wrong_idea"], "correction": m["correction"]}
+                             for m in found[:settings.mcq.max_options - 1]]}
+ 
+diff -ru '--exclude=__pycache__' '--exclude=*.txt' before/edux/plan.py after/edux/plan.py
+--- before/edux/plan.py	2026-11-18 01:59:40.605779303 +0000
++++ after/edux/plan.py	2026-11-18 02:07:16.570868736 +0000
+@@ -207,12 +207,26 @@
+     return [{"id": m["id"], "text": m["wrong_idea"]} for m in found[:settings.mcq.max_options - 1]]
+ 
+ 
++def option_form(text: str) -> str:
++    """An option as shown: trimmed, with no closing full stop, so the key can't be told apart by punctuation."""
++    return text.strip().rstrip(".;!").rstrip()
++
++
++def mcq_points(part_id: str) -> list[dict]:
++    """The points a part's MCQs may use as the correct option: its own mark points only. Note key points, key
++    wording and the description are never options (they are fragments or topic labels, so the key would stand
++    out); a part without mark points gets open checks instead (open_check), and ingest warns about it."""
++    return [{"id": mp["id"], "point": mp["point"], "exemplar": mp["exemplar"] or ""}
++            for mp in graph.mark_points_for([part_id]) if mp["node_id"] == part_id]
++
++
+ def question(part_id: str, purpose: str, correct: str, settings: Settings, point_id: str | None = None) -> dict:
+     """What a multiple-choice question asks, before it is lettered: the correct option's text, the part's
+     misconceptions as wrong options, and whether the chatbot may write one more (the part has fewer than
+-    mcq.min_distractors). Kept with a pending question so it can be asked again with new letters."""
+-    wrong = distractors(part_id, settings)
+-    return {"part_id": part_id, "purpose": purpose, "point_id": point_id, "correct": correct, "wrong": wrong,
++    mcq.min_distractors). Kept with a pending question so it can be asked again with new letters. Every option
++    is in option_form."""
++    wrong = [{**w, "text": option_form(w["text"])} for w in distractors(part_id, settings)]
++    return {"part_id": part_id, "purpose": purpose, "point_id": point_id, "correct": option_form(correct), "wrong": wrong,
+             "extra": len(wrong) < settings.mcq.min_distractors}
+ 
+ 
+@@ -345,8 +359,9 @@
+         stuck = next((p for p in session["parts"] if p["part_id"] == focus), None)
+         if stuck:
+             back = stuck["step_back_to"]
+-            if back:
+-                return [prereq_check(turn, back["id"], focus, settings, stuck=True)]
++            stepped = prereq_check(turn, back["id"], focus, settings, stuck=True) if back else None
++            if stepped:
++                return [stepped]
+             anchor = blocks.get("anchor")
+             return [_step("reteach", focus, {
+                 "anchor": {"id": anchor["part_id"], "name": anchor["name"], "note": anchor["note"]} if anchor else None,
+@@ -370,7 +385,9 @@
+ 
+     for item in (blocks.get("weak_prerequisites") or {}).get("items", []):
+         if item["level"] == "new" and not _checked_this_session(turn, item["part_id"], last_plan):
+-            return [prereq_check(turn, item["part_id"], item["for"], settings, note=item["note"])]
++            asked = prereq_check(turn, item["part_id"], item["for"], settings, note=item["note"])
++            if asked:
++                return [asked]
+ 
+     teaching = teach(turn, focus, settings, progress)
+     held = [m for m in held_misconceptions(turn.student_id, turn.parts) if m["id"] not in handled]
+@@ -392,8 +409,16 @@
+     return progress.setdefault(part_id, {"index": 1, "reteaches": 0, "intuition_asked": False})
+ 
+ 
++def open_check(turn: Turn, part_id: str) -> list[dict]:
++    """A part with no mark points has no MCQs: show its points, then the explain-back of the whole part, scored
++    on its points (the open check). Ends the part's progress, as an explain-back does."""
++    return [_step("show", part_id, {"point": "; ".join(p["point"] for p in _points(part_id))}),
++            _step("explain_back", part_id)]
++
++
+ def check(turn: Turn, part_id: str, index: int, settings: Settings, avoid: list[str] | None = None) -> dict:
+-    """ask_mcq (check) on one point of a part: the point's wording is the correct option."""
++    """ask_mcq (check) on one point of a part: the point's wording is the correct option. Only for a part with
++    mark points (mcq_points), whose points are then its mark points."""
+     point = _points(part_id)[index - 1]
+     return ask_mcq(turn, question(part_id, "check", point["point"], settings, point_id=point["id"]),
+                    {"index": index}, avoid)
+@@ -408,6 +433,9 @@
+     level = learner.support_level(turn.p(part_id))
+     points = _points(part_id)
+     state = _progress(progress, part_id)
++    if not mcq_points(part_id):
++        progress.pop(part_id, None)
++        return open_check(turn, part_id)
+     if state.pop("check_due", False) and state["index"] <= len(points):   # taught, but its check was replaced
+         return [check(turn, part_id, state["index"], settings)]
+     if level == "explain_back" or state["index"] > len(points):
+@@ -423,6 +451,9 @@
+ def shown_or_skipped(turn: Turn, part_id: str, settings: Settings, progress: dict, choice: str) -> list[dict]:
+     """"I know this" (skip_point): the current point's check only, with no teaching. "Just show me": show, a
+     one-line intuition (from the same source as the intuition question) and the point, then its check."""
++    if not mcq_points(part_id):
++        progress.pop(part_id, None)
++        return open_check(turn, part_id)
+     state = _progress(progress, part_id)
+     points = _points(part_id)
+     index = min(state["index"], len(points))
+@@ -454,9 +485,12 @@
+     return teach(turn, part, settings, progress)
+ 
+ 
+-def prereq_check(turn: Turn, part_id: str, for_part: str, settings: Settings, note: str = "", stuck: bool = False) -> dict:
++def prereq_check(turn: Turn, part_id: str, for_part: str, settings: Settings, note: str = "", stuck: bool = False) -> dict | None:
+     """ask_mcq (prereq) on a weak prerequisite: its first point is the correct option. stuck marks a step back
+-    from a part they're stuck on, so the chatbot says it is trying a different way in."""
++    from a part they're stuck on, so the chatbot says it is trying a different way in. None for a part with no
++    mark points."""
++    if not mcq_points(part_id):
++        return None
+     data = {"name": graph.get_node(part_id)["name"], "for": for_part}
+     if note:
+         data["note"] = note
+@@ -484,7 +518,8 @@
+     support = blocks.get("support")
+     if support and support.get("extend") and not reviews_only:
+         return _step("extend", support["part_id"])
+-    reviews = [r for r in (blocks.get("reviews_due") or {}).get("items") or [] if r["part_id"] not in turn.parts]
++    reviews = [r for r in (blocks.get("reviews_due") or {}).get("items") or []
++               if r["part_id"] not in turn.parts and mcq_points(r["part_id"])]
+     return review_check(turn, reviews[0], settings) if reviews else None
+ 
+ 
+@@ -648,8 +683,11 @@
+ )
+ 
+ 
+-def how_check(turn: Turn, part_id: str, settings: Settings) -> dict:
+-    """ask_mcq (how_ai_works) on a how-AI-works part: its point and its misconceptions, shuffled and lettered."""
++def how_check(turn: Turn, part_id: str, settings: Settings) -> dict | None:
++    """ask_mcq (how_ai_works) on a how-AI-works part: its point and its misconceptions, shuffled and lettered.
++    None for a part with no mark points."""
++    if not mcq_points(part_id):
++        return None
+     point = _points(part_id)[0]
+     return ask_mcq(turn, question(part_id, "how_ai_works", point["point"], settings, point_id=point["id"]))
+ 
+diff -ru '--exclude=__pycache__' '--exclude=*.txt' before/edux/service.py after/edux/service.py
+--- before/edux/service.py	2026-11-18 01:59:40.605803367 +0000
++++ after/edux/service.py	2026-11-18 02:07:16.571093623 +0000
+@@ -116,6 +116,8 @@
+             if count % s.literacy.how_secure_every:
+                 continue
+         check = plan.how_check(turn, part, s)
++        if check is None:
++            continue
+         saved = {k: check[k] for k in ("move", "key", "part_id", "data", "question")}
+         return plan.with_check(steps, check), {"part_id": part, "followups": 0, "step": saved}
+     return steps, None
+diff -ru '--exclude=__pycache__' '--exclude=*.txt' before/ingest/validate.py after/ingest/validate.py
+--- before/ingest/validate.py	2026-11-18 01:59:40.605894919 +0000
++++ after/ingest/validate.py	2026-11-18 02:07:16.571148099 +0000
+@@ -348,6 +348,9 @@
+                 continue
+             level = r.get("level")
+             if level == "part":
++                if not points[i]:
++                    self.warn("nodes.csv", r, f"part {i!r} has no mark points: its checks are open (explain-back), "
++                              "not multiple choice")
+                 if not covered.intersection(lineage(i)):
+                     self.warn("nodes.csv", r, f"part {i!r} has no question, mark point or note")
+                 if misconception_count[i] < settings.mcq.min_distractors:
+diff -ru '--exclude=__pycache__' '--exclude=*.txt' before/text/moves/ask_mcq.md after/text/moves/ask_mcq.md
+--- before/text/moves/ask_mcq.md	2026-11-18 01:59:40.606374560 +0000
++++ after/text/moves/ask_mcq.md	2026-11-18 02:07:22.980248924 +0000
+@@ -1 +1 @@
+-Ask one multiple-choice question for data.purpose: show data.options exactly as given, in letter order, writing one plausible wrong option yourself at data.extra_option if there is one, then wait for a letter with no hints. Intuition: lead in from data.note (through data.via if given), guessing is fine; prereq: on data.name, saying you're trying a different way in if data.stuck; review: frame it in data.new_context if given; how_ai_works: after handling what just happened, ask it, then return to their task.
++Ask one multiple-choice question for data.purpose: show data.options exactly as given, in letter order, writing one plausible wrong option yourself at data.extra_option if there is one (like the others in length and form: no full stop, no always or never), then wait for a letter with no hints. Intuition: lead in from data.note (through data.via if given), guessing is fine; prereq: on data.name, saying you're trying a different way in if data.stuck; review: frame it in data.new_context if given; how_ai_works: after handling what just happened, ask it, then return to their task.

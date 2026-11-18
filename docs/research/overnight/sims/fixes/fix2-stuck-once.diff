@@ -1,0 +1,16 @@
+--- a/edux/plan.py
++++ b/edux/plan.py
+@@ -343,7 +343,12 @@
+ 
+     if session and session["state"] == "stuck" and focus:
+         stuck = next((p for p in session["parts"] if p["part_id"] == focus), None)
+-        if stuck:
++        # the step back (or whole-part reteach) comes once per stuck part a session; then teaching carries on.
++        # Kept under its own key: a part's own progress is dropped when its explain_back is asked.
++        handled = progress.setdefault("_stuck_handled", {})
++        session_id = (learner.session_state(turn.student_id, turn.at) or {}).get("session_id") if stuck else None
++        if stuck and handled.get(focus) != session_id:
++            handled[focus] = session_id
+             back = stuck["step_back_to"]
+             if back:
+                 return [prereq_check(turn, back["id"], focus, settings, stuck=True)]
