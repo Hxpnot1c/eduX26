@@ -1,0 +1,434 @@
+{
+  "question": "How do I calculate price elasticity of demand?",
+  "roles": {
+    "target": "ped_formula",
+    "prereq": "ped_definition",
+    "misconception": "ped_formula_m1",
+    "anchor": "pes_formula",
+    "confusable": "yed_definition",
+    "review_parts": [
+      "tax_incidence_split",
+      "tax_supply_shift",
+      "pes_definition"
+    ],
+    "showme_parts": [
+      "ped_values",
+      "tax_incidence_split"
+    ]
+  },
+  "students": {
+    "demo-secure": {
+      "turn1_moves": [
+        [
+          "ask_mcq",
+          "intuition"
+        ]
+      ],
+      "turn2_moves": [
+        [
+          "feedback",
+          "intuition"
+        ],
+        [
+          "teach_point",
+          null
+        ],
+        [
+          "ask_mcq",
+          "check"
+        ]
+      ],
+      "turn3_moves": [
+        [
+          "feedback",
+          "check"
+        ],
+        [
+          "teach_point",
+          null
+        ],
+        [
+          "ask_mcq",
+          "check"
+        ]
+      ],
+      "before": {
+        "ped_formula": {
+          "p_now": 0.3,
+          "level": "new"
+        },
+        "ped_definition": {
+          "p_now": 0.845,
+          "level": "secure"
+        },
+        "pes_formula": {
+          "p_now": 0.799,
+          "level": "secure"
+        },
+        "misconceptions_active": []
+      },
+      "after_wrong": {
+        "ped_formula": {
+          "p_now": 0.262,
+          "level": "new"
+        },
+        "ped_definition": {
+          "p_now": 0.845,
+          "level": "secure"
+        },
+        "pes_formula": {
+          "p_now": 0.799,
+          "level": "secure"
+        },
+        "misconceptions_active": [
+          "ped_formula_m1"
+        ]
+      },
+      "after_right": {
+        "ped_formula": {
+          "p_now": 0.565,
+          "level": "developing"
+        },
+        "ped_definition": {
+          "p_now": 0.905,
+          "level": "secure"
+        },
+        "pes_formula": {
+          "p_now": 0.799,
+          "level": "secure"
+        },
+        "misconceptions_active": []
+      }
+    },
+    "demo-weak": {
+      "turn1_moves": [
+        [
+          "ask_mcq",
+          "prereq"
+        ]
+      ],
+      "turn2_moves": [
+        [
+          "feedback",
+          "prereq"
+        ],
+        [
+          "teach_point",
+          null
+        ],
+        [
+          "ask_mcq",
+          "check"
+        ]
+      ],
+      "turn3_moves": [
+        [
+          "feedback",
+          "check"
+        ],
+        [
+          "teach_point",
+          null
+        ],
+        [
+          "ask_mcq",
+          "check"
+        ]
+      ],
+      "before": {
+        "ped_formula": {
+          "p_now": 0.141,
+          "level": "new"
+        },
+        "ped_definition": {
+          "p_now": 0.153,
+          "level": "new"
+        },
+        "pes_formula": {
+          "p_now": 0.3,
+          "level": "new"
+        },
+        "misconceptions_active": [
+          "ped_formula_m1"
+        ]
+      },
+      "after_wrong": {
+        "ped_formula": {
+          "p_now": 0.141,
+          "level": "new"
+        },
+        "ped_definition": {
+          "p_now": 0.121,
+          "level": "new"
+        },
+        "pes_formula": {
+          "p_now": 0.3,
+          "level": "new"
+        },
+        "misconceptions_active": [
+          "ped_definition_m2",
+          "ped_formula_m1"
+        ]
+      },
+      "after_right": {
+        "ped_formula": {
+          "p_now": 0.397,
+          "level": "new"
+        },
+        "ped_definition": {
+          "p_now": 0.172,
+          "level": "new"
+        },
+        "pes_formula": {
+          "p_now": 0.3,
+          "level": "new"
+        },
+        "misconceptions_active": [
+          "ped_definition_m2"
+        ]
+      }
+    },
+    "demo-showme": {
+      "turn1_moves": [
+        [
+          "ask_mcq",
+          "intuition"
+        ]
+      ],
+      "turn2_moves": [
+        [
+          "feedback",
+          "intuition"
+        ],
+        [
+          "teach_point",
+          null
+        ],
+        [
+          "ask_mcq",
+          "check"
+        ]
+      ],
+      "turn3_moves": [
+        [
+          "feedback",
+          "check"
+        ],
+        [
+          "teach_point",
+          null
+        ],
+        [
+          "ask_mcq",
+          "check"
+        ]
+      ],
+      "before": {
+        "ped_formula": {
+          "p_now": 0.3,
+          "level": "new"
+        },
+        "ped_definition": {
+          "p_now": 0.969,
+          "level": "secure"
+        },
+        "pes_formula": {
+          "p_now": 0.3,
+          "level": "new"
+        },
+        "misconceptions_active": []
+      },
+      "after_wrong": {
+        "ped_formula": {
+          "p_now": 0.262,
+          "level": "new"
+        },
+        "ped_definition": {
+          "p_now": 0.969,
+          "level": "secure"
+        },
+        "pes_formula": {
+          "p_now": 0.3,
+          "level": "new"
+        },
+        "misconceptions_active": [
+          "ped_formula_m2"
+        ]
+      },
+      "after_right": {
+        "ped_formula": {
+          "p_now": 0.565,
+          "level": "developing"
+        },
+        "ped_definition": {
+          "p_now": 0.99,
+          "level": "secure"
+        },
+        "pes_formula": {
+          "p_now": 0.3,
+          "level": "new"
+        },
+        "misconceptions_active": []
+      }
+    }
+  },
+  "timings_ms": [
+    {
+      "student": "demo-secure",
+      "call": "same question",
+      "ms": 95.5,
+      "chars": 2354
+    },
+    {
+      "student": "demo-secure",
+      "call": "wrong letter",
+      "ms": 74.0,
+      "chars": 2280
+    },
+    {
+      "student": "demo-secure",
+      "call": "right letter",
+      "ms": 79.0,
+      "chars": 2291
+    },
+    {
+      "student": "demo-secure",
+      "call": "get_my_progress",
+      "ms": 12.2,
+      "chars": 1826
+    },
+    {
+      "student": "demo-weak",
+      "call": "same question",
+      "ms": 75.7,
+      "chars": 1909
+    },
+    {
+      "student": "demo-weak",
+      "call": "wrong letter",
+      "ms": 30.4,
+      "chars": 1973
+    },
+    {
+      "student": "demo-weak",
+      "call": "right letter",
+      "ms": 27.0,
+      "chars": 2014
+    },
+    {
+      "student": "demo-weak",
+      "call": "get_my_progress",
+      "ms": 20.6,
+      "chars": 1277
+    },
+    {
+      "student": "demo-showme",
+      "call": "same question",
+      "ms": 64.5,
+      "chars": 2093
+    },
+    {
+      "student": "demo-showme",
+      "call": "wrong letter",
+      "ms": 53.1,
+      "chars": 2052
+    },
+    {
+      "student": "demo-showme",
+      "call": "right letter",
+      "ms": 41.2,
+      "chars": 2030
+    },
+    {
+      "student": "demo-showme",
+      "call": "get_my_progress",
+      "ms": 16.7,
+      "chars": 1964
+    },
+    {
+      "student": "demo-showme",
+      "call": "just show me",
+      "ms": 46.4,
+      "chars": 2324
+    },
+    {
+      "student": "demo-showme",
+      "call": "quiz me on what's due",
+      "ms": 41.9,
+      "chars": 1679
+    },
+    {
+      "student": "demo-weak",
+      "call": "same question, minimal profile",
+      "ms": 47.5,
+      "chars": 1282
+    },
+    {
+      "student": "demo-secure",
+      "call": "chatbot self-corrects",
+      "ms": 39.9,
+      "chars": 1876
+    },
+    {
+      "student": "demo-secure",
+      "call": "bad label",
+      "ms": 0.0,
+      "chars": 97
+    },
+    {
+      "student": "demo-secure",
+      "call": "variant: Quiz me on what's due.",
+      "ms": 13.3,
+      "chars": 1500
+    },
+    {
+      "student": "demo-weak",
+      "call": "variant: Quiz me on what's due.",
+      "ms": 0.8,
+      "chars": 541
+    },
+    {
+      "student": "demo-showme",
+      "call": "variant: Quiz me on what's due.",
+      "ms": 12.8,
+      "chars": 1124
+    },
+    {
+      "student": "demo-secure",
+      "call": "variant: How do I interpret PED values?",
+      "ms": 39.2,
+      "chars": 1910
+    },
+    {
+      "student": "demo-weak",
+      "call": "variant: How do I interpret PED values?",
+      "ms": 33.0,
+      "chars": 1623
+    },
+    {
+      "student": "demo-showme",
+      "call": "variant: How do I interpret PED values?",
+      "ms": 38.7,
+      "chars": 1642
+    },
+    {
+      "student": "demo-secure",
+      "call": "variant: What should I work on next?",
+      "ms": 15.7,
+      "chars": 1500
+    },
+    {
+      "student": "demo-weak",
+      "call": "variant: What should I work on next?",
+      "ms": 0.9,
+      "chars": 541
+    },
+    {
+      "student": "demo-showme",
+      "call": "variant: What should I work on next?",
+      "ms": 9.5,
+      "chars": 1124
+    }
+  ],
+  "network_connect_attempts": []
+}

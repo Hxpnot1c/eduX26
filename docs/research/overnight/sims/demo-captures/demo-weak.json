@@ -1,0 +1,454 @@
+{
+  "student": "demo-weak",
+  "before": {
+    "ped_formula": {
+      "p_now": 0.141,
+      "level": "new"
+    },
+    "ped_definition": {
+      "p_now": 0.153,
+      "level": "new"
+    },
+    "pes_formula": {
+      "p_now": 0.3,
+      "level": "new"
+    },
+    "misconceptions_active": [
+      "ped_formula_m1"
+    ]
+  },
+  "1_same_question": {
+    "ok": true,
+    "plan": [
+      {
+        "move": "ask_mcq",
+        "part_id": "ped_definition",
+        "cue": "Quick check on PED: definition, the idea this builds on; these lettered options; wait.",
+        "data": {
+          "purpose": "prereq",
+          "name": "PED: definition",
+          "for": "ped_formula",
+          "note": "You need to know PED compares percentage changes before you can calculate it.",
+          "options": [
+            {
+              "letter": "A",
+              "text": "PED measures how much the price changes when demand changes."
+            },
+            {
+              "letter": "B",
+              "text": "Ratio of percentage changes"
+            },
+            {
+              "letter": "C",
+              "text": "PED is the slope of the demand curve."
+            }
+          ],
+          "answer_type": "mcq",
+          "terms": [
+            "PED: definition"
+          ]
+        }
+      }
+    ],
+    "score_next": {},
+    "reference": {
+      "exam_relevance": {
+        "papers": [
+          {
+            "id": "paper1",
+            "name": "Paper 1: Markets and market failure (example)",
+            "date": "2027-06-08",
+            "days_to_exam": 202
+          }
+        ],
+        "questions": [
+          {
+            "id": "synth_2024_p1_q01",
+            "paper": "Paper 1: Markets and market failure (example)",
+            "series": "Synthetic June 2024",
+            "number": "01",
+            "marks": 4,
+            "command_word": "Calculate",
+            "summary": "Synthetic: calculate PED from a price and quantity change, then say whether demand is elastic.",
+            "parts": [
+              "ped_formula"
+            ]
+          }
+        ]
+      },
+      "misconceptions": {
+        "watch_for": [
+          {
+            "id": "ped_definition_m2",
+            "wrong_idea": "PED measures how much the price changes when demand changes."
+          },
+          {
+            "id": "ped_definition_m1",
+            "wrong_idea": "PED is the slope of the demand curve."
+          }
+        ]
+      }
+    },
+    "focus": [
+      {
+        "id": "ped_formula",
+        "name": "PED: formula and calculation",
+        "level": "new"
+      }
+    ],
+    "style": {
+      "max_words": 120,
+      "interests": "",
+      "format": "Write formulas in LaTeX between $$…$$, e.g. $$PED = \\frac{\\%\\Delta Q_d}{\\%\\Delta P}$$. Write money as £5, or escape a dollar sign as \\$, because $ starts maths. For a diagram part, or when the student asks for one, draw the diagram inline as an SVG visual with labelled axes, the curves, the shift and P1→P2 / Q1→Q2 marked; never use ASCII art. Don't draw otherwise: drawing is slow."
+    }
+  },
+  "mcq_map_after_turn1": {
+    "part_id": "ped_definition",
+    "purpose": "prereq",
+    "point_id": "ped_definition_n1:k1",
+    "options": {
+      "A": {
+        "id": "ped_definition_m2",
+        "text": "PED measures how much the price changes when demand changes."
+      },
+      "B": {
+        "id": "correct",
+        "text": "Ratio of percentage changes"
+      },
+      "C": {
+        "id": "ped_definition_m1",
+        "text": "PED is the slope of the demand curve."
+      }
+    }
+  },
+  "2_wrong_letter": {
+    "letter": "A",
+    "option_id": "ped_definition_m2",
+    "part_id": "ped_definition",
+    "result": {
+      "ok": true,
+      "plan": [
+        {
+          "move": "feedback",
+          "part_id": "ped_definition",
+          "cue": "One line on their answer; correct each listed wrong idea in one line.",
+          "data": {
+            "type": "mcq",
+            "purpose": "prereq",
+            "correct": false,
+            "correct_option": "Ratio of percentage changes",
+            "misconceptions": [
+              {
+                "id": "ped_definition_m2",
+                "wrong_idea": "PED measures how much the price changes when demand changes.",
+                "correction": "It is the other way round: PED measures how quantity demanded responds to a change in price."
+              },
+              {
+                "id": "ped_formula_m1",
+                "wrong_idea": "Divide the change in price by the change in quantity.",
+                "correction": "Quantity goes on top: % change in quantity demanded divided by % change in price."
+              }
+            ],
+            "terms": [
+              "PED: definition",
+              "PED: formula and calculation"
+            ]
+          }
+        },
+        {
+          "move": "teach_point",
+          "part_id": "ped_formula",
+          "cue": "Point 1 of 2: two sentences and one worked line, then the check.",
+          "data": {
+            "index": 1,
+            "total": 2,
+            "point": "Percentage change = change / original x 100",
+            "exemplar": "",
+            "level": "worked_example",
+            "max_words": 80
+          }
+        },
+        {
+          "move": "ask_mcq",
+          "part_id": "ped_formula",
+          "cue": "Ask the check on this point with these lettered options; wait for a letter.",
+          "data": {
+            "purpose": "check",
+            "index": 1,
+            "options": [
+              {
+                "letter": "A",
+                "text": "Divide the change in price by the change in quantity."
+              },
+              {
+                "letter": "B",
+                "text": "Work out the percentage changes from the new values."
+              },
+              {
+                "letter": "C",
+                "text": "PED is the change in quantity divided by the change in price, with no percentages."
+              },
+              {
+                "letter": "D",
+                "text": "Percentage change = change / original x 100"
+              }
+            ],
+            "answer_type": "mcq"
+          }
+        }
+      ],
+      "score_next": {},
+      "reference": {
+        "misconceptions": {
+          "watch_for": [
+            {
+              "id": "ped_formula_m2",
+              "wrong_idea": "Work out the percentage changes from the new values."
+            },
+            {
+              "id": "ped_formula_m3",
+              "wrong_idea": "PED is the change in quantity divided by the change in price, with no percentages."
+            }
+          ]
+        }
+      },
+      "focus": [
+        {
+          "id": "ped_formula",
+          "name": "PED: formula and calculation",
+          "level": "new"
+        }
+      ]
+    }
+  },
+  "after_wrong": {
+    "ped_formula": {
+      "p_now": 0.141,
+      "level": "new"
+    },
+    "ped_definition": {
+      "p_now": 0.121,
+      "level": "new"
+    },
+    "pes_formula": {
+      "p_now": 0.3,
+      "level": "new"
+    },
+    "misconceptions_active": [
+      "ped_definition_m2",
+      "ped_formula_m1"
+    ]
+  },
+  "3_right_letter": {
+    "letter": "D",
+    "option_id": "correct",
+    "part_id": "ped_formula",
+    "result": {
+      "ok": true,
+      "plan": [
+        {
+          "move": "feedback",
+          "part_id": "ped_formula",
+          "cue": "One line on their answer; correct each listed wrong idea in one line.",
+          "data": {
+            "type": "mcq",
+            "purpose": "check",
+            "correct": true,
+            "correct_option": "Percentage change = change / original x 100",
+            "misconceptions": [],
+            "terms": [
+              "PED: formula and calculation"
+            ]
+          }
+        },
+        {
+          "move": "teach_point",
+          "part_id": "ped_formula",
+          "cue": "Point 2 of 2: two sentences and one worked line, then the check.",
+          "data": {
+            "index": 2,
+            "total": 2,
+            "point": "Keep the minus sign",
+            "exemplar": "",
+            "level": "worked_example",
+            "max_words": 80
+          }
+        },
+        {
+          "move": "ask_mcq",
+          "part_id": "ped_formula",
+          "cue": "Ask the check on this point with these lettered options; wait for a letter.",
+          "data": {
+            "purpose": "check",
+            "index": 2,
+            "options": [
+              {
+                "letter": "A",
+                "text": "Divide the change in price by the change in quantity."
+              },
+              {
+                "letter": "B",
+                "text": "Keep the minus sign"
+              },
+              {
+                "letter": "C",
+                "text": "Work out the percentage changes from the new values."
+              },
+              {
+                "letter": "D",
+                "text": "PED is the change in quantity divided by the change in price, with no percentages."
+              }
+            ],
+            "answer_type": "mcq"
+          }
+        }
+      ],
+      "score_next": {},
+      "reference": {
+        "notes": [
+          {
+            "id": "ped_formula_n1",
+            "part_id": "ped_formula",
+            "summary": "PED equals the percentage change in quantity demanded divided by the percentage change in price. Work out each percentage change from the original value first, then divide.",
+            "key_points": [
+              "Percentage change = change / original x 100",
+              "Keep the minus sign"
+            ],
+            "key_wording": [
+              "% change in quantity demanded divided by % change in price"
+            ],
+            "source": "Example Economics Textbook (invented for this pack)",
+            "source_type": "textbook",
+            "location": "ch3 elasticity"
+          }
+        ],
+        "misconceptions": {
+          "watch_for": [
+            {
+              "id": "ped_formula_m1",
+              "wrong_idea": "Divide the change in price by the change in quantity."
+            },
+            {
+              "id": "ped_formula_m2",
+              "wrong_idea": "Work out the percentage changes from the new values."
+            }
+          ]
+        }
+      },
+      "focus": [
+        {
+          "id": "ped_formula",
+          "name": "PED: formula and calculation",
+          "level": "new"
+        }
+      ]
+    }
+  },
+  "after_right": {
+    "ped_formula": {
+      "p_now": 0.397,
+      "level": "new"
+    },
+    "ped_definition": {
+      "p_now": 0.172,
+      "level": "new"
+    },
+    "pes_formula": {
+      "p_now": 0.3,
+      "level": "new"
+    },
+    "misconceptions_active": [
+      "ped_definition_m2"
+    ]
+  },
+  "progress": {
+    "tree": [
+      {
+        "id": "elasticities",
+        "name": "Elasticities",
+        "level": "new",
+        "children": [
+          {
+            "id": "ped",
+            "name": "Price elasticity of demand",
+            "level": "new"
+          },
+          {
+            "id": "pes",
+            "name": "Price elasticity of supply",
+            "level": "new"
+          },
+          {
+            "id": "yed",
+            "name": "Income elasticity of demand",
+            "level": "new"
+          }
+        ]
+      },
+      {
+        "id": "indirect_taxes",
+        "name": "Indirect taxes and market failure",
+        "level": "new",
+        "children": [
+          {
+            "id": "tax_incidence",
+            "name": "Incidence of an indirect tax",
+            "level": "new"
+          },
+          {
+            "id": "externality_tax",
+            "name": "Taxing negative externalities",
+            "level": "new"
+          }
+        ]
+      }
+    ],
+    "levers": [
+      {
+        "part_id": "ped_values",
+        "name": "PED: interpreting values",
+        "level": "new"
+      },
+      {
+        "part_id": "ped_definition",
+        "name": "PED: definition",
+        "level": "new"
+      },
+      {
+        "part_id": "ped_formula",
+        "name": "PED: formula and calculation",
+        "level": "new"
+      },
+      {
+        "part_id": "tax_incidence_split",
+        "name": "Indirect tax: splitting the burden",
+        "level": "new"
+      },
+      {
+        "part_id": "tax_supply_shift",
+        "name": "Indirect tax: shifting supply",
+        "level": "new"
+      }
+    ],
+    "weak_links": [],
+    "reviews_due": [],
+    "trends": {
+      "deep_questions": {
+        "recent": 0.8,
+        "before": null,
+        "direction": null
+      },
+      "constructive": {
+        "recent": 0.0,
+        "before": null,
+        "direction": null
+      },
+      "just_show_me": {
+        "recent": 0.0,
+        "before": null,
+        "direction": null
+      }
+    },
+    "study_pattern": null
+  }
+}

@@ -1,0 +1,302 @@
+{
+  "showme_just_show_me": {
+    "ok": true,
+    "plan": [
+      {
+        "move": "show",
+        "part_id": "ped_formula",
+        "cue": "They asked to be shown: one-line intuition, the point, one worked line; then the check.",
+        "data": {
+          "point": "Percentage change = change / original x 100",
+          "note": "You need to know PED compares percentage changes before you can calculate it.",
+          "terms": [
+            "PED: formula and calculation",
+            "PED: definition"
+          ]
+        }
+      },
+      {
+        "move": "ask_mcq",
+        "part_id": "ped_formula",
+        "cue": "Ask the check on this point with these lettered options; wait for a letter.",
+        "data": {
+          "purpose": "check",
+          "index": 1,
+          "options": [
+            {
+              "letter": "A",
+              "text": "Work out the percentage changes from the new values."
+            },
+            {
+              "letter": "B",
+              "text": "Percentage change = change / original x 100"
+            },
+            {
+              "letter": "C",
+              "text": "Divide the change in price by the change in quantity."
+            },
+            {
+              "letter": "D",
+              "text": "PED is the change in quantity divided by the change in price, with no percentages."
+            }
+          ],
+          "answer_type": "mcq"
+        }
+      }
+    ],
+    "score_next": {},
+    "reference": {
+      "notes": [
+        {
+          "id": "ped_formula_n1",
+          "part_id": "ped_formula",
+          "summary": "PED equals the percentage change in quantity demanded divided by the percentage change in price. Work out each percentage change from the original value first, then divide.",
+          "key_points": [
+            "Percentage change = change / original x 100",
+            "Keep the minus sign"
+          ],
+          "key_wording": [
+            "% change in quantity demanded divided by % change in price"
+          ],
+          "source": "Example Economics Textbook (invented for this pack)",
+          "source_type": "textbook",
+          "location": "ch3 elasticity"
+        }
+      ],
+      "misconceptions": {
+        "watch_for": [
+          {
+            "id": "ped_formula_m3",
+            "wrong_idea": "PED is the change in quantity divided by the change in price, with no percentages."
+          },
+          {
+            "id": "ped_formula_m1",
+            "wrong_idea": "Divide the change in price by the change in quantity."
+          }
+        ]
+      }
+    },
+    "focus": [
+      {
+        "id": "ped_formula",
+        "name": "PED: formula and calculation",
+        "level": "new"
+      }
+    ],
+    "style": {
+      "max_words": 120,
+      "interests": "",
+      "format": "Write formulas in LaTeX between $$…$$, e.g. $$PED = \\frac{\\%\\Delta Q_d}{\\%\\Delta P}$$. Write money as £5, or escape a dollar sign as \\$, because $ starts maths. For a diagram part, or when the student asks for one, draw the diagram inline as an SVG visual with labelled axes, the curves, the shift and P1→P2 / Q1→Q2 marked; never use ASCII art. Don't draw otherwise: drawing is slow."
+    }
+  },
+  "showme_review_prompt": {
+    "ok": true,
+    "plan": [
+      {
+        "move": "answer_brief",
+        "part_id": "ped_formula",
+        "cue": "Answer their question in a few lines; don't give away your own question's answer.",
+        "data": {
+          "terms": [
+            "PED: formula and calculation",
+            "PED: definition"
+          ]
+        }
+      },
+      {
+        "move": "reask",
+        "part_id": "ped_formula",
+        "cue": "Ask your last question again, word for word, and wait.",
+        "data": {
+          "asked": "ask_mcq",
+          "purpose": "check",
+          "index": 1,
+          "options": [
+            {
+              "letter": "A",
+              "text": "Work out the percentage changes from the new values."
+            },
+            {
+              "letter": "B",
+              "text": "Percentage change = change / original x 100"
+            },
+            {
+              "letter": "C",
+              "text": "Divide the change in price by the change in quantity."
+            },
+            {
+              "letter": "D",
+              "text": "PED is the change in quantity divided by the change in price, with no percentages."
+            }
+          ],
+          "answer_type": "mcq"
+        }
+      }
+    ],
+    "score_next": {},
+    "reference": {
+      "notes": [
+        {
+          "id": "ped_formula_n1",
+          "part_id": "ped_formula",
+          "summary": "PED equals the percentage change in quantity demanded divided by the percentage change in price. Work out each percentage change from the original value first, then divide.",
+          "key_points": [
+            "Percentage change = change / original x 100",
+            "Keep the minus sign"
+          ],
+          "key_wording": [
+            "% change in quantity demanded divided by % change in price"
+          ],
+          "source": "Example Economics Textbook (invented for this pack)",
+          "source_type": "textbook",
+          "location": "ch3 elasticity"
+        }
+      ],
+      "misconceptions": {
+        "watch_for": [
+          {
+            "id": "ped_formula_m1",
+            "wrong_idea": "Divide the change in price by the change in quantity."
+          },
+          {
+            "id": "ped_formula_m2",
+            "wrong_idea": "Work out the percentage changes from the new values."
+          }
+        ]
+      }
+    },
+    "focus": [
+      {
+        "id": "ped_formula",
+        "name": "PED: formula and calculation",
+        "level": "new"
+      }
+    ]
+  },
+  "weak_minimal_profile": {
+    "ok": true,
+    "plan": [],
+    "score_next": {
+      "ped_formula": [
+        {
+          "id": "a",
+          "point": "Percentage change = change / original x 100"
+        },
+        {
+          "id": "b",
+          "point": "Keep the minus sign"
+        }
+      ]
+    },
+    "reference": {
+      "notes": [
+        {
+          "id": "ped_formula_n1",
+          "part_id": "ped_formula",
+          "summary": "PED equals the percentage change in quantity demanded divided by the percentage change in price. Work out each percentage change from the original value first, then divide.",
+          "key_points": [
+            "Percentage change = change / original x 100",
+            "Keep the minus sign"
+          ],
+          "key_wording": [
+            "% change in quantity demanded divided by % change in price"
+          ],
+          "source": "Example Economics Textbook (invented for this pack)",
+          "source_type": "textbook",
+          "location": "ch3 elasticity"
+        }
+      ]
+    },
+    "focus": [
+      {
+        "id": "ped_formula",
+        "name": "PED: formula and calculation",
+        "level": "new"
+      }
+    ],
+    "style": {
+      "max_words": 120,
+      "interests": "",
+      "format": "Write formulas in LaTeX between $$…$$, e.g. $$PED = \\frac{\\%\\Delta Q_d}{\\%\\Delta P}$$. Write money as £5, or escape a dollar sign as \\$, because $ starts maths. For a diagram part, or when the student asks for one, draw the diagram inline as an SVG visual with labelled axes, the curves, the shift and P1→P2 / Q1→Q2 marked; never use ASCII art. Don't draw otherwise: drawing is slow."
+    }
+  },
+  "secure_conflict_flagged": {
+    "ok": true,
+    "plan": [
+      {
+        "move": "ask_mcq",
+        "part_id": "ped_formula",
+        "cue": "Ask the intuition question with these lettered options; guessing is fine; wait.",
+        "data": {
+          "purpose": "intuition",
+          "note": "You need to know PED compares percentage changes before you can calculate it.",
+          "via": "PED: definition",
+          "options": [
+            {
+              "letter": "A",
+              "text": "% change in quantity demanded divided by % change in price"
+            },
+            {
+              "letter": "B",
+              "text": "PED is the change in quantity divided by the change in price, with no percentages."
+            },
+            {
+              "letter": "C",
+              "text": "Divide the change in price by the change in quantity."
+            },
+            {
+              "letter": "D",
+              "text": "Work out the percentage changes from the new values."
+            }
+          ],
+          "answer_type": "mcq",
+          "terms": [
+            "PED: formula and calculation",
+            "PED: interpreting values",
+            "elastic",
+            "inelastic",
+            "PED: definition",
+            "PES: definition and determinants",
+            "PES: formula and calculation",
+            "YED: definition and sign",
+            "normal goods",
+            "inferior goods",
+            "Indirect tax: shifting supply",
+            "Evaluating taxes on negative externalities"
+          ]
+        }
+      }
+    ],
+    "score_next": {},
+    "reference": {
+      "misconceptions": {
+        "watch_for": [
+          {
+            "id": "ped_formula_m3",
+            "wrong_idea": "PED is the change in quantity divided by the change in price, with no percentages."
+          },
+          {
+            "id": "ped_formula_m2",
+            "wrong_idea": "Work out the percentage changes from the new values."
+          }
+        ]
+      }
+    },
+    "focus": [
+      {
+        "id": "ped_formula",
+        "name": "PED: formula and calculation",
+        "level": "new"
+      }
+    ],
+    "style": {
+      "max_words": 120,
+      "interests": "",
+      "format": "Write formulas in LaTeX between $$…$$, e.g. $$PED = \\frac{\\%\\Delta Q_d}{\\%\\Delta P}$$. Write money as £5, or escape a dollar sign as \\$, because $ starts maths. For a diagram part, or when the student asks for one, draw the diagram inline as an SVG visual with labelled axes, the curves, the shift and P1→P2 / Q1→Q2 marked; never use ASCII art. Don't draw otherwise: drawing is slow."
+    }
+  },
+  "bad_label_refused": {
+    "ok": false,
+    "error": "this_message.question_depth must be one of surface, mechanism, transfer"
+  }
+}

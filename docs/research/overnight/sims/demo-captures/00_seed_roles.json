@@ -1,0 +1,25 @@
+{
+  "course": "example-mini",
+  "roles": {
+    "target": "ped_formula",
+    "prereq": "ped_definition",
+    "misconception": "ped_formula_m1",
+    "anchor": "pes_formula",
+    "confusable": "yed_definition",
+    "review_parts": [
+      "tax_incidence_split",
+      "tax_supply_shift",
+      "pes_definition"
+    ],
+    "showme_parts": [
+      "ped_values",
+      "tax_incidence_split"
+    ]
+  },
+  "warnings": [],
+  "students": [
+    "demo-secure",
+    "demo-weak",
+    "demo-showme"
+  ]
+}
