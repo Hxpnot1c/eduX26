@@ -70,6 +70,19 @@ def cmd_evidence(student: str, part: str, evidence_type: str, score: float, ts: 
     return 0
 
 
+def _priority_lines(student: str, at: str | None) -> list[str]:
+    """Upcoming assessments and the top three due reviews by expected marks (priorities). CLI only."""
+    lines = [f"assessment {a['id']}: {a['name']} ({a['kind']}) on {a['date']}, {len(a['part_ids'])} parts"
+             for a in learner.assessments(student, at)] or ["assessments: none upcoming"]
+    chance = learner.move_chance(student, "mcq_check", at)
+    valued = sorted(((learner.step_value(student, r["part_id"], chance, at), r["part_id"])
+                     for r in learner.due_reviews(student, 10_000, at)), key=lambda v: -v[0]["value"])
+    for found, part in valued[:3]:
+        why = f" ({learner.reason_text(found['reason'], at)})" if found["reason"] else ""
+        lines.append(f"candidate review {part}: value {found['value']:.4f}{why}")
+    return lines
+
+
 def _learning_line(student: str, at: str | None) -> str:
     """The personal learning-rate offset for the current (or next) session: CLI only, never shown to students or
     teachers (personal-learning-rate)."""
@@ -96,6 +109,8 @@ def cmd_state(student: str, node: str | None = None, at: str | None = None) -> i
 
     print(_session_line(learner.session_state(student, at)))
     print(_learning_line(student, at))
+    for line in _priority_lines(student, at):
+        print(line)
     print(f"{'part':24} {'level':10} {'p_now':>5} {'p_known':>7} {'half-life':>9} {'checks':>6} {'chats':>5}  "
           f"{'last correct':12} review due")
     for root in roots:
