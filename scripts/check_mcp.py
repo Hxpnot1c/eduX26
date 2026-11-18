@@ -26,6 +26,7 @@ example-mini pack loaded and the demo students seeded. It:
 - checks a bad answer is refused and records nothing, get_my_progress, update_my_profile, that a wrong or
   missing key is refused with 401, and that the minimal profile returns no plan;
 - checks priorities (a mock beats an extend, no cramming, gaps, add/remove/rebuild, unmatched topics, considered);
+- checks reply style (per-step length by mastery and fatigue, answer_length wins, diagram parts);
 - checks the engagement rules (a passive streak and its picks, a repeated show, a coasting explain-back) with throwaway students;
 - checks the personal learning rate (within bounds, earlier sessions only, never shown);
 - checks rebuild gives identical state for every demo student and tutor_turn's median server time is under 100 ms;
@@ -772,6 +773,62 @@ async def priorities(url: str) -> None:
           "considered add-on candidates are stored with their values and never sent", json.dumps(stored)[:200])
 
 
+async def reply_style(url: str) -> None:
+    """Per-step reply length follows mastery and fatigue, a student's own answer_length always wins, and steps on
+    a diagram part carry diagram: true (reply-style)."""
+    from edux import context_blocks, plan, service
+    settings = load_settings()
+    ceiling = settings.style.max_words
+
+    def turn_for(student: str) -> context_blocks.Turn:
+        return context_blocks.Turn(student=learner.get_student(student), parts=[], message="", at=learner.now_iso(),
+                                   limits={}, resolution={})
+
+    def review(part: str) -> dict:
+        return plan._step("ask_mcq", part, {"purpose": "review", "name": graph.get_node(part)["name"], "mode": "transfer",
+                                            "options": [], "answer_type": "mcq"}, key="ask_mcq_review")
+
+    def teach(part: str) -> dict:
+        return plan._step("teach_point", part, {"index": 1, "total": 2, "point": "p", "exemplar": "", "level": "hint",
+                                                "max_words": settings.points.max_words})
+
+    secure = next(p for p in learner.all_parts() if learner.level(learner.part_p("demo-secure", p)) == "secure")
+    known = service.reply_style([review(secure)], learner.get_student("demo-secure"), turn_for("demo-secure"), {})
+    tired = service.reply_style([review(secure), teach(secure)], learner.get_student("demo-secure"),
+                                turn_for("demo-secure"), {"session": {"state": "fatigued"}})
+    check(known[0]["data"].get("max_words") == round(ceiling * settings.style.length_known_share)
+          and all(s["data"].get("max_words") == round(ceiling * settings.style.length_fatigued_share) for s in tired),
+          "a review on a secure part gets about half the words; a fatigued turn gets the fatigued share",
+          f"known {known[0]['data'].get('max_words')}, fatigued {[s['data'].get('max_words') for s in tired]} of {ceiling}")
+
+    student = "check-style"
+    keyed = f"{url}?key={new_student(student)}"
+    try:
+        service.update_profile(learner.get_student(student), answer_length=200)
+        for part in ("ped_definition", "tax_supply_shift"):
+            learner.record_evidence(student, part, "explain_back", 1.0, apply="now",
+                                    ts=learner._event_ts(learner.parse_ts(learner.now_iso()) - timedelta(days=3)))
+        own = service.reply_style([review("ped_definition"), teach("ped_definition")], learner.get_student(student),
+                                  turn_for(student), {"session": {"state": "fatigued"}})
+        check(all((s["data"].get("max_words") or 200) >= 200 for s in own),
+              "with answer_length set, no step carries a smaller max_words",
+              json.dumps([s["data"].get("max_words") for s in own]))
+        got = await call(keyed, "tutor_turn", {"message": "How does a tax shift supply?", "client": "check_mcp",
+                                               "node_ids": ["tax_supply_shift"],
+                                               "this_message": {"question_depth": "mechanism", "engagement": "active"}})
+        other = await call(keyed, "tutor_turn", {"message": "And how do I calculate PED?", "client": "check_mcp",
+                                                 "node_ids": ["ped_formula"],
+                                                 "this_message": {"question_depth": "mechanism", "engagement": "active"}})
+        on = [s for s in got.get("plan", []) if s["part_id"] == "tax_supply_shift"]
+        off = [s for s in other.get("plan", []) if s["part_id"] == "ped_formula"]
+        check(on and all(s["data"].get("diagram") is True for s in on) and "sketch" in on[0]["cue"]
+              and off and not any(s["data"].get("diagram") for s in off),
+              "steps on a diagram part carry diagram: true (and the cue line); steps on another part don't",
+              f"{[(s['move'], s['data'].get('diagram')) for s in on]} | {[(s['move'], s['data'].get('diagram')) for s in off]}")
+    finally:
+        drop_student(student)
+
+
 def shuffles() -> None:
     """MCQ options are shuffled differently for different students."""
     from edux import plan
@@ -846,6 +903,7 @@ async def main(url: str, key: str, student: str) -> None:
     await waiting_task(url)
     await engagement_rules(url)
     await priorities(url)
+    await reply_style(url)
     shuffles()
 
     before = max_evidence_id()
