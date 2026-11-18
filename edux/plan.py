@@ -620,8 +620,10 @@ def _second_step(turn: Turn, blocks: dict, settings: Settings, reviews_only: boo
 # back): 1 a worked example and its check, 2 an easier prerequisite check, 3 an offer to stop or switch, 4+ a worked
 # example of the next point (round the part's points), so it is never the same item again and again. Without a step
 # back, a second miss in a row on an open answer gets the worked example instead of a second bare reteach. A right
-# check straight after a worked example doesn't reset the count (they had just been shown it). Our choice; a rung that
-# can't be built (no prerequisite, stopping already offered this session, for fatigue or being stuck) falls through.
+# check straight after a worked example doesn't reset the count (they had just been shown it), and a miss on an
+# open answer is cleared only by a complete open answer (right checks in between don't show they can explain it,
+# research fixes, 0010b). Our choice; a rung that can't be built (no prerequisite, stopping already offered this
+# session, for fatigue or being stuck) falls through to the next.
 LADDER = ("worked_example", "easier_prereq", "offer_choice")
 OPEN_RETEACHES_IN_A_ROW = 1
 
@@ -644,7 +646,10 @@ def _misses(turn: Turn, progress: dict, evidence: dict, retry: dict | None, last
         state = progress["_misses"] = {"part": focus, "session": session_id, "n": 0}
     missed = retry is not None if open_answer else not evidence["correct"]
     just_shown = any(s.get("key") == "show_stuck" for s in last_plan)
-    state["n"] = state["n"] + 1 if missed else (state["n"] if just_shown and not open_answer else 0)
+    keep = not open_answer and (just_shown or state.get("open"))
+    state["n"] = state["n"] + 1 if missed else (state["n"] if keep else 0)
+    if open_answer:
+        state["open"] = missed
     return state["n"] if missed else 0
 
 

@@ -30,6 +30,7 @@ CHOICE_TAKEN = ("try_first", "hint", "just_show_me", "skip_point", "quiz", "exte
 # What a student's answer can be to, as sent by the chatbot; each is also a key of [bkt.evidence].
 # "mcq" is any server-built multiple-choice question (step 05d), scored from the letter picked.
 ANSWER_TYPES = ("prequestion", "mcq", "explain_back", "review", "extend", "past_question", "ail_task", "ail_unprompted")
+OPEN_ANSWERS = ("explain_back", "extend", "past_question", "link")   # answers the student writes, not picks
 LITERACY_ANSWERS = ("ail_task", "ail_unprompted")   # a verify task's answer, or checking a claim unprompted (step 05e)
 AIL_ASK, AIL_VERIFY = "ail_ask", "ail_verify"       # the AI-literacy skills Ask and Verify (ingest/ai_literacy/)
 AIL_HOW = "ail_how_ai_works"                        # the concept holding the how-AI-works parts
@@ -819,6 +820,10 @@ def apply_evidence_event(event: dict) -> None:
         immediate = event["origin"] == "chat" and _recently_taught(conn, student_id, part_id, ts)
     slip, guess = slip_guess(evidence_type, event.get("n_options"), immediate)
     cap = None
+    if immediate and event["evidence_type"] not in OPEN_ANSWERS:
+        # a pick straight after being shown or hinted (the option repeats the point just shown) can't make a part
+        # secure; an answer they write themselves (explain-back, extend) still can (research fixes, 0010b)
+        cap = s.levels.secure - 0.01
     if part_id == AIL_VERIFY and _reported(conn, event) and not _checked_before(conn, event):
         # a reported dead or mismatched source counts as a check (a dead page has nothing else to tick), but it can't
         # be told apart from a made-up one: until the student has done one successful check of their own on Verify,
@@ -903,7 +908,9 @@ def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, sli
         for edge in graph.prerequisites(part_id, 1):
             for prereq in graph.parts_of(edge["other"]):
                 other = _load_state(conn, student_id, prereq, ts)
-                other["p_known"] = min(0.99, _p_at(other, ts) + s.propagation.prereq_boost * gain)
+                was = _p_at(other, ts)
+                # a boost from a dependent part is indirect evidence: it never makes a prerequisite secure on its own
+                other["p_known"] = min(0.99, was + s.propagation.prereq_boost * gain, max(was, s.levels.secure - 0.01))
                 if other["clock_start"]:
                     other["clock_start"] = ts
                 _save_state(conn, other)

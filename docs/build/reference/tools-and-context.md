@@ -90,7 +90,7 @@ At most two steps (three from step 05d, for feedback, `teach_point` and `ask_mcq
      3. an offer to stop or switch (`offer_choice`, `reason = stuck`, cue `offer_choice_stuck`, `quick_parts` other than this part), skipped once stopping has been offered this session, for fatigue or for being stuck;
      4. beyond that, worked examples moving round the part's points, each with its check.
 
-     A rung that can't be built falls through to the next. A right check or a complete open answer resets the count, except a right check straight after a worked example. A missed `extend` neither counts nor resets. Before any step back, a second open-answer miss in a row gets the worked example instead of a second bare reteach. The numbers are our choice (`plan.LADDER`, `OPEN_RETEACHES_IN_A_ROW`).
+     A rung that can't be built falls through to the next. A right check or a complete open answer resets the count, with two exceptions: a right check straight after a worked example, and a right check after a missed open answer. A missed open answer is cleared only by a complete one (research fixes, 0010b). A missed `extend` neither counts nor resets. Before any step back, a second open-answer miss in a row gets the worked example instead of a second bare reteach. The numbers are our choice (`plan.LADDER`, `OPEN_RETEACHES_IN_A_ROW`).
 3. Focus ambiguous → `ask_which` with the candidates **(stop)**. No focus at all (e.g. "quiz me on what's due") → the top due `review`, if any. A request for the due reviews never falls back to the last turn's focus (research fixes, 0001 and 0006). It is recognised from:
    - the `review_due` prompt's wording, in any case or punctuation;
    - the `this_message.asks_for_reviews` label, which is the main signal;
