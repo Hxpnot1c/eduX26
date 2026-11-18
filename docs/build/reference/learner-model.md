@@ -84,6 +84,12 @@ If `offload_left > 0`, guess is replaced by `offloading.guess_after` and `offloa
 
 While the session is fatigued (see Sessions), slip is raised by `session.fatigue_slip_add`, capped at `session.slip_cap`.
 
+**Startup check (identifiability).** Settings fail to load unless, for every evidence type, with slip at its largest (`session.slip_cap`) and guess at its largest (1/2 for a multiple-choice type when `mcq_guess_from_options` is on, and the immediate rule's larger guess):
+- `guess + slip < 1`, so a correct answer is evidence of knowing;
+- `learn_rate < 1 - slip / (1 - guess)`, so a wrong answer still lowers the estimate (Baker, Corbett & Aleven, 2008).
+
+With the current values the tightest case is a 2-option question while fatigued: `learn_rate` must stay below 0.20.
+
 **Pre-questions.** A pre-question is asked before teaching, so a wrong answer on untaught material reveals little, and so does a lucky right one. Its effect is weighted by how much the part has been covered:
 
 ```

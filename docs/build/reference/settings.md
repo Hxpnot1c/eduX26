@@ -15,7 +15,7 @@ secure = 0.75              # at or above this = secure; between = developing
 
 [bkt]                      # Bayesian knowledge tracing
 prior = 0.30               # p_known before any evidence
-learn_rate = 0.10          # chance of learning from one piece of evidence
+learn_rate = 0.10          # chance of learning from one piece of evidence; startup check: below 1 - slip/(1 - guess) for every type (learner-model.md)
 correct_share = 0.67       # share of a link/check score that counts as "correct"
 mcq_guess_from_options = true   # a multiple-choice guess is 1 / the options shown (mcq_check, ail_how, an intuition question; tune-from-research)
 

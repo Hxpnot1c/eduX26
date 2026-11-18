@@ -23,6 +23,10 @@ class SettingsError(ValueError):
     """A settings or context file is missing a key, has an unknown key or a wrong type."""
 
 
+MCQ_TYPES = ("mcq", "mcq_check", "prequestion", "ail_how")   # evidence types that can come from a multiple-choice question
+MIN_OPTIONS = 2            # the fewest options a multiple-choice question can show, so its largest guess is 1 / 2
+
+
 @dataclass(frozen=True)
 class Levels:
     new: float
@@ -342,7 +346,37 @@ def load_settings(path: Path = SETTINGS_PATH) -> Settings:
     settings = _build(Settings, _read_toml(path), "")
     if not 0 < settings.levels.new < settings.levels.secure < 1:
         raise SettingsError("levels: expected 0 < new < secure < 1")
+    check_identifiable(settings)
     return settings
+
+
+def _largest_guess(settings: Settings, evidence_type: str) -> float:
+    """The largest guess an evidence type can be applied with: 1 / MIN_OPTIONS for a multiple-choice type when
+    bkt.mcq_guess_from_options is on."""
+    guess = settings.bkt.evidence[evidence_type].guess
+    if settings.bkt.mcq_guess_from_options and evidence_type in MCQ_TYPES:
+        guess = max(guess, 1 / MIN_OPTIONS)
+    return guess
+
+
+def check_identifiable(settings: Settings) -> None:
+    """Raise unless every evidence type's BKT parameters are identifiable (Baker, Corbett & Aleven, 2008), with
+    slip at its largest (session.slip_cap while fatigued) and guess at its largest (immediate evidence takes the
+    larger of immediate's guess and the type's own): guess + slip < 1, so a correct answer is evidence of knowing,
+    and learn_rate < 1 - slip / (1 - guess), so a wrong answer still lowers the estimate."""
+    bkt, cap = settings.bkt, settings.session.slip_cap
+    immediate = bkt.evidence.get("immediate")
+    for name, sg in bkt.evidence.items():
+        guesses = [_largest_guess(settings, name)]
+        if immediate is not None:
+            guesses.append(max(immediate.guess, guesses[0]))
+        slips = [max(sg.slip, cap)] + ([max(immediate.slip, cap)] if immediate is not None else [])
+        for slip, guess in zip(slips, guesses):
+            if guess + slip >= 1:
+                raise SettingsError(f"bkt.evidence.{name}: guess {guess:.2f} + slip {slip:.2f} (at slip_cap) must be below 1")
+            if bkt.learn_rate >= 1 - slip / (1 - guess):
+                raise SettingsError(f"bkt.evidence.{name}: learn_rate {bkt.learn_rate:.2f} must be below "
+                                    f"1 - slip / (1 - guess) = {1 - slip / (1 - guess):.2f} (slip at slip_cap)")
 
 
 def load_context(path: Path = CONTEXT_PATH) -> ContextConfig:
