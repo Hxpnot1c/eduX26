@@ -960,9 +960,12 @@ async def main(url: str, key: str, student: str) -> None:
     shown = json.dumps(progress) + json.dumps(await call(keyed, "tutor_turn", {
         "message": "How do I calculate PED?", "client": "check_mcp",
         "this_message": {"question_depth": "surface", "engagement": "active"}}))
-    check(not learner.personalisation_on() or (found["n"] >= personal.min_observations
-                                                and low <= found["weight"] <= high and found["offset"] != 0),
-          "the personal learning rate has an offset within its bounds once there is enough earlier evidence",
+    # off (the default): no offset at all. On: inside its bounds, and nonzero only once enough later answers
+    # (each part's first answer is left out) have built up
+    enough = found["n"] >= personal.min_observations
+    check((found["offset"] == 0.0 and found["weight"] == 1.0) if not learner.personalisation_on()
+          else (low <= found["weight"] <= high and (found["offset"] != 0) == enough),
+          "the personal learning rate is off by default; when on, it is within its bounds and moves only with enough earlier evidence",
           json.dumps(found))
     check("offset" not in shown and "learning_rate" not in shown,
           "the learning-rate offset is never shown in tutor_turn or get_my_progress")
