@@ -1,122 +1,348 @@
-# 05 · Product features: which chatbots can reach eduX, and what users asked for
+# 05 · Product features: which chatbots can reach eduX, how students sign in, and the teacher view
 
-Wave 1 (overnight 17–18 Nov 2026). Sources: scout notes `work/w1/w1-05.md`, verifier marks `verify-A.json` (w1-05-*), and the panel's teacher, student and DPO objections. All vendor pages were read on 17 Nov 2026. Where an OpenAI page returned 403, the claim rests on a search snippet and is marked "snippet". Each w1-05 finding was checked by one blind verifier (A); no second mark exists for these ids.
+Waves 1 and 2 (overnight 17–18 Nov 2026). Sources:
+- Wave 1: `work/w1/w1-05.md`, marks in `verify-A.json`.
+- Wave 2: `work/w2/w2-05.md` (routes and authentication, w2-05-01 to -14, marks in `verify-E.json`); `work/w2/w2-05t.md` (teacher view, w2-05-20 to -34, marks in `verify-G.json`); simulation `sims/teacher/results.md`; panels `panel-teacher-student.md` and `panel-investor-dpo.md`.
+
+Vendor pages were read on 17–18 Nov 2026. OpenAI help pages returned 403, so those claims rest on search snippets and are marked "snippet". Each finding has one blind verifier mark.
+
+**Coordinator facts used here.** 05e (AI-literacy coaching) is built on its branch, not merged. Per-student *completion* may be a school opt-in, default off. Per-student levels, AI-literacy scores, offloading and draft counts are never shown. Class-level AI literacy appears only in bands, for groups of 6 or more, and only on opt-in.
 
 ## Summary
-- **No vendor page gives a confirmed route for a UK 16–17-year-old to use eduX today.** claude.ai consumer plans are 18+ (w1-05-02 ✓). Anthropic's commercial terms say nothing about age (w1-05-03 ✓). Claude for Teachers is US-only and "not for students" (w1-05-04 ✓).
-- **Tested client: claude.ai, on an adult's account.** The `?key=` URL works in the team's testing, but Anthropic doesn't document it as an auth method (w1-05-01 ✓).
-- **Gemini is not possible for UK students.** Custom apps (MCP) need a user who is 18+, in the US, on a personal account. Work and school accounts are excluded (w1-05-09 ✓). Don't claim eduX runs inside Gemini on school accounts.
-- **Microsoft Copilot Studio is the best-documented school route, but untested.** It is the only vendor that documents an API key sent as a query parameter and supplied by each user (w1-05-11 ✓). Copilot Chat for learners aged 13–17 is off by default in school tenants until an IT admin turns it on (w1-05-13 ~). Billing for agents with MCP tools is unconfirmed.
-- **ChatGPT is untested, and the README route is out of date.** Custom MCP is added from Plugins → Add custom MCP server (w1-05-05 ✓). Full MCP appears to need Business, Enterprise or Edu; Pro is read/fetch only (w1-05-06 ~, snippet only). Teens are allowed with parental permission (w1-05-08 ~, snippet), but whether teen accounts can add MCP is unknown.
-- **ChatGPT asks the user to confirm every eduX call,** because no eduX tool has `readOnlyHint` (w1-05-05 ✓). Marking `get_my_progress` read-only is a quick fix.
-- **OAuth is what unlocks school deployment.** Gemini Enterprise, Microsoft federated connectors and ChatGPT accept only OAuth or no auth, not custom API keys (w1-05-07 ✓, w1-05-10 ✓, w1-05-12 ✓). The DPO also wants it, because a key in a URL works like a password (see [09](09-safety-ethics.md)).
-- **The panel's feature asks:** a teacher view of class weak points, exam-style work beyond MCQs (numeric and essay planning), and a "just show me" that doesn't feel like a quiz. None is built. They are proposals for the roadmap; only wording and mock-ups fit before Thursday.
+- **No route for a UK 16–17-year-old has been tested.** The only tested client is claude.ai, used on an adult's account. Consumer claude.ai is 18+ (w1-05-02 ✓).
+- **The one documented school route is Microsoft 365 Education plus a Copilot Studio agent. It is untested.**
+  - Copilot Chat is off by default for learners aged 13–17. An admin turns it on by setting the tenant to K-12 and each student's age group to NotAdult (w2-05-04 ✓).
+  - Copilot Studio agents can call a remote MCP server. The key can be sent as a header or a query parameter, or the agent can use OAuth 2.0 (w2-05-03 ✓).
+  - Each student turn costs the school Copilot Credits. Our estimate is about US$84 per student per year, on a rate we haven't verified (w2-05-06 ~). See the [business plan](business-plan.md).
+- **Mistral Le Chat is a personal-account route only.** Its terms allow 13+ with parental permission (w2-05-01 ~), and the account owner can add a custom MCP server (w2-05-02 ✓). But it is a consumer contract, used "in your personal capacity", with no school data processing agreement (DPA). **A school can't deploy it or put it in a DPIA.** Keep it off every pupil-facing slide.
+- **ChatGPT, Claude and Gemini give no under-18 route.** ChatGPT for Teachers is for US staff only. Whether teen accounts can add MCP isn't documented (w2-05-14 ~, snippet). Gemini school accounts take only named partner integrations.
+- **Authentication: none of the fixes is built.** `edux/server.py` still reads only `?key=` (lines 55–57, 86–89). The plan:
+  - **S:** accept the key in an `Authorization: Bearer` header.
+  - **M:** sign in through the school's Microsoft Entra, with eduX checking tokens (Copilot Studio only).
+  - **L:** a full OAuth broker that works with every client.
+
+  A key in the URL conflicts with IETF guidance (w2-05-10 ✓), NCSC guidance (w2-05-11 ✓) and the MCP spec's ban on tokens in the query string (w2-05-05 ✓). DfE's standards don't address it (w2-05-12 ✓).
+- **Teacher view: hand teachers an action, not a watch list.** Dashboards alone have no shown effect on attainment (w2-05-23 ~). ASSISTments' teacher reports came bundled with hints and training, and the report part wasn't isolated (w2-05-20 ~, w2-05-21 ~).
+  - The proposed screen is one page: misconceptions to reteach, each with a starter MCQ, plus the weakest parts.
+  - Rules: k = 6, shares in bands, one 14-day window, no names (all our choice).
+  - It is not built. Show it as a static mock.
+- **The flag rule can't see moderate problems in small classes.** For a set of 12, a misconception held by half the class is flagged 27–56% of the time. One held by 35% is flagged only 7–18% of the time (simulation: synthetic students, `sims/teacher/results.md` §6).
+  - Pooling across sets *may* lift the "half the class" case to about 0.8–0.9, and doesn't help the 35% case unless the threshold is lowered (our calculation, below). **Not reproduced in repo:** the pooling script was run in scratchpad only and not saved, so treat these figures as unchecked.
+  - Say plainly: "It catches big shared misconceptions, not moderate ones."
+- **The panel's other feature asks are still unbuilt:** numeric, chain and essay-plan tasks, a class focus, and per-student completion. Only wording and mock-ups fit before Thursday.
 
 ## Ranked recommendations
 
 | Rank | Recommendation | Lands in | Effort | Before Thursday? | Rests on findings |
 |---|---|---|---|---|---|
-| 1 | Use the "works with" line above on the pitch's architecture slide. No Gemini or Copilot logos. | pitch | S | yes | w1-05-01 ✓, w1-05-02 ✓, w1-05-09 ✓, w1-05-11 ✓ |
-| 2 | Caption the video: "Filmed on a team member's adult claude.ai account. Students would use their school's chatbot." Never show or imply a 16–17-year-old on consumer claude.ai. | video | S | yes | w1-05-02 ✓ |
-| 3 | Prepare the Q&A answer to "Which 16-year-old can use this Monday?": adults and teachers today; Copilot Studio in a Microsoft school tenant next (untested); OAuth after. | pitch Q&A | S | yes | w1-05-03 ✓, w1-05-11 ✓, w1-05-13 ~ |
-| 4 | Build team: add `readOnlyHint: true` to `get_my_progress` in `edux/server.py`. Leave `tutor_turn` and `update_my_profile` as writes, because they record events. | build | S | yes | w1-05-05 ✓ |
-| 5 | Build team: fix the README's ChatGPT section. Route: Plugins → "+" → Add custom MCP server, Authentication = No authentication. Expect a confirmation on write tools. Remove "needs a paid plan" unless re-tested on that plan. | build docs | S | yes | w1-05-05 ✓, w1-05-06 ~ |
-| 6 | Show a teacher-view mock-up (class level, groups of at least 5, no chats, AI-literacy levels off by default) on a roadmap slide. Say "not built". | pitch | S | yes | panel (teacher #4, DPO #5) |
-| 7 | Prepare the honest essay answer: "Essay levels aren't built; numeric, chain and essay-plan tasks are next, all scored by rules." | pitch Q&A | S | yes | panel (teacher #1, student #5) |
-| 8 | Put OAuth on the roadmap slide as the unlock for school tenants and admin-installed connectors. | pitch | S | yes (slide) | w1-05-07 ✓, w1-05-10 ✓, w1-05-12 ✓ |
-| 9 | Hash keys and add revoke/rotate (details in [09](09-safety-ethics.md) recs 3–4). Do it after the video is filmed, or make `seed --reset` keep the stored hash, so demo connector URLs keep working. | build | S | yes, after filming | panel (DPO #2) |
-| 10 | Keep `text/format/gemini.md`, but don't advertise Gemini. | pitch | S | yes | w1-05-09 ✓ |
+| 1 | **"Works with" line** (below): tested with claude.ai on an adult account; Microsoft 365 Education via Copilot Studio is the documented school route, untested. No Le Chat, Gemini or Copilot logos. | pitch, video | S | yes | w1-05-02 ✓, w2-05-03 ✓, w2-05-04 ✓, w2-05-01 ~ |
+| 2 | **Video caption:** "Filmed on a team member's adult claude.ai account. Pupils would use their school's Microsoft Copilot." Never show a 16–17-year-old on a consumer chatbot. | video | S | yes | w1-05-02 ✓, w2-05-04 ✓ |
+| 3 | **Deployment slide, 4 icons:** K-12 tenant → NotAdult age group → Copilot Studio agent with the eduX tool → publish to the Year 12–13 group. Label it "documented route, pilot next", not "works today". | pitch | S | yes | w2-05-03 ✓, w2-05-04 ✓, w2-05-13 ✓ |
+| 4 | **Static teacher-view mock** (spec below), with a corner tag "illustrative class data", about 8 s in the video after the student's wrong answer. Voice-over: "Teachers see what to reteach, never who said what." | video, pitch | S | yes | w2-05-23 ~, w2-05-26 ~, w2-05-29 ✓ |
+| 5 | **Build: accept `Authorization: Bearer <key>`** next to `?key=` in `_key_from_scope` and `require_student` (`edux/server.py`). The README should tell users of claude.ai, Copilot Studio and Le Chat to put the key in a header. Keep `?key=` only for ChatGPT, which can't send custom keys. Do it after filming, or keep both so demo URLs still work. | build | S | yes, after filming | w2-05-02 ✓, w2-05-03 ✓, w2-05-08 ✓, w2-05-09 ~, w2-05-10 ✓ |
+| 6 | **"What your teacher sees" line** in the student's progress text: "Your teacher sees class patterns from groups of 6 or more. Never your chats, your levels, your AI-literacy scores, or how often you asked AI to write for you. If your school turns it on, they also see whether you did checks this week." Build team edits `text/`. | build | S | yes | coordinator decision; w2-05-34 ✓; student panel #3 |
+| 7 | **Q&A answer, "Is a key in a URL secure?"** "No. It's a stop-gap. It conflicts with NCSC and IETF guidance. We're moving it to a header, then to school sign-in through Entra. DfE's standards ask for unique credentials, which ours are." Never say "DfE-compliant" or "non-compliant". | pitch Q&A | S | yes | w2-05-10 ✓, w2-05-11 ✓, w2-05-12 ✓ |
+| 8 | **Q&A answer, "Is the teacher view blind in my set of 12?"** "Partly, yes. It catches a misconception held by about half the class, not one held by a third. Pooling across your sets should help the big ones (our calculation, not reproduced in repo). For the rest, it says 'nothing flagged', not 'all clear'." | pitch Q&A | S | yes | w2-05-29 ✓, w2-05-30 ✓; pooling: our calculation, not reproduced in repo |
+| 9 | **Adult test of Le Chat Free** with a bearer header. Note whether each write tool asks for confirmation. If it works, the slide may say "also tested on Le Chat (adult account)". Never present it as a pupil route. | build/test | S | yes | w2-05-01 ~, w2-05-02 ✓ |
+| 10 | Build: `readOnlyHint: true` on `get_my_progress`, and fix the README's ChatGPT route (carried from wave 1). | build | S | yes | w1-05-05 ✓ |
+| 11 | **Entra sign-in for pilots (option B below).** eduX acts as a resource server using the installed `mcp` SDK's `TokenVerifier` and `AuthSettings`. It checks the Entra token's audience, and the student id is a hash of `tid`+`oid`. | build | M | no | w2-05-05 ✓, w2-05-07 ✓ |
+| 12 | **Teacher view as code:** a `[teacher_view]` settings block, an `offered_misconception_ids` log, and one server-side aggregation. Off unless the school turns it on. | build | M | no | w2-05-28 ✓ to w2-05-34 ✓ |
 
-## Chatbot compatibility table (with verifier corrections)
+## Chatbot compatibility table
 
-Status: **tested** = run end to end by the team; **untested** = documented route exists, not run; **not possible** = vendor docs rule it out for eduX's users or design. "Min age (UK)" is the vendor's minimum for that product in the UK.
+Status meanings:
+- **tested**: run end to end by the team.
+- **documented, untested**: a vendor route exists that we haven't run.
+- **personal only**: allowed for a minor, but on the minor's own consumer account, outside any school contract.
+- **not possible**: vendor docs rule it out.
 
-| Client | Remote MCP support | Plans | Admin needed? | Auth eduX can use | Min age (UK) | Status |
+| Client / setting | Custom remote MCP? | Who adds it | Auth eduX can use | Under-18 in UK? | School can deploy and put in a DPIA? | Status |
 |---|---|---|---|---|---|---|
-| claude.ai Free / Pro / Max (and Ultra) | Yes, "custom connectors" (w1-05-01 ✓) | Free (1 custom connector only), Pro, Max; the page now also lists Ultra (verifier note) | No: the user adds it | OAuth, "No sign in" or fixed headers are documented. `?key=` in the URL is **not documented** but works in team testing | **18** (w1-05-02 ✓); accounts with under-18 signals are disabled, with Yoti age checks | **Tested** (adult team member's account only) |
-| claude.ai Team / Enterprise | Yes (w1-05-01 ✓) | Team, Enterprise | **Yes**: an Owner or Primary Owner adds it; on Enterprise, a custom role with the right permission can too (verifier note) | As above, plus admin-set headers | **Unconfirmed**: commercial terms set no age and are "not for consumer use"; minors guidance covers API products only (w1-05-03 ✓) | Untested; under-18 use unconfirmed |
-| Claude for Education | Connectors listed as admin feature (w1-05-04 ✓) | University plan | Yes | Unconfirmed for custom connectors | Unconfirmed; framed for universities | Untested |
-| Claude for Teachers | Partner connectors only | Verified **US** K-12 staff | District admin | n/a | "Not for students" (w1-05-04 ✓) | **Not possible** for students |
-| ChatGPT Free / Go / Plus | **Unconfirmed**; the help-page snippet names only Pro, Business and Enterprise/Edu (w1-05-06 ~) | Plus not named | No (user adds it from Plugins) | OAuth 2.1 or no auth. ChatGPT "cannot present custom API keys", so `?key=` works only as a no-auth secret URL (w1-05-07 ✓) | 13, with parent/guardian permission under 18; teens go to ChatGPT for Teens (w1-05-08 ~, snippet) | Untested; teen MCP access unknown |
-| ChatGPT Pro | Read/fetch only (w1-05-06 ~, snippet) | Pro | No | As above | As above | Untested; unannotated tools count as writes, so `tutor_turn` may be blocked |
-| ChatGPT Business / Enterprise / Edu | "Full MCP" (w1-05-06 ~, snippet) | Business, Enterprise, Edu | **Yes**: on Business only admins/owners create and publish | As above. ChatGPT now also presents an OpenAI-managed client certificate that servers can verify (verifier note on w1-05-07 ✓) | Edu for UK under-18 pupils: no page found | Untested |
-| Gemini app (consumer) | Yes, "custom apps" (w1-05-09 ✓) | Not stated | No | OAuth (DCR or manual credentials); no-auth and query keys not mentioned | **18, and US only**, personal account | **Not possible** in the UK |
-| Gemini for Education / Workspace for Education | **No**: custom apps not available on work or school accounts (w1-05-09 ✓) | n/a | n/a | n/a | Admin can enable the Gemini app for under-18s with restricted features (w1-09-04 ✓), but without custom MCP | **Not possible** |
-| Gemini Enterprise (Business edition) | Yes, Pre-GA; off by default (w1-05-10 ✓) | Business edition | Yes, team admin | OAuth 2.0 or no auth; no API key | Not a school product | Untested; needs OAuth |
-| Microsoft 365 Copilot federated connector | Yes (w1-05-12 ✓) | Needs an M365 Copilot licence per user | Yes: Global or AI Administrator | Entra SSO, OAuth 2.0 or no auth; one base URL, so no per-student key | Unconfirmed | **Not possible** with per-student keys; possible after OAuth |
-| Microsoft Copilot Studio agent (in Teams / Copilot Chat) | Yes, Streamable HTTP; SSE dropped after Aug 2025 (w1-05-11 ✓) | Copilot Studio, billed in Copilot Credits (snippet) | Yes: an agent maker builds it; IT enables Copilot Chat for learners | None, **API key as header or query parameter supplied by the agent's user**, or OAuth 2.0 (w1-05-11 ✓) | 13; off by default in K-12 tenants; admin sets age groups (w1-05-13 ~: source is MS Learn "Enable Copilot Chat for learners", 3 Sep 2026, not the blog) | **Untested**; student billing unconfirmed |
-| Microsoft Copilot (consumer) | No documented route | n/a | n/a | n/a | 13+ (snippet) | Not possible (no route found) |
-| Oak Aila; NotebookLM / Gemini Notebook; Khanmigo | No MCP client support found (absence, unconfirmed) | — | — | — | — | Not possible (no client) |
-| Oak MCP (for comparison) | Oak runs an MCP **server**, shipped to teachers as a Claude connector **and** a ChatGPT plugin (w1-05-14 ~: verifier found the ChatGPT version) | — | IT may need to enable it | OAuth | Teachers; warns not to enter pupil data | Precedent, not a client |
+| **M365 Copilot Chat (K-12 tenant) + Copilot Studio agent** | Yes, Streamable HTTP only (w2-05-03 ✓) | A staff agent maker; IT turns on Copilot Chat for learners | None; an API key in a **header or query**, supplied by each user; or OAuth 2.0 (dynamic discovery, dynamic or manual) (w2-05-03 ✓) | 13–17 once an admin sets the tenant to K-12 and the age group to NotAdult; off by default; under-13s blocked; A1/A3/A5 student licence (w2-05-04 ✓). Teen safety protections switch on automatically from mid-Oct 2026, and the notice doesn't say whether they cover custom MCP agents (w2-05-13 ✓, read on a third-party mirror) | **Yes, on paper.** The school is controller under its M365 terms, and eduX would be a processor under its own DPA. Power Platform data policies govern MCP access (w2-05-03 ✓) | **Documented, untested.** Billed in Copilot Credits per turn (w2-05-06 ~) |
+| M365 Copilot (paid licence) + MCP plugin / declarative agent | Yes (w1-05-12 ✓) | Global or AI admin | OAuth only. DCR needs a client secret, and DCR isn't available on Entra-protected servers (w2-05-07 ✓) | Unclear for students | Possibly; about US$18 per user per month (academic), which is more than metered credits at our volume | Untested |
+| **Mistral Le Chat Free / Pro / Student** | Yes; on these plans the account owner is the admin (w2-05-02 ✓) | The user | None, a bearer or basic header, or OAuth 2.1 with DCR (w2-05-02 ✓) | 13+ with parental permission. The help page says permission is required; the consumer terms say "where required". UK not named (w2-05-01 ~: the terms are for consumers "outside the EEA") | **No.** Consumer terms, personal capacity only, no DPA. The school is not the controller | **Personal only**; untested. Adults may test it |
+| Mistral Le Chat Team / Enterprise | Docs don't say who administers connectors | — | As above | Commercial terms allow minors only with "legally adequate consent" (w2-05-02 ✓) | Unclear; needs a sales or legal answer | Untested |
+| claude.ai Free / Pro / Max | Yes (w1-05-01 ✓) | The user | OAuth (Claude's published identity is "Recommended", or DCR, or your own client ID); fixed request headers; "No sign in" (w2-05-09 ~). `?key=` works in team testing but isn't documented | **No, 18+** (w1-05-02 ✓) | n/a | **Tested** (adult account only) |
+| claude.ai Team / Enterprise / Education | Yes, admin-added (w1-05-01 ✓) | Owner | As above | No page grants an exception; Education is framed for universities (w1-05-03 ✓, w1-05-04 ✓) | Unclear; ask Anthropic | Untested |
+| Claude for Teachers | Partner connectors only | US district | n/a | Educators only, "consistent with" 18+ (w2-08-04 ✓) | n/a | **Not possible** for students |
+| Claude API in a partner's chat app | The API's MCP connector can call remote servers | The partner | Partner's choice | Anthropic lets organisations serve minors through API products with safeguards (w1-05-03 ✓) | Possibly, through the partner | Someone else must build the app. eduX itself never calls a model |
+| ChatGPT personal / Teens | Custom MCP plan support unclear (w1-05-06 ~, snippet). Teens: not documented | The user | OAuth (CIMD preferred, DCR or predefined; PKCE S256 required) or no auth. It **can't send custom API keys** (w2-05-08 ✓), so `?key=` works only as a no-auth secret URL | 13–17 placed in ChatGPT for Teens since 18 Aug 2026 (w2-05-14 ~, snippet) | No | Untested |
+| ChatGPT Edu / for Teachers | Edu: admins enable (snippet) | Admin | As above | Edu appears to be for universities. For Teachers: US K-12 staff, "not offered to students" (w2-05-14 ~, snippet) | No page found for UK schools | Not a school route |
+| Gemini app / Gemini for Education | Consumer custom apps are US, 18+, personal accounts only (w1-05-09 ✓). School accounts: Sept 2026 added only named partner MCP integrations, admin-controlled (Workspace Updates blog, 15 Sep 2026; not a numbered finding) | — | — | Gemini can be enabled for under-18s, but without custom MCP | n/a | **Not possible** |
+| Gemini Enterprise (Business) | Yes, Pre-GA (w1-05-10 ✓) | Admin | OAuth or no auth | Not a school product | n/a | Untested |
+| Oak MCP (for comparison) | Oak runs a **server**, shipped to teachers as a Claude connector and a ChatGPT plugin (w1-05-14 ~) | — | OAuth | Teachers | — | Precedent, not a client |
 
-### "Works with" line for the pitch (truthful)
-> **Built on the open Model Context Protocol (MCP). Tested with claude.ai. ChatGPT and Microsoft Copilot Studio document MCP support; we haven't tested them yet.**
+### "Works with" line for the pitch
+> **Built on the open Model Context Protocol (MCP). Tested with claude.ai. For pupils, the documented route is the school's own Microsoft 365 Education tenant through Copilot Studio; we haven't tested it yet.**
 >
-> Footnote: *Demo filmed on a team member's adult claude.ai account. claude.ai consumer plans are 18+. For under-18s, eduX needs a school-managed chatbot; we are adding OAuth.*
+> Footnote: *Demo filmed on a team member's adult claude.ai account. claude.ai consumer plans are 18+.*
 
-No Gemini or Copilot logos, and no "school-ready", "works with any chatbot" or "runs inside Gemini" claim (w1-05-09 ✓). If asked "Who can use this on Monday?": adults (including Year 13s who have turned 18) and teachers on their own accounts today; Microsoft school tenants via Copilot Studio next, the one documented per-user key route (untested); OAuth after that.
+If asked "Who can use this on Monday?": "Adults, including Year 13s who have turned 18, and teachers, on their own accounts. Sixth-formers next, through a Microsoft school tenant, once we've piloted it."
 
-## Product features the panel asked for
+If asked about Le Chat: "Its terms let a 13-year-old with a parent's permission add a server. But that's a personal consumer account outside any school contract, so we don't offer it to pupils."
 
-| Ask | Who asked | Status today | Proposal (our choice) | Before Thursday? |
+**Don't say:** "works with any chatbot", "school-ready", "runs inside Gemini", or anything that names Le Chat as a route for pupils.
+
+## Deployment story (Microsoft school; from Microsoft docs, untested by us)
+
+1. **Licences.** Students hold A1, A3 or A5 student licences (w2-05-04 ✓).
+2. **Tenant type.** The Global Admin sets the Microsoft Education Tenant Identifier to K-12.
+3. **Year 12–13 only.** Set their age group to NotAdult, with the consent value. Under-13s stay blocked. Microsoft's teen protections apply automatically (w2-05-13 ✓).
+4. **Data policy.** Allow the eduX connector in the Power Platform data policies (w2-05-03 ✓).
+5. **Agent.** A staff maker builds "eduX Economics" in Copilot Studio and adds eduX under Tools → Model Context Protocol. Auth: the API key in a header now, or OAuth Manual against the school's Entra app later. Paste in eduX's chatbot instructions. **Pick a non-reasoning model**: a reasoning model adds 10 credits per 1,000 tokens (w2-05-06 ~).
+6. **Cost cap.** Allocate credits to the environment or link pay-as-you-go, and set a monthly limit for the agent. Prepaid tenants are blocked at 125% of capacity (w2-05-06 ~).
+7. **Publish.** Release the agent to the Year 12–13 Economics security group in Teams and Copilot Chat.
+8. **Paperwork.**
+   - A DPIA and a record of processing (DfE standards; w2-05-12 ✓).
+   - A DPA naming eduX as processor.
+   - A diagram of the processor chain (DPO wave 2 #2): pupil → Microsoft (the school's M365 terms) → eduX (eduX DPA).
+   - The "what your teacher sees" line (rec 6).
+
+**Open:** whether an MCP tool call bills as one agent action (5 credits); whether Microsoft's teen protections reach custom MCP agents; whether an Agent Builder agent avoids generative-answer charges. These questions need Microsoft's answer or a real tenant test. Two Microsoft pages conflict: the en-GB marketing page says Copilot Chat is for "higher education students aged 13 and older", while MS Learn covers K-12 learners aged 13–17. We rely on MS Learn (w2-05-04 ✓).
+
+## Authentication plan (none built)
+
+| Option | What it is | Works with | Effort | Status |
 |---|---|---|---|---|
-| **Teacher view**: one screen of class weak parts and misconceptions, groups of at least 5, no chats | Teacher #4; DPO #5 (no AI-literacy levels by default) | Not built. Teacher usage reports are off by default (personalisation §5) | Show a **mock-up** in the pitch: class-level weak parts and top misconceptions, minimum group size 5, no message text, no per-student AI-literacy or "Decide" stats unless the school switches them on. Build later. | Mock-up yes; build no |
-| **Who sees my stats?** | Student #4 | `get_my_progress` shows the student's own stats; nothing goes to teachers | One line in `get_my_progress` and the pitch: "Only you see this unless your school switches on a class report, and you'd be told." Wording for the build team. | Yes (wording) |
-| **Exam practice beyond MCQs**: numeric questions marked per step; one "chain" task (order the links, find the missing one) | Teacher #1 | Every check is a four-option MCQ; level-marked answers wait for step 07 (not built) | Numeric and chain tasks are scored by rules, so they fit the no-model-calls design. Roadmap slide only. | No (slide yes) |
-| **Essay practice**: "plan me a 25-marker" tied to the exam-question links | Student #5; Teacher Q&A #1 | Not built; step 07 not built | A planning scaffold (knowledge, analysis chain, evaluation points, diagram) that eduX checks point by point, with no level or mark. Answer in Q&A: "Essay levels aren't built; here is the plan." eduX must never give a numeric mark for level-marked work (server rule 7). | No (honest answer yes) |
-| **Answer first when rushed** | Student #1 | "Just show me" gives the point and still ends with a check | **Tension:** DfE std 10 asks for no full answers by default and friction before answer modes (w1-09-01 ✓). Proposal: when rushed, show a guided example with the last step left to the student, and make the follow-up check skippable. See `09-safety-ethics.md`. | Build team decides Wed |
-| **Gaming the MCQs** (short correct option; "I checked the ONS" makes Verify secure) | Teacher #2; Student #3 | Open; fixes proposed in [02](02-ai-literacy-assessment.md) recs 3–6 and [04](04-economics-education.md) rec 1 | Match option form and length; "I checked" needs a detail; an ignored task gives no evidence, not 0. Covered by other area reports. | See [02](02-ai-literacy-assessment.md) and [04](04-economics-education.md) |
-| **Set a class focus** ("externalities, due Friday") | Teacher #5 | eduX picks the next part itself | A class focus topic and deadline the planner prefers. Later. | No |
-| **Key handling**: hash keys, revoke and rotate, pseudonymous ids, OAuth date | DPO #2 | Keys stored in plaintext (`edux/learner.py:91–94`), looked up in plaintext (`learner.py:104–105`), read from `?key=` (`edux/server.py:55–57`). Ids are made from the student's name (`learner.py:90–91`) | See `09-safety-ethics.md` fixes 3, 4 and 7. OAuth on the roadmap slide. | Hashing and revoke: yes, after filming (S each) |
-| **AI literacy in homework, not only research questions** | Student #2 | 05e (built on its branch, not merged) gives literacy tasks on research questions | Add a Verify moment in homework ("which line of that answer would you check against your notes?"). Listed under Later in [02](02-ai-literacy-assessment.md). | No |
+| **A. Header key** | Accept `Authorization: Bearer <key>`. Keep `?key=` only for ChatGPT. Hash keys and add revoke/rotate ([09](09-safety-ethics.md) recs 6–7) | claude.ai, Copilot Studio, Le Chat (w2-05-02 ✓, -03 ✓, -09 ~) | **S** (1–2 h in `edux/server.py`) | Recommended, not built |
+| **B. School Entra sign-in** | The school registers an Entra app. Copilot Studio uses Manual OAuth with that client. eduX validates Entra JWTs (issuer = school tenant, audience = eduX), publishes Protected Resource Metadata, and returns 401 with `WWW-Authenticate`. Student id = hash of `tid`+`oid` | Copilot Studio only. Entra has no DCR, no CIMD and no `code_challenge_methods_supported`, so spec-strict clients may refuse it (w2-05-07 ✓) | **M** (half to one day: the `mcp` SDK's `TokenVerifier` + `AuthSettings`, `pyjwt`, tests). Untested against Entra v2 audience handling | Recommended for the first pilot, not built |
+| **C. OAuth broker** | A managed or self-hosted authorization server with CIMD, DCR (now deprecated in the MCP spec), PKCE S256 metadata, federated to the school's Entra or Google | All clients (w2-05-05 ✓, w2-05-08 ✓) | **L** (2–4 days, plus vendor DPA and DPIA updates) | Later, when a non-Microsoft school asks |
+
+eduX's own duties under the MCP spec (w2-05-05 ✓) apply to B and C:
+- Accept tokens only from the header, never from the query string.
+- Check each token's audience.
+- Never pass a token on.
+
+Don't build eduX's own authorization server. It is L effort with high security risk.
+
+## Teacher view
+
+### Evidence: what helps teachers act
+- **Dashboards alone:** a 38-study review found no evidence of better achievement. Effects on participation were larger, but participation is engagement, not learning (w2-05-23 ~, abstract only). Teacher-facing dashboards are mostly prototypes evaluated by self-report (w2-05-24 ~, higher education).
+- **ASSISTments (Maine RCT), a bundle:** online homework with hints, teacher reports and teacher training. US grade 7 maths, 2,850 students.
+  - g = 0.18 overall and 0.29 for low-prior students (w2-05-20 ~). The g values and the TerraNova test name come from secondary summaries (Blueprints, Evidence for ESSA). The abstract is primary.
+  - 45 schools were randomised and 43 analysed; one school withdrew before assignment.
+  - A follow-up found g = 0.22 and no significant mediation through teachers' targeted homework review (w2-05-21 ~, secondary).
+- **ASSISTments (North Carolina replication):** ES ≈ +0.10 on the grade 8 state maths test, a year after the programme ended (w2-05-22 ~, secondary).
+  - About 6,000 students were analysed; 9,073 is the enrolment.
+  - WWC reports a non-significant result on a second grade 8 test.
+
+  **So we can't say "teacher dashboards raise grades".** We can say: "Online homework with teacher reports raised maths scores in a US trial."
+- **Lumilo:** real-time analytics glasses for teachers improved learning in 18 US middle-school classes (w2-05-25 ~, abstract). Press coverage (a different Hechinger article from the one first cited) reports that more than half the gain came from teachers wearing glasses with the analytics off. Being watched is an active ingredient. eduX's view is asynchronous and shouldn't claim this effect.
+- **How teachers use dashboards:** they read them through what they already know and respond with feedback and extra instruction (w2-05-26 ~; unverified, the papers couldn't be opened). Dashboard-prompted feedback was more balanced than human-prompted feedback (teacher-initiated or in reply to students), most of all for low-ability students (w2-05-27 ~, abstract only). **So put the action, a starter MCQ, next to the signal.**
+
+### Coordinator decision on per-student data
+
+| Data | Shown to the teacher? |
+|---|---|
+| Per-student **completion** ("did checks this week: yes / no") | **School opt-in, default off**, like Sparx. Needs a privacy-notice line and the school's lawful basis in its DPIA |
+| Per-student levels, `p_known`, AI-literacy scores, offloading, draft counts | **Never** (coordinator decision) |
+| Chats, minutes, fatigue, confidence | Never (w2-05t spec and personalisation §5) |
+| Class-level misconceptions and weak parts | Yes, with k = 6, banded, one window, when the school turns the view on |
+| Class-level AI literacy | Only in bands, groups of 6 or more, opt-in |
+
+This settles the clash between w2-09 rec 4 and w2-05t: draft and offloading counts are **not** in the teacher view. The teacher panel's ask for completion is met as an opt-in. Their wish to see levels per student is not.
+
+### Flag rule (our choice) and what it can't detect
+
+**Rule (our choice):** flag a misconception when **at least 6 distinct students AND at least 40%** of students offered that distractor picked it on their first attempt, over a **14-day window**, recomputed once a week (w2-05-29 ✓).
+- Background pick rate 15%: false alarms 0.1–1.0% per evaluation, or 0.1–1.2 expected false flags a term across 10 misconceptions.
+- Very attractive distractors (25% background): false alarms 1.4–10.7% per evaluation, about 2–13 a term (w2-05-30 ✓).
+- Clustering within a class raises false alarms (w2-05-30 ✓). CUSUM was worse and is rejected.
+
+Simulation: synthetic students, parameters our choice.
+
+**Small classes (teacher panel #4).** The teacher quoted 5% and 33% detection for a set of 12. Those are the 1-week figures. The recommended 2-week rule does better, but it is still weak:
+
+| Set | Share doing checks each week | Detect 50% prevalence | Detect 35% prevalence |
+|---|---|---|---|
+| 12 | 50% | 0.27 | 0.07 |
+| 12 | 80% | 0.56 | 0.18 |
+| 14 | 50% | 0.44 | 0.13 |
+| 14 | 80% | 0.74 | 0.32 |
+
+Rows for 12 from `sims/teacher/results.md` §6. Rows for 14 are our calculation with the same model.
+
+**Pooling (our calculation; simulation: synthetic students). Not reproduced in repo.** The script behind this table was not saved to `sims/teacher/`, and `sims/teacher/results.md` has no pooling section. No verifier has rerun it. Don't quote these figures in the pitch until someone saves and reruns the script.
+- Model: the same exact binomial as `sims/teacher/misconception_alarm.py`, with pooled class size n and an effective attempt share 1 − (1 − a)^w over w weeks. Students are independent, with no clustering. The script was run in scratchpad only and not saved to the repo.
+- Results for sets of 12:
+
+| Pooled | Rule | FA per evaluation, 15% background | FA, 25% background | Detect 50% | Detect 35% |
+|---|---|---|---|---|---|
+| 1 set, 4-week window | k=6, 40% | 0.003–0.005 | 0.04–0.05 | 0.53–0.61 | 0.17–0.21 |
+| 2 sets (24), 2 weeks | k=6, 40% | 0.002–0.006 | 0.05–0.09 | 0.81–0.83 | 0.30–0.34 |
+| 3 sets (36), 2 weeks | k=6, 40% | ≤ 0.001 | 0.03–0.05 | 0.86–0.89 | 0.28–0.30 |
+| 4 sets (48), 2 weeks | k=6, 40% | ≤ 0.001 | 0.01–0.03 | 0.89–0.92 | 0.25–0.27 |
+| 2–4 sets, 2 weeks | k=6, **30%** | 0.004–0.039 | 0.21–0.29 | 0.93–1.00 | 0.61–0.75 |
+
+Ranges span 50% and 80% of students doing checks each week.
+
+**What this means, plainly (if the unreproduced figures hold):**
+- **Pooling 2–4 sets catches a misconception held by half the students** about 8–9 times in 10.
+- **With a 40% threshold, pooling never catches one held by 35%.** As the pool grows, the observed share settles near 35%, below the threshold, so detection *falls*.
+- **Dropping the threshold to 30% when pooled** catches the 35% case 6–7 times in 10. The cost is false alarms of 0.4–4% per evaluation at a 15% background (about 0.5–5 a term across 10 misconceptions). For attractive distractors it is 21–29%, which is useless without the per-misconception `alarm_share` override (w2-05t rec 7).
+- **A longer window (4 weeks) helps a little** and makes flags slower and staler.
+
+**Proposal (our choice, not built):**
+- Offer **department pooling** as a school opt-in. It needs a written school instruction, since pooling within a school is a `w_cross` decision and pooling across schools is ruled out (personalisation §5). With it: x = 30% and k = 6, plus a per-misconception `alarm_share`. Shown to the head of department as "across your Year 12 sets".
+- Caveats on pooling:
+  - It mixes sets with different teachers, so one set's problem is diluted.
+  - Clustering will raise false alarms above these figures (w2-05-30 ✓).
+  - The flag no longer says which set has the problem.
+- For a single small set with no pooling, the screen should say **"nothing flagged" and never "no problems"**. The pitch should say: "It catches big shared misconceptions, not moderate ones."
+
+### Spec and mock: one screen (all rules our choice)
+
+```
++--------------------------------------------------------------------------------+
+| eduX · Class 12E Economics · last 14 days · 17 students linked                  |
+| You see class patterns only: no chats, no levels, no AI-literacy scores.        |
+| Names appear only in section 3, if your school has switched it on.             |
++--------------------------------------------------------------------------------+
+| 1. MISCONCEPTIONS TO TACKLE (flagged: >= 6 students and >= 40% of those asked)  |
+|  ! "A tax removes the externality completely"     Externalities: taxes         |
+|    about half of those asked picked this · 6-9 students (low evidence)         |
+|    [ Starter MCQ: preview / print ]   [ Mark as addressed ]                    |
+|  ! "Price elasticity = slope of the demand curve" PED                          |
+|    most of those asked picked this · 10-14 students                            |
+|    [ Starter MCQ: preview / print ]   [ Mark as addressed ]                    |
+|  Nothing flagged does not mean no problems: with this many students, only      |
+|  misconceptions held by about half the class are reliably caught.              |
+|  [ Pool with your other Year 12 sets: needs school setting ]                   |
++--------------------------------------------------------------------------------+
+| 2. WEAKEST PARTS (share of students who worked on it and are not yet secure)  |
+|   Part                          Not yet secure    Students    Last evidence     |
+|   Negative externalities: tax   most              10-14       2 days ago        |
+|   PED and total revenue         about half        15+         this week         |
+|   Monetary policy transmission  about half        6-9 (low evidence) 5 days ago |
+|   Market failure types          too few students (<6) worked on it            |
++--------------------------------------------------------------------------------+
+| 3. COMPLETION THIS WEEK (only if your school has switched this on)             |
+|   Did checks: 11 students · Didn't: 6 students   [ list names ]                 |
++--------------------------------------------------------------------------------+
+| 4. COURSE-PACK ROWS TO REVIEW: 4 rows flagged by students or checks             |
++--------------------------------------------------------------------------------+
+| Never shown: individual levels, chats, time on task, offloading, draft counts, |
+| fatigue, confidence, AI-literacy scores. Updated weekly (Sunday).              |
++--------------------------------------------------------------------------------+
+```
+
+Rules behind it:
+- **One window, weekly.** One 14-day window, recomputed weekly on a fixed day. There is no date picker. Overlapping windows let figures be subtracted from each other.
+- **Counts in bands.** Counts appear as bands (6–9, 10–14, 15+). Shares appear as words: "some" is 40–49% (part rows only), "about half" is 50–69%, "most" is 70% and above. "All" is never shown. A count of 5 or fewer is never shown, which matches DfE performance tables (w2-05-31 ✓). DfE publishes no fixed rule and works case by case (w2-05-32 ✓). NHS HES rounds and stars small counts (w2-05-33 ✓).
+- **Minimised, not anonymous.** The ICO says k-anonymity fails against background knowledge, and a teacher has plenty (w2-05-34 ✓). So this is minimised personal data, not anonymous data. **Never say "anonymous".**
+- **Below-threshold items** are not listed and get no counts. The screen says only that a quiet result isn't an all-clear.
+- **Starter MCQ.** It reuses the server-built check for that misconception, the action the evidence points to. "Mark as addressed" resets the window and gives a before/after re-check in pilots.
+- **Completion (section 3) appears only on school opt-in.** It shows did / didn't, never scores. Section 4 lists course-pack content rows, not student drafts.
+- **"Not yet secure"** means `p_known` is below the mastery threshold among students with evidence in the window. It is not a grade prediction.
+- **Pilot measure:** whether the teacher used the starter, and the class's re-check accuracy two weeks later. That is engagement and near-transfer, not attainment (w2-05-23 ~, w2-05-24 ~).
+
+**For the video:** a static rendering with "illustrative class data". The seeded demo has one student, so real numbers would be suppressed anyway.
+
+**Data the view needs (DPO wave 2 #4):** log `offered_misconception_ids` on check rows, so the share has the right denominator.
+- Retention (our choice): drop the column's values after 28 days, two windows. The rest of the row follows the general retention default in [09](09-safety-ethics.md).
+- Necessity: without it, the denominator overcounts and the rule under-flags.
+- Not built.
+
+## Other product features the panels asked for
+
+| Ask | Who | Status | Proposal (our choice) | Before Thursday? |
+|---|---|---|---|---|
+| Per-student completion | Teacher wave 2 #4 | Not built | School opt-in, default off (coordinator) | Mock only |
+| Pooling across sets | Teacher wave 2 #4 | Not built | Department opt-in, x = 30% (above; figures not reproduced in repo) | No; Q&A wording yes |
+| "Does my teacher see I asked it to write my essay?" | Student wave 2 #3 | Draft counts were proposed for the teacher report (w2-09 rec 4) | **No, never.** Rec 6 wording | Wording yes |
+| Exam practice beyond MCQs (numeric, chain, essay plan) | Teacher #1; student #5 (wave 1) | Not built; step 07 not built | Rule-scored numeric and chain tasks; essay-plan scaffold with no mark. See [04](04-economics-education.md) | No (slide yes) |
+| Answer first when rushed | Student #1 (wave 1) | "Just show me" skips the attempt | Guided example with the last step left to the student, skippable check ([09](09-safety-ethics.md) rec 14) | Build team decides Wed |
+| Class focus ("externalities, due Friday") | Teacher #5 (wave 1) | Not built | A focus topic and deadline the planner prefers | No |
+| A tested school route | Student wave 2 #5; investor wave 2 #2 | None | Copilot Studio test on a real tenant | No |
 
 ## Later (not before Thursday; for the business plan and Q&A)
-- **OAuth 2.1 with PKCE.** It is what ChatGPT, Gemini Enterprise and Microsoft federated connectors accept for anything beyond no-auth (w1-05-07 ✓, w1-05-10 ✓, w1-05-12 ✓). Effort L.
-- **End-to-end test on Copilot Studio** in a Microsoft education tenant with Copilot Chat for learners enabled. Find out the Copilot Credit cost per `tutor_turn` (w1-05-11 ✓, w1-05-13 ~).
-- **Teacher view** (class level, off by default, switched on by the school). **Class focus topic and deadline.**
-- **Numeric questions marked per step, chain tasks, essay-plan scaffold.** Step 07 (level-marked answers) after that.
-- **Ask Anthropic** whether school-held Team or Enterprise plans may include under-18 members. This needs a human contact, not an agent (w1-05-03 ✓).
-- **Test ChatGPT Plus and a teen account** with an adult on Plus first (w1-05-06 ~, w1-05-08 ~).
+- **Copilot Studio end to end** in a Microsoft education tenant, with a 17-year-old test account under the school's control. Questions to answer:
+  - Does an MCP call bill as one agent action?
+  - Do teen protections cover the agent?
+  - Does Agent Builder avoid the generative-answer charge?
+- **Options B, then C** of the authentication plan.
+- **Teacher view build:** `[teacher_view]` settings (`min_students = 6`, `min_share = 0.40`, `pooled_min_share = 0.30`, `window_days = 14`, `first_attempt_only = true`, weekly recompute; all our choice). Also the `alarm_share` override per misconception, the `offered_misconception_ids` migration, and opt-in completion.
+- **Calibrate the background pick rate** from the first pilot's check data. We assumed 15% (25% as a stress case).
+- **Check the ONS SRS "below 10" threshold** (snippet only, w2-05-32 ✓ note). If confirmed, k = 10 would leave most sets of 12–16 seeing nothing, so pooling would be the only option.
+- **Ask** Mistral (Team or Enterprise for UK schools), Microsoft (billing unit) and Anthropic (under-18 members on school plans). These need a human, not an agent.
+- **Numeric, chain and essay-plan tasks**; class focus.
 
 ## Considered and rejected
-- **Film ChatGPT as the main client.** Plan support is unclear, every write tool asks for confirmation, and the docs moved recently (w1-05-05 ✓, w1-05-06 ~).
-- **"Works with Gemini" because `text/format/gemini.md` exists.** Custom apps are US-only, 18+ and personal-account-only (w1-05-09 ✓).
-- **A scout line (w1-08 rec 2) placing eduX inside Gemini on school accounts.** False: school accounts can't add custom apps (w1-05-09 ✓).
-- **Claim Claude for Education covers UK schools.** It is framed for universities; the K-12 offer is US teachers only (w1-05-04 ✓).
-- **Treat Oak as a client.** Oak runs a server, not a client (w1-05-14 ~).
-- **A pure answer-first mode with no check.** It conflicts with DfE std 10 (w1-09-01 ✓). A guided example with a skippable check is the compromise.
-- **AI-literacy levels in the default teacher view.** That is non-core profiling of minors; the DPO wants it off by default (panel DPO #5).
+- **Le Chat as a pupil route** (w2-05 rec 2 put it on the slide). It is a personal consumer account with no DPA, so a school can't deploy it or name it in a DPIA (DPO wave 2 #1). Adults may test it.
+- **Per-student levels or AI-literacy scores in the teacher view.** That is non-core profiling of minors, it is what the student panel fears, and there is no evidence that per-student displays raise attainment (w2-05-23 ~). Ruled out by the coordinator.
+- **Draft or offloading counts in the teacher report** (w2-09 rec 4). They would teach students to hide AI use, which wipes out Verify evidence (student wave 2 #3). Ruled out by the coordinator.
+- **CUSUM across weeks.** In the simulation, 66–91% of terms gave at least one false signal across 10 misconceptions (w2-05-30 ✓).
+- **k = 5.** It detects more in sets of 12, but it shows counts of exactly 5, which DfE suppresses (w2-05-31 ✓). A school's DPIA could choose it.
+- **Exact percentages or "n of m".** They make differencing easy (w2-05-34 ✓).
+- **Pooling across schools.** Ruled out by personalisation §5.
+- **Entra as the authorization server for all clients.** It lacks DCR, CIMD and S256 metadata (w2-05-07 ✓).
+- **Building our own authorization server this week.** L effort, high security risk.
+- **The M365 Copilot licence route for students.** About US$216 per student per year (US$18 a month), which is more than our metered estimate.
+- **ChatGPT Edu as the school route.** Nothing we read offers it to UK secondary schools.
+- **Claiming "DfE-compliant" or "non-compliant" for the key.** DfE doesn't address it (w2-05-12 ✓).
 
 ## Panel objections this report answers or leaves open
 
 | Objection | Panel | Status |
 |---|---|---|
-| No lawful chatbot route for under-18s | DPO #1; investor #1; student Q4 | **Partly answered**: truthful wording, Copilot Studio named as the documented route. Access itself is not solved: no tested under-18 route exists. |
-| "Runs inside Gemini" is false | Investor #1 | **Answered**: line removed everywhere (w1-05-09 ✓). |
-| I can't see anything (teacher view) | Teacher #4 | **Partly**: mock-up now, build later. |
-| Recognition, not exam skills | Teacher #1; student #5 | **Partly** for teacher #1 (see [04](04-economics-education.md) recs 6, 8); **open** for student #5: roadmap only, essay features not built. |
-| Quiz instead of answer | Student #1 | **Partly**: compromise proposed, constrained by DfE std 10. |
-| Feels like being watched | Student #4 | **Partly**: "only you see this" wording; teacher view off by default. |
-| Key in URL, plaintext | DPO #2 | **Partly**: hash and revoke proposed (S); OAuth later. |
-| Lesson fit / class focus | Teacher #5 | **Partly**: class focus is later; route and friction answers in recs 3 and 9 above. |
+| No lawful under-18 route | DPO w1 #1; investor w2 #2; student w2 #5 | **Partly**: the documented Microsoft route and its steps are written up. **Open**: nothing is tested |
+| Le Chat can't go in a DPIA | DPO w2 #1 | **Answered**: Le Chat is now "personal only", off pupil-facing slides |
+| Copilot processor chain | DPO w2 #2 | **Partly**: chain stated in deployment step 8; the DPA and the teen-protection check are open |
+| Child holds a long-lived secret; `?key=` | DPO w1 #2, w2 #3 | **Recommended**: header (S), hashing and revoke (S), Entra (M). None built |
+| Teacher view: lawful basis, retention of the new log | DPO w2 #4 | **Partly**: minimised design, a 28-day retention proposal and the privacy line are written. The lawful basis is the school's to name; not built |
+| Teacher screen blind for small sets; completion | Teacher w2 #4 | **Partly**: honest numbers, a pooling proposal (figures not reproduced in repo) and opt-in completion. Moderate misconceptions in one small set stay undetectable |
+| Draft counts vs the mock | Teacher w2 #5; student w2 #3 | **Answered** by the coordinator decision: never shown |
+| "Runs inside Gemini" | Investor w1 #1 | **Answered**: removed |
+| Exam skills beyond MCQs | Teacher w1 #1; student w1 #5 | **Open**: roadmap only |
+| Quiz instead of answer | Student w1 #1 | **Partly**: compromise proposed |
 
 ## Findings
 
 | id | claim (short) | strength | population | outcome | mark |
 |---|---|---|---|---|---|
-| w1-05-01 | claude.ai custom connectors on Free (1 only), Pro, Max, Team, Enterprise (also Ultra); Team needs Owner; auth OAuth / no sign-in / headers | official document | all claude.ai users | policy | ✓ |
-| w1-05-02 | claude.ai consumer users must be 18+; accounts with minor signals disabled; Yoti verification | official document | consumer users; excludes 16–17 | policy | ✓ |
-| w1-05-03 | Commercial terms set no age, "not for consumer use"; minors guidance covers API products only | official document | organisations | policy | ✓ |
-| w1-05-04 | Claude for Teachers: verified US K-12 educators only, not for students; Education guide is for universities | official document | US K-12 staff; universities | policy | ✓ |
-| w1-05-05 | ChatGPT adds custom MCP via Plugins; OAuth or no auth; tools without `readOnlyHint` need confirmation | official document | ChatGPT users | policy | ✓ |
-| w1-05-06 | Full MCP only on Business/Enterprise/Edu; Pro read/fetch only; Business admins publish | official document (snippet) | ChatGPT subscribers | policy | ~ snippet only (403); article slug now 12584461-connecting-custom-mcp-servers-in-chatgpt |
-| w1-05-07 | ChatGPT can't present custom API keys; OAuth 2.1 + PKCE or no auth | official document | n/a | policy | ✓ (now also an OpenAI-managed client certificate) |
-| w1-05-08 | OpenAI Europe terms: 13+, parental permission under 18; under-18s placed in ChatGPT for Teens | official document (snippet) | 13–17, UK/EEA | policy | ~ snippet only (403) |
-| w1-05-09 | Gemini custom apps: 18+, US, personal accounts, English, History on | official document | US adults | policy | ✓ |
-| w1-05-10 | Gemini Enterprise Business: custom MCP, Pre-GA, StreamableHTTP, OAuth or no auth, off by default | official document | business tenants | policy | ✓ |
-| w1-05-11 | Copilot Studio: remote MCP over Streamable; auth none, API key (header or query, user-supplied) or OAuth | official document | M365 / Power Platform tenants | policy | ✓ |
-| w1-05-12 | M365 Copilot federated connectors: Global/AI admin; Entra SSO, OAuth or no auth; Copilot licence per user | official document | M365 tenants | policy | ✓ |
-| w1-05-13 | Copilot Chat for learners 13+, off by default in K-12, admin-enabled; shared-data agents pay-as-you-go | official document | students 13+ in M365 Education tenants | policy | ~ "off by default" rests on MS Learn "Enable Copilot Chat for learners" (3 Sep 2026), not the cited blog |
-| w1-05-14 | Oak ships its MCP server to teachers as a Claude connector; warns against pupil data; Aila has no MCP | official / practitioner | UK teachers | adoption / policy | ~ Oak also ships a ChatGPT plugin (same day) |
+| w1-05-01 | claude.ai custom connectors on Free (1), Pro, Max, Team, Enterprise; OAuth / no sign-in / headers | official document | claude.ai users | policy | ✓ |
+| w1-05-02 | claude.ai consumer users must be 18+ | official document | consumers | policy | ✓ |
+| w1-05-03 | Commercial terms set no age; minors guidance covers API products | official document | organisations | policy | ✓ |
+| w1-05-04 | Claude for Teachers US K-12 staff only; Education framed for universities | official document | US staff; universities | policy | ✓ |
+| w1-05-05 | ChatGPT custom MCP via Plugins; tools without `readOnlyHint` need confirmation | official document | ChatGPT users | policy | ✓ |
+| w1-05-06 | Full MCP only on Business/Enterprise/Edu; Pro read/fetch only | official document (snippet) | ChatGPT subscribers | policy | ~ snippet only |
+| w1-05-07 | ChatGPT can't present custom API keys; OAuth 2.1 + PKCE or no auth | official document | n/a | policy | ✓ |
+| w1-05-08 | OpenAI Europe: 13+, parental permission under 18 | official document (snippet) | 13–17 UK/EEA | policy | ~ snippet only |
+| w1-05-09 | Gemini custom apps: 18+, US, personal accounts | official document | US adults | policy | ✓ |
+| w1-05-10 | Gemini Enterprise Business: custom MCP Pre-GA, OAuth or no auth | official document | business tenants | policy | ✓ |
+| w1-05-11 | Copilot Studio: remote MCP; none, API key or OAuth | official document | M365 tenants | policy | ✓ |
+| w1-05-12 | M365 Copilot federated connectors: admin; Entra SSO, OAuth or no auth | official document | M365 tenants | policy | ✓ |
+| w1-05-13 | Copilot Chat for learners 13+, off by default in K-12 | official document | 13–17 in M365 Education | policy | ~ superseded by w2-05-04 ✓ |
+| w1-05-14 | Oak ships an MCP server to teachers | official / practitioner | UK teachers | adoption | ~ also a ChatGPT plugin |
+| w2-05-01 | Mistral: 13+, parental permission; consumer terms "where required", personal capacity | official document | consumers 13+ | policy | ~ terms are for consumers outside the EEA (not "EU"); help page and terms differ |
+| w2-05-02 | Le Chat: account owner is admin on Free/Pro/Student; none, bearer/basic or OAuth 2.1 DCR; commercial terms on minors | official document | Le Chat users | policy | ✓ (product now called "Work", with "Chat (legacy)") |
+| w2-05-03 | Copilot Studio MCP: Streamable only; none, API key (header or query, user-supplied) or OAuth 2.0 | official document | M365 tenants | policy | ✓ |
+| w2-05-04 | K-12: Copilot Chat off by default for 13–17, blocked under 13; K-12 + NotAdult; A1/A3/A5 | official document | 13–17 in M365 Education | policy | ✓ (en-GB marketing page conflicts) |
+| w2-05-05 | MCP spec: PRM, audience check, no tokens in query, S256; DCR deprecated (2026-07-28) | official document | n/a | policy | ✓ |
+| w2-05-06 | Copilot Credits: 1/2/5/10; reasoning +10 per 1,000 tokens; 125% enforcement; about US$84/student/yr | official document + our estimate | Copilot Studio tenants | cost | ~ US$0.01/credit not on the cited page; per-student cost is our estimate |
+| w2-05-07 | Entra: no DCR for MCP; discovery lacks registration endpoint and S256 metadata | official document | Microsoft tenants | policy | ✓ |
+| w2-05-08 | ChatGPT OAuth: CIMD, DCR or predefined; S256 required; no custom API keys | official document | ChatGPT developers | policy | ✓ |
+| w2-05-09 | claude.ai: sign-in options; OAuth client choices; fixed headers | official document | claude.ai users | policy | ~ published identity is "Recommended", not default |
+| w2-05-10 | RFC 6750: query-string bearer tokens SHOULD NOT be used | official document | n/a | policy | ✓ |
+| w2-05-11 | NCSC: don't use API keys; prefer signed JWTs, short-lived credentials | official document | UK organisations | policy | ✓ |
+| w2-05-12 | DfE cyber standards: unique credentials; MFA for staff, not students; DPIA; URL keys not addressed | official document | England schools | policy | ✓ |
+| w2-05-13 | MC1509805: teen protections from mid-Oct 2026 for Copilot apps and agents "where applicable" | official document (mirror) | 13–17 in Microsoft tenants | policy | ✓ (third-party mirror) |
+| w2-05-14 | ChatGPT for Teachers US staff only; teens auto-placed since 18 Aug 2026; teen MCP undocumented | official document (snippet) | US staff; 13–17 | policy | ~ snippet only |
+| w2-05-20 | ASSISTments Maine RCT: g = 0.18, 0.29 low-prior; 2,850 grade 7 | RCT | US grade 7 | learning | ~ 45 randomised, 43 analysed; g and test name from secondary sources |
+| w2-05-21 | Follow-up: g = 0.22; no significant mediation through homework review | RCT (mediation) | US grade 7 | learning | ~ secondary only |
+| w2-05-22 | NC replication: ES ≈ +0.10 on grade 8 test | RCT | US grades 7–8 | learning | ~ secondary; about 6,000 analysed (9,073 enrolled); WWC: second test n.s. |
+| w2-05-23 | 38-study review: no evidence dashboards improve achievement; participation effects larger | systematic review | mixed | learning / engagement | ~ abstract only |
+| w2-05-24 | 50 teacher-facing dashboards: mostly prototypes, self-report evaluation | systematic review | higher education | adoption | ~ abstract only |
+| w2-05-25 | Lumilo glasses improved learning; more than half the gain from glasses alone | RCT (small) | US middle school | learning | ~ abstract; "more than half" is from a different Hechinger article |
+| w2-05-26 | Teachers consult dashboards 8.3 times a lesson; act through feedback | correlational | Dutch primary | adoption | ~ unverified (papers not opened) |
+| w2-05-27 | Dashboard-prompted feedback balanced task/process | correlational | K-12 | teacher behaviour | ~ comparison is human-prompted, not teacher-initiated only; abstract only |
+| w2-05-28 | Farrington: no alarm with fewer than 5 reports in 4 weeks | analogy (method) | surveillance data | method | ✓ |
+| w2-05-29 | k=6/40%/2-week rule: FA 0.1–1.0%; detects 50% prevalence 27–85% | simulation | synthetic classes 12–25 | prediction | ✓ (rerun matches) |
+| w2-05-30 | Weak spots: 25% background, clustering, CUSUM | simulation | synthetic | prediction | ✓ (CUSUM "x10 cells" is an approximation) |
+| w2-05-31 | DfE suppresses measures for 5 or fewer pupils | official document | England schools | policy | ✓ |
+| w2-05-32 | DfE confidentiality policy: no numeric thresholds, case by case | official document | England | policy | ✓ |
+| w2-05-33 | NHS HES: 1–7 starred, rounding to 5 | official document | England hospital data | policy | ✓ |
+| w2-05-34 | ICO: no single formula; k-anonymity fails against background knowledge | official document | UK | policy | ✓ |
 
-Also cited here; each sits in its home report's table: w1-09-01 ✓ ([09](09-safety-ethics.md)), w1-09-04 ✓ ([09](09-safety-ethics.md)).
+Also cited here; each sits in its home report's table: w2-08-04 ✓ ([business plan](business-plan.md)).

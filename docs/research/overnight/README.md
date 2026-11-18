@@ -9,68 +9,109 @@ Read [`MORNING-BRIEF.md`](MORNING-BRIEF.md) first.
 |---|---|
 | [`MORNING-BRIEF.md`](MORNING-BRIEF.md) | One page: Wednesday's five actions, pitch points, risks, what changed |
 | [`pitch-notes.md`](pitch-notes.md) | Claims we can make (exact wording, finding id, mark), claims to avoid, and an 8-slide deck outline |
-| [`01-competition-fit.md`](01-competition-fit.md) | What the EduX rules ask for, how eduX scores against each criterion, and the defining-half gap |
-| [`02-ai-literacy-assessment.md`](02-ai-literacy-assessment.md) | Our definition, the AILit crosswalk, the validity argument, the reliability maths, and scoring problems on the 05e branch |
-| [`04-economics-education.md`](04-economics-education.md) | Gateway ideas, evidence-based misconceptions, 30 draft pack rows, the MCQ give-away and a content error |
-| [`05-product-features.md`](05-product-features.md) | Which chatbots can reach eduX, at what age and on which plan, and the features the panel asked for |
-| `06-*.md` (simulation) | **Not ready yet.** Synthetic-student simulations of the course learner model; scripts are in `sims/` |
-| [`09-safety-ethics.md`](09-safety-ethics.md) | The DfE product safety standards matrix, the DPO's objections checked against the code, and ranked fixes |
-| [`demo-plan.md`](demo-plan.md) | Video storyboard (Plan A and Plan B), live expo script, checklists, and bugs found while capturing |
-| [`business-plan.md`](business-plan.md) | Market, buyers, pricing, competitors, distribution risk, regulation, evaluation plan |
-| [`judge-panel.md`](judge-panel.md) | Red-team objections from six personas and whether each is answered yet |
+| [`01-competition-fit.md`](01-competition-fit.md) | What the EduX rules ask for, how eduX scores against each criterion, the defining-half gap, and the competition after Gemini's catch-up |
+| [`02-ai-literacy-assessment.md`](02-ai-literacy-assessment.md) | Our definition, the AILit crosswalk, the validity argument, the scoring simulation on the 05e branch, the missing-data rule, and what chatbots get wrong with sources |
+| [`03-learning-science.md`](03-learning-science.md) | Learning-science ideas not yet used: contrasting cases, self-marking, diagram practice, in-session relearning, nudges |
+| [`04-economics-education.md`](04-economics-education.md) | Gateway ideas, evidence-based misconceptions, 30 draft pack rows, the MCQ give-away, a content error, and the 9EC0 mark tally |
+| [`05-product-features.md`](05-product-features.md) | Which chatbots can reach eduX, at what age and on which plan; authentication; the teacher-view spec and its alarm rule |
+| [`06-settings-simulation.md`](06-settings-simulation.md) | Synthetic-student simulations of the course learner model: three bugs, the proposal's settings, the alarms, and the pitch chart |
+| [`09-safety-ethics.md`](09-safety-ethics.md) | The DfE product safety standards matrix, offloading evidence, the DPO's objections checked against the code, and ranked fixes |
+| [`demo-plan.md`](demo-plan.md) | Video storyboard (Plan A and Plan B), live expo script, checklists, bugs to fix before filming, and the pitch chart |
+| [`business-plan.md`](business-plan.md) | Market, buyers, pricing anchored on procurement records, competitors, distribution and cost risk, regulation, evaluation plan |
+| [`judge-panel.md`](judge-panel.md) | Red-team objections from six personas in two waves, the status of each, and open questions for wave 3 |
 | [`findings.csv`](findings.csv) | Every verified finding (✓ or ~), with its home report in `area_report`. ✗ findings are dropped |
-| `sims/` | Simulation scripts, results and demo captures (synthetic students, example pack only) |
-| `work/` | Briefs for scouts, verifiers, panel and writers; wave-1 scout notes, verifier marks and panel files |
+| `sims/` | Course learner-model simulation scripts, results and demo captures (synthetic students, example pack only) |
+| [`sims/literacy/`](sims/literacy/README.md) | The AI-literacy scoring simulation on the 05e branch's learner code: a replica validated against the real code, the grid search and the final check (report 02) |
+| [`sims/teacher/`](sims/teacher/results.md) | The teacher-view misconception alarm: exact binomial and clustering simulation of the flag rule (report 05) |
+| `work/` | Briefs for scouts, verifiers, panel and writers; scout notes, verifier marks and panel files for waves 1 (`w1/`) and 2 (`w2/`) |
 
 Each finding appears in the findings table of one report only: its home report, given in `area_report`. Other reports cite it by id and link to that report.
 
 ## Method
 Each wave runs in four stages:
 - **Scouts.** Six to eight scouts each research one question.
-- **Blind verifiers.** Each claim is checked by one blind verifier, who sees only the claim and its source. Four verifiers ran in wave 1.
+- **Blind verifiers.** Each claim is checked by one blind verifier, who sees only the claim and its source.
 - **Red team.** A panel of six personas attacks the product.
 - **Editor.** An editor rewrites the reports, the pitch notes and this index.
 
-Marks: ✓ confirmed against the source; ~ broadly supported, with a stated problem; ✗ dropped. Wave 1 produced 97 findings: 67 ✓, 30 ~ and 0 ✗.
+Marks: ✓ confirmed against the source; ~ broadly supported, with a stated problem; ✗ dropped.
+
+| | findings | ✓ | ~ | ✗ |
+|---|---|---|---|---|
+| Wave 1 (verifier sets A–D, I) | 109 | 75 | 34 | 0 |
+| Wave 2 (verifier sets E–H, J) | 121 | 63 | 58 | 0 |
+| **Total** | **230** | **138** | **92** | **0** |
+
+The wave-1 morning brief counted 97 findings. The 12 simulation findings (w1-06) were verified after it was written.
 
 Labels used throughout: "our choice" marks a number we chose. "Simulation: synthetic students" marks a simulated result. Neither is evidence about real students.
 
+Panel status words (from wave 2): **answered** = a fix is built or a document answers it; **recommended** = a fix is recommended but not built; **partly**; **open**.
+
 ## Methods used so far
-| question area | wave 1 methods | not reached in wave 1 |
-|---|---|---|
-| 01 Competition fit | The official EduX site (HTML and its scripts); Luma listings and organiser galleries; web search; framework sites; repo and git inspection | The Challenge 1 brief (renders only in a browser); the Oceania deck (needs sign-in); the Monash Friction page (403) |
-| 02 Defining and assessing AI literacy | Primary framework documents (AILit, UNESCO, Long & Magerko, CAR, Ofqual, DfE), read from PDFs; OpenAlex and arXiv; psychometric validation studies and one exploratory meta-analysis; first-principles psychometrics (Spearman–Brown, attenuation, Fisher z); a BKT simulation; a code review of the 05e branch | Full texts of AILIT-S, AILQ and Chiu et al. (abstracts only); JCQ detail (image-only PDF) |
-| 04 Economics education | Primary research PDFs (Ferraro & Taylor, TUCE-4, Shanahan et al.); nine 9EC0 examiner reports, summarised only; citation chaining from the Economics Network handbook; cross-field concept inventories and stock–flow studies; our own count of the demo captures | TEL-4 high-school data (unreadable fonts); Busom & Lopez-Mayan full text |
-| 05 Product features | Vendor help centres and terms (Anthropic, OpenAI, Google, Microsoft, Oak); web search limited to vendor domains; search snippets where a page returned 403; repo reading | Live tests on ChatGPT, Copilot Studio or any school tenant (read-only rule) |
-| 06 Simulation | A synthetic-student harness running the real `tutor_turn` code on the example pack (`sims/`) | In progress; report not ready |
-| 07 Demo (→ `demo-plan.md`) | The product run offline (`capture_demo.py`, `check_mcp.py`); multimedia-learning meta-analyses (abstracts and secondary sources); practitioner guides (YC, Paul Graham, hackathon guides); cross-field checklists (surgery, aviation) | claude.ai message limits (needs a login); an end-to-end run of 05e in claude.ai |
-| 08 Market and business (→ `business-plan.md`) | Official statistics (Ofqual, DfE capacity, CFR spend data); the DfE Technology in Schools survey; gov.uk buying guidance; competitors' public pages and terms; first-principles MDES maths | UK-wide JCQ entries; Edexcel's share; what schools actually pay competitors |
-| 09 Safety and ethics | DfE standards and guidance (gov.uk); vendor terms; a code read of `edux/` and `text/` against the DPO's objections | KCSIE detail for components; NCSC guidance on keys in URLs |
-| All areas | Red-team panel: investor, teacher, AI-literacy researcher, DPO, student, EduX judges | — |
+| question area | wave 1 methods | wave 2 methods added | still not reached |
+|---|---|---|---|
+| 01 Competition fit | The official EduX site (HTML and its scripts); Luma listings and organiser galleries; web search; framework sites; repo and git inspection | No new scout. Consistency edit from 02, 05 and the business plan | The Challenge 1 brief (renders only in a browser); the Oceania deck (needs sign-in); the Monash Friction page (403) |
+| 02 Defining and assessing AI literacy | Primary framework documents (AILit, UNESCO, Long & Magerko, CAR, Ofqual, DfE); OpenAlex and arXiv; psychometric validation studies; first-principles psychometrics; a BKT simulation; a code review of the 05e branch | **Simulation of the 05e branch** (a replica validated against the real learner code, a grid search, an N = 1,000 check, lenient-labelling stress test); **psychometric missing-data literature** (NAEP technical documentation; PISA practice via Robitzsch 2021); **LLM-evaluation literature** (citation audits, sycophancy and self-correction papers, arXiv and PMC full texts); **journalism fact-checking taxonomy** (Wardle, Tow Center/CJR, EBU); **survey grey literature** (NLT, Ofcom, OUP, DfE PPLV, Pew, Internet Matters) | OECD PISA technical reports (403); real per-chatbot label error rates; per-host trigger rates |
+| 03 Learning science (new in wave 2) | — | OpenAlex abstracts by DOI; meta-analyses on contrasting cases, self-grading, drawing, relearning, productive failure, generation and implementation intentions; code reads of `plan.py` and `service.py`; cross-field links: psychometrics/CAT exposure control, game design, behavioural economics, surgical checklists | EEF pages (403, secondary only); several binary PDFs |
+| 04 Economics education | Primary research PDFs (Ferraro & Taylor, TUCE-4, Shanahan et al.); nine 9EC0 examiner reports, summarised only; citation chaining; cross-field concept inventories; our count of the demo captures | **Exam mark-scheme tallies** (June 2025 9EC0 mark schemes, point vs level marks, numbers only); **CS-education Parsons problems**; writing-to-learn meta-analyses; ERIC and OpenAlex abstracts | TEL-4 high-school data; whether chain tasks raise levelled essay marks |
+| 05 Product features | Vendor help centres and terms; web search limited to vendor domains; repo reading | Vendor admin docs (Copilot Studio, Entra, Microsoft message centre, Mistral); standards (IETF RFC 6750, NCSC, DfE cyber standards, MCP authorization spec); a code check of the `mcp` SDK; learning-analytics dashboard reviews; **epidemiological surveillance analogy and simulation** (Farrington's minimum-count rule; exact binomial and beta-binomial runs in `sims/teacher/`); **disclosure-control standards** (DfE, NHS HES, ICO, ONS) | Live tests on Copilot Studio or any school tenant (read-only rule); OpenAI help pages (403); the pooling calculation is not saved in the repo |
+| 06 Simulation | A synthetic-student harness running the real `tutor_turn` code on the example pack (`sims/`) | The report was written after the wave-1 runs (findings w1-06): deterministic bug probes, detector and decay sweeps, a partial rerun by the verifier | `sensitivity.py` not run; a full 9EC0 pack |
+| 07 Demo (→ `demo-plan.md`) | The product run offline; multimedia-learning meta-analyses; practitioner guides; cross-field checklists | No new scout. Consistency edit from 02 and 06 | An end-to-end run of 05e in claude.ai |
+| 08 Market and business (→ `business-plan.md`) | Official statistics; the DfE Technology in Schools survey; gov.uk buying guidance; competitors' public pages; first-principles MDES maths | **Procurement records via Find a Tender** (OCDS API) and the Contracts Finder API; the Ofqual Register API; vendor announcements (Google, Anthropic, OpenAI, Khan); the European Commission AI-literacy Q&A | What schools pay for Up Learn, Seneca or Eedi; the share of sixth forms with learner Copilot on |
+| 09 Safety and ethics | DfE standards and guidance; vendor terms; a code read of `edux/` and `text/` | **Survey grey literature** shared with 02; the Bastani RCT full text (PMC); retraction and preprint status checks | KCSIE detail for components; the Internet Matters and Ofcom PDFs (blocked or binary) |
+| All areas | Red-team panel: six personas | Red-team panel: six personas in three paired files | — |
 
 ## Open questions
-Merged from the six panels ([`judge-panel.md`](judge-panel.md)). Status: **open** = not yet researched; **in progress** = partly covered, with work under way; **done** = a finding answers it; **blocked** = needs a human or access we don't have.
+
+### Wave-1 questions, with wave-2 status
+Status: **done** = a finding or report answers it; **partly** = part answered; **open** = not yet researched; **blocked** = needs a human or access we don't have.
 
 | # | question | raised by | status |
 |---|---|---|---|
-| 1 | Can UK 16–17-year-olds use a custom remote MCP server today, and through which product and setting (ChatGPT Edu, ChatGPT teen accounts, Copilot Chat for learners, a school-managed tenant)? Under what DPA and data residency? | investor, DPO | in progress (05 maps the documented routes; none tested; the Anthropic question needs a human) |
-| 2 | Does a per-student key in a URL meet the DfE security standard and NCSC guidance? What is the minimum OAuth that Copilot Studio and claude.ai Team accept? | DPO | open |
-| 3 | What does the Challenge 1 brief say (Desired Outcomes, Target Users), and does eduX's scope match it? | judges | blocked (needs a human to paste the brief) |
-| 4 | Can a 75-second literacy segment run end to end on the merged 05e build in claude.ai without a retake? What breaks? | judges | open (Wednesday's 18:00 gate) |
-| 5 | Which BKT settings for literacy parts (prior, learn rate, slip, decay) keep a simulated student without the skill below "secure" under 15% label noise? | judges, researcher, student | open (w1-02-32 ✓ simulated only the current settings) |
-| 6 | How do embedded and stealth assessments treat non-response without scoring disengagement as low skill? | researcher, student | open (02 rec 4 proposes "missing"; literature not searched) |
-| 7 | How accurately do Claude and ChatGPT self-label `pushback_changed`, `conflict_flagged` and `web_access` across about 20 scripted transcripts? | researcher | open |
-| 8 | In chatbots with web search, what share of bad citations are retrieval misattribution rather than invention? | researcher | open |
-| 9 | Do question-feature checklists predict better verification, or are they rituals? | researcher | open |
-| 10 | What share of UK 16–18-year-olds' chatbot use is homework help rather than factual lookup? | student | open |
-| 11 | For each 9EC0 paper, what share of marks is point-marked and what share level-marked? Which skills do the examiner reports link most to lost marks? | teacher | open |
-| 12 | Do server-scorable tasks (ordering a chain of reasoning, finding the missing link, choosing the diagram shift) predict or improve extended-writing marks? Does MCQ retrieval improve essay marks compared with essay practice? | teacher, student | open |
-| 13 | In voluntary tutoring tools, does question-before-answer cut return use compared with answer-then-check? | student | open |
-| 14 | How long does a teacher take to review one part's rows, and how often are drafted economics corrections wrong? How long does a full 9EC0 pack take? | teacher, investor | open (one error found in nine parts; no rate) |
-| 15 | What do UK economics teachers want from a teacher view? What is the smallest report within the privacy checklist in personalisation.md §5? | teacher, judges | open |
-| 16 | Do visible usage stats, and the chance a teacher sees them, change teenagers' honesty or make them switch tools? | student | open |
-| 17 | How long do comparable UK edtech providers keep pupil records after a pupil leaves? | DPO | open |
-| 18 | Under KCSIE 2026 and the DfE standards, what must a component do with a disclosure it processes but doesn't store? | DPO | open |
-| 19 | Did any host's study mode announce cross-session progress per topic in 2026? | investor | open |
-| 20 | What do UK schools actually pay for Up Learn, Eedi or Seneca Premium (e.g. Contracts Finder)? | investor | open (list prices only: w1-08-07 ✓) |
-| 21 | Who buys AI-literacy assessment in the UK and EU (exam boards, AI Act Art. 4 deployers), and at what price? | investor | open |
+| 1 | Can UK 16–17-year-olds use a custom remote MCP server today, and through which product and setting? Under what DPA? | investor, DPO | **partly**: Copilot Studio in a K-12 Microsoft 365 tenant is documented (w2-05-03 ✓, w2-05-04 ✓); untested; the DPA and teen protections for custom agents are open (wave-3 Q4–5) |
+| 2 | Does a per-student key in a URL meet the DfE security standard and NCSC guidance? What is the minimum sign-in that Copilot Studio and claude.ai accept? | DPO | **done** in [05](05-product-features.md): it conflicts with IETF, NCSC and the MCP spec; DfE is silent (w2-05-05 ✓, -10 ✓, -11 ✓, -12 ✓). The header fix is not built |
+| 3 | What does the Challenge 1 brief say, and does eduX's scope match it? | judges | **blocked**: needs a human to paste the brief |
+| 4 | Can a 75-second literacy segment run end to end on the merged 05e build in claude.ai without a retake? | judges | **open**: Wednesday's 18:00 gate |
+| 5 | Which BKT settings for literacy parts keep a student without the skill below "secure" under label noise? | judges, researcher, student | **done** (simulation: synthetic students): three settings, no code ([02](02-ai-literacy-assessment.md) rec 2; w2-02-02 ✓, -08 ✓) |
+| 6 | How do embedded assessments treat non-response without scoring disengagement as low skill? | researcher, student | **done**: treat ignored tasks as missing (NAEP, PISA; w2-02-11 ✓, -12 ~). Not built |
+| 7 | How accurately do Claude and ChatGPT self-label `pushback_changed`, `conflict_flagged` and `web_access` across about 20 scripted transcripts? | researcher | **open**: audit designed ([02](02-ai-literacy-assessment.md) rec 19), not run |
+| 8 | In chatbots with web search, what share of bad citations are misattribution rather than invention? | researcher | **partly**: with search on, about a quarter to a third of citations or statements are unsupported, with few invented links (w2-02-33 ~, -34 ✓); no figure for claude.ai on UK data |
+| 9 | Do question-feature checklists predict better verification, or are they rituals? | researcher | **open**: only indirect evidence (w2-09-15 ~) |
+| 10 | What share of UK 16–18-year-olds' chatbot use is homework help rather than factual lookup? | student | **done**: among monthly users aged 16–18, 70.4% homework help, 69.7% asking questions, 45.5% summarising (w2-09-01 ~) |
+| 11 | For each 9EC0 paper, what share of marks is point-marked and what share level-marked? | teacher | **done**: about 34% point-marked, 66% level-marked, 3.5% MCQ (w2-04-02 ✓) |
+| 12 | Do server-scorable tasks (chains, missing links, diagram shifts) predict or improve extended-writing marks? | teacher, student | **partly**: cross-field evidence only (Parsons problems, writing-to-learn; w2-04-04 ~ to -09 ~); no economics test |
+| 13 | In voluntary tutoring tools, does question-before-answer cut return use compared with answer-then-check? | student | **open** |
+| 14 | How long does a teacher take to review one part's rows, and how often are drafted corrections wrong? | teacher, investor | **open** (one error in nine parts; no rate) |
+| 15 | What do UK economics teachers want from a teacher view? What is the smallest report within the privacy checklist? | teacher, judges | **partly**: one-screen spec, alarm rule and coordinator decision in [05](05-product-features.md); no teacher asked |
+| 16 | Do visible usage stats, and the chance a teacher sees them, change teenagers' honesty or make them switch tools? | student | **open** |
+| 17 | How long do comparable UK edtech providers keep pupil records after a pupil leaves? | DPO | **open**: [09](09-safety-ethics.md) rec 9 proposes our own default; comparable providers not checked |
+| 18 | Under KCSIE 2026 and the DfE standards, what must a component do with a disclosure it processes but doesn't store? | DPO | **open**: [09](09-safety-ethics.md) recs 13, 15, 19 propose a signpost and a DSL route; KCSIE not checked |
+| 19 | Did any host's study mode announce cross-session progress per topic in 2026? | investor | **done**: yes, Gemini (w2-08-01 ✓, -02 ✓); none found for ChatGPT (w2-08-03 ✓) |
+| 20 | What do UK schools actually pay for Up Learn, Eedi or Seneca Premium? | investor | **partly**: procurement records for Sparx and Century (w2-08-06 ✓, -07 ✓); none found for Up Learn, Eedi or Seneca |
+| 21 | Who buys AI-literacy assessment in the UK and EU, and at what price? | investor | **partly**: Article 4 requires no measurement (w2-08-09 ✓), so no compliance buyer; no other buyer named |
+
+### Wave-3 questions (from [`judge-panel.md`](judge-panel.md))
+All are new in wave 2, so most are **open**. Tags: [I] investor, [D] DPO, [J] judges, [R] researcher, [T] teacher, [S] student.
+
+| # | question | raised by | status |
+|---|---|---|---|
+| 1 | How many English sixth forms and colleges run Microsoft 365 A3/A5 with learner Copilot enabled for 13–17s? | I | open |
+| 2 | Does an MCP tool call in Copilot Studio bill as an agent action, and does an Agent Builder agent avoid it? | I, J | open (needs a human to ask Microsoft) |
+| 3 | Have Gemini study notebooks reached UK under-18 school accounts? | I | open |
+| 4 | Do Microsoft's 13–17 Copilot protections apply to Copilot Studio custom agents and their MCP tools? | D | open |
+| 5 | Is there a DfE or ICO template DPA for an MCP plug-in behind a school's Microsoft 365 tenant? | D | open |
+| 6 | What lawful basis do UK schools use for pupil-level analytics shared with teachers? | D | partly: the coordinator decision narrows it to opt-in per-student completion and banded class AI literacy |
+| 7 | Do any trusts or awarding bodies buy AI-literacy assessment, and at what price? | I | open |
+| 8 | What do the brief's Desired Outcomes say about who uses the assessment? | J | blocked: needs a human to paste the brief |
+| 9 | How often does claude.ai with search on misattribute citations on UK economic data? | J | open |
+| 10 | What is per-host agreement between `source_conflict` / `pushback_changed` and a script, across five scripted failure modes? | R | open (audit designed: [02](02-ai-literacy-assessment.md) rec 19) |
+| 11 | How many literacy moments does a typical student generate per week, per host? | R | open |
+| 12 | Do NLT's checking items have a published base and wording that allow the 58.5% to be quoted correctly? | R | partly: the verifier found the base (those who had heard of generative AI; w2-09-02 ✓); the item wording is not checked |
+| 13 | Do 16–18s disclose pasted AI text less when disclosing it triggers a task? | S | open |
+| 14 | Across past 9EC0 8- and 12-markers, how often would a monopsony or "depends on elasticity" answer conflict with a C1 or C4 key? | T | open |
+| 15 | Do faded-chain tasks raise blind-levelled analysis marks on economics essays? | T | open |
+| 16 | How long does reviewing one C4 item take, and how often is its key disputed? | T | open |
+| 17 | Can chatbot image input reliably label a photographed diagram's shift and direction for server scoring? | S | open |
+| 18 | What flag rate does the alarm rule give if pooled across 2–4 sets of 10–16 students? | T | partly: [05](05-product-features.md) has a calculation, but it is not reproduced in the repo |
+| 19 | Does a skippable within-session re-ask keep accuracy gains without cutting return use? | S | open |

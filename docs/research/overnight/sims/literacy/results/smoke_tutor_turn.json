@@ -1,0 +1,126 @@
+{
+ "A": {
+  "turns": [
+   [
+    "answer_with_sources",
+    "literacy_task(ask)"
+   ],
+   [
+    "teach_point",
+    "ask_mcq"
+   ],
+   [
+    "answer_brief",
+    "reask(None)"
+   ],
+   [
+    "answer_brief",
+    "reask(ask)"
+   ],
+   []
+  ],
+  "evidence": [
+   {
+    "ts": "2026-09-07T17:00:00+00:00",
+    "part_id": "ail_ask",
+    "evidence_type": "ail_question",
+    "score": 0.25,
+    "check_id": null
+   },
+   {
+    "ts": "2026-09-07T17:12:00+00:00",
+    "part_id": "ail_ask",
+    "evidence_type": "ail_task",
+    "score": 0.0,
+    "check_id": null
+   }
+  ],
+  "driver_predicts": "ail_question 0.25 on ail_ask; then ail_task 0.0 on ail_ask once re-asked and not done (turn 2 if the plan had room for the re-ask, else after max_waits)"
+ },
+ "B": {
+  "turns": [
+   [
+    "answer_with_sources",
+    "literacy_task(verify)"
+   ]
+  ],
+  "evidence": [
+   {
+    "ts": "2026-09-09T17:00:00+00:00",
+    "part_id": "ail_ask",
+    "evidence_type": "ail_question",
+    "score": 0.5,
+    "check_id": null
+   }
+  ],
+  "driver_predicts": "ail_question 0.5 (wrong at correct_share 0.67); a verify task"
+ },
+ "C": {
+  "turns": [
+   [
+    "answer_with_sources",
+    "literacy_task(verify)"
+   ],
+   [
+    "teach_point",
+    "ask_mcq"
+   ]
+  ],
+  "evidence": [
+   {
+    "ts": "2026-09-11T17:00:00+00:00",
+    "part_id": "ail_ask",
+    "evidence_type": "ail_question",
+    "score": 0.75,
+    "check_id": null
+   },
+   {
+    "ts": "2026-09-11T17:03:00+00:00",
+    "part_id": "ail_verify",
+    "evidence_type": "ail_task",
+    "score": 0.5,
+    "check_id": null
+   }
+  ],
+  "driver_predicts": "ail_question 0.75; ail_task 0.5 on ail_verify"
+ },
+ "D": {
+  "turns": [
+   [
+    "answer_with_sources",
+    "literacy_task(verify)"
+   ],
+   [
+    "teach_point",
+    "ask_mcq"
+   ],
+   [
+    "answer_brief",
+    "reask(None)"
+   ],
+   [
+    "reask(verify)"
+   ],
+   [
+    "ask_mcq"
+   ]
+  ],
+  "evidence": [
+   {
+    "ts": "2026-09-13T17:00:00+00:00",
+    "part_id": "ail_ask",
+    "evidence_type": "ail_question",
+    "score": 0.75,
+    "check_id": null
+   },
+   {
+    "ts": "2026-09-13T17:12:00+00:00",
+    "part_id": "ail_verify",
+    "evidence_type": "ail_task",
+    "score": 0.0,
+    "check_id": null
+   }
+  ],
+  "driver_predicts": "ail_question 0.75; ail_task 0.0 on ail_verify after the re-ask"
+ }
+}
