@@ -4,7 +4,7 @@ Waves 1, 3 and 5 (overnight 17–18 Nov 2026). Wave 2 added no 06 scout note.
 
 **Sources.**
 - **Wave 1.** Scout notes `work/w1/w1-06.md`, blind verifier marks `work/w1/verify-I.json` (w1-06-*), the panel files, and the simulation outputs in [`sims/results/`](sims/README.md). The verifier reran the probes and recomputed every number from `results/metrics.csv`. A partial rerun (seeds 1–2, all variants, both scenarios, 42 runs) reproduced the stored rows exactly.
-- **Wave 5.** Scout note `work/w5/w5-06g.md` (red-teaming the scoring rules as a mechanism), scripts and results in [`sims/gaming/`](sims/gaming/README.md). Integration verifier S re-measured the counters at N = 30 (gamers) and N = 100 (honest students) on the stacked tree (`work/w5/verify-S.json`); where its numbers differ from the scout's, **verifier S's numbers are used**. Wave 6's fairer counters (0009b, 0010b) come from `work/w6/w6-fix-counters.md`, **verification pending**.
+- **Wave 5.** Scout note `work/w5/w5-06g.md` (red-teaming the scoring rules as a mechanism), scripts and results in [`sims/gaming/`](sims/gaming/README.md). Integration verifier S re-measured the counters at N = 30 (gamers) and N = 100 (honest students) on the stacked tree (`work/w5/verify-S.json`); where its numbers differ from the scout's, **verifier S's numbers are used**. Wave 6's fairer counters (0009b, 0010b) come from `work/w6/w6-fix-counters.md`, **verified in simulation, wave 6**.
 - **Wave 3.** Scout note `work/w3/w3-06.md` (the decay-clock asymmetry on economics parts), blind verifier marks `work/w3/verify-M.json` (w3-06-*), and the scripts and results in [`sims/decay/`](sims/decay/README.md).
   - The verifier recomputed the crossing times by hand and reran `cases.py`; `results/cases.md` came out byte-identical. It also reran the full 960-student population; `population.md` came out byte-identical.
   - Four of its marks are ~, and their corrections are applied below: the review-gap window (-02), the snapshot range (-04), the nudge case (-06) and the cap's effect (-09).
@@ -68,7 +68,7 @@ Ranks 1–8 are the wave-1 list, unchanged (other reports cite recs 1–3 and 8)
 | 12 | **Re-run the 05e How AI works AUC (w2-02-05 ~) with fix (c).** It should improve by construction, but it is untested. This report tests economics parts on `main` only. | sims | S | maybe | open |
 | 13 | **Store the prior at first touch** (a `p_floor` column in `part_state`, set in `_load_state`), so fix (c) stays rebuild-stable when difficulty changes or `w_cross > 0`. It needs a migration. Until then keep `difficulty.w_cross = 0` (it is 0 today) and don't edit teacher difficulty without a rebuild. | build | M | no | w3-06-10 ✓ |
 | 14 | **Latent: hard parts start below the candidate band.** A difficulty-0.7 part starts at prior 0.24, below `queue_band` 0.30, so `learner.candidates()` would never offer it untouched. It isn't live today. Fix it before wiring `candidates()` in, e.g. band floor = `min(prior)`. | build | S | no | w3-06-07 ✓ |
-| 15 | **Wave 5–6: apply 0009b (dead-link report cap) and 0010b (show-then-pick cap)**, not 0009/0010 ([build list](wednesday-build-list.md) steps 5d–5e). Keep 0009b's text line: never tick what only repeats the chatbot's reply. | build | S | yes (verification pending) | w5-06g-01 ~, -03 ~; w6 notes |
+| 15 | **Wave 5–6: apply 0009b (dead-link report cap) and 0010b (show-then-pick cap)**, not 0009/0010 ([build list](wednesday-build-list.md) steps 5d–5e). Keep 0009b's text line: never tick what only repeats the chatbot's reply. | build | S | yes (verified in simulation, wave 6) | w5-06g-01 ~, -03 ~; w6 notes |
 | 16 | **Pitch: never "gaming-proof".** Use only the line that matches the build (pitch-notes). | pitch | S | yes | w5-06g-01 ~, -04 ~ |
 | 17 | **Record a skip when a new task replaces an unanswered Verify task** (`service._literacy_followup`, 1 line, untested). Until then, no claim that skips are shown. | build | S | optional | w5-06g-07 ~ |
 | 18 | **Spread the key's length rank** across each part's options in the pack (an ingest check, or distractors both longer and shorter than the key). | pack, ingest | M | no | w5-06g-05 ~ |
@@ -174,8 +174,8 @@ Source: w1-06-12 ~; the verifier says the main run's shares differ from the pilo
 ### Exploits, ranked (gain × ease × visibility at the expo, each 1–3; our scoring)
 | rank | exploit | what it gets (before counters) | counter | after the counter |
 |---|---|---|---|---|
-| 1 | **"The link is broken"** (L1) | Verify secure for 100% of zero-skill students in 2 messages; the chatbot praises it (w5-06g-01 ~) | 0009b: reports cap Verify at developing until one real check | 0% secure (shown developing); verification pending |
-| 2 | **"Just show me", then pick the option that repeats it** (C3) | 9/9 course parts secure (w5-06g-03 ~) | 0010b: a pick straight after a show or hint can't make a part secure | 0 parts; verification pending |
+| 1 | **"The link is broken"** (L1) | Verify secure for 100% of zero-skill students in 2 messages; the chatbot praises it (w5-06g-01 ~) | 0009b: reports cap Verify at developing until one real check | 0% secure (shown developing); verified in simulation, wave 6 |
+| 2 | **"Just show me", then pick the option that repeats it** (C3) | 9/9 course parts secure (w5-06g-03 ~) | 0010b: a pick straight after a show or hint can't make a part secure | 0 parts; verified in simulation, wave 6 |
 | 3 | **Drop the longest and shortest options** (C2m) | 58% right vs about 31% chance; 4.4 false-secure parts (w5-06g-05 ~) | 0010b (secure); pack fix for the cue itself (later) | 0 parts secure; the 58% cue remains |
 | 4 | **Restate the chatbot's reply as a check** (L2/L3) | Verify secure under a literal labeller, never under a skeptical one (w5-06g-06 ~) | text line (in 0009b): never tick what only repeats your reply or its citation | depends on the real chatbot; untested |
 | 5 | Paste a 4-feature question template (L4) | Ask secure in about 10 min | none: writing the features is the Ask skill | — |
@@ -191,8 +191,8 @@ Verifier S's re-measurements replace the scout's where they differ (honest L0 65
 |---|---|---|---|---|
 | 0009 (wave 5): a bare or a,d-ticked report is no evidence | L1 100% → 0% Verify secure | L0 65% → 59% (N = 100) | 6 of 8 takes fall to Verify **new**; clashes with 0007's ticking rule | ~ (w5-fix-counter-c2); **superseded** |
 | 0010 (wave 5): immediate evidence capped below secure | C3 9 → 0; C2m 4.4 → 2.2; C1 57% → 17% | **3.6 → 1.4 parts secure in a session**; first secure 2.4 → 12.0 min; +7 days 2.5 → 0.9 | unchanged; open-only failers lose the stop offer | ~ (w5-fix-counter-c1); **superseded** |
-| **0009b (wave 6):** reports count, but can't lift Verify past developing until one real check | L1, L1d 100% → 0% (developing) | L0 64% → 62% (N = 300, SE about 3 points) | all 8 developing (0.740) | recommended, **verification pending** |
-| **0010b (wave 6):** a *picked* answer straight after a show or hint can't make a part secure; a *written* one can; a prerequisite boost never makes a part secure | C3, C3t, C2m, C1 → 0 parts | 3.6 → **3.4** parts; +7 days 2.5 (unchanged) | unchanged; open-only failer's stop offer at turn 19 | recommended, **verification pending** |
+| **0009b (wave 6):** reports count, but can't lift Verify past developing until one real check | L1, L1d 100% → 0% (developing) | L0 64% → 62% (N = 300, SE about 3 points) | all 8 developing (0.740) | recommended, **verified in simulation, wave 6** |
+| **0010b (wave 6):** a *picked* answer straight after a show or hint can't make a part secure; a *written* one can; a prerequisite boost never makes a part secure | C3, C3t, C2m, C1 → 0 parts | 3.6 → **3.4** parts; +7 days 2.5 (unchanged) | unchanged; open-only failer's stop offer at turn 19 | recommended, **verified in simulation, wave 6** |
 
 A settings-only alternative to 0010 (raising the immediate guess to 0.6) left C3 at 7 parts: rejected.
 

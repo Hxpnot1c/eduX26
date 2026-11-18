@@ -8,7 +8,7 @@ Waves 1, 2, 3 and 5. Sources:
   - `work/w2/w2-09.md`: how UK 16–18s use chatbots, and new literacy moments. Marks in `verify-E.json`.
 - **Wave 3 scout note.** `work/w3/w3-02e.md`: a ready-to-run label-agreement study, its sample-size maths and a spring 2027 pilot plan. Marks in `verify-O.json`, ids w3-02e-01 to -14. The protocol, the 40 draft messages and the key are in the appendix file [02a](02a-label-agreement-protocol.md).
 - **Wave 3 demo rehearsal.** `work/w3/w3-07.md` drove the 05e branch with the scripted demo. Three Verify scoring bugs from it are added here, marked in `verify-P.json` (w3-07-c5 ✓, w3-07-c7 ✓).
-- **Wave 5.** Gaming red team `work/w5/w5-06g.md` (home: [06](06-settings-simulation.md)); label dry run `work/w5/w5-02s.md` and proxy labels `w5-02r-labels.md` (home: [02a](02a-label-agreement-protocol.md) §4); labelling fixes `w5-fix-labels.md`; integration verifier S (`verify-S.json`; home: [build list](wednesday-build-list.md)). Wave 6's counters 0009b/0010b: `work/w6/w6-fix-counters.md`, verification pending.
+- **Wave 5.** Gaming red team `work/w5/w5-06g.md` (home: [06](06-settings-simulation.md)); label dry run `work/w5/w5-02s.md` and proxy labels `w5-02r-labels.md` (home: [02a](02a-label-agreement-protocol.md) §4); labelling fixes `w5-fix-labels.md`; integration verifier S (`verify-S.json`; home: [build list](wednesday-build-list.md)). Wave 6's counters 0009b/0010b: `work/w6/w6-fix-counters.md`, verified in simulation, wave 6.
 - **Panels.** Wave 1: researcher and student. Wave 2: `panel-judges-researcher.md` and `panel-teacher-student.md`.
 - **Branch.** `build/05e-literacy-coaching`, read-only in `/home/vishnu/edux26`.
 
@@ -48,7 +48,7 @@ Marks: ✓ confirmed; ~ broadly supported, with the stated problem. Findings mar
   - Show the skip count beside the level.
   - Reliability still needs about 12 moments per skill (w1-02-31 ✓). So claim a validity argument and "embedded assessment", not a validated test.
 
-- **Wave 5: Verify could be gamed, and the fix is a cap, not a penalty.** Two bare "the link is broken" reports made Verify secure for 100% of simulated zero-skill students; honest partial-skill students reached secure 65% of the time (w5-06g-01 ~, verifier S). Wave 6's 0009b lets a report count as checking but caps Verify at developing until one real check: gamers 0%, honest 62% vs 64% (verification pending). Never claim "gaming-proof".
+- **Wave 5: Verify could be gamed, and the fix is a cap, not a penalty.** Two bare "the link is broken" reports made Verify secure for 100% of simulated zero-skill students; honest partial-skill students reached secure 65% of the time (w5-06g-01 ~, verifier S). Wave 6's 0009b lets a report count as checking but caps Verify at developing until one real check: gamers 0%, honest 62% vs 64% (verified in simulation, wave 6). Never claim "gaming-proof".
 - **Wave 5: label reliability is still unmeasured.** The only agreement numbers are a Claude proxy against a Claude-written key: a pipeline test, not agreement evidence (w5-02s-01 ~). It showed which definitions are unclear, and 0007 now gives the chatbot the rules ([02a](02a-label-agreement-protocol.md) §4).
 - **Wave 5: a request_type bug scored Verify answers as failed Ask questions.** A Verify answer labelled `research` recorded Ask 0/4 (w5-02s-02 ✓). Patch 0007 tells the chatbot to label such answers `other`; patch 0008 guards the server (Ask new 0.256 → developing 0.528 in the mislabelled Plan A take; w5-fix-guard-1 ✓).
 
@@ -91,7 +91,7 @@ Marks: ✓ confirmed; ~ broadly supported, with the stated problem. Findings mar
 | 26 | **Done in wave 3: the decay-clock asymmetry on economics parts.** It does invert rankings on `main`; the fix recommended there is decay towards the prior plus a "not yet shown" cap ([06](06-settings-simulation.md)). Still open: re-run the How AI works AUC with that fix on the 05e branch. | sims | S | maybe | w2-02-05 ~; w3-06-01 ✓, w3-06-08 ✓ |
 | 27 | **A "feedback" moment.** When the student asks for feedback on their writing, ask "which suggestion would you reject, and why?". This needs a new mark-point design. | design | M | no | w2-09-01 ~ |
 | 28 | **Wave 5: apply 0007 + 0008 (labelling rules, Ask guard)** and confirm the `source_conflict` rule (Option A). | build, text | S | yes | w5-02s-02 ✓, w5-fix-guard-1 ✓, w5-fix-labels-1 ✓ |
-| 29 | **Wave 5–6: apply 0009b, not 0009**, keeping its text line (never tick what only repeats the reply). Pitch: "a reported dead link counts as checking, but secure needs a real check"; never "gaming-proof". | build, pitch | S | yes (verification pending) | w5-06g-01 ~, w5-fix-counter-c2 ~ |
+| 29 | **Wave 5–6: apply 0009b, not 0009**, keeping its text line (never tick what only repeats the reply). Pitch: "a reported dead link counts as checking, but secure needs a real check"; never "gaming-proof". | build, pitch | S | yes (verified in simulation, wave 6) | w5-06g-01 ~, w5-fix-counter-c2 ~ |
 | 30 | **Fix the 02a key and rater sheet before the study** (§4.3 there), and analyse with `sims/agreement/analyse.py`. | study | S | yes, if the study runs | w5-02s-01 ~, -03 ~ |
 
 ### Settings snippet (our choice, from the simulation; not an edit)
@@ -404,7 +404,7 @@ Full exploit ranking and counters: [06](06-settings-simulation.md), mechanism-de
 
 | Verify exploit | before | counter | after | status |
 |---|---|---|---|---|
-| "The link is broken", twice (L1) | 100% Verify secure, under a minute (w5-06g-01 ~) | **0009b**: a report counts, but caps Verify at developing until one real check | 0% secure (developing) | recommended, verification pending |
+| "The link is broken", twice (L1) | 100% Verify secure, under a minute (w5-06g-01 ~) | **0009b**: a report counts, but caps Verify at developing until one real check | 0% secure (developing) | recommended, verified in simulation, wave 6 |
 | Copy the publisher and date from the citation (L1d) | 100% under a literal labeller | 0009b's text line: never tick what only repeats the reply or its citation | 0% | depends on the real chatbot; untested |
 | Restate the chatbot's reply (L2/L3) | secure under a literal labeller, never under a skeptical one (w5-06g-06 ~) | same text line | — | untested with a real chatbot |
 | One real check, then dead-link reports (L1c) | secure | none: the rule allows it | secure | residual |
