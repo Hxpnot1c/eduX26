@@ -188,7 +188,7 @@ exam_cues = ["exam", "paper", "marks", "question"]   # exam_relevance is sent on
 
 [style]                    # how tutor_turn asks the chatbot to write (step 05b)
 max_words = 120            # default length of a reply's explanation (MCQ options don't count); the student's profile answer_length overrides
-length_known_share = 0.5   # a review or check on a part at developing or above: this share of the ceiling (reply-style)
+length_known_share = 0.5   # a review or check on a part at developing or above: this share of the ceiling (step 05j; Kalyuga et al., 2003)
 length_fatigued_share = 0.4   # every step while fatigued; neither shrinks a student's own answer_length
 
 [results]                  # size of a tutor_turn result (step 05c)

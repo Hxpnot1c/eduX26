@@ -103,6 +103,9 @@ A simple read-only page at `/me?key=` showing:
 - Mock marks counted as evidence.
 - Learning the `[priorities]` weights from the `considered` logs: a contextual bandit, checked first against old logs (offline evaluation) before it changes any choice.
 
+### Diagrams, next (after step 05j)
+- Server-drawn diagrams: eduX draws standard diagrams (supply and demand shifts, a tax wedge, externalities, AD/AS) by rule and returns an image link, for chatbots that can't draw.
+
 ## Extras (only if time allows)
 - **Investigate activity.** An optional guided research task: ask → predict → AI answer with tagged claims → verify two claims → apply in a paragraph → reflect. It scores the AI-literacy skills from 05e (`ail_ask`, `ail_verify`), plus `think_first`, `apply` and `reflect`.
 - Automated extraction from the specification, papers and textbook into a draft pack.
