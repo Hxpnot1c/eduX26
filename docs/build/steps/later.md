@@ -107,6 +107,7 @@ A simple read-only page at `/me?key=` showing:
 ### Fatigue, next (after step 05s)
 - Fit the school's own time-on-task curve, to replace the research average once there's data.
 - Per-student persistence, using the same shrinkage approach as the starting offsets. Persistence varies between students (Wu, Debeer et al., 2019).
+- A per-student fatigue view for teachers, only behind a DPIA. For now per-student curves are CLI only (`personalisation.md` §5: personal traits are never shown as labels).
 
 ### Assessments, next (after step 05u)
 - Import assignments from Microsoft Teams Assignments and Google Classroom instead of entering them twice.
