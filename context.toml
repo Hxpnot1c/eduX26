@@ -41,7 +41,7 @@ reference = ["causal"]
 reference = ["notes"]
 [moves.answer_with_sources] # a research question (step 05e)
 reference = ["notes"]
-# ask_mcq (all purposes), explain_back, reask, offer_stop, ask_which: none
+# ask_mcq (all purposes), explain_back, reask, offer_choice, ask_which: none
 
 [watch_for]                # moves that ask the student something also get the part's watch-for misconceptions,
                            # as id and wrong_idea only; a bare move covers its variants

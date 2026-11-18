@@ -9,10 +9,12 @@ Order (first match wins for the main step):
   answer given    -> feedback, then reteach when points are missing (which ends the plan); after a multiple-choice
                      intuition answer, teaching; after a check, the next point (or the same point re-taught)
   question instead of the pending answer -> answer_brief, then reask the same question (fatigue and stuck first)
-  fatigued        -> offer_stop (once a session; also replaces reteach's re-ask, as do stuck moves)
+  fatigued        -> offer_choice: stop or quick questions (once a session; also replaces reteach's re-ask, as do
+                     stuck moves)
   stuck on focus  -> ask_mcq on the weakest prerequisite (prereq, stuck) / reteach of the whole part (through the anchor)
   ambiguous focus -> ask_which (no focus at all: the top due review, as ask_mcq)
-  just_show_me    -> show the current point, then its check; skip_point ("I know this") -> its check only
+  just_show_me    -> show the current point, then its check; skip_point ("I know this") -> its check only;
+                     a pick from offer_choice: quiz -> the current point's check, extend -> extend, stop -> nothing
   intuition       -> ask_mcq (intuition), once per part
   weak prereq     -> ask_mcq (prereq) (level new, not checked this session)
   held misconc.   -> feedback with the held misconception (unless already corrected this session), then teaching
@@ -37,7 +39,8 @@ from edux.settings import TEXT_DIR, Settings, SettingsError, read_text
 
 log = logging.getLogger(__name__)
 
-STOP = {"reteach", "offer_stop", "ask_which", "ask_mcq", "explain_back", "reask"}
+STOP = {"reteach", "offer_choice", "ask_which", "ask_mcq", "explain_back", "reask"}
+PICKS = ("quiz", "extend", "stop")   # ways on from offer_choice the student picks, sent back as this_message.choice
 ASKS = {"reteach", "ask_mcq", "explain_back", "extend", "reask"}
 MAX_STEPS = 3
 # The answer.type the chatbot sends back for a step that asks something.
@@ -59,7 +62,7 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "extend": ({"answer_type"}, set()),
     "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "correct_option", "purpose", "points_met", "missing",
                                              "intuition", "secure"}),
-    "offer_stop": ({"minutes", "quick_parts"}, set()),
+    "offer_choice": ({"reason", "options"}, {"minutes", "quick_parts"}),
     "reask": ({"asked"}, {"answer_type", "skill"}),
     "reteach": (set(), {"missing", "anchor", "point", "level", "answer_type"}),
     "show": ({"point"}, {"note"}),
@@ -328,18 +331,19 @@ def corrected_in(steps: list[dict]) -> set[str]:
 
 
 def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_plan: list[dict],
-              handled: set[str], answered_prequestion: str | None, offered_stop: bool = False,
+              handled: set[str], answered_prequestion: str | None, offered: frozenset[str] = frozenset(),
               progress: dict | None = None) -> list[dict]:
-    """The steps of the first rule that matches, or [] when there is nothing to plan. Stopping is offered once
-    a session: if the student carries on, teaching goes on. progress is the point-by-point progress per part
-    (step 05d), updated in place."""
+    """The steps of the first rule that matches, or [] when there is nothing to plan. Each offer_choice reason is
+    offered once a session (offered holds those already made): if the student carries on, teaching goes on.
+    progress is the point-by-point progress per part (step 05d), updated in place."""
     progress = {} if progress is None else progress
     session = blocks.get("session")
     focus = turn.parts[0] if turn.parts else None
 
-    if session and session["state"] == "fatigued" and not offered_stop:
+    if session and session["state"] == "fatigued" and "fatigued" not in offered:
         quick = [{"id": p["id"], "name": p["name"], "level": p["level"]} for p in session["quick_parts"]]
-        return [_step("offer_stop", None, {"minutes": session["minutes"], "quick_parts": quick})]
+        return [offer_choice("fatigued", ["stop"] + (["quick"] if quick else []),
+                             {"minutes": session["minutes"], "quick_parts": quick})]
 
     if session and session["state"] == "stuck" and focus:
         stuck = next((p for p in session["parts"] if p["part_id"] == focus), None)
@@ -361,6 +365,8 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
 
     if choice in ("just_show_me", "skip_point"):
         return shown_or_skipped(turn, focus, settings, progress, choice)
+    if choice in PICKS:
+        return picked(turn, focus, settings, progress, choice)
 
     pq = blocks.get("prequestion")
     asked_before = (progress.get(focus) or {}).get("intuition_asked") or any(
@@ -418,6 +424,22 @@ def teach(turn: Turn, part_id: str, settings: Settings, progress: dict) -> list[
                                            "exemplar": point["exemplar"], "level": level,
                                            "max_words": settings.points.max_words}),
             check(turn, part_id, state["index"], settings)]
+
+
+def offer_choice(reason: str, options: list[str], data: dict | None = None) -> dict:
+    """offer_choice (stop): the ways on in options, from stop, quick (questions on data.quick_parts), quiz and
+    extend. reason is fatigued or passive; each is offered once a session."""
+    return _step("offer_choice", None, {"reason": reason, "options": options, **(data or {})})
+
+
+def picked(turn: Turn, part_id: str, settings: Settings, progress: dict, choice: str) -> list[dict]:
+    """The way on the student picked from offer_choice: quiz, the current point's check (as "I know this");
+    extend, a harder question on the part; stop, nothing (the chatbot wraps up with a one-line summary)."""
+    if choice == "quiz":
+        return shown_or_skipped(turn, part_id, settings, progress, "skip_point")
+    if choice == "extend":
+        return [_step("extend", part_id)]
+    return []
 
 
 def shown_or_skipped(turn: Turn, part_id: str, settings: Settings, progress: dict, choice: str) -> list[dict]:
@@ -517,19 +539,20 @@ def reask(pending: dict) -> list[dict]:
 
 
 def _urgent(steps: list[dict]) -> bool:
-    """Fatigue or stuck: offer_stop, a step back to a prerequisite (ask_mcq with data.stuck) or a re-teach of the
-    whole part. These come before a pending question, a re-teach of missing points and the point loop."""
-    return bool(steps) and (steps[0]["move"] in ("offer_stop", "reteach") or bool(steps[0]["data"].get("stuck")))
+    """Fatigue or stuck: offer_choice when fatigued, a step back to a prerequisite (ask_mcq with data.stuck) or a
+    re-teach of the whole part. These come before a pending question, a re-teach of missing points and the point loop."""
+    return bool(steps) and (steps[0]["move"] == "reteach" or steps[0]["data"].get("reason") == "fatigued"
+                            or bool(steps[0]["data"].get("stuck")))
 
 
 def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", answer: dict | None = None,
            evidence: dict | None = None, last_plan: list[dict] | None = None,
-           corrected: set[str] | None = None, offered_stop: bool = False, pending: dict | None = None,
+           corrected: set[str] | None = None, offered: frozenset[str] = frozenset(), pending: dict | None = None,
            progress: dict | None = None, last_mcq: dict | None = None) -> list[dict]:
     """The plan for this turn (see the module docstring). answer is what the chatbot sent about the student's
     answer and evidence its scored item; last_plan is the plan issued on the previous turn; corrected holds the
-    misconceptions already corrected this session, which aren't corrected again; offered_stop is true once
-    stopping has been offered this session; pending is the question still waiting for an answer, when this
+    misconceptions already corrected this session, which aren't corrected again; offered holds the offer_choice
+    reasons already offered this session; pending is the question still waiting for an answer, when this
     message asked something instead (on the same part, or with no new focus). progress is the point-by-point
     progress per part, updated in place; last_mcq the last question's letter map, so a repeat is reshuffled."""
     last_plan = last_plan or []
@@ -539,7 +562,7 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
     answered_prequestion = None
 
     def main() -> list[dict]:
-        return main_step(turn, blocks, settings, choice, last_plan, handled, answered_prequestion, offered_stop, progress)
+        return main_step(turn, blocks, settings, choice, last_plan, handled, answered_prequestion, offered, progress)
 
     if pending and not answer:
         urgent = main()
@@ -674,8 +697,8 @@ def score_next(plan: list[dict]) -> dict[str, list[dict]]:
     course content when the answer comes back, so no mapping is saved."""
     out: dict[str, list[dict]] = {}
     for step in plan:
-        if step["move"] == "offer_stop":   # the short burst of quick questions, if they choose it
-            for part in step["data"]["quick_parts"]:
+        if step["move"] == "offer_choice":   # the short burst of quick questions, if they choose it
+            for part in step["data"].get("quick_parts") or []:
                 points = lettered(part["id"])
                 if points:
                     out.setdefault(part["id"], points)

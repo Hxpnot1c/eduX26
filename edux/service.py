@@ -47,25 +47,30 @@ def _last_plan(student_id: str) -> dict:
     ids corrected so far in that session]}, empty if none."""
     row = learner._conn().execute("SELECT ts, plan_json FROM issued_plan WHERE student_id = ?", (student_id,)).fetchone()
     if row is None:
-        return {"ts": None, "plan": [], "focus": [], "corrected": [], "offered_stop": False, "points": {}}
-    return {"ts": row["ts"], "corrected": [], "offered_stop": False, "points": {}, **json.loads(row["plan_json"])}
+        return {"ts": None, "plan": [], "focus": [], "corrected": [], "offered": [], "points": {}}
+    return {"ts": row["ts"], "corrected": [], "offered": [], "points": {}, **json.loads(row["plan_json"])}
 
 
-def _this_session(student_id: str, last: dict, at: str) -> tuple[set[str], bool]:
-    """(misconceptions already corrected, stopping already offered) this session, carried in issued_plan
-    while the session lasts."""
+def offered_in(steps: list[dict]) -> set[str]:
+    """The offer_choice reasons (fatigued, passive) a plan offered. offer_stop, before offer_choice, was fatigue."""
+    return {step["data"].get("reason", "fatigued") for step in steps if step["move"] in ("offer_choice", "offer_stop")}
+
+
+def _this_session(student_id: str, last: dict, at: str) -> tuple[set[str], frozenset[str]]:
+    """(misconceptions already corrected, offer_choice reasons already offered) this session, carried in
+    issued_plan while the session lasts."""
     session = learner.session_state(student_id, at)
     if last["ts"] is None or session is None or last["ts"] < session["session_id"]:
-        return set(), False
-    offered = last["offered_stop"] or any(step["move"] == "offer_stop" for step in last["plan"])
-    return set(last["corrected"]) | plan.corrected_in(last["plan"]), offered
+        return set(), frozenset()
+    offered = set(last["offered"]) | ({"fatigued"} if last.get("offered_stop") else set()) | offered_in(last["plan"])
+    return set(last["corrected"]) | plan.corrected_in(last["plan"]), frozenset(offered)
 
 
 def _save_plan(student_id: str, at: str, steps: list[dict], focus: list[str], corrected: set[str],
-               offered_stop: bool, style_sent: dict | None, pending: dict | None, mcq: dict | None,
+               offered: set[str], style_sent: dict | None, pending: dict | None, mcq: dict | None,
                points: dict, literacy: dict | None = None, how: dict | None = None) -> None:
     """Save the plan issued this turn, with what the next turn needs: the focus, misconceptions corrected and
-    whether stopping was offered this session, the style sent, the question waiting for an answer, the MCQ
+    the offer_choice reasons offered this session, the style sent, the question waiting for an answer, the MCQ
     letter map (step 05d), point-by-point progress per part (step 05d; kept across parts and sessions, so
     coming back to a part resumes where it stopped), and the pending literacy task and how-AI-works check
     (step 05e)."""
@@ -73,7 +78,7 @@ def _save_plan(student_id: str, at: str, steps: list[dict], focus: list[str], co
     with conn:
         conn.execute("INSERT OR REPLACE INTO issued_plan (student_id, ts, plan_json) VALUES (?, ?, ?)",
                      (student_id, at, json.dumps({"plan": steps, "focus": focus, "corrected": sorted(corrected),
-                                                  "offered_stop": offered_stop, "style_sent": style_sent,
+                                                  "offered": sorted(offered), "style_sent": style_sent,
                                                   "pending": pending, "mcq": mcq, "points": points,
                                                   "literacy": literacy, "how": how})))
 
@@ -178,7 +183,7 @@ def _open_question(last: dict, parts: list[str], answer: dict | None, choice: st
     session, not "just show me", and on the same part or with no new focus. A message about another part
     drops it."""
     pending = last.get("pending")
-    if not pending or answer or choice in ("just_show_me", "skip_point") or last["ts"] is None:
+    if not pending or answer or choice in ("just_show_me", "skip_point", *plan.PICKS) or last["ts"] is None:
         return None
     gap = (learner.parse_ts(at) - learner.parse_ts(last["ts"])).total_seconds() / 60
     if gap > _settings().session.gap_minutes:
@@ -374,7 +379,7 @@ def tutor_turn(
     profile = learner.profile_of(student)
     blocks = context_blocks.assemble(profile, turn, s, _context())
     config = _context().profiles.get(profile, _context().profiles[_context().default_profile])
-    corrected, offered_stop = _this_session(student["id"], last, at)
+    corrected, offered = _this_session(student["id"], last, at)
     pending = _open_question(last, parts, answer, choice, at)
     points = dict(last["points"] or {})
     again = last.get("pending") if lost else None
@@ -391,7 +396,7 @@ def tutor_turn(
     else:
         steps = plan.add_terms(turn, plan.choose(turn, blocks, s, choice, course_answer,
                                                  evidence if course_answer else None,
-                                                 last["plan"], corrected, offered_stop, pending, points,
+                                                 last["plan"], corrected, offered, pending, points,
                                                  last.get("mcq")))
     if config.plan and this_message.get("source_conflict"):
         steps = plan.with_source_conflict(steps)
@@ -403,7 +408,7 @@ def tutor_turn(
     current_style = style(student, client)
     send_style = _style_due(last, current_style, at)
     _save_plan(student["id"], at, steps, parts, corrected | plan.corrected_in(steps),
-               offered_stop or any(step["move"] == "offer_stop" for step in steps), current_style,
+               offered | offered_in(steps), current_style,
                _pending_after(steps, pending), _mcq_after(steps, last), points, literacy, how)
     # with no plan (a comparison profile), answers on the focus parts can still be scored
     next_points = plan.score_next(steps) if config.plan else {

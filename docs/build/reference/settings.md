@@ -229,7 +229,7 @@ reference = ["causal"]
 reference = ["notes"]
 [moves.review_transfer]    # until 05d
 reference = ["notes"]
-# prequestion, check_prereq, step_back, review_recall, reask, offer_stop, ask_which; from 05d ask_mcq and explain_back;
+# prequestion, check_prereq, step_back, review_recall, reask, offer_choice (offer_stop before engagement-rules), ask_which; from 05d ask_mcq and explain_back;
 # from 05e answer_with_sources, literacy_task, source_conflict: none
 ```
 
@@ -251,7 +251,7 @@ Plain markdown files read at startup. Changing wording never touches code.
 | `server_instructions.md` | the MCP server instructions |
 | `tools/<tool>.md` | each tool's description (`tutor_turn`: at most 8 lines) |
 | `style.md` | reply length, interests and formatting rules, appended to the server instructions |
-| `moves/<move>.md` | what each move does, at most 2 sentences, with `{field}` placeholders filled from the step's `data`. Sent once, as a section of the server instructions (step 05c). The final set is the 14 moves in `tools-and-context.md` ("The move set"): `ask_mcq`, `teach_point`, `show`, `explain_back`, `extend`, `feedback`, `reteach`, `answer_brief`, `reask`, `offer_stop`, `ask_which`, `answer_with_sources`, `literacy_task`, `source_conflict`. Step 05c has the interim 17 listed there |
+| `moves/<move>.md` | what each move does, at most 2 sentences, with `{field}` placeholders filled from the step's `data`. Sent once, as a section of the server instructions (step 05c). The final set is the 14 moves in `tools-and-context.md` ("The move set"): `ask_mcq`, `teach_point`, `show`, `explain_back`, `extend`, `feedback`, `reteach`, `answer_brief`, `reask`, `offer_choice` (`offer_stop` until engagement-rules), `ask_which`, `answer_with_sources`, `literacy_task`, `source_conflict`. Step 05c has the interim 17 listed there |
 | `moves/<key>.cue.md` | one line, at most 15 words, sent with every step of that move (step 05c). The key adds the variant (`ask_mcq_<purpose>`, `teach_<level>`, `review_<mode>`), falling back to the bare move |
 | `literacy/<skill>_<level>.md` | feedback and task patterns for `ask` and `verify` at `new`, `developing` and `secure` (step 05e) |
 | `format/<client>.md` | formatting for maths, money and diagrams per chatbot (`claude`, `chatgpt`, `gemini`, `default`), returned in `style.format` |

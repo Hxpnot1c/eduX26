@@ -71,20 +71,21 @@ Called once, at the start of every reply (from step 05e, research questions abou
 #### Choosing the plan
 At most two steps (three from step 05d, for feedback, `teach_point` and `ask_mcq`). Each is `{move, part_id, cue, data}`. `cue` is one line from `text/moves/<key>.cue.md`, where the key is the move plus its variant (`teach_<level>` and `review_<mode>` until 05d, `ask_mcq_<purpose>` from 05d), falling back to the bare move; what the move means is in the server instructions, sent once (step 05c). The moves are listed in "The move set" below. Steps that ask something carry `data.answer_type`. Steps marked **(stop)** end the plan, because the student needs to reply.
 
-**A question instead of an answer (step 05c).** The question last asked is kept in `issued_plan` as `pending`. A message with no `answer` while one is pending, on the same part or with no new focus, gets `answer_brief` (a few lines), then `reask` **(stop)**: the same question, with the same `score_next`. A message about another part, a research question, "just show me" or a new session drops `pending`. Fatigue and stuck rules come first.
+**A question instead of an answer (step 05c).** The question last asked is kept in `issued_plan` as `pending`. A message with no `answer` while one is pending, on the same part or with no new focus, gets `answer_brief` (a few lines), then `reask` **(stop)**: the same question, with the same `score_next`. A message about another part, a research question, "just show me", a pick from `offer_choice` or a new session drops `pending`. Fatigue and stuck rules come first.
 
 **With an answer,** the plan is a feedback step, then the main step:
 - prequestion → `feedback`: confirm, or name the picked misconception with its correction, plus the correct idea.
 - all points met → `feedback`, with the points they made.
-- points missing → `feedback` (naming any misconceptions the answer showed), then `reteach` **(stop)** with only the missing points' wording (step 05c; before, one `reteach_gap` step did both). It re-teaches those and asks them to try again, and nothing else follows it. If they are fatigued or stuck, the `feedback` step also names what's missing and is followed by `offer_stop`, `step_back` or `reteach` with the anchor.
+- points missing → `feedback` (naming any misconceptions the answer showed), then `reteach` **(stop)** with only the missing points' wording (step 05c; before, one `reteach_gap` step did both). It re-teaches those and asks them to try again, and nothing else follows it. If they are fatigued or stuck, the `feedback` step also names what's missing and is followed by `offer_choice`, `step_back` or `reteach` with the anchor.
 
 **The main step** is the first rule that matches:
-1. Fatigued, and stopping not yet offered this session → `offer_stop` with `quick_parts` **(stop)**. If they carry on, teaching goes on.
+1. Fatigued, and not yet offered this session → `offer_choice` (`reason = fatigued`, `options` stop and quick, with `quick_parts`) **(stop)**. If they carry on, teaching goes on.
 2. Stuck on the focus part:
    - `step_back` to its weakest prerequisite **(stop)**;
    - or, when it has no prerequisite, `reteach` of the whole part (through the anchor, or a different example; `switch_approach` before 05c).
 3. Focus ambiguous → `ask_which` with the candidates **(stop)**. No focus at all (e.g. "quiz me on what's due") → the top due `review`, if any.
 4. `choice == just_show_me` → `show`: a short worked example. Nothing else follows it.
+   - A pick from `offer_choice`, sent back as `this_message.choice` (engagement-rules): `quiz` → the current point's check (as `skip_point`), `extend` → `extend` **(stop)**, `stop` → an empty plan (the chatbot wraps up with a one-line summary).
 5. Pre-question eligible → `prequestion` **(stop)**.
    - Eligible means the part has no evidence yet, its level is below `support.worked_example_below`, it has enough misconceptions and there was no "just show me" this session.
    - It is never asked twice: not on the turn its answer arrives, and not again when the last plan already asked it.
@@ -158,7 +159,7 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
 | `reteach` | yes **(stop)**, unless an `ask_mcq` check follows | 05c | `reteach_gap`, `switch_approach` (05c), `reteach_point` (05d) | `missing` or `point`, `anchor`, `answer_type` | notes, anchor | 45 |
 | `answer_brief` | no | 05c | | | notes | 20 |
 | `reask` | yes **(stop)** | 05c | `literacy_followup` (05e) | `pending` | none | 20 |
-| `offer_stop` | yes **(stop)** | 05b | | `quick_parts` | none | 35 |
+| `offer_choice` | yes **(stop)** | 05b | `offer_stop` (engagement-rules) | `reason` (`fatigued` / `passive`), `options` (from `stop`, `quick`, `quiz`, `extend`), `quick_parts` | none | 45 |
 | `ask_which` | yes **(stop)** | 05b | | `candidates` | none | 20 |
 | `answer_with_sources` | no | 05e | | `trusted_sources` | notes | 40 |
 | `literacy_task` | yes **(stop)** when `data.task` | 05e | | `skill`, `level`, `task`, `features`, `pattern` | none | 35 |
@@ -166,7 +167,7 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
 
 - **Sharing.** `feedback` is the only move that names a misconception (picked, shown or held) and corrects it: the wrong idea, one line on why it's wrong, then the right idea, with no praise. A right answer gets one line on why it's right, unless the part is at secure (`data.secure`, tune-from-research). `reteach` never repeats that: it re-teaches only what was missed, a different way in.
 - **Interim set (05c).** Step 05c builds the sections and cues for the moves that exist before server-built MCQs: `prequestion`, `check_prereq`, `step_back`, `review_recall`, `review_transfer`, `teach_worked_example`, `teach_hint_procedural`, `teach_hint_conceptual`, `teach_explain_back`, `show`, `feedback`, `reteach`, `extend`, `answer_brief`, `reask`, `offer_stop` and `ask_which` (17). It already merges `correct_misconception` into `feedback`, and `reteach_gap` and `switch_approach` into `reteach`.
-- **05d** replaces the asking moves with `ask_mcq`, the teach levels with `teach_point`, and renames `teach_explain_back` to `explain_back`, deleting the old texts. **05e** adds three moves and folds `literacy_followup` into `reask`.
+- **05d** replaces the asking moves with `ask_mcq`, the teach levels with `teach_point`, and renames `teach_explain_back` to `explain_back`, deleting the old texts. **05e** adds three moves and folds `literacy_followup` into `reask`. **Engagement-rules** generalises `offer_stop` into `offer_choice`, with no new section.
 - **Word budget.** The sections above total about 510 words with their headings. With `server_instructions.md` (about 200) and `style.md` (about 90), the whole is about 800, under `instructions.max_words = 900`. As built in 05c, the 17 interim sections with the 10 rules come to about 880 words, so 05d's cut to 11 moves must land before 05e adds three.
 
 #### Response
@@ -181,7 +182,7 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
   "focus": [{"id": "ped_formula", "name": "PED: formula and calculation", "level": "new"}]
 }
 ```
-- `score_next`: for each part a step asks about (and an `offer_stop`'s quick parts), except a pre-question or `ask_mcq` (step 05d), which are answered by option: the points to tick in the student's next answer.
+- `score_next`: for each part a step asks about (and an `offer_choice`'s quick parts), except a pre-question or `ask_mcq` (step 05d), which are answered by option: the points to tick in the student's next answer.
 - `data.terms` (step 05c), once per plan, on its first step on a part: names and aliases of the steps' parts, then of known parts (developing or above) linked to them, then of other known parts by importance, up to `limits.terms`. The chatbot doesn't introduce course terms outside it, and explains in plain words when one is needed.
 - `score_next` ids are letters, `a`, `b`, `c`… per part in point order (step 05c). A research turn's `score_next` always includes `ail_verify`'s ticks (step 05e).
 - `style`, sent only on the first `tutor_turn` of a session or when `client`, `interests` or `max_words` changed since it was last sent (step 05c):

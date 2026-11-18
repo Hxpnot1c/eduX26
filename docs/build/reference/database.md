@@ -144,7 +144,7 @@ CREATE INDEX idx_call_log_student ON call_log(student_id, ts);
 ```sql
 CREATE TABLE issued_plan (student_id TEXT PRIMARY KEY,
   ts TEXT NOT NULL,
-  plan_json TEXT NOT NULL);          -- {"plan", "focus", "corrected", "offered_stop"}: carried within a session
+  plan_json TEXT NOT NULL);          -- {"plan", "focus", "corrected", "offered"}: carried within a session ("offered": the offer_choice reasons made; "offered_stop" before engagement-rules)
 ```
 
 `migrations/007_call_log_budget.sql` (step 05c) adds `over_budget INTEGER NOT NULL DEFAULT 0` to `call_log`: 1 when a result was still over `results.max_chars` after dropping every reference block. `issued_plan.plan_json` also carries `style_sent` (the style last sent, so it is sent again only when it changes) and `pending` (the question last asked, until it is answered). From step 05d it carries `points` (progress through each part's points) and `mcq` (the letter → option map of the last MCQ), and from step 05e `literacy` (the pending literacy task and its follow-ups).

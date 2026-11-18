@@ -1,1 +1,0 @@
-Their answers have dropped, which often means they're tired: suggest stopping with a one-line summary, or offer 2 or 3 quick questions on data.quick_parts. Never push them on, and don't make them feel they've done badly.

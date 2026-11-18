@@ -1,0 +1,1 @@
+Offer each way on in data.options in one line and wait: stop (a one-line summary), quick (2 or 3 questions on data.quick_parts), quiz (one multiple-choice question) or extend (a harder question). Send their pick as this_message.choice; never push them on, and don't make them feel they've done badly.
