@@ -50,7 +50,7 @@ import httpx
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
-from edux import graph, learner, service
+from edux import demo, graph, learner, service
 from edux.settings import load_settings
 
 EXPECTED_TOOLS = {"tutor_turn", "get_my_progress", "update_my_profile"}
@@ -288,7 +288,7 @@ async def choices(keyed: str, student: str) -> None:
 async def wrong_intuition(url: str) -> None:
     """A wrong intuition answer is followed by teaching, never by another intuition question (demo-weak)."""
     student, part = "demo-weak", "pes_formula"
-    keyed = f"{url}?key={learner.get_student(student)['key']}"
+    keyed = f"{url}?key={demo.demo_keys()[student]}"
     labels = {"question_depth": "surface", "engagement": "active"}
     got = await call(keyed, "tutor_turn", {"message": "How do I work out PES?", "node_ids": [part], "client": "check_mcp",
                                            "this_message": labels})
@@ -310,7 +310,7 @@ async def prerequisite_and_review(url: str) -> None:
     """A prerequisite check (demo-weak) and a due review (demo-showme) come as ask_mcq and are scored from the letter."""
     for student, message, purpose in (("demo-weak", "How do I calculate PED?", "prereq"),
                                       ("demo-showme", "quiz me on what's due", "review")):
-        keyed = f"{url}?key={learner.get_student(student)['key']}"
+        keyed = f"{url}?key={demo.demo_keys()[student]}"
         got = await call(keyed, "tutor_turn", {"message": message, "client": "check_mcp",
                                                "this_message": {"question_depth": "surface", "engagement": "active"}})
         step = (got.get("plan") or [{}])[-1]
@@ -333,7 +333,7 @@ async def stuck_on_point(url: str) -> None:
     next plan steps back (demo-showme on PART, intuition answered right). The plan left by the review run is
     cleared first, so the question here isn't taken as a detour from a pending one."""
     student = "demo-showme"
-    keyed = f"{url}?key={learner.get_student(student)['key']}"
+    keyed = f"{url}?key={demo.demo_keys()[student]}"
     with learner._conn() as conn:
         conn.execute("DELETE FROM issued_plan WHERE student_id = ?", (student,))
     labels = {"question_depth": "surface", "engagement": "active"}
@@ -361,7 +361,7 @@ async def research_questions(url: str) -> None:
     ignored task re-asked once then counted as a skip (missing, not 0), Ask and Verify raised by a well-phrased question and an answered
     verify task, and no literacy task on a course question."""
     student = "demo-weak"
-    keyed = f"{url}?key={learner.get_student(student)['key']}"
+    keyed = f"{url}?key={demo.demo_keys()[student]}"
     labels = {"question_depth": "surface", "engagement": "active"}
     with learner._conn() as conn:
         conn.execute("DELETE FROM issued_plan WHERE student_id = ?", (student,))
@@ -420,7 +420,7 @@ async def research_questions(url: str) -> None:
 async def secure_every(url: str) -> None:
     """At secure, the literacy task comes only every literacy.secure_every research questions (demo-showme)."""
     student = "demo-showme"
-    keyed = f"{url}?key={learner.get_student(student)['key']}"
+    keyed = f"{url}?key={demo.demo_keys()[student]}"
     with learner._conn() as conn:
         conn.execute("DELETE FROM issued_plan WHERE student_id = ?", (student,))
     for _ in range(8):   # unprompted checks until Verify is secure
@@ -448,7 +448,7 @@ async def how_ai_works(url: str) -> None:
     misconception); one check per part per session; an ignored check re-asked once then skipped (no evidence); a
     self-correction gets a check on confidence and is stored."""
     student = "demo-secure"
-    keyed = f"{url}?key={learner.get_student(student)['key']}"
+    keyed = f"{url}?key={demo.demo_keys()[student]}"
     labels = {"question_depth": "surface", "engagement": "active"}
     with learner._conn() as conn:
         conn.execute("DELETE FROM issued_plan WHERE student_id = ?", (student,))
@@ -771,7 +771,7 @@ async def priorities(url: str) -> None:
     finally:
         drop_student(student)
 
-    key = learner._conn().execute("SELECT key FROM student WHERE id = 'demo-secure'").fetchone()[0]
+    key = demo.demo_keys()["demo-secure"]
     got = await call(f"{url}?key={key}", "tutor_turn", {"message": "Quiz me on what's due", "client": "check_mcp",
                                                        "this_message": {"question_depth": "surface", "engagement": "active"}})
     stored = plan_json("demo-secure").get("considered")
@@ -1018,7 +1018,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--url", default="http://127.0.0.1:8000/mcp")
     parser.add_argument("--student", default="demo-secure", help="a demo student (default demo-secure)")
-    parser.add_argument("--key", help="the student's key (default: read from the database)")
+    parser.add_argument("--key", help="the student's key (default: read from demo-keys.json in the data folder)")
     parser.add_argument("--keep", action="store_true", help="don't reset the demo students after the run")
     args = parser.parse_args()
     cli("seed-demo", "--reset")
@@ -1026,7 +1026,7 @@ if __name__ == "__main__":
     if found is None:
         sys.exit(f"unknown student {args.student!r}; run python -m edux.cli seed-demo first")
     try:
-        asyncio.run(main(args.url, args.key or found["key"], args.student))
+        asyncio.run(main(args.url, args.key or demo.demo_keys()[args.student], args.student))
     finally:
         if not args.keep:
             cli("seed-demo", "--reset")
