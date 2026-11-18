@@ -90,6 +90,13 @@ def topics() -> list[dict]:
     return [_node_dict(r) for r in rows]
 
 
+def is_diagram(part_id: str) -> bool:
+    """True when the pack marks the part's content as a diagram (nodes.csv `diagram`). It depends on the content,
+    never on the student."""
+    node = get_node(part_id)
+    return bool(node) and node.get("diagram") == "true"
+
+
 def is_literacy(node_id: str) -> bool:
     """True for the AI-literacy topic and everything under it."""
     return node_id == AI_LITERACY_TOPIC or any(n["id"] == AI_LITERACY_TOPIC for n in ancestors(node_id))

@@ -117,6 +117,7 @@ _FILES = (
         C("extraction_confidence", "real", default="1.0", doc="0–1", bounds=(0, 1)),
         C("difficulty", "real", doc="optional, 0 (easy) to 1 (hard); blank inherits from the nearest ancestor, else average", bounds=(0, 1)),
         C("intuition", default="", doc="parts only: one line in everyday language that leads into the idea; the source of the intuition question when no known part links in"),
+        C("diagram", enum=("true", "false"), default="false", doc="parts only, optional: `true` when the content is a diagram (supply and demand shifts, a tax wedge, externalities, AD/AS), so teaching includes a labelled diagram or asks for a sketch. Set by the content, never by the student"),
     ), content_row=True, required_file=True, course_scoped=True, doc="The knowledge tree."),
     FileSpec("edges.csv", "edge", _content(
         C("from_id", required=True, doc="node id"),

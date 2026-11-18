@@ -70,6 +70,7 @@ A source's **authority** comes from its type, ranked in `settings.toml` (mark sc
 | source_ids | ids from sources.csv |
 | extraction_confidence | 0–1 |
 | intuition | parts only: one line in everyday language that leads into the idea; the source of the intuition question when no known part links in (step 05d) |
+| diagram | parts only, optional: `true` or `false` (default `false`). `true` when the content is a diagram: supply and demand shifts, a tax wedge, externalities, AD/AS and the like. Steps on the part carry `diagram: true`, so the chatbot includes a labelled diagram or asks for a sketch (step 05j). It is set by the content, never by the student: matching format to a student's "learning style" has no good evidence (Pashler et al., 2008) |
 | difficulty | optional, 0 (easy) to 1 (hard). Blank inherits from the nearest ancestor that has one, else average (`difficulty.default`). Teachers can set it with a feedback `edit`. Sets a part's starting estimate and forgetting speed (see `learner-model.md`) |
 
 **Tree rules:**
