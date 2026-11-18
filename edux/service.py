@@ -320,6 +320,40 @@ def style(student: dict, client: str | None) -> dict:
             "interests": (row and row["interests"]) or "", "format": _format_for(client)}
 
 
+CHECKS = ("check", "review", "prereq")   # ask_mcq purposes that check a part (reply-style)
+
+
+def reply_style(steps: list[dict], student: dict, turn: context_blocks.Turn, blocks: dict) -> list[dict]:
+    """Per-step reply length (reply-style).
+
+    Length: style.max_words (or the profile's answer_length) is the ceiling. A step gets data.max_words only below
+    it: length_fatigued_share of it on every step while fatigued, otherwise length_known_share of it on a review or
+    check of a part at developing or above (Kalyuga et al., 2003: full explanations slow down students who already
+    know the material). A student's own answer_length always wins: nothing shrinks, and teach_point's word budget
+    becomes it."""
+    s = _settings().style
+    row = learner._conn().execute("SELECT answer_length FROM student_profile WHERE student_id = ?",
+                                  (student["id"],)).fetchone()
+    own = row["answer_length"] if row else None
+    ceiling = own or s.max_words
+    fatigued = (blocks.get("session") or {}).get("state") == "fatigued"
+    out = []
+    for step in steps:
+        data, part = dict(step["data"]), step["part_id"]
+        if own:
+            if step["move"] == "teach_point":
+                data["max_words"] = own
+        else:
+            share = s.length_fatigued_share if fatigued else (
+                s.length_known_share if step["move"] == "ask_mcq" and data.get("purpose") in CHECKS and part
+                and learner.level(turn.p(part)) != "new" else 1.0)
+            target = round(ceiling * share)
+            if target < ceiling:
+                data["max_words"] = min(data.get("max_words") or target, target)
+        out.append(plan._refill({**step, "data": data}) if data != step["data"] else step)
+    return out
+
+
 REQUEST_LABELS = ("request_type", "question_features", "source_conflict", "web_access", "asks_recent", "pushback_changed")
 
 
@@ -422,6 +456,7 @@ def tutor_turn(
         steps, literacy = _literacy_followup(student["id"], last, steps, evidence, request, at)
         _unchecked(course_steps, steps, points)
     considered = [c for step in steps for c in step.pop("considered", [])]   # add-on candidates not picked (priorities)
+    steps = reply_style(steps, student, turn, blocks)
     current_style = style(student, client)
     send_style = _style_due(last, current_style, at)
     _save_plan(student["id"], at, steps, parts, corrected | plan.corrected_in(steps),

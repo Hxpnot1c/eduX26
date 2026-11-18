@@ -2,7 +2,7 @@ Call this when the student tells you something to remember about how they want t
 
 - interests: things they care about, used to choose examples (e.g. "football, cooking").
 - exam_date_override: the date of their exam as YYYY-MM-DD if it differs from the course's paper dates; an empty string clears it.
-- answer_length: roughly how many words they want in an answer.
+- answer_length: roughly how many words they want in an answer. Set it whenever they ask for shorter or more detailed replies; their choice then wins over the per-step lengths.
 - add_assessment: an upcoming homework, class_test or mock of their own, with its date and the topics it covers. Read back the matched topics and part count so they can confirm; if nothing matched, show them the topics returned and ask which.
 - remove_assessment: the id of one to remove (the profile lists them).
 

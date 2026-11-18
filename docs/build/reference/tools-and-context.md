@@ -189,6 +189,12 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
 - `score_next` ids are letters, `a`, `b`, `c`… per part in point order (step 05c). A research turn's `score_next` always includes `ail_verify`'s ticks (step 05e).
 - `style`, sent only on the first `tutor_turn` of a session or when `client`, `interests` or `max_words` changed since it was last sent (step 05c):
   - `max_words`: the profile's `answer_length`, else `style.max_words`. It limits the explanation only; MCQ options don't count.
+  - **Per step (reply-style):** that `max_words` is the ceiling for the session. A step gets its own `data.max_words` only when its target is below the ceiling:
+    - while fatigued, every step: `style.length_fatigued_share` of the ceiling;
+    - otherwise, a review or check (`ask_mcq` with purpose `check`, `review` or `prereq`) on a part at developing or above: `style.length_known_share` of it;
+    - a new point keeps the ceiling.
+  - **The student's own request always wins.** Once they set `answer_length` (the chatbot calls `update_my_profile` when they ask for shorter or more detailed replies), nothing is shrunk, and `teach_point`'s word budget becomes their length.
+  - Why: the expertise reversal effect. Full explanations help novices but slow down students who already know the material (Kalyuga et al., 2003).
   - `interests`: from the profile. When empty, the chatbot uses a neutral everyday example (tune-from-research: it no longer guesses from what it knows about the student).
   - `format`: `text/format/<client>.md`, the first of `claude`, `chatgpt` or `gemini` contained in `client`, else `default`.
 - `reference`: only the blocks the plan's moves use, from `[moves.<move>] reference` in `context.toml` (step 05c), and only those in the profile. `misconceptions.held` is the step part's held misconceptions, in full. `misconceptions.watch_for` goes only with moves that ask something (`[watch_for] moves`), as `id` and `wrong_idea` only, so the chatbot can tag a new one. `exam_relevance` is added only when the message mentions an exam or a command word. Before 05c: the profile's blocks that are not plan inputs. Plan inputs are `focus`, `prequestion`, `support`, `session` and `reviews_due`; `teaching_note` is never sent. A block that is only `{"items": [...]}` is sent as the list. The move texts say to use reference only when it helps the current step.

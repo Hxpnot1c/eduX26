@@ -241,6 +241,8 @@ class Blocks:
 @dataclass(frozen=True)
 class Style:
     max_words: int
+    length_known_share: float
+    length_fatigued_share: float
 
 
 @dataclass(frozen=True)
