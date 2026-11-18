@@ -135,6 +135,8 @@ def _how_ai_works(turn: context_blocks.Turn, blocks: dict, last: dict, steps: li
             if count % s.literacy.how_secure_every:
                 continue
         check = plan.how_check(turn, part, s)
+        if check is None:
+            continue
         saved = {k: check[k] for k in ("move", "key", "part_id", "data", "question")}
         return plan.with_check(steps, check), {"part_id": part, "followups": 0, "step": saved}
     return steps, None

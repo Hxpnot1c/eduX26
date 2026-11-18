@@ -130,7 +130,7 @@ Summaries and key wordings only, never long excerpts.
 | source_ids | **required**: the specification or textbook section the point is based on |
 | order | integer within the part: the order the points are taught and scored in (step 05d) |
 
-A part with no mark points uses its notes' key points, in file order.
+A part with no mark points uses its notes' key points, in file order, for teaching and scoring open answers. **Only mark points are ever the correct option of a multiple-choice question** (research fixes, 0004): note key points, key wording and descriptions are fragments or topic labels, so as an option the key would stand out. A part with no mark points gets open checks (its points shown, then an explain-back), with no intuition, check, prerequisite, review or how-AI-works MCQ. Write mark points as full statements in option form: no closing full stop, and like the part's misconceptions in length.
 
 ### trusted_sources.csv: where students can check claims (step 05e)
 | column | meaning |
@@ -224,6 +224,7 @@ The load report also lists **suggested links**: pairs of parts in different conc
 
 **Warnings** print:
 - a part with no question, mark point or note
+- a part with no mark points: its checks are open (explain-back), not multiple choice (research fixes, 0004)
 - a part with fewer than `mcq.min_distractors` misconceptions (step 05d; before, a part with no misconception)
 - a part with no `intuition` (step 05d)
 - an edge with no note, unless its `teach_use` is `intuition` (then it is an error)

@@ -233,7 +233,10 @@ def prequestion(turn: Turn, settings: Settings) -> dict | None:
     if len(found) < settings.mcq.min_distractors or _session_offloaded(turn):
         return None
     found.sort(key=lambda m: "examiner_report" not in graph.source_types(m["source_ids"]))
-    return {"part_id": part, "correct": core_idea(part), "source": intuition_source(turn, part),
+    keys = [mp for mp in graph.mark_points_for([part]) if mp["node_id"] == part]
+    if not keys:   # the key is a mark point, never key wording or the description (plan.mcq_points)
+        return None
+    return {"part_id": part, "correct": keys[0]["point"], "source": intuition_source(turn, part),
             "distractors": [{"id": m["id"], "wrong_idea": m["wrong_idea"], "correction": m["correction"]}
                             for m in found[:settings.mcq.max_options - 1]]}
 

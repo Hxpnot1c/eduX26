@@ -216,12 +216,26 @@ def distractors(part_id: str, settings: Settings) -> list[dict]:
     return [{"id": m["id"], "text": m["wrong_idea"]} for m in found[:settings.mcq.max_options - 1]]
 
 
+def option_form(text: str) -> str:
+    """An option as shown: trimmed, with no closing full stop, so the key can't be told apart by punctuation."""
+    return text.strip().rstrip(".;!").rstrip()
+
+
+def mcq_points(part_id: str) -> list[dict]:
+    """The points a part's MCQs may use as the correct option: its own mark points only. Note key points, key
+    wording and the description are never options (they are fragments or topic labels, so the key would stand
+    out); a part without mark points gets open checks instead (open_check), and ingest warns about it."""
+    return [{"id": mp["id"], "point": mp["point"], "exemplar": mp["exemplar"] or ""}
+            for mp in graph.mark_points_for([part_id]) if mp["node_id"] == part_id]
+
+
 def question(part_id: str, purpose: str, correct: str, settings: Settings, point_id: str | None = None) -> dict:
     """What a multiple-choice question asks, before it is lettered: the correct option's text, the part's
     misconceptions as wrong options, and whether the chatbot may write one more (the part has fewer than
-    mcq.min_distractors). Kept with a pending question so it can be asked again with new letters."""
-    wrong = distractors(part_id, settings)
-    return {"part_id": part_id, "purpose": purpose, "point_id": point_id, "correct": correct, "wrong": wrong,
+    mcq.min_distractors). Kept with a pending question so it can be asked again with new letters. Every option
+    is in option_form."""
+    wrong = [{**w, "text": option_form(w["text"])} for w in distractors(part_id, settings)]
+    return {"part_id": part_id, "purpose": purpose, "point_id": point_id, "correct": option_form(correct), "wrong": wrong,
             "extra": len(wrong) < settings.mcq.min_distractors}
 
 
@@ -362,8 +376,9 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
         if stuck and handled.get(focus) != session_id:
             handled[focus] = session_id
             back = stuck["step_back_to"]
-            if back:
-                return [prereq_check(turn, back["id"], focus, settings, stuck=True)]
+            stepped = prereq_check(turn, back["id"], focus, settings, stuck=True) if back else None
+            if stepped:
+                return [stepped]
             anchor = blocks.get("anchor")
             return [_step("reteach", focus, {
                 "anchor": {"id": anchor["part_id"], "name": anchor["name"], "note": anchor["note"]} if anchor else None,
@@ -394,7 +409,9 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
 
     for item in (blocks.get("weak_prerequisites") or {}).get("items", []):
         if item["level"] == "new" and not _checked_this_session(turn, item["part_id"], last_plan):
-            return [prereq_check(turn, item["part_id"], item["for"], settings, note=item["note"])]
+            asked = prereq_check(turn, item["part_id"], item["for"], settings, note=item["note"])
+            if asked:
+                return [asked]
 
     teaching = teach(turn, focus, settings, progress)
     held = [m for m in held_misconceptions(turn.student_id, turn.parts) if m["id"] not in handled]
@@ -416,8 +433,16 @@ def _progress(progress: dict, part_id: str) -> dict:
     return progress.setdefault(part_id, {"index": 1, "reteaches": 0, "intuition_asked": False})
 
 
+def open_check(turn: Turn, part_id: str) -> list[dict]:
+    """A part with no mark points has no MCQs: show its points, then the explain-back of the whole part, scored
+    on its points (the open check). Ends the part's progress, as an explain-back does."""
+    return [_step("show", part_id, {"point": "; ".join(p["point"] for p in _points(part_id))}),
+            _step("explain_back", part_id)]
+
+
 def check(turn: Turn, part_id: str, index: int, settings: Settings, avoid: list[str] | None = None) -> dict:
-    """ask_mcq (check) on one point of a part: the point's wording is the correct option."""
+    """ask_mcq (check) on one point of a part: the point's wording is the correct option. Only for a part with
+    mark points (mcq_points), whose points are then its mark points."""
     point = _points(part_id)[index - 1]
     return ask_mcq(turn, question(part_id, "check", point["point"], settings, point_id=point["id"]),
                    {"index": index}, avoid)
@@ -432,6 +457,9 @@ def teach(turn: Turn, part_id: str, settings: Settings, progress: dict) -> list[
     level = learner.support_level(turn.p(part_id))
     points = _points(part_id)
     state = _progress(progress, part_id)
+    if not mcq_points(part_id):
+        progress.pop(part_id, None)
+        return open_check(turn, part_id)
     if state.pop("check_due", False) and state["index"] <= len(points):   # taught, but its check was replaced
         return [check(turn, part_id, state["index"], settings)]
     if level == "explain_back" or state["index"] > len(points):
@@ -485,7 +513,10 @@ def shown_or_skipped(turn: Turn, part_id: str, settings: Settings, progress: dic
     """"I know this" (skip_point): the current point's check only, with no teaching. "Just show me": show, a
     one-line intuition (from the same source as the intuition question) and the point, then its check; after
     show.max_per_part_session shows of the part this session, a 2-option check first instead, whose feedback
-    gives the point."""
+    gives the point. A part with no mark points gets its open check."""
+    if not mcq_points(part_id):
+        progress.pop(part_id, None)
+        return open_check(turn, part_id)
     state = _progress(progress, part_id)
     points = _points(part_id)
     index = min(state["index"], len(points))
@@ -519,9 +550,12 @@ def after_check(turn: Turn, evidence: dict, settings: Settings, progress: dict, 
     return teach(turn, part, settings, progress)
 
 
-def prereq_check(turn: Turn, part_id: str, for_part: str, settings: Settings, note: str = "", stuck: bool = False) -> dict:
+def prereq_check(turn: Turn, part_id: str, for_part: str, settings: Settings, note: str = "", stuck: bool = False) -> dict | None:
     """ask_mcq (prereq) on a weak prerequisite: its first point is the correct option. stuck marks a step back
-    from a part they're stuck on, so the chatbot says it is trying a different way in."""
+    from a part they're stuck on, so the chatbot says it is trying a different way in. None for a part with no
+    mark points."""
+    if not mcq_points(part_id):
+        return None
     data = {"name": graph.get_node(part_id)["name"], "for": for_part}
     if note:
         data["note"] = note
@@ -555,7 +589,7 @@ def _second_step(turn: Turn, blocks: dict, settings: Settings, reviews_only: boo
     if support and support.get("extend") and not reviews_only:
         candidates.append(("extend", support["part_id"], None))
     for r in (blocks.get("reviews_due") or {}).get("items") or []:
-        if r["part_id"] not in turn.parts:
+        if r["part_id"] not in turn.parts and mcq_points(r["part_id"]):
             candidates.append(("review", r["part_id"], r))
     if not candidates:
         return None
@@ -737,8 +771,11 @@ HOW_TRIGGERS = (
 )
 
 
-def how_check(turn: Turn, part_id: str, settings: Settings) -> dict:
-    """ask_mcq (how_ai_works) on a how-AI-works part: its point and its misconceptions, shuffled and lettered."""
+def how_check(turn: Turn, part_id: str, settings: Settings) -> dict | None:
+    """ask_mcq (how_ai_works) on a how-AI-works part: its point and its misconceptions, shuffled and lettered.
+    None for a part with no mark points."""
+    if not mcq_points(part_id):
+        return None
     point = _points(part_id)[0]
     return ask_mcq(turn, question(part_id, "how_ai_works", point["point"], settings, point_id=point["id"]))
 

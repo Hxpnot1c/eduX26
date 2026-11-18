@@ -348,6 +348,9 @@ class _Checker:
                 continue
             level = r.get("level")
             if level == "part":
+                if not points[i]:
+                    self.warn("nodes.csv", r, f"part {i!r} has no mark points: its checks are open (explain-back), "
+                              "not multiple choice")
                 if not covered.intersection(lineage(i)):
                     self.warn("nodes.csv", r, f"part {i!r} has no question, mark point or note")
                 if misconception_count[i] < settings.mcq.min_distractors:
