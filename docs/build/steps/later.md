@@ -99,9 +99,21 @@ A simple read-only page at `/me?key=` showing:
 - Content review: list flagged and draft rows with approve, reject and edit, writing to the teacher feedback CSV.
 
 ### Priorities, next (after step 05i)
-- Teachers setting assessments for a whole class.
+- Teachers setting assessments for a whole class: planned in step 05u.
 - Mock marks counted as evidence.
+- **Research item: per-type learn rates.** The model has one learn rate for all evidence types, so the value score can't prefer the step a student learns most from (step 05n). Find evidence on whether learning differs by question type before adding per-type rates.
 - Learning the `[priorities]` weights from the `considered` logs: a contextual bandit, checked first against old logs (offline evaluation) before it changes any choice.
+
+### Fatigue, next (after step 05s)
+- Fit the school's own time-on-task curve, to replace the research average once there's data.
+- Per-student persistence, using the same shrinkage approach as the starting offsets. Persistence varies between students (Wu, Debeer et al., 2019).
+
+### Assessments, next (after step 05u)
+- Import assignments from Microsoft Teams Assignments and Google Classroom instead of entering them twice.
+- Real calendar reminders. Synapse can only remind in chat, at the start of a session.
+
+### Rename, after the competition
+- Rename the internal identifiers (the `edux/` package and imports, `EDUX_*` environment variables, the repo) to Synapse in one commit.
 
 ### Diagrams, next (after step 05j)
 - Server-drawn diagrams: eduX draws standard diagrams (supply and demand shifts, a tax wedge, externalities, AD/AS) by rule and returns an image link, for chatbots that can't draw.
