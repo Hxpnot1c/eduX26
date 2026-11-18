@@ -225,6 +225,7 @@ The load report also lists **suggested links**: pairs of parts in different conc
 **Warnings** print:
 - a part with no question, mark point or note
 - a part with no mark points: its checks are open (explain-back), not multiple choice (research fixes, 0004)
+- a misconception more than 20% longer or shorter than a mark point of its part, and a pack where the mark point is the shortest, middle or longest option 15 points more often than an even spread: either way the multiple-choice checks can be answered by length alone (research fixes, 0011; both thresholds are our choice, `KEY_LENGTH_BAND` and `KEY_RANK_SKEW` in `ingest/validate.py`)
 - a part with fewer than `mcq.min_distractors` misconceptions (step 05d; before, a part with no misconception)
 - a part with no `intuition` (step 05d)
 - an edge with no note, unless its `teach_use` is `intuition` (then it is an error)

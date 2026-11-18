@@ -23,13 +23,13 @@ Ask each student, in their own chat: **"How do I calculate price elasticity of d
 | student | what the chatbot should do | plan |
 |---|---|---|
 | demo-secure | asks a multiple-choice question first and nothing else | `prequestion` |
-| demo-weak | no question on the formula; first checks what PED means with one quick question. Once they answer: feedback, then corrects "divide the change in price by the change in quantity" | `check_prereq`, then `feedback` (with the held misconception) |
+| demo-weak | no question on the formula; first checks what PED means with one quick question. Once they answer: feedback, then corrects "divide the change in price by the change in quantity demanded to get PED" | `check_prereq`, then `feedback` (with the held misconception) |
 | demo-showme | asks the question first, unless they've said "just show me" this session; has reviews booked from earlier "just show me" turns | `prequestion` |
 
 Optionally show the plans side by side (`python -m edux.cli context --student <id> --message "..."` shows the blocks they're built from) to make the difference explicit.
 
 ## 2. Pre-question and misconception correction (demo-secure, about 1 minute)
-1. The chatbot asks the multiple-choice question about the PED formula. Answer with the wrong option **"Divide the change in price by the change in quantity"**.
+1. The chatbot asks the multiple-choice question about the PED formula. Answer with the wrong option **"Divide the change in price by the change in quantity demanded to get PED"**.
 2. The answer reaches the server at the start of that reply, so the plan is `feedback` then `teach`. The chatbot names that wrong idea, says why it's wrong (quantity goes on top, and it uses percentage changes), then gives a short worked example. It closes with "try this one, or ask for a hint", rather than offering a choice after showing everything.
 3. In the terminal, `state --student demo-secure`: the target now has evidence and the misconception is active. Ask the same question again: no pre-question this time.
 

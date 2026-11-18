@@ -19,6 +19,8 @@ from ingest.registry import FileSpec, split_list
 MAX_KEY_WORDING_WORDS = 15  # a key wording must be shorter than this
 MAX_SUMMARY_WORDS = 120
 LOW_CONFIDENCE = 0.5
+KEY_LENGTH_BAND = 0.20  # our choice: each misconception within 20% of a mark point's length (MCQ options of similar length)
+KEY_RANK_SKEW = 0.15    # our choice: warn when the key is the shortest, middle or longest option this much more often than even
 URL = re.compile(r"https?://[A-Za-z0-9.-]+\.[A-Za-z]{2,}(:\d+)?(/\S*)?")
 
 
@@ -115,6 +117,11 @@ def value_error(col: registry.Column, value: str) -> str | None:
 
 def _words(text: str) -> int:
     return len(text.split())
+
+
+def _option(text: str) -> str:
+    """An MCQ option as shown (edux.plan.option_form): trimmed, with no closing full stop."""
+    return text.strip().rstrip(".;!").rstrip()
 
 
 class _Checker:
@@ -307,6 +314,46 @@ class _Checker:
 
     # --- warnings -------------------------------------------------------
 
+    def check_option_lengths(self) -> None:
+        """Length cues in the server-built MCQs (step 05d): a check shows a mark point as the correct option beside its
+        part's misconceptions, so a key much longer or shorter than them, or a key that is usually the middle-length
+        option, can be picked without knowing the subject (item-writing guideline: options of similar length). A part
+        with more misconceptions than fit in one question (mcq.max_options - 1) is left out of the rank count."""
+        max_options = load_settings().mcq.max_options
+        wrong: dict[str, list[int]] = defaultdict(list)
+        for r in self.rows("misconceptions.csv"):
+            if r.get("status") != "rejected" and r.get("wrong_idea"):
+                wrong[r.get("node_id", "")].append(len(_option(r["wrong_idea"])))
+        seen = {"shortest": 0.0, "middle": 0.0, "longest": 0.0}
+        even = dict(seen)
+        sets = 0
+        for r in self.rows("mark_points.csv"):
+            lengths = wrong.get(r.get("node_id", ""), [])
+            if r.get("status") == "rejected" or not r.get("point") or not lengths:
+                continue
+            key = len(_option(r["point"]))
+            far = sorted(n for n in lengths if abs(n - key) > KEY_LENGTH_BAND * key)
+            if far:
+                self.warn("mark_points.csv", r, f"mark point {r.get('id')!r} is {key} characters but {len(far)} of its "
+                          f"part's misconceptions are more than {KEY_LENGTH_BAND:.0%} longer or shorter "
+                          f"({', '.join(map(str, far))}): its multiple-choice check can be answered by length")
+            if len(lengths) < 2 or len(lengths) + 1 > max_options:
+                continue
+            n, below = len(lengths) + 1, sum(x < key for x in lengths)
+            ranks = range(below, n - sum(x > key for x in lengths))   # ties: every rank they could take, equally
+            for rank in ranks:
+                seen["shortest" if rank == 0 else "longest" if rank == n - 1 else "middle"] += 1 / len(ranks)
+            even["shortest"] += 1 / n
+            even["longest"] += 1 / n
+            even["middle"] += (n - 2) / n
+            sets += 1
+        if sets >= 6:
+            for rank, count in seen.items():
+                if (count - even[rank]) / sets > KEY_RANK_SKEW:
+                    self.warn("mark_points.csv", None, f"the mark point is the {rank} option in {count:.0f} of {sets} "
+                              f"multiple-choice checks (about {even[rank]:.0f} if spread evenly): length alone beats "
+                              "chance; write some misconceptions longer and some shorter than the mark points they sit with")
+
     def check_coverage(self) -> None:
         by_id = {r["id"]: r for r in self.rows("nodes.csv") if r.get("id")}
 
@@ -425,6 +472,7 @@ def validate_tables(tables: dict[str, Table]) -> ValidationResult:
     checker.check_order()
     checker.check_values()
     checker.check_coverage()
+    checker.check_option_lengths()
     return checker.result
 
 
