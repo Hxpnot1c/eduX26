@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -41,6 +42,54 @@ def cmd_add_student(name: str, course: str, profile: str | None = None) -> int:
         return 1
     print(f"student: {created['id']}")
     print(f"key:     {created['key']}")
+    return 0
+
+
+def cmd_delete_student(student: str, yes: bool) -> int:
+    """Delete every row about a student, in every table. Needs --yes: it cannot be undone."""
+    if learner.get_student(student) is None:
+        print(f"unknown student {student!r}", file=sys.stderr)
+        return 1
+    if not yes:
+        print(f"this deletes every row about {student} and cannot be undone; run again with --yes", file=sys.stderr)
+        return 1
+    counts = learner.delete_student(student)
+    print(f"{student}: deleted " + ", ".join(f"{n} {t}" for t, n in counts.items() if n))
+    return 0
+
+
+def cmd_export_student(student: str, out: Path | None) -> int:
+    """Write everything stored about a student as JSON, to a file or to the screen."""
+    try:
+        data = learner.export_student(student)
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
+    text = json.dumps(data, indent=2, ensure_ascii=False)
+    if out:
+        out.write_text(text, encoding="utf-8")
+        print(f"{student}: exported {sum(len(r) for r in data['tables'].values())} rows to {out}")
+    else:
+        print(text)
+    return 0
+
+
+def cmd_leave_student(student: str, on: str | None) -> int:
+    """Mark a student as having left; their data is deleted retention.after_leaving_days later by purge."""
+    try:
+        learner.leave_student(student, on)
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(f"{student}: marked as left; purge deletes their data after {learner._settings().retention.after_leaving_days} days")
+    return 0
+
+
+def cmd_purge() -> int:
+    """Apply the retention settings: old call-log rows, and students who left long enough ago."""
+    done = learner.purge()
+    print(f"purged {done['call_log']} call-log row(s) and {len(done['students'])} student(s)" +
+          (": " + ", ".join(done["students"]) if done["students"] else ""))
     return 0
 
 
@@ -265,6 +314,16 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--name", required=True)
     p.add_argument("--course", required=True)
     p.add_argument("--profile", help="context profile (default from context.toml)")
+    p = sub.add_parser("delete-student", help="delete every row about a student, in every table (cannot be undone)")
+    p.add_argument("--student", required=True)
+    p.add_argument("--yes", action="store_true", help="confirm")
+    p = sub.add_parser("export-student", help="write everything stored about a student as JSON")
+    p.add_argument("--student", required=True)
+    p.add_argument("--out", type=Path, help="a file (default: print it)")
+    p = sub.add_parser("leave-student", help="mark a student as having left; purge deletes their data later")
+    p.add_argument("--student", required=True)
+    p.add_argument("--on", help="the date they left, YYYY-MM-DD (default: today)")
+    p = sub.add_parser("purge", help="apply the retention settings: old call-log rows and students who left")
     p = sub.add_parser("set-profile", help="switch a student's context profile")
     p.add_argument("--student", required=True)
     p.add_argument("--profile", required=True, help="a profile in context.toml, or 'default'")
@@ -316,6 +375,14 @@ def main(argv: list[str] | None = None) -> None:
         code = cmd_load(args.pack)
     elif args.command == "add-student":
         code = cmd_add_student(args.name, args.course, args.profile)
+    elif args.command == "delete-student":
+        code = cmd_delete_student(args.student, args.yes)
+    elif args.command == "export-student":
+        code = cmd_export_student(args.student, args.out)
+    elif args.command == "leave-student":
+        code = cmd_leave_student(args.student, args.on)
+    elif args.command == "purge":
+        code = cmd_purge()
     elif args.command == "set-profile":
         code = cmd_set_profile(args.student, args.profile)
     elif args.command == "log":

@@ -12,7 +12,7 @@ import json
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 
-from edux import graph, learner
+from edux import db, graph, learner
 
 STUDENTS = {"demo-secure": "Demo: mostly secure", "demo-weak": "Demo: weak prerequisite", "demo-showme": "Demo: just show me"}
 EXAM_IN_DAYS = 150
@@ -291,16 +291,34 @@ def _course(course: str | None) -> str:
     return rows[0]
 
 
+def keys_path():
+    """Where the demo students' keys are kept: demo-keys.json in the data folder. Real students' keys are stored only
+    as hashes. The demo students are fixtures with fixed ids and no personal data, and the demo script prints their
+    keys, so they are kept readable here (the data folder is git-ignored)."""
+    return db.data_dir() / "demo-keys.json"
+
+
+def demo_keys() -> dict[str, str]:
+    """The demo students' keys, by id (empty if none were saved)."""
+    try:
+        return json.loads(keys_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
 def remove_students() -> dict[str, str]:
-    """Delete the demo students, their events and derived state. Returns the keys they had, by id."""
-    conn = learner._conn()
-    keys = {sid: s["key"] for sid in STUDENTS if (s := learner.get_student(sid))}
-    ids = list(keys)
-    with conn:
-        for sid in ids:
-            for table in ("exchange_log", "evidence_log", "literacy_skip", "student_profile", "student_assessment", "issued_plan", *learner.DERIVED_TABLES):
-                conn.execute(f"DELETE FROM {table} WHERE student_id = ?", (sid,))
-            conn.execute("DELETE FROM student WHERE id = ?", (sid,))
+    """Delete the demo students and every row about them (the call log too). Returns the keys they had, by id: from
+    demo-keys.json, or, for a database from before step 05x, from the student row."""
+    saved, conn = demo_keys(), learner._conn()
+    keys = {}
+    for sid in STUDENTS:
+        if learner.get_student(sid) is None:
+            continue
+        legacy = conn.execute("SELECT key FROM student WHERE id = ?", (sid,)).fetchone()
+        key = saved.get(sid) or (legacy["key"] if legacy else None)
+        if key:
+            keys[sid] = key
+        learner.delete_student(sid)
     return keys
 
 
@@ -319,12 +337,10 @@ def seed(course: str | None = None, reset: bool = False, overrides: str | None =
     exam = (clock.now + timedelta(days=EXAM_IN_DAYS)).date().isoformat()
     keys = {}
     for sid, name in STUDENTS.items():
-        keys[sid] = learner.add_student(name, course_id, student_id=sid)["key"]
-        if sid in old_keys:   # --reset keeps each demo student's key, so connector URLs keep working
-            with learner._conn() as conn:
-                conn.execute("UPDATE student SET key = ? WHERE id = ?", (old_keys[sid], sid))
-            keys[sid] = old_keys[sid]
+        # --reset keeps each demo student's key, so connector URLs keep working
+        keys[sid] = learner.add_student(name, course_id, student_id=sid, key=old_keys.get(sid))["key"]
         service.update_profile(learner.get_student(sid), exam_date_override=exam)
         SEEDS[sid](sid, roles, clock)
         _flush()
+    keys_path().write_text(json.dumps(keys), encoding="utf-8")
     return {"course": course_id, "roles": roles, "warnings": warnings, "students": keys}
