@@ -38,7 +38,7 @@ mcq_check = { slip = 0.10, guess = 0.25 }   # a multiple-choice check on one poi
 [nudges]                   # small odds multipliers from an ordinary exchange. Judgement calls, starting values (no study gives them); ceiling: decision 0003
 depth = { surface = 1.0, mechanism = 1.0, transfer = 1.1 }   # a basic question doesn't lower the estimate; evidence does that
 engagement = { passive = 1.0, active = 1.0, constructive = 1.05 }
-ceiling = 0.40             # an exchange alone never lifts a part above this p_known; at most levels.new
+ceiling = 0.35             # an exchange alone never lifts a part above this p_known; strictly below levels.new
 concept_tag_strength = 0.5 # a nudge on a concept tag reaches its parts at this strength
 
 [evidence]

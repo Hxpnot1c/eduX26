@@ -16,7 +16,7 @@ def test_many_deep_exchanges_never_pass_the_ceiling(student, part):
     for _ in range(80):    # about 14 labelled messages used to reach "secure"
         learner.record_exchange(student["id"], [part], "transfer", "constructive", apply="now")
     assert _p_known(student["id"], part) <= ceiling + 1e-9
-    assert learner.level(learner.part_p(student["id"], part)) != "secure"
+    assert learner.level(learner.part_p(student["id"], part)) == "new"      # not "developing", not "secure"
 
 
 def test_the_nudge_still_raises_a_part_below_the_ceiling(student, part):
@@ -41,10 +41,16 @@ def test_a_surface_passive_exchange_changes_nothing(student, part):
     assert _p_known(student["id"], part) == pytest.approx(start)
 
 
-def test_settings_refuse_a_ceiling_above_the_new_level(tmp_path):
+@pytest.mark.parametrize("bad_ceiling", ["0.40", "0.90", "0.0"])
+def test_settings_refuse_a_ceiling_that_is_not_strictly_below_the_new_level(tmp_path, bad_ceiling):
     text = settings.SETTINGS_PATH.read_text(encoding="utf-8")
-    assert "ceiling = 0.40" in text
+    assert "ceiling = 0.35" in text
     bad = tmp_path / "settings.toml"
-    bad.write_text(text.replace("ceiling = 0.40", "ceiling = 0.90"), encoding="utf-8")
+    bad.write_text(text.replace("ceiling = 0.35", f"ceiling = {bad_ceiling}"), encoding="utf-8")
     with pytest.raises(settings.SettingsError, match="nudges.ceiling"):
         settings.load_settings(bad)
+
+
+def test_the_ceiling_itself_is_a_new_part():
+    s = learner._settings()
+    assert learner.level(s.nudges.ceiling) == "new"

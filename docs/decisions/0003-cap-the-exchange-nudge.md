@@ -16,7 +16,7 @@ This is the opposite of the first design principle in the research: judge behavi
 
 ## Decision
 
-Add `nudges.ceiling = 0.40` in `settings.toml`. An exchange may raise a part towards the ceiling and no further:
+Add `nudges.ceiling = 0.35` in `settings.toml`. An exchange may raise a part towards the ceiling and no further:
 
 ```
 p = max(p_before, min(odds / (1 + odds), nudges.ceiling))
@@ -24,7 +24,7 @@ p = max(p_before, min(odds / (1 + odds), nudges.ceiling))
 
 - It never lowers a part (multipliers are at least 1).
 - It does nothing to a part that evidence has already lifted past the ceiling.
-- `load_settings` refuses a ceiling above `levels.new` (0.40), so conversation alone can never move a part out of "new".
+- `load_settings` refuses a ceiling that is not strictly below `levels.new` (0.40). `level()` calls a part "new" only when `p < levels.new`, so a ceiling equal to 0.40 would let talk alone show "developing". Strictly below, talk alone always leaves a part at "new".
 - Bump `protocol` to `v0.3`, because the meaning of scoring changes.
 
 The labels stay in the exchange log. The AI-literacy trends and the engagement rules still read them.
@@ -39,7 +39,7 @@ The labels stay in the exchange log. The AI-literacy trends and the engagement r
 | Research review, F1 (LLM scoring of chat logs) | The best case found was 0.85 accuracy against expert labels with no annotator agreement reported; no validated scorer for chat-log constructs exists. | Abstract only | Not about this exact label set. |
 | Sharma et al. (2023), arXiv 2310.13548 | Assistants agree with users, and preference models sometimes reward it. | Single study, replicated across five assistants | Not tested on depth labels. |
 
-The size of the ceiling (0.40) is a **judgement call, starting value**. No study gives it. It is set equal to the "new" threshold so the rule is easy to state: talking alone never moves a part out of "new".
+The size of the ceiling (0.35) is a **judgement call, starting value**. No study gives it. It sits strictly below the "new" threshold, so the rule is easy to state: talking alone never moves a part out of "new". A part starts at 0.30 (0.24 for a hard part, 0.36 for an easy one), so for a normal part talk can add at most 0.05. An easy part that already starts above the ceiling is left as it is.
 
 ## Alternatives considered
 
@@ -47,6 +47,10 @@ The size of the ceiling (0.40) is a **judgement call, starting value**. No study
 - **Cap at `levels.secure − 0.05`.** A student could still reach "developing" by talk alone, and "developing" changes the support level and the reviews offered.
 - **Leave it and rely on later evidence to correct it.** Rejected: until then the level is wrong, and the demo and any teacher view would show it.
 - **Validate the labels server-side.** Better in the long term (audit item C2), but a larger change. The ceiling is the minimal safe step.
+
+## Correction after review
+
+The first version of this record set the ceiling to 0.40, equal to `levels.new`, and claimed talk could "never leave new". That was wrong: `level()` treats `p < 0.40` as "new", so exactly 0.40 shows "developing". The test only checked "not secure", so it missed this. Vishnu's review caught it. The ceiling is now 0.35, the settings check is strict, and the test asserts the level is "new".
 
 ## Consequences
 
@@ -65,7 +69,7 @@ python -m edux.cli state --student <each demo student>        # levels identical
 python scripts/check_mcp.py --url http://127.0.0.1:8765/mcp   # all checks passed, rebuild identical
 ```
 
-New tests in `tests/test_exchange_nudge.py`: 80 deep exchanges stay at or below the ceiling and not "secure"; a nudge still raises a low part; a nudge never lowers a part evidence lifted; a surface, passive exchange changes nothing; a ceiling above `levels.new` is refused when settings load.
+New tests in `tests/test_exchange_nudge.py`: 80 deep exchanges (transfer and constructive) stay at or below the ceiling and leave the part's level **"new"**; the ceiling itself is a "new" part; a nudge still raises a low part; a nudge never lowers a part evidence lifted; a surface, passive exchange changes nothing; a ceiling of 0.40, 0.90 or 0 is refused when settings load.
 
 ## What would change our mind
 
