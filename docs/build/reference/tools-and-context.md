@@ -279,8 +279,16 @@ Updates `student_profile`. `interests` and `answer_length` come back in every tu
 The numbered rules:
 1. Call `tutor_turn` at the start of every reply, before writing anything (step 05e: not only about the course).
 2. Do the plan's steps in order and nothing else.
-3. Label the student's message honestly.
-4. Tick only the points the student actually produced.
+3. Label the student's message honestly, by the labelling rules in the `tutor_turn` tool description (research fixes, 0007).
+4. Tick only the points the student fully produced.
+
+**Labelling rules (research fixes, 0007).** The `tutor_turn` tool description ends with five rules in our own words. They are tool text, so they don't count towards the instructions budget.
+- `request_type`: an answer is never `research`. A course answer or "ok, go on" is `concept`; an answer to a source check or a how-AI-works question, or chat off the course, is `other`.
+- The `concept` question feature.
+- `source_conflict`, Option A: a source that won't open, a missing claim, or a different figure, date or period counts; rounding of the same figure doesn't. If their check shows the chatbot was wrong, it also sets `conflict_flagged`.
+- `engagement` levels.
+- `points_met`: only whole points. On a Verify answer, tick a for looking (including "it wouldn't load") and d for a verdict; both figures without a verdict is c.
+
 5. Use `reference` only when it helps.
 6. Follow `style`.
 7. Never give a numeric mark for a level-marked question.
