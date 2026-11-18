@@ -133,7 +133,7 @@ CREATE TABLE call_log (id INTEGER PRIMARY KEY AUTOINCREMENT,
   student_id TEXT,                   -- null when the key didn't resolve
   tool TEXT NOT NULL,
   ms REAL NOT NULL,                  -- server time for the call
-  result_chars INTEGER NOT NULL,     -- size of the JSON result
+  result_chars INTEGER NOT NULL,     -- characters of the compact JSON result, as sent
   ok INTEGER NOT NULL,               -- 0 when the tool raised or returned ok: false
   error TEXT);
 CREATE INDEX idx_call_log_student ON call_log(student_id, ts);
@@ -147,7 +147,7 @@ CREATE TABLE issued_plan (student_id TEXT PRIMARY KEY,
   plan_json TEXT NOT NULL);          -- {"plan", "focus", "corrected", "offered", "considered"}: carried within a session ("considered": add-on candidates not picked, with values; never sent) ("offered": the offer_choice reasons made; "offered_stop" before engagement-rules)
 ```
 
-`migrations/007_call_log_budget.sql` (step 05c) adds `over_budget INTEGER NOT NULL DEFAULT 0` to `call_log`: 1 when a result was still over `results.max_chars` after dropping every reference block. `issued_plan.plan_json` also carries `style_sent` (the style last sent, so it is sent again only when it changes) and `pending` (the question last asked, until it is answered). From step 05d it carries `points` (progress through each part's points) and `mcq` (the letter → option map of the last MCQ), and from step 05e `literacy` (the pending literacy task and its follow-ups).
+`migrations/007_call_log_budget.sql` (step 05c) adds `over_budget INTEGER NOT NULL DEFAULT 0` to `call_log`: 1 when a `tutor_turn` or `get_my_progress` result was still over `results.max_chars` after dropping every reference block (`tutor_turn`) or trimming the lowest-ranked list items (`get_my_progress`). The every-part view of `get_my_progress` is over by design and is flagged. `issued_plan.plan_json` also carries `style_sent` (the style last sent, so it is sent again only when it changes) and `pending` (the question last asked, until it is answered). From step 05d it carries `points` (progress through each part's points) and `mcq` (the letter → option map of the last MCQ), and from step 05e `literacy` (the pending literacy task and its follow-ups).
 
 `migrations/008_evidence_point.sql` (05d follow-ups) adds the one point a multiple-choice question asked to `evidence_log`. It is set for checks, re-checks, prerequisite checks (the prerequisite's first point) and reviews, and from step 05e for `ail_how` checks. It stays null for explain-backs and other open answers that cover several points, and for intuition questions. Older rows stay null and replay unchanged.
 

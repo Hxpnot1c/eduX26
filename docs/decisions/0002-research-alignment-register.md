@@ -50,8 +50,8 @@ The register cites sources in short form. Each implementing record gives the ful
 
 | ID | Finding | Status |
 |---|---|---|
-| C15 | The `finally` block in `timed()` can replace a tool result if the `call_log` insert fails. Stored error text can echo input. | Planned |
-| C16 | The result budget counts "£" as six characters (escaped JSON), so reference blocks drop early. | Planned |
+| C15 | The `finally` block in `timed()` can replace a tool result if the `call_log` insert fails. Stored error text can echo input. | Proposed: [0004](0004-count-results-as-sent.md), #47 |
+| C16 | The result budget did not count what is sent: the SDK pretty-prints (3,571 characters on the wire against 2,355 counted for `get_my_progress`), `get_my_progress` was not checked, and the gate used a median. | Proposed: [0004](0004-count-results-as-sent.md), #47 |
 | C17 | Only three words of instruction headroom (897 of 900). Tool descriptions (895 words) are outside the cap. | Planned (before Part 2 A) |
 | C18 | Unbounded input sizes; no rate limit; migrations not run under a lock. | Planned |
 | C19 | No unit tests. `scripts/check_mcp.py` is the only check and needs a running server. | Planned (this series) |

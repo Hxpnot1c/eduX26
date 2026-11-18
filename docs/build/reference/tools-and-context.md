@@ -21,6 +21,7 @@ Each student has a key. The connector URL is `https://<host>/mcp?key=<key>`.
 Every tool adapter is wrapped to time it. Each call:
 - writes a `call_log` row (see `database.md`);
 - prints one console line, e.g. `tutor_turn demo-weak 18ms 3.1k chars ok`, ending in `OVER BUDGET` when the result was over `results.max_chars` (step 05c; the row's `over_budget` is 1).
+- sends the result as **compact JSON text** (no spaces or newlines, non-ASCII characters as they are), and counts its size from that same text, so the number logged is the number sent (step 05w). A failure to write the log is printed on stderr and never replaces the result; stored error text is cut to 200 characters.
 
 `python -m edux.cli calls [--student] [--last N]` lists:
 - recent calls;

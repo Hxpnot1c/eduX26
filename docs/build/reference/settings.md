@@ -192,8 +192,8 @@ max_words = 120            # default length of a reply's explanation (MCQ option
 length_known_share = 0.5   # a review or check on a part at developing or above: this share of the ceiling (step 05j; Kalyuga et al., 2003)
 length_fatigued_share = 0.4   # every step while fatigued; neither shrinks a student's own answer_length
 
-[results]                  # size of a tutor_turn result (step 05c)
-max_chars = 2400           # about 600 tokens; over this, reference blocks are dropped, then the call is logged as over budget
+[results]                  # size of a tutor_turn or levels-only get_my_progress result, in characters of compact JSON as sent (steps 05c, 05w)
+max_chars = 2400           # engineering budget, about 600 tokens, not from research; over this, reference blocks (tutor_turn) or the lowest-ranked list items (get_my_progress) are dropped, then the call is logged as over budget
 
 [instructions]             # the MCP server instructions, sent once per chat (step 05c)
 max_words = 900            # server_instructions.md + style.md + every move section; over this is a startup error

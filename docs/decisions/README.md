@@ -85,5 +85,6 @@ The result that would make us revisit this.
 | [0001](0001-record-decisions.md) | Record decisions with their research basis | Accepted |
 | [0002](0002-research-alignment-register.md) | Research alignment register | Proposed |
 | [0003](0003-cap-the-exchange-nudge.md) | Cap what an ordinary exchange can do to a part's estimate | Proposed |
+| [0004](0004-count-results-as-sent.md) | Count tool results as they are sent, and keep every default result inside the budget | Proposed |
 
 Each later record is added to this table in the pull request that introduces it.

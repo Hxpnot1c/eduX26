@@ -37,6 +37,7 @@ This folder is the build plan for the learning service: an MCP server that a sch
 | [05t](steps/05t-bridge-ending.md) | `build/bridge-ending` | The reply's ending in a fixed order: urgent review, a bridge question towards the next topic, extend, other reviews |
 | [05u](steps/05u-class-assessments.md) | `build/class-assessments` | Teacher-set class tests and assignments, in-chat deadline reminders, and `plan_my_study` day-by-day plans |
 | [05v](steps/05v-exchange-nudge-ceiling.md) | `build/fix-exchange-nudge` | An ordinary exchange can raise a part only up to `nudges.ceiling` (0.40); `protocol` v0.3 (C1) |
+| [05w](steps/05w-result-size-as-sent.md) | `build/fix-result-size` | Results sent as compact JSON and sized as sent; levels-only progress kept within the budget; a logging failure can't replace a result (C15, C16) |
 | [06](steps/06-demo.md) | `build/06-demo` | Demo seeding script, README, tunnel and connector set-up |
 | [08](steps/08-tests.md) | `build/08-tests` | Unit tests with pytest: a fixture that loads the example pack into a throwaway folder, settings checks, learner-model core, rebuild, and the instruction and result size gates |
 | [Later](steps/later.md) | | Checks (past-question, explain-back, link, find-the-error), automated tests, student and teacher pages, extras |
