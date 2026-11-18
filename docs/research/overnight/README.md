@@ -2,11 +2,12 @@
 
 This folder holds research to make eduX a stronger entry for Cambridge EduX 2026, Challenge 1 ("Beneath the Surface: Defining and Assessing AI Literacy"). It builds on the personalisation review in [`../personalisation.md`](../personalisation.md) and does not repeat it.
 
-Read [`MORNING-BRIEF.md`](MORNING-BRIEF.md) first, then [`wednesday-build-list.md`](wednesday-build-list.md) and [`pitch-script.md`](pitch-script.md).
+Read [`MORNING-BRIEF.md`](MORNING-BRIEF.md) first, then [`RUNBOOK.md`](RUNBOOK.md) (the day's commands) and [`pitch-script.md`](pitch-script.md). [`wednesday-build-list.md`](wednesday-build-list.md) is the detailed reference.
 
 ## Files
 | file | what it holds |
 |---|---|
+| [`RUNBOOK.md`](RUNBOOK.md) | One page for Wednesday: set-up, fast-forward and branch, one row per patch (file, apply command, test, expected output, owner, slot), freeze, tunnel and connector, dry run and gate, filming, edit, deck, leave-behind. Commands tested on a fresh clone |
 | [`MORNING-BRIEF.md`](MORNING-BRIEF.md) | One page: Wednesday's five actions, decisions needing a human, pitch points, risks, what changed |
 | [`wednesday-build-list.md`](wednesday-build-list.md) | Wednesday's build as a patch series (fast-forward 05e, then 0001–0008, then the wave-6 patches 0011, 0009b and 0010b, all blind-verified; 0005 optional): for each step what it fixes on camera, the apply and test commands with expected results, hours, owner, what is lost if skipped; the 16:30 freeze, 18:00 gate, cut line and known residuals. Home report for the `w4-fix-*`, `w5-fix-*`, `w6-c*`, `w6-planA`, `w6-combined-*` and `w6-len-*` findings |
 | [`pitch-script.md`](pitch-script.md) | Word-for-word video voiceover (Plan A, and Plan B in §1b) with shot timings and captions, deck speaker notes, the expo leave-behind, every number → finding id → mark, and what we couldn't say. Edited after the wave-4 pitch red team |

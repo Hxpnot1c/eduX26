@@ -1,5 +1,7 @@
 # Wednesday build list (18 November)
 
+> **Follow [RUNBOOK.md](RUNBOOK.md) on the day** (one page: exact commands, tested on a fresh clone). This file is the detailed reference: what each patch fixes, its residuals and the cut line. Where the two differ, the runbook's commands win.
+
 **Eleven patches, check_mcp 74/74 after every one.** Wave 4 turned the build fixes into a patch series, `sims/fixes/combined/0001–0005`. Wave 5 added 0006–0008 (`-w5` files). Wave 6 replaced wave 5's two counters, 0009 and 0010, with fairer ones, **0009b and 0010b (✓ verified, verifier U)**, and added **0011 (MCQ option length rank; ✓ verified, verifier V, with an economics flag on two rows)**. Each patch applies on top of the one before it, on the 05e branch.
 - **0001–0005:** a blind integration verifier (set Q) applied them in order, merged four conflicts by hand and ran `check_mcp.py` after each step: 74/74 every time (`work/w4/verify-Q.json`).
 - **0006–0010:** a second blind verifier (set S) applied the renumbered files on 0001–0005: offsets only, no conflict, 74/74 after each (`work/w5/verify-S.json`, w5-fix-combined-2 ✓).
@@ -14,7 +16,7 @@ The words to record are in [pitch-script.md](pitch-script.md); the shot list and
 
 ## Summary
 - **0001–0004 first (4 h), then 0006–0008, then 0011, 0009b and 0010b (all recommended, tested diffs, verified).** Order: fast-forward 05e → 0001 core → 0002 focus → 0003 Verify scoring (+ migration 010) → 0004 MCQ (code + pack rows) → 0006 stuck ladder and review requests → 0007 labelling text → 0008 Ask guard → **0011 MCQ length rank (step 5f)** → 0009b dead-link report cap → 0010b show-then-pick cap.
-  - **0010b no longer fits by default.** Adding 0011 (15 min of B1's time) leaves 0010b's hour outside the 16:00 deadline unless the day runs an hour ahead (see "The clock"). **Drop 0010b first**, as before.
+  - **0010b is dropped by default.** Start it only if 0009b has passed `check` by 15:00, which means the day is an hour ahead (see "The clock").
   - **0005 (decay) is optional, not a default.** There is no room for it before the 16:30 freeze if 0006–0011 go in. **0009 and 0010 are superseded**: don't apply them.
 - **What it fixes on camera:**
   - Verify ends **developing** in all eight Plan A takes: 0.748 without 0009b, **0.740** with it (w6-planA ✓). On the bare branch it ended **new** in four of six takes, after the student had found the problem.
@@ -30,18 +32,11 @@ The words to record are in [pitch-script.md](pitch-script.md); the shot list and
 
 ## Before you start (B1, 5 min)
 
-The patches live on the research branch (`sims/fixes/` is untracked there). After the fast-forward, the 05e tree won't contain `docs/research/overnight/` unless you copy it in. Set one variable and use it throughout:
-
-```bash
-cd <repo root, on main after the fast-forward>          # "the 05e tree"
-FIX=docs/research/overnight/sims/fixes                   # if the research folder is in this tree
-# FIX=/home/vishnu/edux26-research/docs/research/overnight/sims/fixes   # otherwise, the absolute path
-PY=/home/vishnu/edux26/.venv/bin/python
-```
+The patches are committed (tracked) on branch `research/overnight`. [RUNBOOK.md](RUNBOOK.md) §0–1 gives the tested set-up: `ROOT`, `PY`, `SCRATCH`, `FIX` and `C` set once; `main` fast-forwarded to `build/05e-literacy-coaching` (`git merge --ff-only`, 14 commits); the fixes committed on a new branch `build/wednesday-fixes`, never on `main`; the patches copied outside the build tree with `git archive origin/research/overnight docs/research/overnight/sims | tar -x -C "$W/research"`; and a portable `check` function in place of `harness/check.sh` (which hard-codes one laptop's paths).
 
 **Testing a patched copy: always use an absolute `PYTHONPATH`, and print `edux.__file__` before trusting a number** (`cd /tmp && PYTHONPATH=/abs/copy $PY -c 'import edux; print(edux.__file__)'`). A relative path silently runs the venv's unpatched 05e code (w6-path-1 ~).
 
-**Apply each patch with a dry run first** (from the 05e tree):
+**Apply each patch with a dry run first.** The runbook uses `git apply --check "$C/<file>" && git apply "$C/<file>"` for all ten patches (tested on a fresh clone, 18 Nov). The notes below are the earlier history:
 ```bash
 git apply --check docs/research/overnight/sims/fixes/combined/000N-*.diff && \
 git apply docs/research/overnight/sims/fixes/combined/000N-*.diff          # 0001–0005 only
@@ -54,7 +49,7 @@ git apply docs/research/overnight/sims/fixes/combined/000N-*.diff          # 000
   patch -p1 --dry-run < "$P" && patch -p1 < "$P"
   ```
 - `patch -p1` works for 0001–0005 too, and so does `git am --keep-cr`. **Plain `git am` strips the CRs from 0004's two CSVs**, so the tree differs from the tested one.
-- Commit after each step, so that a later cut can rebuild cleanly.
+- Commit after each step on `build/wednesday-fixes` (`fix: apply 000N …`), so that a later cut can rebuild cleanly. Don't push until the freeze passes.
 
 **The check after every step (about 1 min):**
 ```bash
@@ -76,7 +71,7 @@ cd $FIX/../demo-05e
 $PY run_episode.py --code /tmp/claude-1000/w3-07/sN --label sN --out /tmp/claude-1000/w3-07/cap \
     --scenario final final_ticks_ad clean plan_now then_ped recommended
 ```
-- **Check the console for OVER BUDGET.** The verifier's Plan A digest reports no errors, but it does not record the reply budget. The largest result had only about 80 characters to spare before wave 4 (w3-07-c2 ~). 0003 adds a `skipped` field to progress and 0004 changes option texts, so **the budget has not been checked on the patched stack.**
+- **Watch for OVER BUDGET.** On the full stack, the largest `check_mcp` result was **2,395 of 2,400 characters** (verifier W): 5 to spare. In the runbook's fresh-clone test it reached **2,399 after 0004**: 1 to spare (the count varies with the shuffled options). Watch the over-budget count in `check` and the server console in the dry run. Fallback if anything goes over: drop one reference block from that move's context, or trim the longest text in `text/`, then rerun `check`.
 
 **Line numbers.** Every `file:line` in the reports is for `main`. After the fast-forward the lines shift, so find the code by function name.
 
@@ -88,8 +83,8 @@ $PY run_episode.py --code /tmp/claude-1000/w3-07/sN --label sN --out /tmp/claude
 |---|---|
 | **B1 · Build lead** | The fast-forward and every patch: applies it, runs `check.sh`, commits. Owns the freeze. |
 | **B2 · Second builder** | The step-specific test after each patch (below) and the Plan A rehearsal. Owns 0005 and the re-capture of the demo trees. |
-| **E · Economist** | **Reviews 0004's drafted pack rows from 09:30**: 20 mark points, 10 misconceptions, the four How AI works sets, reading the 22 that 0011 rewords in their 0011 wording. Rewords `tax_incidence_split_p2`/`_m2` after 0011 (13:30–14:00). Checks the economics in the dry run. |
-| **P · Pitch lead** | Pastes the Challenge 1 brief into `challenge-brief.md` (needs a human). Line card, adult account, deck, dry run and filming. |
+| **E · Economist** | **Reviews 0004's drafted pack rows from 09:30** (`$FIX/mcq-pack-proposal/*.csv`) and the 22 rows 0011 rewords (0011 section of `$C/README.md`), in their 0011 wording. 13:30–14:00: **drafts** the `tax_incidence_split_p2`/`_m2` rewording in a note, never in the CSVs. B1 pastes it in after 0011 passes (about 15:30), commits, reloads and reruns `check`. Leave-behind and QR code Thursday 13:00–17:00. Checks the economics in the dry run. |
+| **P · Pitch lead** | Pastes the Challenge 1 brief into `challenge-brief.md` at 09:00 (needs a human). Builds the deck 09:00–16:00. Line card, adult account, dry run and filming; video edit Thursday 09:00–17:00 with B2. |
 
 ## The series, step by step
 
@@ -99,28 +94,32 @@ Clock times assume a 09:00 start. The steps are serial: each patch needs the one
 |---|---|---|---|---|
 | 0 | Fast-forward `main` to 05e | B1 | 0.5 | 09:00–09:30 |
 | 1 | 0001 core | B1, B2 tests | 0.5 | 09:30–10:00 |
-| 2 | 0002 focus (**decide before 0003**) | B1, B2 tests | 0.5 | 10:00–10:30 |
+| 2 | 0002 focus (**default: apply**; B1 skips it only if `check` fails, then uses the 0003 variant; decided by 10:30) | B1, B2 tests | 0.5 | 10:00–10:30 |
 | 3 | 0003 Verify scoring + migration 010 | B1, B2 tests | 1.0 | 10:30–11:30 |
 | 4 | 0004 MCQ code + pack rows | B1 applies; E's review 09:30–11:30 | 1.5 | 11:30–13:00 |
-| — | lunch. **P and E agree the `source_conflict` rule (5c): 15 min** | P, E | | 13:00–13:30 |
+| — | lunch. **P and E decide by 13:30: the `source_conflict` rule (default: Option A) and the empty plan after a matched check (default: accept it for now).** If they reject Option A, skip 0007 and use cut-line row 6 | P, E | | 13:00–13:30 |
 | 5 | 0005 decay: **optional, not scheduled** (no room with 0006–0011; see the clock) | B2 | 1.0 (+0.5 re-capture) | — |
 | 5b | 0006 stuck ladder + review requests (recommended) | B1, B2 tests | 1.0 here (+0.5 in the dry run) | 13:30–14:30 |
 | 5c | 0007 labelling text + 0008 Ask guard (recommended) | B1, B2 tests | 0.75 | 14:30–15:15 |
-| 5f | 0011 MCQ length rank (pack rows + ingest warnings; ✓ verified). E's 0.5 h read is in the morning review; E rewords p2/m2 13:30–14:00 | B1, B2 tests | 0.25 | 15:15–15:30 |
+| 5f | 0011 MCQ length rank (pack rows + ingest warnings; ✓ verified). E's 0.5 h read is in the morning review; E drafts p2/m2 13:30–14:00, B1 pastes it after 0011 | B1, B2 tests | 0.25 | 15:15–15:30 |
 | 5d | 0009b dead-link report cap (✓ verified) | B1, B2 tests | 0.5 | 15:30–16:00 |
-| 5e | 0010b show-then-pick cap (✓ verified; **only if 0009b passes by 15:00**) | B1, B2 tests | 1.0 | **no slot**: 15:00–16:00 only if the day is 1 h ahead |
+| 5e | 0010b show-then-pick cap (✓ verified; **dropped by default**: start only if 0009b has passed `check` by 15:00) | B1, B2 tests | 1.0 | **no slot**: 15:00–16:00 only if the day is 1 h ahead |
+| — | Server, tunnel and claude.ai connector ([RUNBOOK](RUNBOOK.md) §4) | B2 | 0.5 | 15:30–16:15 (in parallel) |
+| — | Deck | P | | 09:00–16:00 (in parallel) |
 | 6 | Outside the series (optional, each with its own check) | B1 / E | ≤ 0.5 | only if ahead of time |
 | 6b | Mock-ups: browser check, light and dark, 1280×720 | E | 0.5 | 14:00–14:30 (in parallel) |
 | — | **Freeze and final checks** (check.sh, Plan A, seed-demo, re-capture, shot 5) | B1, B2 | 0.5 | 16:00–**16:30** |
 | 7 | Dry run in claude.ai (now also: review wordings, stuck turns, a pasted explain-back); **18:00 gate** | all | 1.5 | 16:30–18:00 |
 | 8 | Film Plan A or Plan B | all | 3.0 | 18:00–21:00 |
-| 9 | Label-agreement study (optional), with the 02a key fixes | all | 2 × 4 people | 21:00–23:00 or Thursday |
+| 9 | Label-agreement study (optional), with the 02a key fixes | all | 2 × 4 people | after submission |
+| — | Video edit (captions, highlight boxes, caption track) | P, B2 | | Thursday 09:00–17:00 |
+| — | Leave-behind and QR code | E | | Thursday 13:00–17:00 |
 
 **The clock.** Steps 0–4 end at 13:00. After lunch the patch window is 13:30–16:00 (2.5 h), because the freeze checks need 16:00–16:30. B1's time in that window: 0006 1.0 h + 0007/0008 0.75 h + 0011 0.25 h + 0009b 0.5 h = **2.5 h, which fills it**. 0010b's 1 h does not fit (without 0011 it was already 0.75 h over). So:
 - **0010b is the one to drop.** Start it only if 0009b passes `check.sh` by **15:00** (the day an hour ahead). Otherwise leave it out and use its cut-line workaround. If the team wants 0010b's pitch line more than 0011, dropping 0011 saves only 15 minutes: not enough on its own.
 - **0011 goes before 0009b**, because it is 15 minutes, touches no code and fixes a cue a judge can find at the expo. Applied right after 0008 is a tested position (scout: byte-identical trees in either order; verifier V: 74/74 on 0008 + 0011).
 - **0005 gives way.** It changes nothing in Plan A; it fixes off-camera levels and the How AI works ranking. If the team wants 0005 instead (for a How AI works ranking claim), apply it at 13:30–14:30 and expect 0009b not to fit either.
-- **E works in parallel:** the 22 rows of 0011 are read in the morning review, and p2/m2 are reworded 13:30–14:00, before the mock-up check.
+- **E works in parallel:** the 22 rows of 0011 are read in the morning review, and the p2/m2 rewording is drafted 13:30–14:00 (not in the CSVs). B1 applies it after 0011.
 - **The real-chatbot checks move into the dry run:** 0006's review wordings and stuck turns, and 0009b's pasted explain-back. The 02a re-keying moves to step 9.
 
 **0006–0011 without 0005 is untested as a stack.** Every verifier tree (S, U, V) included 0005. The original 0006 was tested without 0005 (74/74, same probe numbers; w5-fix-residual), but verifier S built the `-w5` files on a tree with 0005. Dry-run each file with `patch -p1 --dry-run`. If any hunk is rejected, stop there and drop the rest. `check.sh` on that tree decides.
@@ -207,13 +206,13 @@ Clock times assume a 09:00 start. The steps are serial: each patch needs the one
 - **Both halves are needed.** The code alone still scores 0.83. On the old pack it turns 7 of 9 parts into open checks, and `check_mcp` stops at check 1.
 - **E's review (09:30–11:30, before B1 applies).** Read the drafted rows in `$FIX/mcq-pack-proposal/`: the 20 economics mark points, 10 misconceptions and the four How AI works sets. They are the scout's wording, marked `draft`. Order of work:
   1. B1 applies 0004 as tested.
-  2. **Hold E's corrections to the 22 rows that 0011 rewords** (list in `work/w6/w6-fix-length.md`, "Every changed row") until 0011 is in (step 5f). Read those rows in their 0011 wording. If you edit them earlier, 0011's hunks won't apply.
+  2. **Hold E's corrections to the 22 rows that 0011 rewords** (0011 section of `$C/README.md`) until 0011 is in (step 5f); B1 applies them. Read those rows in their 0011 wording. If you edit them earlier, 0011's hunks won't apply.
   3. E's other corrections go into the CSVs as a separate commit.
   4. Rerun `check.sh` and `testwise.py`.
 
   Any rewording means the rows are no longer the tested ones, so keep the form rules:
   - keys as plain claims, no closing full stop;
-  - lengths within 0.7–1.3× the distractors' median (our choice);
+  - every option within ±20% of the key's length (our choice; 0011's ingest warning checks it);
   - no "always", "only" or "on purpose".
 
   **Don't add `ped_values_m2`.** It changes the demo target and breaks `check_mcp`, which hard-codes `ped_formula`; add it after filming. `ped_formula` still has no sign-error misconception: optional, step 6.
@@ -264,13 +263,13 @@ Clock times assume a 09:00 start. The steps are serial: each patch needs the one
 - **0007 is text only:** labelling rules in `text/tools/tutor_turn.md` (195 → 537 words with 0006; no cap) and 5 more words in the server instructions (894/900). In our words:
   - an answer is never `research`: a course answer or "ok, go on" is `concept`; an answer to a source-checking task or a how-AI-works question is `other`;
   - the `concept` question feature needs an economics term or an official statistic;
-  - `source_conflict` is true when the source wouldn't open, or doesn't say what the chatbot said (a different figure, date or period, or the claim is missing). Rounding is not a conflict. **This is Option A, our choice: P and E confirm it at lunch;**
+  - `source_conflict` is true when the source wouldn't open, or doesn't say what the chatbot said (a different figure, date or period, or the claim is missing). Rounding is not a conflict. **This is Option A, our choice and the default: P and E decide by 13:30; if they reject it, skip 0007 (cut-line row 6);**
   - `points_met`: tick only what the student fully produced; on a Verify answer, a for "wouldn't load" and d for a verdict.
 - **0008 is 3 lines in `service.py`:** an answer sent with `request_type: research` and no question features is turned into `other` (AI-literacy part) or `concept` (course part) before anything is recorded.
 - **On camera:** with 0008, if the chatbot labels the 4c answer `research`, Ask stays **developing (0.528)** in the progress shot. Without it, Ask drops to **new (0.256)**. Answers labelled research that wrote Ask 0.0: 3/3 → 0/3. An answer plus a real new question keeps its Ask credit (w5-fix-guard-1 ✓). 0007 alone changes nothing on the server: it acts on the chatbot (w5-fix-labels-1 ✓).
 - **Apply:** `patch -p1 < $FIX/combined/0007-w5-labels-text.diff`, then `patch -p1 < $FIX/combined/0008-w5-ask-guard.diff` (dry run first each time).
 - **Test.** Run `check.sh` after each (74/74). If the only failure is "MCQ options are shuffled differently for different students", rerun: it is a chance clash (verifier S, skip-0007 tree). Then `sims/fixes/labels_probe.py` on a copy: expect 0/3 answers writing Ask 0.0, as in `results/w5-S/labels_s8.txt`.
-- **Team decision: the empty plan after a matched check.** Under 0007, a Verify answer where the source matched is labelled `other`, and `other` gets an **empty plan**: no feedback step on the check. Before, it got a stray course MCQ. The Verify evidence is still recorded. Plan A is unaffected, because every 4c turn sets `source_conflict`. Options: accept it for now (the chatbot replies in its own words), or add a feedback step later (code, after filming). Either way, don't film a matched check.
+- **Team decision: the empty plan after a matched check.** Under 0007, a Verify answer where the source matched is labelled `other`, and `other` gets an **empty plan**: no feedback step on the check. Before, it got a stray course MCQ. The Verify evidence is still recorded. Plan A is unaffected, because every 4c turn sets `source_conflict`. Options: accept it for now (the chatbot replies in its own words), or add a feedback step later (code, after filming). **Default: accept it for now; P and E decide by 13:30.** Either way, don't film a matched check.
 - **If skipped.** Skip 0008: if 4c is labelled `research`, Ask falls to new; retake. It is 3 lines, so keep it. Skip 0007: the server is unchanged, but the chatbot gets no rules for answers, `source_conflict` or ticks.
 
 ### Step 5f · `0011-w6-mcq-length-rank.diff` (B1 0.25 h; E 0.5 h read + p2/m2 rewording; ✓ verified; runs before 5d)
@@ -307,7 +306,7 @@ Added in wave 6 (`work/w6/w6-fix-length.md`; `sims/fixes/combined/README.md` "00
 - **It relies on the 0009b text line.** A gamer who pastes the shown point back as an explain-back reaches 9/9 parts under a literal labeller, 0/9 under a skeptical one. Don't take 0010b without that sentence.
 - **On camera:** Plan A is unchanged, and `seed-demo` progress is identical. Shot 5 shows only first moves, so it is unaffected. A part picked right straight after teaching now reads **developing**; an explain-back (or a later check) makes it secure. Say that, never "one right answer and it's secure".
 - **Apply:** `patch -p1 < $FIX/combined/0010b-w6-show-then-pick-cap.diff` (dry run first). Test: `check.sh` (74/74), then the wave-5 probes as in step 5b (always-failing student unchanged; review asks 18/18).
-- **Go/no-go at 15:00.** Start it only if 0009b passes `check.sh` by 15:00; it must pass by 16:00, because the freeze checks need 16:00–16:30. Otherwise keep 0009b and 0011 and drop 0010b. Then make no "picking straight after being shown never makes a part secure" claim, and don't demo "just show me" followed by a progress shot.
+- **Go/no-go at 15:00 (dropped by default).** Start it only if 0009b has passed `check` by 15:00, which means the day is an hour ahead; it must pass by 16:00, because the freeze checks need 16:00–16:30. Otherwise keep 0009b and 0011 and drop 0010b. Then make no "picking straight after being shown never makes a part secure" claim, and don't demo "just show me" followed by a progress shot.
 - **Superseded: `0010-w5-show-then-answer-counter.diff`.** It cut honest students' secure parts 3.6 → 1.4, removed the stop-or-switch offer for students who fail only explain-backs, and still leaked 4.0 parts to "teach me + match" (w5-fix-counter-c1 ~). Don't apply it.
 
 ### Step 6 · Outside the series: optional, not tested with it (only if on time; each needs its own `check.sh`)
@@ -355,11 +354,11 @@ None of these is in 0001–0011. Apply them only after the last patch you keep. 
   - **With 0009b:** paste one explain-back that only repeats the chatbot's reply; it should not be ticked.
   - **With 0006 (5 min):** 10 review wordings; is `asks_for_reviews` true on the asks and false on the rest? Three wrong answers in a row: does a worked example follow?
   - **With 0007:** does the chatbot label the 4c answer `other` and an explain-back `concept`?
-  - Any miss: reset, new chat, retake.
+  - Any miss: reset, new chat, try again (any number of resets before the gate).
 - **The 18:00 gate.** Plan A needs all three:
   - the patched 05e build;
   - `check_mcp` passing with no OVER BUDGET;
-  - one end-to-end episode with the right labels and no retake.
+  - one take, after any number of resets, that runs 4a–4d with the right labels and no mid-episode retake.
 
   Otherwise, film Plan B ([pitch-script.md](pitch-script.md) §1b). The gate doesn't wait for fixes.
 
