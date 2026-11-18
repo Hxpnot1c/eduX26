@@ -62,6 +62,7 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "ask_mcq_check": ({"purpose", "options", "index", "answer_type"}, {"extra_option"}),
     "ask_mcq_prereq": ({"purpose", "options", "name", "for", "answer_type"}, {"note", "stuck", "extra_option"}),
     "ask_mcq_review": ({"purpose", "options", "name", "mode", "answer_type"}, {"new_context", "extra_option"}),
+    "ask_mcq_review_reason": ({"purpose", "options", "name", "mode", "reason", "answer_type"}, {"new_context", "extra_option"}),
     "ask_mcq_how_ai_works": ({"purpose", "options", "answer_type"}, {"extra_option"}),
     "extend": ({"answer_type"}, set()),
     "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "correct_option", "purpose", "points_met", "missing",
@@ -539,12 +540,33 @@ def review_check(turn: Turn, r: dict, settings: Settings) -> dict:
 
 
 def _second_step(turn: Turn, blocks: dict, settings: Settings, reviews_only: bool = False) -> dict | None:
-    """extend when earned, otherwise the top due review (not on a focus part) as an MCQ, otherwise nothing."""
+    """The add-on step with the most expected marks (learner.step_value, priorities): extend when earned, or a due
+    review (not on a focus part) as an MCQ, otherwise nothing. Ties keep the old order: extend, then reviews in
+    reviews_due order. Only due reviews are candidates; a test never makes a review due. A review picked because of
+    one of the student's tests carries data.reason. The candidates not picked go on the step as considered (with
+    their values), which service saves in issued_plan and never sends."""
+    candidates = []
     support = blocks.get("support")
     if support and support.get("extend") and not reviews_only:
-        return _step("extend", support["part_id"])
-    reviews = [r for r in (blocks.get("reviews_due") or {}).get("items") or [] if r["part_id"] not in turn.parts]
-    return review_check(turn, reviews[0], settings) if reviews else None
+        candidates.append(("extend", support["part_id"], None))
+    for r in (blocks.get("reviews_due") or {}).get("items") or []:
+        if r["part_id"] not in turn.parts:
+            candidates.append(("review", r["part_id"], r))
+    if not candidates:
+        return None
+    valued = [(turn.valued(part), kind, part, r) for kind, part, r in candidates]
+    best = max(range(len(valued)), key=lambda i: (valued[i][0]["value"], -i))
+    found, kind, part, r = valued[best]
+    if kind == "extend":
+        step = _step("extend", part)
+    else:
+        step = review_check(turn, r, settings)
+        if found["reason"]:
+            step = _refill({**step, "key": "ask_mcq_review_reason",
+                            "data": {**step["data"], "reason": learner.reason_text(found["reason"], turn.at)}})
+    step["considered"] = [{"move": k, "part_id": p, "value": round(v["value"], 5)}
+                          for i, (v, k, p, _) in enumerate(valued) if i != best]
+    return step
 
 
 # --- the plan -----------------------------------------------------------------------

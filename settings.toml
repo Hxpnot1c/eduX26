@@ -134,6 +134,14 @@ learn_rate_weight_bounds = [0.5, 1.5]   # odds multiplier on bkt.learn_rate; nar
 max_change_per_session = 0.25   # log-odds the offset may rise from one session to the next
 down_change_factor = 2.0   # it may fall this many times faster: under-crediting is the safer mistake
 
+[priorities]               # which add-on step eduX picks, by expected marks (priorities); starting guesses, to be learned from pilot data
+weight_homework = 0.3      # how much a test of each kind counts
+weight_class_test = 0.6
+weight_mock = 1.0
+weight_final = 1.0         # the final exam, always in the sum
+horizon_days = 7           # urgency = clamp(horizon_days / days to the test, urgency_floor, 1)
+urgency_floor = 0.2
+
 [difficulty]               # optional teacher-set difficulty per node (0 easy – 1 hard), inherited by parts
 default = 0.5              # used when no node above the part has one
 prior_shift = 0.15         # starting p_known moves down (hard) or up (easy) by up to this much

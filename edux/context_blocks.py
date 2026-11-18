@@ -31,6 +31,7 @@ class Turn:
     limits: dict[str, int]
     resolution: dict            # graph.resolve() output
     blocks: dict[str, dict | None] = field(default_factory=dict)   # blocks produced so far this turn
+    cache: dict = field(default_factory=dict)                       # values worked out once a turn (priorities)
 
     @property
     def student_id(self) -> str:
@@ -38,6 +39,18 @@ class Turn:
 
     def p(self, part_id: str) -> float:
         return learner.part_p(self.student_id, part_id, self.at)
+
+    def value(self, part_id: str) -> float:
+        """Expected marks from a step on the part (learner.step_value), cached for the turn."""
+        return self.valued(part_id)["value"]
+
+    def valued(self, part_id: str) -> dict:
+        values = self.cache.setdefault("values", {})
+        if part_id not in values:
+            if "chance" not in self.cache:
+                self.cache["chance"] = learner.move_chance(self.student_id, "mcq_check", self.at)
+            values[part_id] = learner.step_value(self.student_id, part_id, self.cache["chance"], self.at)
+        return values[part_id]
 
     def limit(self, name: str, default: int = 3) -> int:
         return self.limits.get(name, default)
@@ -264,7 +277,8 @@ def session(turn: Turn, settings: Settings) -> dict | None:
 
 
 def weak_prerequisites(turn: Turn, settings: Settings) -> dict | None:
-    """Prerequisites below secure, ranked by how weak the student is x link weight x importance."""
+    """Prerequisites below secure, ranked by expected marks x link weight (learner.step_value, priorities), then,
+    on a tie, by how weak the student is x link weight x importance."""
     found: dict[str, dict] = {}
     for part in turn.parts:
         for edge in graph.prerequisites(part, 1):
@@ -273,12 +287,12 @@ def weak_prerequisites(turn: Turn, settings: Settings) -> dict | None:
                 p = turn.p(pre)
                 if pre in turn.parts or p >= settings.levels.secure:
                     continue
-                score = (1 - p) * w * graph.weight(pre)["importance"]
+                score = (turn.value(pre) * w, (1 - p) * w * graph.weight(pre)["importance"])
                 if pre not in found or score > found[pre]["score"]:
                     node = graph.get_node(pre)
                     found[pre] = {"part_id": pre, "name": node["name"], "level": learner.level(p), "p_now": _r(p),
                                   "for": part, "note": edge["note"], "score": score}
-    items = sorted(found.values(), key=lambda i: -i["score"])[:turn.limit("weak_prerequisites")]
+    items = sorted(found.values(), key=lambda i: (-i["score"][0], -i["score"][1]))[:turn.limit("weak_prerequisites")]
     for item in items:
         del item["score"]
     return {"items": items} if items else None
@@ -435,8 +449,9 @@ def exam_relevance(turn: Turn, settings: Settings) -> dict | None:
 
 
 def reviews_due(turn: Turn, settings: Settings) -> dict | None:
-    """Due reviews ranked by how overdue x importance, boosted when the part is linked to the current focus;
-    each with a mode (recall or transfer)."""
+    """Due reviews ranked by expected marks (learner.step_value, priorities), then, on a tie, by how overdue x
+    importance, boosted when the part is linked to the current focus; each with a mode (recall or transfer).
+    Only parts already due are here: an upcoming test orders reviews, it never makes one due."""
     b = settings.blocks
     due = learner.due_reviews(turn.student_id, 10_000, turn.at)
     if not due:
@@ -450,10 +465,10 @@ def reviews_due(turn: Turn, settings: Settings) -> dict | None:
         overdue_days = max(0.0, (at - learner.parse_ts(r["due"])).total_seconds() / 86400)
         is_linked = r["part_id"] in linked
         score = (1 + overdue_days) * (r["importance"] + b.review_importance_floor) * (1 + b.review_link_boost * is_linked)
-        scored.append((score, r, is_linked))
-    scored.sort(key=lambda s: -s[0])
+        scored.append((turn.value(r["part_id"]), score, r, is_linked))
+    scored.sort(key=lambda s: (-s[0], -s[1]))
     limit = min(turn.limit("reviews_due"), settings.scheduling.max_reviews_per_reply)
-    return {"items": [_review_item(turn, r, is_linked, settings) for _, r, is_linked in scored[:limit]]}
+    return {"items": [_review_item(turn, r, is_linked, settings) for _, _, r, is_linked in scored[:limit]]}
 
 
 def _new_context(part_id: str, settings: Settings) -> dict:

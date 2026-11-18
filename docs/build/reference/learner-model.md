@@ -170,6 +170,27 @@ Shares are adapted from Cepeda et al. (2008): the optimal gap shrinks as the tes
 
 `reviews_due` returns up to `max_reviews_per_reply` due parts, ordered by importance.
 
+## Priorities: the add-on step by expected marks
+The student's message still sets the main step. The value score orders only the choices eduX makes itself:
+- the add-on step (`plan._second_step`): an earned `extend`, the best due review, or nothing;
+- the order of due reviews (`reviews_due`);
+- the order of prerequisite repairs (`weak_prerequisites`).
+
+```
+value = move_chance × Σ over the final exam and the student's upcoming assessments covering the part
+        [ weight(kind) × urgency(days to it) × (1 − p on its date) ]
+urgency(days) = clamp(horizon_days / max(days, 1), urgency_floor, 1)
+```
+
+- **Prediction at the test date.** `p on its date` is `p_now` with decay run forward to the test date, not today's value, so a part that is secure now but will fade before the mock counts as a gap.
+- **The final exam is always in the sum** (`weight_final`), at the date spacing uses. With no exam ahead, it counts at `urgency_floor` with today's p.
+- **`move_chance`** is the student's learn rate, including their personal offset. The learn rate isn't per evidence type, so a review and an extend get the same chance today.
+- **No cramming.** Due-ness (the share gap or `review_when_below`) still decides whether a review is eligible. A test only orders the eligible reviews and decides between extend, a review or nothing; it never makes a review due.
+- **Ties** keep the old order (extend first, then overdue × importance), so with no assessments only the extend-vs-review choice changes.
+- **Reason.** A review picked because of a test (the assessment adding the most to its value) carries `data.reason`, e.g. "on your mock on Tuesday" (the day name within 7 days, else the date).
+- **Logging.** The candidates not picked are saved with their values as `considered` in `issued_plan`. They are never sent: they are the data a later model would learn the weights from.
+- **Weights.** The weights in `[priorities]` are hand-set starting guesses. Learned policies have mostly not beaten sensible rule-based ones (Doroudi, Aleven & Brunskill, 2019), so they stay hand-set until there is pilot data.
+
 ## Choosing what to teach next (candidates)
 A part is a candidate when its `p_now` is inside `queue_band` and its prerequisites are at least developing. Candidates are ordered by `importance × (1 - p_now)`. Parts the student hasn't met count at their starting estimate.
 

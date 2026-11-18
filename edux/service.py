@@ -79,19 +79,22 @@ def _this_session(student_id: str, last: dict, at: str) -> tuple[set[str], froze
 
 def _save_plan(student_id: str, at: str, steps: list[dict], focus: list[str], corrected: set[str],
                offered: set[str], style_sent: dict | None, pending: dict | None, mcq: dict | None,
-               points: dict, literacy: dict | None = None, how: dict | None = None) -> None:
+               points: dict, literacy: dict | None = None, how: dict | None = None,
+               considered: list[dict] | None = None) -> None:
     """Save the plan issued this turn, with what the next turn needs: the focus, misconceptions corrected and
     the offer_choice reasons offered this session, the style sent, the question waiting for an answer, the MCQ
     letter map (step 05d), point-by-point progress per part (step 05d; kept across parts and sessions, so
     coming back to a part resumes where it stopped), and the pending literacy task and how-AI-works check
-    (step 05e)."""
+    (step 05e), and the add-on candidates not picked with their values (considered, priorities: data for learning
+    the weights later; never sent to the chatbot)."""
     conn = learner._conn()
     with conn:
         conn.execute("INSERT OR REPLACE INTO issued_plan (student_id, ts, plan_json) VALUES (?, ?, ?)",
                      (student_id, at, json.dumps({"plan": steps, "focus": focus, "corrected": sorted(corrected),
                                                   "offered": sorted(offered), "style_sent": style_sent,
                                                   "pending": pending, "mcq": mcq, "points": points,
-                                                  "literacy": literacy, "how": how})))
+                                                  "literacy": literacy, "how": how,
+                                                  "considered": considered or []})))
 
 
 def _how_ai_works(turn: context_blocks.Turn, blocks: dict, last: dict, steps: list[dict], evidence: dict | None,
@@ -418,11 +421,12 @@ def tutor_turn(
         steps, how = _how_ai_works(turn, blocks, last, steps, evidence, this_message)
         steps, literacy = _literacy_followup(student["id"], last, steps, evidence, request, at)
         _unchecked(course_steps, steps, points)
+    considered = [c for step in steps for c in step.pop("considered", [])]   # add-on candidates not picked (priorities)
     current_style = style(student, client)
     send_style = _style_due(last, current_style, at)
     _save_plan(student["id"], at, steps, parts, corrected | plan.corrected_in(steps),
                offered | offered_in(steps), current_style,
-               _pending_after(steps, pending), _mcq_after(steps, last), points, literacy, how)
+               _pending_after(steps, pending), _mcq_after(steps, last), points, literacy, how, considered)
     # with no plan (a comparison profile), answers on the focus parts can still be scored
     next_points = plan.score_next(steps) if config.plan else {
         p: points for p in parts if (points := plan.lettered(p))}

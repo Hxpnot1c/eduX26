@@ -581,6 +581,56 @@ def days_to_exam(student_id: str, part_id: str, at: datetime) -> float | None:
     return min(ahead) if ahead else None
 
 
+KIND_LABELS = {"homework": "homework", "class_test": "class test", "mock": "mock", "final": "final exam"}
+
+
+def p_on(student_id: str, part_id: str, when: datetime | str) -> float:
+    """The part's predicted p on a date: p_now with decay run forward to when (priorities)."""
+    return part_p(student_id, part_id, when)
+
+
+def move_chance(student_id: str, evidence_type: str, at: datetime | str | None = None) -> float:
+    """The chance a step producing evidence_type moves the part: the student's BKT learn rate (with their personal
+    offset). The learn rate isn't per evidence type yet, so every type gets the same value."""
+    session = session_state(student_id, at)
+    offset = learning_offset(student_id, session["session_id"] if session else at)["offset"]
+    return personal_learn_rate(_settings().bkt.learn_rate, offset)
+
+
+def step_value(student_id: str, part_id: str, chance: float, at: datetime | str | None = None) -> dict:
+    """Expected marks from a step on a part (priorities): chance x the sum, over the final exam and the student's
+    upcoming assessments covering the part, of weight(kind) x urgency(days to it) x (1 - p on its date).
+    urgency = clamp(horizon_days / max(days, 1), urgency_floor, 1). With no final exam date ahead, the final
+    counts at urgency_floor with today's p. Returns {value, reason}: reason is the assessment (not the final) that
+    adds the most, or None."""
+    s, at_dt = _settings().priorities, parse_ts(at or now_iso())
+    weights = {"homework": s.weight_homework, "class_test": s.weight_class_test, "mock": s.weight_mock}
+
+    def urgency(days: float | None) -> float:
+        return s.urgency_floor if days is None else min(1.0, max(s.urgency_floor, s.horizon_days / max(days, 1.0)))
+
+    final = final_exam_days(student_id, part_id, at_dt)
+    when = at_dt + timedelta(days=final) if final is not None else at_dt
+    total = s.weight_final * urgency(final) * (1 - p_on(student_id, part_id, when))
+    reason, best = None, 0.0
+    for a in assessments(student_id, at_dt):
+        if part_id not in a["part_ids"]:
+            continue
+        days = _days_until(a["date"], at_dt)
+        term = weights[a["kind"]] * urgency(days) * (1 - p_on(student_id, part_id, a["date"]))
+        total += term
+        if term > best:
+            reason, best = {**a, "days": days}, term
+    return {"value": chance * total, "reason": reason}
+
+
+def reason_text(assessment: dict, at: datetime | str | None = None) -> str:
+    """A few words on why a review was picked: "on your mock on Tuesday" (the day within a week, else the date)."""
+    day = parse_ts(assessment["date"]).date()
+    when = day.strftime("%A") if assessment["days"] <= 7 else f"{day.day} {day.strftime('%b')}"
+    return f"on your {KIND_LABELS[assessment['kind']]} on {when}"
+
+
 def review_gap_days(student_id: str, part_id: str, at: datetime) -> float:
     """Days until the next review after evidence: a share of the days left to the exam (Cepeda et al., 2008),
     a smaller share as the exam gets closer. With no exam ahead, decay.base_half_life_days."""

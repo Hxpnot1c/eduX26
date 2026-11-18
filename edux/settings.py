@@ -182,6 +182,16 @@ class Personalisation:
 
 
 @dataclass(frozen=True)
+class Priorities:
+    weight_homework: float
+    weight_class_test: float
+    weight_mock: float
+    weight_final: float
+    horizon_days: float
+    urgency_floor: float
+
+
+@dataclass(frozen=True)
 class Difficulty:
     default: float
     prior_shift: float
@@ -269,6 +279,7 @@ class Settings:
     engagement: Engagement
     show: Show
     personalisation: Personalisation
+    priorities: Priorities
     difficulty: Difficulty
     link_weight: LinkWeight
     resolve: Resolve
