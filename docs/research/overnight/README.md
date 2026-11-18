@@ -7,10 +7,11 @@ Read [`MORNING-BRIEF.md`](MORNING-BRIEF.md) first, then [`wednesday-build-list.m
 ## Files
 | file | what it holds |
 |---|---|
-| [`MORNING-BRIEF.md`](MORNING-BRIEF.md) | One page: Wednesday's five actions, pitch points, risks, what changed |
-| [`wednesday-build-list.md`](wednesday-build-list.md) | Wednesday's build as a tested patch series (fast-forward 05e, then 0001–0005): for each step what it fixes on camera, the apply and test commands with expected results, hours, owner, what is lost if skipped; the 16:30 freeze, 18:00 gate, cut line and known residuals. Home report for the `w4-fix-*` findings |
+| [`MORNING-BRIEF.md`](MORNING-BRIEF.md) | One page: Wednesday's five actions, decisions needing a human, pitch points, risks, what changed |
+| [`wednesday-build-list.md`](wednesday-build-list.md) | Wednesday's build as a patch series (fast-forward 05e, then 0001–0008, then the wave-6 counters 0009b/0010b, verification pending): for each step what it fixes on camera, the apply and test commands with expected results, hours, owner, what is lost if skipped; the 16:30 freeze, 18:00 gate, cut line and known residuals. Home report for the `w4-fix-*` findings |
 | [`pitch-script.md`](pitch-script.md) | Word-for-word video voiceover (Plan A, and Plan B in §1b) with shot timings and captions, deck speaker notes, the expo leave-behind, every number → finding id → mark, and what we couldn't say. Edited after the wave-4 pitch red team |
-| [`pitch-notes.md`](pitch-notes.md) | Claims we can make (exact wording, finding id, mark), claims to avoid, and an 8-slide deck outline |
+| [`pitch-notes.md`](pitch-notes.md) | Claims we can make (exact wording, finding id, mark), claims to avoid (incl. "gaming-proof", "cheaper than Sparx"), an 8-slide deck outline and 11 expo answers |
+| [`roadmap.md`](roadmap.md) | After the competition: a 12-month plan (Dec 2026 – Nov 2027) with four gates and pass tests, a one-slide version and five Q&A answers. All "our plan" |
 | [`01-competition-fit.md`](01-competition-fit.md) | What the EduX rules ask for, how eduX scores against each criterion, the defining-half gap, and the competition after Gemini's catch-up |
 | [`02-ai-literacy-assessment.md`](02-ai-literacy-assessment.md) | Our definition, the AILit crosswalk, the validity argument, the scoring simulation on the 05e branch, the missing-data rule, what chatbots get wrong with sources, and the label-agreement study design |
 | [`02a-label-agreement-protocol.md`](02a-label-agreement-protocol.md) | Ready-to-run protocol for the label-agreement study: 40 draft messages (to be rewritten by the team), the key, rater instructions, pass rule and reporting template |
@@ -20,7 +21,7 @@ Read [`MORNING-BRIEF.md`](MORNING-BRIEF.md) first, then [`wednesday-build-list.m
 | [`06-settings-simulation.md`](06-settings-simulation.md) | Synthetic-student simulations of the course learner model: three bugs, the proposal's settings, the alarms, the pitch chart, and the decay-clock asymmetry with its fixes |
 | [`09-safety-ethics.md`](09-safety-ethics.md) | The DfE product safety standards matrix, offloading evidence, the DPO's objections checked against the code, and ranked fixes |
 | [`demo-plan.md`](demo-plan.md) | Video storyboard (Plan A and Plan B), live expo script, checklists, bugs to fix before filming, and the pitch chart |
-| [`business-plan.md`](business-plan.md) | Market, buyers, pricing anchored on procurement records, competitors, distribution and cost risk, regulation, evaluation plan |
+| [`business-plan.md`](business-plan.md) | Market, buyers, pricing anchored on procurement records, the unit-economics model (cost per call, break-even, class cap, call-saving options, the "4.5×" answer), competitors, distribution, regulation, evaluation plan |
 | [`judge-panel.md`](judge-panel.md) | Red-team objections from six personas in three waves, the status of each, and open questions for wave 4 |
 | [`findings.csv`](findings.csv) | Every verified finding (✓ or ~), with its home report in `area_report`. ✗ findings are dropped |
 | `sims/` | Course learner-model simulation scripts, results and demo captures (synthetic students, example pack only) |
@@ -29,8 +30,12 @@ Read [`MORNING-BRIEF.md`](MORNING-BRIEF.md) first, then [`wednesday-build-list.m
 | [`sims/decay/`](sims/decay/README.md) | The decay-clock asymmetry on economics parts: deterministic cases, fixes (a)–(c) and a 960-student population run on the real learner code (report 06, wave 3) |
 | [`sims/demo-05e/`](sims/demo-05e/README.md) | Scripted rehearsal of the Plan A literacy episode against the 05e branch's own MCP server, with captures and a per-turn digest (demo plan, wave 3). Not claude.ai captures |
 | `sims/fixes/` | Wave 4: the fix scouts' diffs, probes and measurement scripts (core bugs, focus, Verify scoring, MCQ give-away, decay), with before/after results. Superseded for building by `combined/` |
-| [`sims/fixes/combined/`](sims/fixes/combined/README.md) | **The tested patch series** 0001–0005 (plus a 0003 variant for when 0002 is skipped) that the build list applies, the integration verifier's conflict notes, harness scripts and per-step results (check_mcp 74/74 after each step) |
-| `work/` | Briefs for scouts, verifiers, panel, writers and fix scouts; scout notes, verifier marks and panel files for waves 1–4 (`w1/`–`w4/`). Wave 4: fix-scout notes, the integration verifier (`verify-Q.json`), the market and Microsoft notes (`w4-08.md`, `verify-R.json`) and the pitch red team (`panel-pitch.md`) |
+| [`sims/fixes/combined/`](sims/fixes/combined/README.md) | **The patch series** that the build list applies: 0001–0005 (wave 4), 0006–0008 (`-w5`), 0009b/0010b (`-w6`, verification pending), with superseded 0009/0010 kept for reference; variants, the integration verifiers' notes, harness scripts and per-step results (check_mcp 74/74 after each step) |
+| [`sims/gaming/`](sims/gaming/README.md) | Wave 5: red-teaming the scoring rules as a mechanism. 16 cheap strategies × 2 chatbot labellers on the real service layer, and the counters (report 06) |
+| [`sims/economics/`](sims/economics/results.md) | Wave 5: the unit-economics model on the Copilot route (`unit_model.py`, stdlib): cost per call, break-evens, pack fill, call-saving options (business plan) |
+| [`sims/agreement/`](sims/agreement/README.md) | Wave 5: `analyse.py`, the label-agreement analysis for the 02a study (replaces `agree.py`), and its dry run. The dry run is a pipeline test, not agreement evidence (report 02a) |
+| [`mockups/`](mockups/README.md) | Wave 6: static HTML mock-ups of the teacher view and the student progress page for the deck and video. Pictures of a design, invented data; the README says which parts are built |
+| `work/` | Briefs for scouts, verifiers, panel, writers and fix scouts; scout notes, verifier marks and panel files for waves 1–4 (`w1/`–`w4/`). Wave 4: fix-scout notes, the integration verifier (`verify-Q.json`), the market and Microsoft notes (`w4-08.md`, `verify-R.json`) and the pitch red team (`panel-pitch.md`). Wave 5: fix, gaming, label and economics notes, verifiers S and T. Wave 6: roadmap, mock-up and counter notes |
 
 Each finding appears in the findings table of one report only: its home report, given in `area_report`. Other reports cite it by id and link to that report.
 
@@ -40,6 +45,8 @@ Waves 1–3 each ran in four stages (wave 4 changed this; see below):
 - **Blind verifiers.** Each claim is checked by one blind verifier, who sees only the claim and its source.
 - **Red team.** A panel of six personas attacks the product.
 - **Editor.** An editor rewrites the reports, the pitch notes and this index.
+
+**Wave 5 was a build-and-red-team wave.** Fix scouts wrote 0006–0008 and two counters. A gaming scout red-teamed the scoring rules as a mechanism. A label scout ran a proxy-chatbot label audit and dry-ran the analysis script. An economics scout built a unit-economics model. Integration verifier S stacked and reran every patch; verifier T checked the economics arithmetic and code readings. **Wave 6** (partly reported here) replaced the two counters with fairer ones (0009b, 0010b; verification pending), wrote the 12-month roadmap and drew the mock-ups.
 
 **Wave 4 was a build wave.** Fix scouts wrote diffs against the 05e branch and measured each one on copies of the code. An integration verifier then stacked them into one patch series, merged the conflicts by hand and reran every check and headline number after each step. A single pitch red team (judge, teacher, student) attacked the script; the six-persona panel did not run. One scout (w4-08) fetched Ofqual and Microsoft sources directly.
 
@@ -51,7 +58,8 @@ Marks: ✓ confirmed against the source; ~ broadly supported, with a stated prob
 | Wave 2 (verifier sets E–H, J) | 121 | 63 | 58 | 0 |
 | Wave 3 (verifier sets K–P) | 108 | 70 | 38 | 1 |
 | Wave 4 (verifier sets Q, R) | 19 | 16 | 3 | 0 |
-| **Total** | **357** | **224** | **133** | **1** |
+| Wave 5 (verifier sets S, T) | 23 | 10 | 13 | 0 |
+| **Total** | **380** | **234** | **146** | **1** |
 
 The findings column counts kept findings only (✓ + ~), so the ✗ column is extra. The one ✗ is w3-02e-14 (a misread blog post), listed in [pitch-notes](pitch-notes.md) as a claim to avoid.
 
@@ -74,6 +82,13 @@ Panel status words (from wave 2): **answered** = a fix is built or a document an
 | 08 Market and business (→ `business-plan.md`) | Official statistics; the DfE Technology in Schools survey; gov.uk buying guidance; competitors' public pages; first-principles MDES maths | **Procurement records via Find a Tender** (OCDS API) and the Contracts Finder API; the Ofqual Register API; vendor announcements (Google, Anthropic, OpenAI, Khan); the European Commission AI-literacy Q&A | **Microsoft pricing:** the Azure Retail Prices API and the Copilot Credit estimator, MS Learn billing pages; the DfE Technology in Schools PDF. **Copyright:** legislation (CDPA, database regulations, Trade Marks Act), IPO guidance and **exam-board policy documents** (Pearson, AQA), CLA licences | **Direct fetch of Ofqual tables** (the annual qualifications market report's ODS data tables, found via the gov.uk content API); JCQ returned 403 | What schools pay for Up Learn, Seneca or Eedi; the share of sixth forms with learner Copilot on |
 | 09 Safety and ethics | DfE standards and guidance; vendor terms; a code read of `edux/` and `text/` | **Survey grey literature** shared with 02; the Bastani RCT full text (PMC); retraction and preprint status checks | **ICO, KCSIE and IRMS guidance:** ICO lawful-basis, children, rights, DPIA and Art 28 pages; DfE data protection toolkit; KCSIE 2026 full text; the IRMS academies retention toolkit; competitors' privacy pages | — | KCSIE detail for components; the Internet Matters and Ofcom PDFs (blocked or binary) |
 | All areas | Red-team panel: six personas | Red-team panel: six personas in three paired files | Red-team panel: six personas in three paired files. **The shared web-search budget ran out during wave 3**; later work uses code, simulation and direct fetches only | **Pitch red team** (three personas: judge, teacher, student) against the script, with a number check against `findings.csv`. No web search; direct fetches only | — |
+
+**Methods added in wave 5:**
+- **Mechanism-design red team** (security red-teaming and incentive compatibility): 16 cheap student strategies, a literal and a skeptical chatbot labeller, and counters, all on the real service layer (`sims/gaming/`; report 06).
+- **Proxy-chatbot label audit:** a Claude model labelled the 40 draft messages from the tool texts alone; the disagreements with the key were classified and fed into the labelling rules (patch 0007). A pipeline test and rubric audit, not agreement evidence (`sims/agreement/`; report 02a).
+- **Unit-economics model:** a first-principles cost model on verified Microsoft rates, plus a code reading of when 05e calls eduX (`sims/economics/`; business plan).
+- **Patch-and-rerun on a stacked tree** (verifier S): 0006–0010 applied, check_mcp, eight Plan A takes, probes and the gaming runs after each step, plus every single skip.
+- No web search in wave 5: every external number is an earlier finding.
 
 ## Open questions
 
@@ -134,7 +149,7 @@ From the wave-3 panel: 18 after merging. Status after wave 4 (the tested patch s
 
 | # | question | raised by | status |
 |---|---|---|---|
-| 1 | In a claude.ai dry run, which labels does Claude send on the four Plan A lines? | J | open: Wednesday's dry run (build list item 9) |
+| 1 | In a claude.ai dry run, which labels does Claude send on the four Plan A lines? | J | open: Wednesday's dry run (build list step 7) |
 | 2 | How often do real 16–18 research questions contain the resolver's trigger words, and how often does it pick the wrong part? | S, T | partly: patch 0002 cuts false focus on a 43-line test set from 15 to 3 (w4-fix-focus-1 ✓); real-student frequency still open |
 | 3 | Whom do the brief's Desired Outcomes name as the user of the assessment? | J | blocked: needs a human to paste the brief |
 | 4 | Under the decay fix, does How AI works AUC on the 05e branch rise above 0.5 (from .40)? | J, R | **done**: 0.85/0.88 with patch 0005 (none vs strong, N = 60, simulation; w4-fix-core-4 ✓) |

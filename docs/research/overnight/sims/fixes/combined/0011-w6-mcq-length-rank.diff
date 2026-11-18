@@ -1,0 +1,161 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: eduX wave-6 w6-fix-length <noreply@example.invalid>
+Date: Wed, 18 Nov 2026 06:30:00 +0000
+Subject: [PATCH] MCQ options of even length rank: the key is no longer usually the middle-length option
+
+Wave 6 (w6-fix-length). Applies on 0008 (independent of 0009/0010/0009b/0010b: no shared file).
+coursepacks/example-mini: 4 mark points and 17 misconceptions reworded so every misconception is within 20% of
+each mark point's length on its part, and the key is shortest, middle or longest about equally often (wording is
+a proposal for the team economist: work/w6/w6-fix-length.md lists every row).
+ingest/validate.py: two load warnings (our thresholds): a misconception more than 20% longer or shorter than a
+mark point of its part, and a pack where the key is the shortest, middle or longest option 15 points more often
+than an even spread.
+---
+diff -ruN '--exclude=__pycache__' a/coursepacks/example-mini/mark_points.csv b/coursepacks/example-mini/mark_points.csv
+--- a/coursepacks/example-mini/mark_points.csv	2026-11-18 05:41:36.144769147 +0000
++++ b/coursepacks/example-mini/mark_points.csv	2026-11-18 05:41:36.151963050 +0000
+@@ -1,8 +1,8 @@
+ id,node_id,point,exemplar,source_ids,order,status,flag,updated_by,updated_at
+ ped_definition_p1,ped_definition,PED compares percentage changes in quantity demanded and in price,"Price up 10%, quantity demanded down 5%: PED is -0.5.",spec;tb_main,1,draft,,w4-fix-mcq proposal,
+-ped_definition_p2,ped_definition,"PED has no units, so it compares goods with very different prices","A 1% response is a 1% response, whether the good costs 50p or £500.",tb_main,2,draft,,w4-fix-mcq proposal,
+-ped_definition_p3,ped_definition,"A price rise cuts quantity demanded, so PED has a minus sign","Cinema tickets up 20%, visits down 10%: PED = -0.5, a negative number.",tb_main,3,draft,,w4-fix-mcq proposal,
+-ped_formula_p1,ped_formula,"Each percentage change is the change divided by the original value, times 100","Price from £2 to £2.50: (0.50 / 2) x 100 = 25%.",spec;tb_main,1,draft,,w4-fix-mcq proposal,
++ped_definition_p2,ped_definition,"PED has no units, so it compares goods with different prices","A 1% response is a 1% response, whether the good costs 50p or £500.",tb_main,2,draft,,w6-fix-length proposal,
++ped_definition_p3,ped_definition,"A price rise cuts the quantity demanded, so the value of PED is negative","Cinema tickets up 20%, visits down 10%: PED = -0.5, a negative number.",tb_main,3,draft,,w6-fix-length proposal,
++ped_formula_p1,ped_formula,"Each % change is the change divided by the original value, times 100",Price from £2 to £2.50: (0.50 / 2) x 100 = 25%.,spec;tb_main,1,draft,,w6-fix-length proposal,
+ ped_formula_p2,ped_formula,"Keep the minus sign, because price and quantity demanded move in opposite ways","Quantity -15%, price +25%: PED = -15 / 25 = -0.6.",tb_main,2,draft,,w4-fix-mcq proposal,
+ ped_values_p1,ped_values,"Ignoring the sign, elastic means above 1 and inelastic means below 1","PED of -2.5 is elastic; PED of -0.4 is inelastic.",spec;tb_main,1,draft,,w4-fix-mcq proposal,
+ ped_values_p2,ped_values,"When demand is price inelastic, raising the price raises total revenue","PED -0.4: price up 10%, quantity down 4%, so spending rises.",tb_main,2,draft,,w4-fix-mcq proposal,
+@@ -12,10 +12,10 @@
+ pes_formula_p2,pes_formula,"PES is positive, because firms supply more when the price rises","Both changes go the same way, so the answer has no minus sign.",tb_main,2,draft,,w4-fix-mcq proposal,
+ yed_definition_p1,yed_definition,YED divides % change in quantity demanded by % change in income,"Incomes rise 5% and holidays abroad rise 10%: YED = 2.",spec;tb_main,1,draft,,w4-fix-mcq proposal,
+ yed_definition_p2,yed_definition,Positive YED means a normal good; negative YED means an inferior good,"Incomes rise and bus journeys fall: YED is negative, so buses are inferior here.",tb_main,2,draft,,w4-fix-mcq proposal,
+-tax_supply_shift_p1,tax_supply_shift,"The tax raises firms' costs, so supply shifts up by the tax per unit",A 50p tax per coffee moves the supply curve up by 50p at every quantity.,spec;tb_main,1,draft,,w4-fix-mcq proposal,
++tax_supply_shift_p1,tax_supply_shift,"The tax raises firms' costs, so the supply curve shifts up by the tax per unit",A 50p tax per coffee moves the supply curve up by 50p at every quantity.,spec;tb_main,1,draft,,w6-fix-length proposal,
+ tax_supply_shift_p2,tax_supply_shift,A specific tax gives a parallel shift and an ad valorem tax a pivot,"A 20% tax adds 20p to a £1 item but £1 to a £5 item, so the gap widens.",tb_main,2,draft,,w4-fix-mcq proposal,
+ tax_incidence_split_p1,tax_incidence_split,"The more price inelastic demand is, the more of the tax consumers bear","Smokers keep buying after a cigarette tax, so most of it shows up in the price.",spec;tb_main,1,draft,,w4-fix-mcq proposal,
+-tax_incidence_split_p2,tax_incidence_split,"When demand is price elastic, producers bear the larger share of the tax","Tax one brand of crisps and buyers switch, so the firm absorbs most of it.",tb_main,2,draft,,w4-fix-mcq proposal,
++tax_incidence_split_p2,tax_incidence_split,"When demand is price elastic, producers bear more of the tax","Tax one brand of crisps and buyers switch, so the firm absorbs most of it.",tb_main,2,draft,,w6-fix-length proposal,
+ externality_tax_eval_p2,externality_tax_eval,A tax equal to marginal external cost moves output to the social optimum,"If each tonne of smoke does £30 of harm to others, a £30 tax per tonne makes the firm count that harm.",spec;tb_main,1,draft,,w4-fix-mcq proposal,
+ externality_tax_eval_p1,externality_tax_eval,"Valuing the external cost in money is hard, so the tax rate is a guess","How much is a day of a child's asthma worth in pounds? The tax depends on the answer.",spec;tb_main,2,draft,,w4-fix-mcq proposal,
+ externality_tax_eval_p3,externality_tax_eval,"With price inelastic demand, the tax cuts output by a small amount","Drivers keep buying petrol after a fuel tax rise, so emissions fall a little.",tb_main,3,draft,,w4-fix-mcq proposal,
+diff -ruN '--exclude=__pycache__' a/coursepacks/example-mini/misconceptions.csv b/coursepacks/example-mini/misconceptions.csv
+--- a/coursepacks/example-mini/misconceptions.csv	2026-11-18 05:41:36.144780363 +0000
++++ b/coursepacks/example-mini/misconceptions.csv	2026-11-18 05:41:36.151973599 +0000
+@@ -1,20 +1,20 @@
+ id,node_id,wrong_idea,correction,source_ids,status,flag,updated_by,updated_at
+-ped_definition_m1,ped_definition,"PED is the slope of the demand curve, so it is the same all along it","Slope uses absolute changes; PED uses percentage changes, so it varies along a straight-line demand curve.",tb_main,draft,,w4-fix-mcq proposal,
+-ped_formula_m1,ped_formula,Divide the change in price by the change in quantity.,Quantity goes on top: % change in quantity demanded divided by % change in price.,tb_main,draft,,extraction,
+-ped_values_m1,ped_values,"An elastic good has a PED below 1, because demand hardly changes","Ignoring the sign, elastic means greater than 1: quantity changes proportionally more than price.",tb_main,draft,,w4-fix-mcq proposal,
+-pes_definition_m1,pes_definition,Supply is just as elastic in the short run as in the long run,Supply is usually more elastic in the long run because firms can change all their inputs.,tb_main,draft,,w4-fix-mcq proposal,
+-pes_formula_m1,pes_formula,"PES is usually negative, just like PED for most goods",PES is usually positive because a higher price leads firms to supply more.,tb_main,draft,,w4-fix-mcq proposal,
+-yed_definition_m1,yed_definition,YED measures how demand responds to a change in the good's price,YED uses the change in income; the good's own price is held constant.,tb_main,draft,,w4-fix-mcq proposal,
+-tax_supply_shift_m1,tax_supply_shift,"An indirect tax shifts the demand curve, because buyers now pay more","The tax is paid by firms, so it raises their costs and shifts supply, not demand.",tb_main,draft,,w4-fix-mcq proposal,
+-tax_incidence_split_m1,tax_incidence_split,"Producers bear the tax, as they are the ones who hand it to the government","Who hands the money over does not decide who bears it; the split depends on elasticities.",tb_main,draft,,w4-fix-mcq proposal,
+-externality_tax_eval_m1,externality_tax_eval,A pollution tax set at the right level brings pollution down to zero,"A tax equal to the marginal external cost internalises the externality: output falls to the social optimum and the welfare loss goes, but the efficient amount of pollution, usually above zero, remains.",tb_main,draft,,w4-fix-mcq proposal,
+-ped_formula_m2,ped_formula,Work out the percentage changes from the new values.,"Percentage changes are worked out from the original values: change divided by original, times 100.",tb_main,draft,,extraction,
+-ped_formula_m3,ped_formula,"PED is the change in quantity divided by the change in price, with no percentages.","Absolute changes depend on the units used; PED divides percentage changes, so it has no units.",tb_main,draft,,extraction,
+-ped_definition_m2,ped_definition,PED measures how much the price changes when demand changes.,"It is the other way round: PED measures how quantity demanded responds to a change in price.",tb_main,draft,,extraction,
+-pes_formula_m2,pes_formula,PES is the % change in price divided by the % change in quantity supplied,Quantity goes on top: % change in quantity supplied divided by % change in price.,tb_main,draft,,w4-fix-mcq proposal,
+-pes_definition_m2,pes_definition,Supply is price elastic when buyers have lots of substitutes to switch to,"Substitutes affect PED; PES depends on how easily firms can raise output (spare capacity, stocks and time).",tb_main,draft,,w4-fix-mcq proposal,
++ped_definition_m1,ped_definition,"The slope of the demand curve is PED, so it is the same all along it","Slope uses absolute changes; PED uses percentage changes, so it varies along a straight-line demand curve.",tb_main,draft,,w6-fix-length proposal,
++ped_formula_m1,ped_formula,Divide the change in price by the change in quantity demanded to get PED,Quantity goes on top: % change in quantity demanded divided by % change in price.,tb_main,draft,,w6-fix-length proposal,
++ped_values_m1,ped_values,"An elastic good has a PED below 1, since demand for it hardly changes","Ignoring the sign, elastic means greater than 1: quantity changes proportionally more than price.",tb_main,draft,,w6-fix-length proposal,
++pes_definition_m1,pes_definition,Supply is just as price elastic in the short run as in the long run,Supply is usually more elastic in the long run because firms can change all their inputs.,tb_main,draft,,w6-fix-length proposal,
++pes_formula_m1,pes_formula,"PES is usually negative, just as PED is for most goods we buy",PES is usually positive because a higher price leads firms to supply more.,tb_main,draft,,w6-fix-length proposal,
++yed_definition_m1,yed_definition,YED measures how demand responds to a change in its own price,YED uses the change in income; the good's own price is held constant.,tb_main,draft,,w6-fix-length proposal,
++tax_supply_shift_m1,tax_supply_shift,"Because buyers now pay more, an indirect tax shifts the demand curve left","The tax is paid by firms, so it raises their costs and shifts supply, not demand.",tb_main,draft,,w6-fix-length proposal,
++tax_incidence_split_m1,tax_incidence_split,"Producers bear the tax, as they hand the money to the government",Who hands the money over does not decide who bears it; the split depends on elasticities.,tb_main,draft,,w6-fix-length proposal,
++externality_tax_eval_m1,externality_tax_eval,A pollution tax at the right level brings pollution down to zero,"A tax equal to the marginal external cost internalises the externality: output falls to the social optimum and the welfare loss goes, but the efficient amount of pollution, usually above zero, remains.",tb_main,draft,,w6-fix-length proposal,
++ped_formula_m2,ped_formula,"Work out each percentage change using the new value, not the original","Percentage changes are worked out from the original values: change divided by original, times 100.",tb_main,draft,,w6-fix-length proposal,
++ped_formula_m3,ped_formula,"PED is the change in quantity over the change in price, with no percentages","Absolute changes depend on the units used; PED divides percentage changes, so it has no units.",tb_main,draft,,w6-fix-length proposal,
++ped_definition_m2,ped_definition,PED measures how far the price changes when the demand changes,It is the other way round: PED measures how quantity demanded responds to a change in price.,tb_main,draft,,w6-fix-length proposal,
++pes_formula_m2,pes_formula,PES divides the % change in price by the % change in quantity supplied,Quantity goes on top: % change in quantity supplied divided by % change in price.,tb_main,draft,,w6-fix-length proposal,
++pes_definition_m2,pes_definition,"If buyers have lots of substitutes to switch to, supply is price elastic","Substitutes affect PED; PES depends on how easily firms can raise output (spare capacity, stocks and time).",tb_main,draft,,w6-fix-length proposal,
+ yed_definition_m2,yed_definition,A necessity like bread has a negative income elasticity of demand,Necessities are normal goods with YED between 0 and 1; only inferior goods have a negative YED.,tb_main,draft,,w4-fix-mcq proposal,
+-tax_supply_shift_m2,tax_supply_shift,An ad valorem tax shifts supply by the same amount at every price,"An ad valorem tax is a percentage of the price, so the gap between the curves widens as price rises.",tb_main,draft,,w4-fix-mcq proposal,
+-tax_incidence_split_m2,tax_incidence_split,"The more price inelastic demand is, the more of the tax producers bear","It is the other way round: buyers who can't cut back end up paying more of the tax through a higher price.",tb_main,draft,,w4-fix-mcq proposal,
+-externality_tax_eval_m2,externality_tax_eval,"Firms just pay a pollution tax and carry on, so output does not change","The tax makes polluting costlier, so firms cut pollution or output wherever that is cheaper than paying.",tb_main,draft,,w4-fix-mcq proposal,
++tax_supply_shift_m2,tax_supply_shift,An ad valorem tax shifts the supply curve by the same amount at every price,"An ad valorem tax is a percentage of the price, so the gap between the curves widens as price rises.",tb_main,draft,,w6-fix-length proposal,
++tax_incidence_split_m2,tax_incidence_split,"If demand is price inelastic, producers bear most of the tax burden",It is the other way round: buyers who can't cut back end up paying more of the tax through a higher price.,tb_main,draft,,w6-fix-length proposal,
++externality_tax_eval_m2,externality_tax_eval,"Firms just pay a pollution tax and carry on, so output doesn't change","The tax makes polluting costlier, so firms cut pollution or output wherever that is cheaper than paying.",tb_main,draft,,w6-fix-length proposal,
+ externality_tax_eval_m3,externality_tax_eval,"A tax on pollution shifts demand, while a tax on the product shifts supply","Both are paid by producers and raise their costs, so both shift supply; neither shifts demand.",tb_main,draft,,w4-fix-mcq proposal,
+diff -ruN '--exclude=__pycache__' a/ingest/validate.py b/ingest/validate.py
+--- a/ingest/validate.py	2026-11-18 05:41:36.145614974 +0000
++++ b/ingest/validate.py	2026-11-18 05:41:36.152719182 +0000
+@@ -19,6 +19,8 @@
+ MAX_KEY_WORDING_WORDS = 15  # a key wording must be shorter than this
+ MAX_SUMMARY_WORDS = 120
+ LOW_CONFIDENCE = 0.5
++KEY_LENGTH_BAND = 0.20  # our choice: each misconception within 20% of a mark point's length (MCQ options of similar length)
++KEY_RANK_SKEW = 0.15    # our choice: warn when the key is the shortest, middle or longest option this much more often than even
+ URL = re.compile(r"https?://[A-Za-z0-9.-]+\.[A-Za-z]{2,}(:\d+)?(/\S*)?")
+ 
+ 
+@@ -117,6 +119,11 @@
+     return len(text.split())
+ 
+ 
++def _option(text: str) -> str:
++    """An MCQ option as shown (edux.plan.option_form): trimmed, with no closing full stop."""
++    return text.strip().rstrip(".;!").rstrip()
++
++
+ class _Checker:
+     def __init__(self, tables: dict[str, Table]):
+         self.t = tables
+@@ -307,6 +314,46 @@
+ 
+     # --- warnings -------------------------------------------------------
+ 
++    def check_option_lengths(self) -> None:
++        """Length cues in the server-built MCQs (step 05d): a check shows a mark point as the correct option beside its
++        part's misconceptions, so a key much longer or shorter than them, or a key that is usually the middle-length
++        option, can be picked without knowing the subject (item-writing guideline: options of similar length). A part
++        with more misconceptions than fit in one question (mcq.max_options - 1) is left out of the rank count."""
++        max_options = load_settings().mcq.max_options
++        wrong: dict[str, list[int]] = defaultdict(list)
++        for r in self.rows("misconceptions.csv"):
++            if r.get("status") != "rejected" and r.get("wrong_idea"):
++                wrong[r.get("node_id", "")].append(len(_option(r["wrong_idea"])))
++        seen = {"shortest": 0.0, "middle": 0.0, "longest": 0.0}
++        even = dict(seen)
++        sets = 0
++        for r in self.rows("mark_points.csv"):
++            lengths = wrong.get(r.get("node_id", ""), [])
++            if r.get("status") == "rejected" or not r.get("point") or not lengths:
++                continue
++            key = len(_option(r["point"]))
++            far = sorted(n for n in lengths if abs(n - key) > KEY_LENGTH_BAND * key)
++            if far:
++                self.warn("mark_points.csv", r, f"mark point {r.get('id')!r} is {key} characters but {len(far)} of its "
++                          f"part's misconceptions are more than {KEY_LENGTH_BAND:.0%} longer or shorter "
++                          f"({', '.join(map(str, far))}): its multiple-choice check can be answered by length")
++            if len(lengths) < 2 or len(lengths) + 1 > max_options:
++                continue
++            n, below = len(lengths) + 1, sum(x < key for x in lengths)
++            ranks = range(below, n - sum(x > key for x in lengths))   # ties: every rank they could take, equally
++            for rank in ranks:
++                seen["shortest" if rank == 0 else "longest" if rank == n - 1 else "middle"] += 1 / len(ranks)
++            even["shortest"] += 1 / n
++            even["longest"] += 1 / n
++            even["middle"] += (n - 2) / n
++            sets += 1
++        if sets >= 6:
++            for rank, count in seen.items():
++                if (count - even[rank]) / sets > KEY_RANK_SKEW:
++                    self.warn("mark_points.csv", None, f"the mark point is the {rank} option in {count:.0f} of {sets} "
++                              f"multiple-choice checks (about {even[rank]:.0f} if spread evenly): length alone beats "
++                              "chance; write some misconceptions longer and some shorter than the mark points they sit with")
++
+     def check_coverage(self) -> None:
+         by_id = {r["id"]: r for r in self.rows("nodes.csv") if r.get("id")}
+ 
+@@ -425,6 +472,7 @@
+     checker.check_order()
+     checker.check_values()
+     checker.check_coverage()
++    checker.check_option_lengths()
+     return checker.result
+ 
+ 

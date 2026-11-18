@@ -1,9 +1,10 @@
 # Business plan: market, buyers, pricing, unit economics, competitors, copyright and evaluation
 
-Waves 1–4 (overnight 17–18 Nov 2026). Sources:
+Waves 1–5 (overnight 17–18 Nov 2026). Sources:
 - Wave 1: `work/w1/w1-08.md`, `work/w1/w1-05.md`; marks in `verify-C.json` and `verify-A.json`.
 - Wave 2: `work/w2/w2-08.md` (marks in `verify-H.json`) and `work/w2/w2-05.md` (cost and routes; marks in `verify-E.json`); the investor and DPO panel (`work/w2/panel-investor-dpo.md`).
 - Wave 3: `work/w3/w3-08m.md` (Microsoft channel and billing; marks in `verify-K.json`), `work/w3/w3-08c.md` (copyright and Pearson; marks in `verify-N.json`), and the investor section of `work/w3/panel-investor-dpo.md`. The DPO section of that panel is answered in [09](09-safety-ethics.md).
+- Wave 5: `work/w5/w5-08u.md` (unit economics on the Copilot route; model in [`sims/economics/`](sims/economics/results.md)), marks in `verify-T.json`. No new external sources: every rate is an earlier ✓ or ~ finding.
 - Wave 4: `work/w4/w4-08.md` (Edexcel's share from Ofqual's market report; whether pupils can reach a custom agent in Copilot), marks in `verify-R.json`. Web search was unavailable: every source was fetched directly (Ofqual's data tables, Microsoft Learn, and Message Center posts read on a third-party mirror).
 
 Each finding has one blind verifier mark. Labels: "our choice" marks numbers we chose; "our estimate" marks numbers we derived.
@@ -18,6 +19,14 @@ Each finding has one blind verifier mark. Labels: "our choice" marks numbers we 
 1. **The market row is filled from Ofqual.** In England in 2024–25, Pearson Edexcel Economics A (9EC0) had 21,005 of 40,795 A level Economics certificates: 51.5% (our arithmetic; w4-08-07 ✓, w4-08-08 ✓). The 30/40/50% scenarios are gone. The ceiling is about £239k a year at £5 (our estimate; w4-08-10 ✓).
 2. **A new channel condition.** Microsoft is adding an admin switch that limits students to the Study and Learn agent (MC1548047; w4-08-01 ~). A school that turns it on can't use eduX.
 3. **Growth comes through Pearson subjects more than other boards.** Pearson leads in Business, Politics and Maths (w4-08-09 ✓), and AQA bans AI use of its material (w3-08c-10 ✓).
+
+**Wave 5 changes four things:**
+1. **A unit-economics model** (`sims/economics/unit_model.py`, our modelling on verified rates). One eduX call costs the school **£0.0375**. Microsoft's take equals our £5 at **133 calls a student a year**, about 4.4 a week (w5-08u-01 ✓).
+2. **The Sparx comparison is lost on this route.** Even if eduX were free, a student could make only **75 calls a year** before the school's cost passed Sparx's top estimate of £2.80 (w5-08u-01 ✓, w2-08-06 ✓). We don't compete on price.
+3. **The class cap was understated.** A full-term month for a class of 20 is about **£65**, not £45. The £45 figure spread a year's use over 10 months (w5-08u-04 ✓).
+4. **05e calls eduX on every reply, research questions included** (w5-08u-05 ✓). The old assumption "never on chit-chat" is not what the branch builds. Research turns carry the Ask and Verify evidence, so they stay.
+
+After the competition: [roadmap.md](roadmap.md) is our 12-month plan, with four gates (route, pilot-ready, pilot result, payer) and a pricing test in the autumn that shows Microsoft's cost beside ours.
 
 Two scout-note lines stay out: "eduX runs inside Gemini on school accounts" (false: w1-05-09 ✓) and the target market "or ChatGPT/Claude" for pupils (w2-08 rec 3), because neither host has an under-18 route (see [05](05-product-features.md)). The internal "8–30% of sixth forms" guess in w3-08m is also left out: none of its inputs is measured.
 
@@ -40,6 +49,8 @@ Two scout-note lines stay out: "eduX runs inside Gemini on school accounts" (fal
 | 2 | **Target-market line:** "Sixth forms on Microsoft 365 Education. No official survey counts Microsoft vs Google schools; how many have learner Copilot on isn't published, and finding out is our first pilot task." Don't imply a percentage. If pushed: "Teacher Tapp finds about four in five teachers use Outlook", labelled a teacher-level proxy. | pitch, §1 | S | yes | w3-08m-01 ✓, w3-08m-03 ~, w2-05-04 ✓ |
 | 3 | **Price line:** £5 per student per year, minimum £100; trust tier £3; students free (our choice). When asked "Sparx costs a trust £2–3": "Our trust tier matches that; a single A level department pays a little more because it is small." | pitch, §3 | S | yes | w2-08-06 ✓, w2-08-07 ✓ |
 | 4 | **Cost line, honest version:** "eduX makes no model calls, so our own cost is hosting. On Microsoft the school also pays Microsoft: 5 credits per eduX call at about 0.75p a credit. At 20 course messages a week that's about £22.50 a student a year, roughly £7.50 a term, on top of our £5. The range is £11 to £108, depending on use. We recommend pay-as-you-go with a monthly cap per class." Don't say a licensed student costs nothing. | pitch Q&A, §3 | S | yes | w3-08m-05 ~, w3-08m-06 ✓, w3-08m-07 ✓, w3-08m-13 ✓ |
+| 4a | **Unit-economics lines (wave 5):** "One eduX call costs the school about 4p. Microsoft's take passes our £5 at about 4 course messages a week." And: "On Microsoft, even a free eduX costs more than Sparx above about 75 calls a student a year. We don't compete on price; we compete on what the school learns about how its pupils use AI." Restate the cap as £65 for a full-term month. | §3, pitch Q&A | S | yes | w5-08u-01 ✓, w5-08u-04 ✓, w2-08-06 ✓ |
+| 4b | **The "4.5×" Q&A answer** (§3), and keep research turns calling eduX: they carry the Ask and Verify evidence. Write that into 05. | pitch Q&A, 05 | S | yes | w5-08u-05 ✓ |
 | 5 | **Drop every Article 4 "compliance" or "licence the instrument" line.** Keep AI-literacy evidence as value to the school (teacher insight) and possibly to awarding bodies (a task bank), not as a compliance product. | pitch, §4, §10 | S | yes | w2-08-09 ✓ |
 | 6 | **Competitor rows:** Gemini (tracking + Classroom insights), **Microsoft Study and Learn (free, preselected for K-12, teacher-assignable from Nov 2026)**, ChatGPT (in-chat quizzes, no tracking found), Claude (US teachers only, connectors to Eedi and ASSISTments), and the Pioneer Programme. | §4, pitch Q&A | S | yes | w2-08-01 ✓ to w2-08-05 ✓, w2-08-08 ✓, w3-08m-04 ✓ |
 | 7 | **Distribution answer for Q&A:** adults and teachers today. Sixth-formers next, through a Copilot Studio agent in a Microsoft school tenant, untested. "Microsoft's own posts imply students can choose other agents unless the school locks them to Study and Learn. No Microsoft page says outright that a school's custom agent works for 13–17s, and we haven't tested it. We know of no public UK case of Copilot Studio agents for pupils; our search was limited." | pitch Q&A | S | yes | w2-05-03 ✓, w3-08m-04 ✓, w3-08m-12 ~, w4-08-01 ~, w4-08-02 ✓ |
@@ -180,12 +191,60 @@ Arithmetic checked by the verifier (w3-08m-13 ✓). The per-student figures are 
 - **Our margin is still hosting only,** because eduX makes no model calls. That is true, and it doesn't lower the school's total. Never say "zero running cost" or "cheaper than a chatbot".
 - **Our price can't fix this.** Cutting £5 to £0 still leaves £22.50. Raising it adds to a total that already worries a business manager.
 - **What can move the total:**
-  1. fewer calls: eduX only on course messages, never on chit-chat (the central case already assumes this);
+  1. fewer calls. The central case counts 20 course messages a week. **But the 05e branch tells the chatbot to call `tutor_turn` on every reply, research questions included** (w5-08u-05 ✓). If 10% research and 10% off-course messages come on top, that is 25 calls a week: about £28.10 to Microsoft (our arithmetic). Call-saving options are below;
   2. a standard-rate model and the standard harness;
-  3. a monthly cap per class: about 6,000 credits, **about £45 a month for a class of 20** in the central case (our arithmetic). That is the number the investor asked for;
+  3. a monthly cap per class. Set it at **about £65 for a full-term month for a class of 20** (about 8,700 credits). It averages about £45 a month across the year. A £45 cap would stop eduX partway through a full-term month (w5-08u-04 ✓; usage is our choice). Use before exams is probably higher (unmodelled);
   4. the free route, if it exists. One Microsoft table lists custom actions in Copilot Chat with no usage-based billing, but two other Microsoft pages say custom-agent use is pay-as-you-go (w3-08m-09 ✓). **Test it (rec 15). Don't pitch it.**
 - **Not a route: Agent Builder.** It skips the generative-answer charge, but it can't author actions that call external services, so it can't call MCP (w3-08m-08 ✓).
 - **The investor's test:** the real turn count from one class, and a priced cap per class. Until then the honest answer is "£11–108, central £22.50", not "maybe zero".
+
+### Unit-economics model (wave 5; our modelling on verified rates)
+
+Script: [`sims/economics/unit_model.py`](sims/economics/unit_model.py) (stdlib; outputs in `results.md` and `results.json`). Every rate comes from a ✓ or ~ row in `findings.csv`. Message counts, weeks and the message mix are our choice.
+
+**Per call and break-even** (5 credits a call, pay-as-you-go, ex VAT; w5-08u-01 ✓):
+- **One call costs the school £0.0375**, about 4p.
+- **Break-even with our licence: 133 calls a student a year** (4.4 a week over 30 weeks) at £5; 80 at £3. Above that, Microsoft's meter is most of the bill.
+- **Against Sparx: 75 calls a year, even if eduX is free.** Sparx's top estimate is £2.80 (w2-08-06 ✓). The £3 trust tier alone is already above it. The central total, £27.50, is about 10× Sparx.
+- With progress and profile calls and schema retries (3 per 100 each, our choice), Microsoft's central share rises from £22.50 to about £23.85.
+
+| course messages a week × 30 weeks | Microsoft £ | total with £5 | Microsoft's share | Microsoft ÷ eduX |
+|---|---|---|---|---|
+| 5 | 5.62 | 10.62 | 53% | 1.1× |
+| 10 | 11.25 | 16.25 | 69% | 2.2× |
+| **20 (central)** | **22.50** | **27.50** | **82%** | **4.5×** |
+
+**Reading:** on Copilot, eduX is priced like a consumer AI tutor, not like school homework software. The gap is Microsoft's meter, not our licence.
+
+**What drives calls (code reading, 05e branch).**
+- One `tutor_turn` per student message, research questions included (w5-08u-05 ✓).
+- An explanation costs no extra call: `plan.teach` returns the teaching point and its check in one plan (w5-08u-06 ✓). So "fewer calls during explanations" saves nothing.
+- About 8 messages per course part: k(1+p)+3+q with 3 points, a 30% wrong rate and one side question (our choice; w5-08u-06 ✓).
+
+**Call-saving options** (per 100 student messages; mix 80% loop, 10% research, 10% off-course, all our choice; savings are model output, not measured):
+
+| option | saving (an uncalled message bills 0 / 2 credits) | evidence lost | risk |
+|---|---|---|---|
+| A. no call on greetings, thanks and off-course chat | 9% / 6% | none scored | low |
+| B. the chatbot answers quick side questions and re-asks without a call | 10% / 6% | depth and engagement labels on those messages | low–medium |
+| E. retries 3% → 1% | 2% | none | none |
+| **A + B + E** | **21% / 13%** (sensitivity 8–21%) | | low |
+| C. also a pre-branched plan (the next step for each MCQ letter) | A+B+C+E 45% / 28% | none; scored one turn late | medium: the answer key reaches the chatbot first |
+| Skip research turns too | about 10% more | **all Ask and Verify evidence** | rejected |
+
+- **A server-side quota saves nothing:** a refused call is still billed (w3-08m-06 ✓). The cap has to sit in Microsoft (the per-agent monthly limit) or in what the chatbot is told.
+- **Pre-purchase saves at most 20%** (w3-08m-07 ✓). A 25k pack beats pay-as-you-go only at about 82% use or more, about 47–58 central-use students a month (our arithmetic). Recommend a pack only to a trust with about 60 steady users; otherwise pay-as-you-go with the cap.
+- **Option A is a text change after filming** (`text/server_instructions.md` on 05e). Measure before claiming any saving: `call_log` already records every call.
+
+**Other payers, known vs assumed** (w5-08u §C). No other channel has both under-18 access and a known price. Over-18 FE learners through ChatGPT Edu or Claude for Education are possible, seat-priced (price assumed) and a small market for 9EC0. A hosted eduX front end is the only route where we set the whole price, but eduX would then call a model: a different product, later.
+
+### The honest answer to "Microsoft takes 4.5× your revenue"
+
+Use this in Q&A, close to word for word (also [pitch-notes](pitch-notes.md) §d Q11):
+
+> "Yes. In our central case Microsoft's meter is about £22.50 a student a year against our £5, and we show it rather than hide it. Each call costs the school about 4p. That's what any custom agent on Copilot costs, and it isn't our margin: our own cost is hosting, because eduX never calls a model. The school can cap a class of 20 at about £65 a month in term. Not calling eduX on chit-chat cuts a few per cent in our model, and we'll measure the real figure in the first class. But the honest objection isn't the ratio. It's that Microsoft's own Study and Learn tutor is free. A school pays for eduX only if it values a 9EC0 learner model it owns and evidence of how its pupils use AI, and neither is validated yet. So our test is a real call count from one class, and three heads of Economics signing priced letters of intent with Microsoft's cost printed next to ours."
+
+Don't say "maybe zero". If a tenant test shows the declarative-agent route isn't metered, say so then, not before.
 
 ## 4. Competitors (public pages, 17–18 Nov 2026)
 
@@ -301,7 +360,7 @@ Full table in [05](05-product-features.md).
 
 1. **Now to March 2027: recruit 3–5 pilot Economics departments** through the team's own networks (no contact made). Criteria:
    - Edexcel 9EC0;
-   - **a Microsoft 365 Education tenant whose IT admin will switch on Copilot Chat for Year 12–13, build the agent, and switch on pay-as-you-go with a per-class cap** (about £45 a month for a class of 20, central; our estimate);
+   - **a Microsoft 365 Education tenant whose IT admin will switch on Copilot Chat for Year 12–13, build the agent, and switch on pay-as-you-go with a per-class cap** (about £65 for a full-term month for a class of 20, central; our estimate);
    - **the school does not plan to switch on Study and Learn-only mode for Year 12–13** (w4-08-01 ~), and IT will approve the agent in the Agent Registry (w4-08-06 ✓);
    - a DSL willing to review the safety statement.
 
@@ -343,7 +402,7 @@ The wave 3 verdict: "Still no, but this is the first wave that gives me numbers 
 9. **The team:** a named technical lead and post-competition commitment. 05e is built on its branch but not merged; merge it.
 
 **Q&A lines the investor wants (wave 3):**
-- *Total cost per student?* "£5 to us plus about £22.50 to Microsoft in our central estimate, £11–108 depending on use. We recommend a cap of about £45 a month per class of 20."
+- *Total cost per student?* "£5 to us plus about £22.50 to Microsoft in our central estimate, £11–108 depending on use. We recommend a cap of about £65 for a full-term month per class of 20."
 - *Can a 16-year-old reach a custom agent?* Only "Microsoft confirmed it on [date]" or "a test account did" counts. Today: "not yet tested".
 - *Why pay twice when Study and Learn is free?* "Study and Learn doesn't know 9EC0 and doesn't report AI literacy to the school."
 - *What stops Pearson copying the pack?* "Our cost per pack in hours, and host-neutrality." Both unproven.
@@ -471,4 +530,8 @@ The wave 3 verdict: "Still no, but this is the first wave that gives me numbers 
 | w3-08c-13 | Seneca, Up Learn, Oak describe alignment, not partnership; Oak post-2022 content under OGL | practitioner (vendor pages) | UK secondary and A level | adoption / policy | ✓ |
 | w3-08c-14 | CLA Schools Licence held for schools, copies within institution; CLA GenAI licence opt-in only | official document (licensor) | UK schools; AI developers | policy | ✓ |
 
+| w5-08u-01 | At 5 credits a call and £0.0375 a call, credits equal a £5 licence at about 133 calls a student a year; central £22.50 to Microsoft, 82% of spend, 4.5× eduX | first-principles model on verified rates | UK schools, Copilot PAYG | cost | ✓ (£5/£3 prices our choice) |
+| w5-08u-04 | A class of 20 at the central rate uses 60,000 credits a year: £45 a month over 10 months, about £65 in a full-term month | first-principles model | as above | cost | ✓ (usage our choice) |
+| w5-08u-05 | The 05e branch tells the chatbot to call tutor_turn at the start of every reply, research questions included; main says replies about the course | code reading | 05e branch | cost | ✓ (line number off by one) |
+| w5-08u-06 | plan.teach returns the teaching point with its check; plans have at most 3 steps; about 7.9 messages per part (our mix) | code reading | 05e branch | cost | ✓ |
 Also cited here; each sits in its home report's table: w2-05-01 ~, w2-05-02 ✓, w2-05-03 ✓, w2-05-04 ✓, w2-05-06 ~ (superseded as the headline by w3-08m-13), w2-05-10 ✓, w2-05-11 ✓, w2-05-12 ✓, w2-05-14 ~, w2-05-20 ~, w2-05-23 ~, w1-05-02 ✓, w1-05-03 ✓, w1-05-09 ✓, w1-05-14 ~ ([05](05-product-features.md)); w1-09-01 ✓ to w1-09-03 ✓, w1-09-08 ~ ([09](09-safety-ethics.md)); w1-04-08 ✓ ([04](04-economics-education.md)).

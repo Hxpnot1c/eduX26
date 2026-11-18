@@ -1,10 +1,10 @@
 # w6-08r · After the competition: a 12-month roadmap (Dec 2026 – Nov 2027)
 
-**Method.** This note brings together what waves 1–5 already found. It adds no new web research. Sources: [MORNING-BRIEF](../../MORNING-BRIEF.md), [business plan](../../business-plan.md), [02](../../02-ai-literacy-assessment.md), [02a](../../02a-label-agreement-protocol.md), [05](../../05-product-features.md), [09](../../09-safety-ethics.md), [judge panel](../../judge-panel.md), `docs/build/steps/later.md`, the pilot plan in `work/w3/w3-02e.md` §2, and the wave-5 notes `w5-06g` (gaming) and `w5-08u` (unit economics). Factual numbers come only from ✓ rows in `findings.csv`, cited by id. Numbers marked "our choice", "our estimate" or "our calculation" are ours.
+**Method.** This note brings together what waves 1–5 already found. It adds no new web research. Sources: [MORNING-BRIEF](MORNING-BRIEF.md), [business plan](business-plan.md), [02](02-ai-literacy-assessment.md), [02a](02a-label-agreement-protocol.md), [05](05-product-features.md), [09](09-safety-ethics.md), [judge panel](judge-panel.md), `docs/build/steps/later.md`, the pilot plan in `work/w3/w3-02e.md` §2, and the wave-5 notes `w5-06g` (gaming) and `w5-08u` (unit economics). Factual numbers come only from ✓ rows in `findings.csv`, cited by id. Numbers marked "our choice", "our estimate" or "our calculation" are ours.
 
 **Conventions.**
 - **Everything in the roadmap is "our plan".** It is not a commitment from any school, from Microsoft or from Pearson, and none of them has been contacted.
-- Objections are cited as *persona wave #n*, for example "DPO w3 #2" means wave 3, DPO persona, objection 2 in the [judge panel](../../judge-panel.md).
+- Objections are cited as *persona wave #n*, for example "DPO w3 #2" means wave 3, DPO persona, objection 2 in the [judge panel](judge-panel.md).
 - Effort: S under 2 h, M about half a day, L more.
 - Each success criterion is a pass/fail test we can run ourselves and show.
 

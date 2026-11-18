@@ -1,9 +1,10 @@
-# 06 · Settings simulation: three bugs, the proposal's settings, the alarms, and the decay asymmetry
+# 06 · Settings simulation: three bugs, the proposal's settings, the alarms, the decay asymmetry, and gaming the scoring rules
 
-Waves 1 and 3 (overnight 17–18 Nov 2026). Wave 2 added no 06 scout note.
+Waves 1, 3 and 5 (overnight 17–18 Nov 2026). Wave 2 added no 06 scout note.
 
 **Sources.**
 - **Wave 1.** Scout notes `work/w1/w1-06.md`, blind verifier marks `work/w1/verify-I.json` (w1-06-*), the panel files, and the simulation outputs in [`sims/results/`](sims/README.md). The verifier reran the probes and recomputed every number from `results/metrics.csv`. A partial rerun (seeds 1–2, all variants, both scenarios, 42 runs) reproduced the stored rows exactly.
+- **Wave 5.** Scout note `work/w5/w5-06g.md` (red-teaming the scoring rules as a mechanism), scripts and results in [`sims/gaming/`](sims/gaming/README.md). Integration verifier S re-measured the counters at N = 30 (gamers) and N = 100 (honest students) on the stacked tree (`work/w5/verify-S.json`); where its numbers differ from the scout's, **verifier S's numbers are used**. Wave 6's fairer counters (0009b, 0010b) come from `work/w6/w6-fix-counters.md`, **verification pending**.
 - **Wave 3.** Scout note `work/w3/w3-06.md` (the decay-clock asymmetry on economics parts), blind verifier marks `work/w3/verify-M.json` (w3-06-*), and the scripts and results in [`sims/decay/`](sims/decay/README.md).
   - The verifier recomputed the crossing times by hand and reran `cases.py`; `results/cases.md` came out byte-identical. It also reran the full 960-student population; `population.md` came out byte-identical.
   - Four of its marks are ~, and their corrections are applied below: the review-gap window (-02), the snapshot range (-04), the nudge case (-06) and the cap's effect (-09).
@@ -40,6 +41,13 @@ Waves 1 and 3 (overnight 17–18 Nov 2026). Wave 2 added no 06 scout note.
   - Within one student, the inversion is live: `_levers`, `weak_prerequisites`, the prerequisite gate and the levels shown all read `p_now` (w3-06-07 ✓).
   - Across students it is latent, because no code on `main` compares students yet. It matters for any future teacher view and for evaluation.
 
+- **Wave 5: the scoring rules are not incentive-compatible** (mechanism design). Every cheap deviation we tried, except vague questions and ignoring tasks, earned more displayed level per minute than honest play (w5-06g-01 ~). Simulation: synthetic students, example pack; effort weights are our choice.
+  - **#1 at the expo: "the link is broken".** Two bare reports make Verify secure for 100% of zero-skill students. Honest partial-skill students: 65% (verifier S, N = 100).
+  - **#2: "just show me", then pick the matching option.** All 9 course parts read secure (w5-06g-03 ~).
+  - **A new MCQ cue after patch 0004:** dropping the longest and shortest options gets 58% right against about 31% chance (w5-06g-05 ~).
+  - **The skip counter is nearly blind** (about 2% of ignored tasks counted; w5-06g-07 ~).
+  - **Counters:** wave 6's 0009b and 0010b take these gamers to 0 secure at a small honest cost (verification pending). Guessers still gain "developing". **Never claim "gaming-proof".**
+
 ## Ranked recommendations
 
 Ranks 1–8 are the wave-1 list, unchanged (other reports cite recs 1–3 and 8). Wave 3 adds ranks 9–14. Ranks 1–11 can be done before Thursday 23:59; 12 is "maybe"; 13–14 come later.
@@ -60,6 +68,11 @@ Ranks 1–8 are the wave-1 list, unchanged (other reports cite recs 1–3 and 8)
 | 12 | **Re-run the 05e How AI works AUC (w2-02-05 ~) with fix (c).** It should improve by construction, but it is untested. This report tests economics parts on `main` only. | sims | S | maybe | open |
 | 13 | **Store the prior at first touch** (a `p_floor` column in `part_state`, set in `_load_state`), so fix (c) stays rebuild-stable when difficulty changes or `w_cross > 0`. It needs a migration. Until then keep `difficulty.w_cross = 0` (it is 0 today) and don't edit teacher difficulty without a rebuild. | build | M | no | w3-06-10 ✓ |
 | 14 | **Latent: hard parts start below the candidate band.** A difficulty-0.7 part starts at prior 0.24, below `queue_band` 0.30, so `learner.candidates()` would never offer it untouched. It isn't live today. Fix it before wiring `candidates()` in, e.g. band floor = `min(prior)`. | build | S | no | w3-06-07 ✓ |
+| 15 | **Wave 5–6: apply 0009b (dead-link report cap) and 0010b (show-then-pick cap)**, not 0009/0010 ([build list](wednesday-build-list.md) steps 5d–5e). Keep 0009b's text line: never tick what only repeats the chatbot's reply. | build | S | yes (verification pending) | w5-06g-01 ~, -03 ~; w6 notes |
+| 16 | **Pitch: never "gaming-proof".** Use only the line that matches the build (pitch-notes). | pitch | S | yes | w5-06g-01 ~, -04 ~ |
+| 17 | **Record a skip when a new task replaces an unanswered Verify task** (`service._literacy_followup`, 1 line, untested). Until then, no claim that skips are shown. | build | S | optional | w5-06g-07 ~ |
+| 18 | **Spread the key's length rank** across each part's options in the pack (an ingest check, or distractors both longer and shorter than the key). | pack, ingest | M | no | w5-06g-05 ~ |
+| 19 | **Teacher view (later):** surface source_conflict count per task, top-letter share, seconds per answer and dodged questions; all but dodges are already logged. | later | M | no | w5-06g-08 ~ |
 
 ## The three bugs (rank first: Wednesday fixes)
 
@@ -152,7 +165,45 @@ Source: w1-06-12 ~; the verifier says the main run's shares differ from the pilo
   - Far scenario, exam day: its parts are rated +0.87 (current) and +0.73 (proposal) above truth.
   - Near: +0.23 and +0.14.
   - Source: `summary.md`, main run. The scout's "+0.6 to +0.9" was a pilot figure.
-- **What the sim doesn't test:** the teacher's and student's objection, a student who picks the shortest option (see Panel objections).
+- **What the sim doesn't test:** the teacher's and student's objection, a student who picks the shortest option (see Panel objections). **Wave 5 tested it:** see the mechanism-design section below.
+
+## Mechanism design: gaming the scoring rules (wave 5, with the wave-6 counters)
+
+**Method.** Security red-teaming and mechanism design. The scoring rules are treated as a mechanism whose payoff is the level shown. The question is whether any cheap deviation from honest play pays more displayed level per minute of effort. `sims/gaming/gaming_sim.py` drives the real service layer of 05e + 0001–0005: 16 strategies × 2 chatbot labellers (literal: ticks what is said; skeptical: never ticks what repeats its own reply) × 5 code variants, 30 students × 40 messages each. Effort weights and truth models are our choice. **Simulation: synthetic students, example pack. Displayed level is a prediction outcome, not learning.**
+
+### Exploits, ranked (gain × ease × visibility at the expo, each 1–3; our scoring)
+| rank | exploit | what it gets (before counters) | counter | after the counter |
+|---|---|---|---|---|
+| 1 | **"The link is broken"** (L1) | Verify secure for 100% of zero-skill students in 2 messages; the chatbot praises it (w5-06g-01 ~) | 0009b: reports cap Verify at developing until one real check | 0% secure (shown developing); verification pending |
+| 2 | **"Just show me", then pick the option that repeats it** (C3) | 9/9 course parts secure (w5-06g-03 ~) | 0010b: a pick straight after a show or hint can't make a part secure | 0 parts; verification pending |
+| 3 | **Drop the longest and shortest options** (C2m) | 58% right vs about 31% chance; 4.4 false-secure parts (w5-06g-05 ~) | 0010b (secure); pack fix for the cue itself (later) | 0 parts secure; the 58% cue remains |
+| 4 | **Restate the chatbot's reply as a check** (L2/L3) | Verify secure under a literal labeller, never under a skeptical one (w5-06g-06 ~) | text line (in 0009b): never tick what only repeats your reply or its citation | depends on the real chatbot; untested |
+| 5 | Paste a 4-feature question template (L4) | Ask secure in about 10 min | none: writing the features is the Ask skill | — |
+| 6 | **Ignore every task** (L6) | no level gain, but `skipped.verify` reads 0.57 for about 34 ignored tasks (w5-06g-07 ~) | record a skip when a task is replaced (1 line, untested) | — |
+| 7 | Always "A" (C1) | false secure for about half the students, gone by +7 days | 0010b | 0 |
+| 8 | Answer only when sure, dodge otherwise (C5) | dodges recorded nowhere; 42% of displayed-secure parts include points the student doesn't know (w5-06g-08 ~) | count dropped questions as unanswered (later) | — |
+| – | Vague research questions (L5) | **nothing**: Ask can't be farmed by asking more (w5-06g-09 ~) | none needed | — |
+
+### Counters, and what each costs honest students
+Verifier S's re-measurements replace the scout's where they differ (honest L0 65%, not 53%; honest C0 3.6 parts, not 4.1; always-"A" false secure 57%, not 53%).
+
+| counter | gamers | honest students | Plan A (8 takes) | status |
+|---|---|---|---|---|
+| 0009 (wave 5): a bare or a,d-ticked report is no evidence | L1 100% → 0% Verify secure | L0 65% → 59% (N = 100) | 6 of 8 takes fall to Verify **new**; clashes with 0007's ticking rule | ~ (w5-fix-counter-c2); **superseded** |
+| 0010 (wave 5): immediate evidence capped below secure | C3 9 → 0; C2m 4.4 → 2.2; C1 57% → 17% | **3.6 → 1.4 parts secure in a session**; first secure 2.4 → 12.0 min; +7 days 2.5 → 0.9 | unchanged; open-only failers lose the stop offer | ~ (w5-fix-counter-c1); **superseded** |
+| **0009b (wave 6):** reports count, but can't lift Verify past developing until one real check | L1, L1d 100% → 0% (developing) | L0 64% → 62% (N = 300, SE about 3 points) | all 8 developing (0.740) | recommended, **verification pending** |
+| **0010b (wave 6):** a *picked* answer straight after a show or hint can't make a part secure; a *written* one can; a prerequisite boost never makes a part secure | C3, C3t, C2m, C1 → 0 parts | 3.6 → **3.4** parts; +7 days 2.5 (unchanged) | unchanged; open-only failer's stop offer at turn 19 | recommended, **verification pending** |
+
+A settings-only alternative to 0010 (raising the immediate guess to 0.6) left C3 at 7 parts: rejected.
+
+### What still pays, after the counters
+- **Guessers still gain "developing"** faster than honest students. The counters stop false *secure*, not all false progress.
+- **One real check, then dead-link reports** (L1c) still reaches Verify secure: the rule allows it.
+- **Pasting the shown point back as an explain-back** (C3x) reaches 9/9 under a literal labeller, 0/9 under a skeptical one. It depends on the chatbot following 0009b's text line, which is untested with a real chatbot.
+- **The skip counter is nearly blind.** About 2% of ignored tasks are counted, because a new research question replaces a pending task without a skip. Topic-switch dodges are recorded nowhere (w5-06g-07 ~, -08 ~).
+- **The 58% middle-length cue: fix in progress.** 0010b stops it making parts secure (4.4 → 0 parts; verification pending). The cue itself remains in the options after 0004 and still needs the pack fix (rec 18, later).
+
+**Say:** "We red-teamed our own scoring. A reported dead link counts as checking, but secure needs a real check" (only with 0009b in). **Never say "gaming-proof".**
 
 ## Recommended chart for the pitch
 
@@ -308,6 +359,7 @@ Sources: `results/population.md`, w3-06-08 ✓ and w3-06-09 ~. Notes:
 - **Raising `levels.secure` to 0.85–0.95.** The scout reports that pilot exam-day false secure stayed at 71–73% while coverage fell. The false secures sit near p ≈ 1 because of half-life inflation, not near the threshold. This was **not verified, and the output was not saved**. The direction is consistent with the immediate-share data above.
 
 ## Panel objections this report answers or leaves open
+- **Wave 5, "Can a student game the levels?": partly.** Red-teamed (mechanism-design section): the worst exploits have counters (0009b, 0010b; recommended, verification pending), guessers still gain "developing", and a 58% middle-length cue remains in the options.
 - **Teacher #2 / #3 and student #3, "What stops a student picking the shortest option?": partly.** The sim's guesser always picks "A", not the shortest option. Open-answer evidence held it near 0 secure parts (w1-06-10 ~). A shortest-option guesser is still untested. The wave-3 option-form audit found the opposite cue: in 7 of 9 example-pack parts the correct option is longer than every distractor (w3-05-08 ~, [05](05-product-features.md)), so a longest-option guesser would do well.
 - **Judges #3, "Why believe a 'secure' Verify?": open here.** That objection is about AI-literacy levels; this report covers course parts only. See [02](02-ai-literacy-assessment.md).
 - **Judges (expected), "Can a student chat their way to secure?": recommended.** Yes, on `main`: 14 exchanges with no check reach .763 (w3-06-06 ~). Rec 10 caps never-right parts at the prior and shows "not yet shown". Not built.
@@ -341,6 +393,15 @@ Sources: `results/population.md`, w3-06-08 ✓ and w3-06-09 ~. Notes:
 | w3-06-09 | Fix (b): ranking almost unchanged; never-right shown developing+ 0.8–2.2% → 0; stored state unchanged | simulation | synthetic | prediction (levels shown) | ~ within 0.003 except one within-student cell (.004) |
 | w3-06-10 | Live state = two rebuilds in 5,760 / 5,760 student × variant runs | simulation | synthetic | policy (determinism) | ✓ |
 | w3-06-11 | Censoring analogy; two-state chain relaxes to μ/(λ+μ), so `main` holds two equilibria | theory / analogy | n/a | n/a (model design) | ✓ (frozen value is the prior only for untouched parts) |
+| w5-06g-01 | Two bare "link is broken" reports make Verify secure for 100% of zero-skill students; honest partial-skill students reach secure less often | simulation | synthetic, example-mini, 05e + 0001–0005 | prediction | ~ honest L0 is 65% at N = 100 on 0001–0008 (verifier S), not 53% |
+| w5-06g-02 | Counter 0009: L1 100% → 0%, check_mcp 74/74, Plan A final 0.636 | simulation | synthetic | prediction | ~ honest 65% → 59%, not 53% → 47%; four more Plan A takes fall to new |
+| w5-06g-03 | "Just show me" + match makes all 9 parts secure | simulation | synthetic; near-verbatim show (upper bound) | prediction | ~ C3 9 parts confirmed; honest C0 is 3.6, not 4.1 |
+| w5-06g-04 | Counter 0010 cuts C3 to 0 and always-"A" false secure; costs honest students | simulation | synthetic | prediction | ~ C1 57% → 17%; honest 3.6 → 1.4; first secure 2.4 → 12.0 min |
+| w5-06g-05 | After 0004, dropping the longest and shortest options gets 58% right (chance about 31%); 4.4 false-secure parts | simulation | example-mini, synthetic | prediction | ~ 4.4 parts confirmed (2.2 under 0010); the 58% not re-measured |
+| w5-06g-06 | Restating the chatbot's reply as a Verify answer reaches secure under a literal labeller, never under a skeptical one | simulation | synthetic; chatbot behaviour assumed | prediction | ~ not re-measured; the related L1d case was (100% literal, 0% skeptical) |
+| w5-06g-07 | A student who ignores every task shows skipped.verify 0.57 for about 34 ignored tasks | simulation | synthetic | prediction (signal coverage) | ~ not re-measured |
+| w5-06g-08 | Topic-switch dodges leave no trace; 42% of the selective student's secure parts include unknown points | simulation | synthetic | prediction | ~ C5 2.0 parts confirmed; the 42% not re-measured |
+| w5-06g-09 | Vague questions gain nothing; the longest-option cue (14% right) still made ped_values secure for 30/30 | simulation | synthetic | prediction | ~ not re-measured |
 
 ## How to rerun
 

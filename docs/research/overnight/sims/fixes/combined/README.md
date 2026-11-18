@@ -313,3 +313,62 @@ so it is a chance clash. 0007 is text only and doesn't touch the shuffle. Three 
 - **Skip 0008.** If the chatbot labels the 4c answer `research`, Ask drops to **new** in the progress shot. Cheap (3 lines): keep it.
 - **Skip 0007.** The server is unchanged. The chatbot gets no rules for labelling answers, source_conflict or ticks.
 - **Skip 0006.** Plan A is unchanged. Off camera, a failing student gets up to 23 bare reteaches in a row, and "quiz me" paraphrases go to the old focus.
+
+## Wave 6: fairer counters 0009b and 0010b (w6-fix-counters)
+
+These are alternatives to 0009 and 0010. **Use 0009 or 0009b, never both. The same goes for 0010 and 0010b.** Notes are in `work/w6/w6-fix-counters.md`, results in `results/w6/`, and the scripts in `sims/fixes/w6/`.
+
+| # | file | applies on | touches |
+|---|---|---|---|
+| 9b | `0009b-w6-dead-link-report-cap.diff` | 0008 | learner.py (`apply_evidence_event`, `_apply_evidence` gains `cap=`, 2 helpers), tools/tutor_turn.md (+34 words) |
+| 10b | `0010b-w6-show-then-pick-cap.diff` | 0009b (it reuses 0009b's `cap=`) | learner.py (immediate cap, prerequisite boost), plan.py `_misses` |
+| – | `variants/0010b-alone-w6-show-then-pick-cap.diff` | 0008 (series without 0009b) | as 10b plus the `cap=` plumbing; add 0009b's tutor_turn.md sentence by hand |
+
+```bash
+C=docs/research/overnight/sims/fixes/combined
+for p in $C/000[1-5]-*.diff $C/00{06,07,08}-w5-*.diff $C/0009b-w6-*.diff $C/0010b-w6-*.diff; do patch -p1 < "$p"; done
+```
+Applying the patches with `patch -p1` to a fresh export gives `edux/` and `text/` byte-identical to the trees I tested. A dry run of 0010b straight on 0008 fails one hunk; use the `variants/` file for that case.
+
+### What changes
+- **0009b (dead-link report).** A Verify answer sent with `source_conflict` still scores 1, so an honest a,d tick or a bare report still counts. Until the student has one successful check of their own on Verify (a correct Verify answer that wasn't a report), reports can't lift Verify past `levels.secure - 0.01`, so they cap it at developing. Once the student has done a real check, reports count in full. Text: never tick a point for words that only repeat the chatbot's reply, a point it just showed, or its citation.
+- **0010b (show then pick).** Immediate evidence (within 30 min of a worked example or hint) that the student *picks* (an MCQ check, a review or a prequestion) can't make a part secure. An answer the student *writes* (explain_back, extend, past_question) still can.
+  - A prerequisite boost from a dependent part is indirect evidence, so it never makes a prerequisite secure on its own. This is the leak that let "teach me + pick the matching option" reach secure under 0010.
+  - plan.py: a miss on an open answer is cleared only by a complete open answer. This restores the stop/switch offer that 0010 lost.
+
+### Results
+Same harness, seeds and N as `sims/gaming`, plus three adaptive gamers in `sims/fixes/w6/gaming_w6.py`:
+- C3t: "teach me" + pick the matching option.
+- C3x: "just show me" + match + paste the shown point back.
+- L1c: one real check, then "the link is broken".
+
+N = 100 for C0, L0 and L0s, 30 for the rest, plus L0 at N = 300. Base = 0001–0008.
+
+| | base (0008) | 0009 / 0010 | **0009b / 0010b** |
+|---|---|---|---|
+| Plan A, 8 takes: Verify at 4d | developing 0.748 in all 8 | 0.636 in 2 takes, **new (0.300) in 6** | **developing 0.740 in all 8**; Ask 0.528 and plan moves identical |
+| L1 "link is broken": Verify secure | 100% | 0% (shown new) | **0%** (developing, 0.740) |
+| L1d with copied details, literal labeller | 100% | 100% | **0%** (developing) |
+| L1c one real check, then reports | 100% | 0% | 100% (the rule allows it: one real check + one report) |
+| L0 honest partial: Verify secure, N=300 (SE about 3 pts) | 64% | 60% | **62%** |
+| L0s honest strong | 100% | 100% | 100% |
+| C0 honest: parts secure in session / +7 d / effort-min to first secure | 3.6 / 2.5 / 2.4 | 1.4 / 0.9 / 12.0 | **3.4 / 2.5 / 8.9** |
+| C3 show + match | 9 | 0 | **0** |
+| C3t teach + match | 9 | 4.0 | **0** |
+| C2m middle-length guess | 4.4 | 2.2 | **0** |
+| C1 always "A" | 0.8 | 0.2 | **0** |
+| C3x show + paste explain-back: literal / skeptical labeller | 9 / 9 | 4 / 2 | **9 / 0** (needs the 0009b text line to be followed) |
+| C4 copy explain-back: literal / skeptical labeller | 3.8 / 1.3 | 1.3 / 0.3 | 3.8 / 0.0 |
+| open-only failer: stop/switch offer (40 turns) | turn 15 | never | **turn 19** |
+
+The other probes are unchanged from 0008:
+- always-failing student: stop/switch offer at turn 8, 29/30 plans with an MCQ, no bare-reteach runs;
+- review asks: 18/18, with 0/12 ordinary messages stolen.
+
+`seed-demo` progress for every seeded student is identical to 0008. check_mcp passes **74/74** on 0009b, on 0009b+0010b and on 0010b alone (timing median 25–27 ms, no rerun).
+
+### Hours and what to cut
+- 0009b: 0.5 h. No demo re-shoot: every Plan A take still shows developing.
+- 0010b: 1 h, including a rerun of check_mcp and the probes. Re-check any course progress shot that relies on a part going secure from MCQs straight after teaching. Such a part now needs an explain-back.
+- If short of time, keep 0009b (cheap, and it fixes the demo conflict) and drop 0010b.
+- Don't take 0010b without the "never tick what only repeats your reply" sentence. Without it, C3x still reaches 9/9 under a literal labeller.

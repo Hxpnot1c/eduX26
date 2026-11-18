@@ -9,6 +9,8 @@ Appendix to [02 · Defining and assessing AI literacy](02-ai-literacy-assessment
 > - **Figures inside the messages are illustrative, not checked facts.** Examples are "CPI 2.8% in February 2025" and "Bank Rate 4.75% in November 2024". No real student data is used.
 > - **Not run yet.** Nothing here is a result. Every sample-size and simulation figure is our calculation (w3-02e-01, -02, -06).
 
+**Wave 5 update (§4).** A dry run of the analysis script on a Claude proxy's labels against the key: a **pipeline test, not agreement evidence**. It found definitions to clarify before Wednesday and key errors to fix (§4.3), and a server bug that patch 0008 now guards. Use [`sims/agreement/analyse.py`](sims/agreement/README.md) for the real run; it replaces Appendix C's `agree.py`.
+
 **Verifier corrections applied here (verify-O.json).**
 - **AC1 example (w3-02e-04 ~).** At 87.5% prevalence (35 of 40 "yes" per rater) and 90% raw agreement, κ ≈ .54 and AC1 ≈ .87. The scout's κ .28 / AC1 .88 matches a marginal prevalence of 92.5%, not 87.5%.
 - **Pass-rule simulation (w3-02e-06 ✓).** A rerun reproduced the **upper** ends of the ranges in §1.6 (independent errors). The **lower** ends depend on how strongly the bot's errors cluster within a message, which our model fixes by assumption. The rerun's clustered case (ICC .2) gave .39 / .72 / .94.
@@ -237,6 +239,73 @@ Also add a column for the mean of bot–B and bot–C κ (the ceiling test, §1.
   - "κ = .8 proves reliable assessment" (agreement on labels is one link in the scoring inference, not reliability of the literacy level, which still needs about 12 moments per skill; [02](02-ai-literacy-assessment.md)).
 - **Video/pitch shape:** one bar pair per skill (B–C vs bot–consensus, with CI whiskers), captioned "40 synthetic messages · 2 human labellers · Claude · 18 Nov 2026".
 
+## 4. Wave 5: dry run, definitions to clarify, key fixes, and how to run `analyse.py`
+
+Sources: `work/w5/w5-02r-labels.md` (proxy labels), `work/w5/w5-02s.md` (dry run and audit), `work/w5/w5-fix-labels.md` (patch 0007), and verifier S (`work/w5/verify-S.json`).
+
+> **Not agreement evidence.** The key was drafted by a Claude model, the proxy labeller is a Claude model, and a Claude model classified the disagreements. Two Claude models agreeing says nothing about humans or about the chatbot's labels in use. Shared blind spots are invisible: "no disagreement" on a label does not mean its definition is clear. Never quote these numbers as a result, a κ for the bot, or a pass.
+
+### 4.1 What the dry run showed (a pipeline test)
+- **The script runs end to end** on data in the real format (w5-02s-01 ~). It handled consensus filled from B where B = C, blank bot cells counted as missing (not 0), a bot that calls an R item `concept` (its features scored 0, as the server records), a typo (stops with the line and value), and every verdict branch except "pass". Quadratic-weighted κ matches scikit-learn; Krippendorff's α reproduces textbook values. AC1 is not checked against an outside implementation, and Fleiss' κ is not implemented.
+- **Dry-run numbers, for the pipeline only:** pooled Ask features 72 decisions, answer scoring 56. Do not report them.
+- **33 disagreements between proxy and key: 29 genuinely ambiguous definitions, 2 proxy errors, 2 key errors** (w5-02s-03 ~; classified by a Claude model). None was a plain misreading of a message: nearly all trace to definitions.
+- **Biggest single cause: `request_type` on answers.** All eight V items disagreed (key `research`, proxy `concept`), and the tool text gave no rule. On the server it is not cosmetic: a Verify answer labelled `research` records **Ask 0/4** and routes the turn to the research plan (w5-02s-02 ✓; confirmed in code and in probes). Patch 0007 now tells the chatbot the rule, and patch 0008 guards the server ([build list](wednesday-build-list.md) step 5c).
+- **Engagement was the proxy's blind spot.** It produced 9 disagreements, 7 of them on labels the proxy marked "sure". Unsure flags are useful triage, not complete: 11 of 33 disagreements came on "sure" labels.
+
+### 4.2 Definitions to clarify (now mostly in patch 0007)
+Raters and the chatbot must read the same text (§1.2: "add nothing else"). Patch 0007 appends these rules to `text/tools/tutor_turn.md`; give raters the same wording.
+
+| # | label | rule (our wording) | in 0007? |
+|---|---|---|---|
+| 1 | `request_type` on answers | An answer is never `research`. A course answer or "ok, go on" is `concept`. An answer to a source-checking task or how-AI-works question is `other`, and so is off-course chat | yes |
+| 2 | `request_type`: concept vs research | research needs facts or figures about a particular place and time, or asks for sources. A how-or-why question about a course idea is concept, even if it names a real country or currency | yes |
+| 3 | `source_conflict` | True when the source wouldn't open, or doesn't say what the chatbot said: the claim is missing, or the figure, date or period differs. Rounding is not a conflict. **Option A, our choice; the team confirms** | yes |
+| 4 | `points_met` and Verify ticks | Tick a point only if the message contains all of it, in any words. Verify: a for "opened it" or "wouldn't load"; d for a verdict. With 0009b, also: never tick what only repeats the chatbot's reply, a point it just showed, or its citation | yes (0009b adds the last sentence) |
+| 5 | `question_features: concept` | Needs an economics term or an official statistic. The price of an everyday thing (petrol, rents, food banks) doesn't count on its own | yes |
+| 6 | `engagement` | passive: no question and no answer. active: asks, or answers by recalling or restating. constructive: adds a step of their own (a reason, an inference, a comparison with a conclusion, an application). Being wrong doesn't change the level | yes |
+| 7 | `question_depth` on non-questions | Defined only for questions, yet required on every message. Text option: surface for a non-question, unless it explains a cause or applies the idea. Better (code, later): make it optional for answers | no |
+| 8 | `choice` / `homework` | Set `just_show_me` also when the student asks to be given the answer; `homework` when they ask for work they will hand in | no |
+| 9 | `asks_reasoning`, `context`, `asks_recent` | No disagreements, but both labellers were Claude. Watch these in the B–C adjudication | no |
+
+### 4.3 Key errors to fix (before anyone labels)
+Don't edit Appendix B in place unless you then rerun `analyse.py --dryrun`: the script parses Appendix B and its `KEY_NOTE_FLAGS` map. Apply these to the frozen key in the study commit.
+
+| item(s) | label | now | change to | why |
+|---|---|---|---|---|
+| V01–V08 | `request_type` | research | **other** | `research` scores Ask 0/4; `concept` pulls the course focus (verifier S); 0007 says `other` |
+| V01, V08 | `source_conflict` | 0 | **1** | Under Option A a different figure is a conflict (2.8% vs 3.0%; 2.2% vs 2.0%) |
+| V04 | `source_conflict` | — | decide | "highest since the late 1940s" vs "since WW2" |
+| V08 | tick a (rater rule) | raters told "says they opened it" | **give raters 0007's `points_met` wording, word for word** | The chatbot never saw the "says they opened it" rule, so bot and humans had different instructions |
+| O04, O06 | engagement | active | active (keep); the proxy's "passive" was its error | asking for something isn't "just reading" |
+| E01 | engagement | constructive | active | pure recall (rule 6) |
+| V items with "so…" (V01, V02, V04, V07, V08) | engagement | active | constructive | an inference is their own step (rule 6). E04 stays constructive: a wrong reason is still a reason |
+| R03, R05, R10, R12, R16 | `concept` feature | as keyed | check against rule 5 | "petrol prices", "rents", "food banks" alone don't count |
+| R09 | `request_type` | research | concept, or rewrite it to ask for data with a place and time | it is course theory as written |
+| O04 | `choice` | none | `just_show_me` (our suggestion) | "just write my 25 marker" is a show-me request |
+| E08 | point c | 1 | decide: does c need both halves? | the student gave only the inferior-good half |
+
+Also decide before labelling: if a bot calls an R item `concept`, its four features score **0** (what the server records). The script does this and says how many it scored.
+
+### 4.4 How to run `analyse.py` on Wednesday
+Full instructions: [`sims/agreement/README.md`](sims/agreement/README.md). Stdlib Python, about 1 s.
+1. Collect `decisions.csv`: one row per decision, `msg_id,label,unit,rater,value`. Raters `B`, `C`, `consensus`, `bot1`, `bot2`. **Leave blanks for missing values, never 0.** Enter consensus rows only for adjudicated B–C disagreements; the script fills consensus = B elsewhere.
+2. After the B and C labels, and again after adjudication:
+   ```bash
+   python3 docs/research/overnight/sims/agreement/analyse.py decisions.csv > results.md
+   ```
+   Options: `--pairs B-C,bot1-consensus`, `--ask-min 2,3`, `--reps 2000`.
+3. Read the flow table first (a **!** marks a count below the expected n), then the verdict, then Table 5 (the server-level Ask score and Verify tick count).
+4. If the messages are rewritten, update Appendix A/B and `KEY_NOTE_FLAGS` before any `--dryrun`. The real run needs only `decisions.csv`.
+5. Report with the §3 templates. The script prints a warning if the only raters are `key` and `proxy`.
+
+### 4.5 Findings (home report for the wave-5 label findings)
+
+| id | claim | strength | population | outcome | mark |
+|---|---|---|---|---|---|
+| w5-02s-01 | The agreement script runs end to end on real-format data (missing values, consensus fill, features-0 rule, verdict branches) | simulation (pipeline test) | Claude proxy vs Claude-written key; 40 synthetic messages | system reliability | ~ not re-run by a verifier; Claude vs Claude, not agreement evidence |
+| w5-02s-02 | Labelling a Verify answer `research` makes the server record Ask 0/4 and route to the research plan | code reading + probe | 05e branch | prediction (validity) | ✓ confirmed in code and by verifier S |
+| w5-02s-03 | Of 33 proxy–key disagreements, 29 were ambiguous definitions, 2 proxy errors, 2 key errors | simulation (audit) | as w5-02s-01 | prediction (label clarity) | ~ classified by a Claude model; not verified |
+
 ## Appendix A. The 40 draft messages (CSV-ready; show to raters)
 
 **Read first.**
@@ -358,6 +427,8 @@ O06,concept,surface,active,skip_point,,,no,,,
 `research*` on the V items marks a known gap in the tool text: it doesn't say what `request_type` an answer to a Verify task should be. Expect disagreement, and treat it as a definition fix rather than a bot error.
 
 ## Appendix C. Scripts (our code; stdlib Python)
+
+> **Superseded by [`sims/agreement/analyse.py`](sims/agreement/README.md)** (wave 5), which adds the missing-value, consensus-fill and features-0 rules, value checks, the flow table, sensitivity and specificity, the verdict and Table 5. Kept for reference.
 
 **`agree.py`** (full source; tested on fake data, for example ask_feature bot1–consensus: 72 decisions / 18 messages, κ .72 [.58, .86]). Copy it into a file and run `python agree.py decisions.csv`. For each label and rater pair it prints n decisions, n messages, % agreement, κ (quadratic-weighted for `depth` and `engagement`), a 95% CI by cluster bootstrap over messages (2,000 resamples) and AC1. Sensitivity and specificity: count by hand from the bot1-vs-consensus rows (four cells).
 

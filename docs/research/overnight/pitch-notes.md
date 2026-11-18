@@ -4,6 +4,12 @@ Waves 1, 2 and 3. Every claim below comes from a finding in `findings.csv`, chec
 
 Use the wording as written. If you shorten a line, keep the caveat.
 
+**What changed in wave 5.**
+- **Five new avoid rows, marked (w5):** "gaming-proof", "the checks can't be gamed by form", "cheaper than Sparx on Microsoft", "label agreement shown" before the real study, and "we show skipped tasks".
+- **Two lines that are true only with a patch in** (both recommended, verification pending): "A reported dead link counts as checking, but secure needs a real check" needs 0009b. "Picking an option straight after being shown never makes a part secure; secure needs an answer in your own words or a later check" needs 0010b. Check the build before you say either ([wednesday-build-list](wednesday-build-list.md) steps 5d–5e).
+- **New Q&A 11: "Microsoft takes 4.5× your revenue",** with the honest answer (§d).
+- **After the competition:** [roadmap.md](roadmap.md) §5 has a one-slide version (≤ 80 words) and §6 five Q&A answers ("What happens after the competition?", "Can a 16-year-old use it?", "Will you show it improves grades?", "How will you know the scores mean anything?", "Who pays?"). Everything there is "our plan".
+
 **What changed in wave 2.**
 - **New positioning.** Lead with AI-literacy evidence from real use. Gemini now tracks progress across sessions and gives teachers insights (w2-08-01 ✓, w2-08-02 ✓). So the old moat line, "hosts shape one conversation; eduX keeps a learner model across sessions", is gone. What we offer instead is a learner model the school owns, across chatbots: a head start, not a moat.
 - **New claims.** Lines 27–42 are new.
@@ -107,6 +113,11 @@ Lead with performance evidence, then the usage figures with their bases (researc
 
 | Don't say | Why | Say instead |
 |---|---|---|
+| **(w5)** "Gaming-proof", "you can't game it", "cheap tricks don't work" | In simulation, every cheap deviation we tried except vague questions out-earned honest work in level per minute (w5-06g-01 ~). Even with the wave-6 counters (0009b, 0010b), guessers still gain "developing", a student who has done one real check can then report dead links freely, and pasting the shown point back reaches secure if the chatbot ticks literally ([06](06-settings-simulation.md)). | With 0009b in: "A reported dead link counts as checking, but secure needs a real check." With 0010b in: "Picking an option straight after being shown never makes a part secure." Otherwise: "We red-teamed our own scoring and fixed the worst exploit first." |
+| **(w5)** "The checks can't be gamed by form", "our MCQs resist test-wiseness" | 0004 removed the punctuation and longest-option cues (0.96 → 0.28; w4-fix-mcq-1 ✓), but created a middle-length cue: dropping the longest and shortest options gets 58% right against about 31% chance (w5-06g-05 ~, simulation). With 0010b, cue-guessing no longer makes parts secure (4.4 → 0, verification pending), but the cue itself remains. | "We fixed the give-aways we found; our audit found a new length cue, and fixing it in the pack is next." |
+| **(w5)** "Cheaper than Sparx", "affordable as homework software" on Microsoft | One eduX call costs the school about £0.0375 in Copilot Credits. Even if eduX were free, staying at Sparx's top estimate (£2.80) allows only 75 calls a student a year (w5-08u-01 ✓; w2-08-06 ✓). | "We don't compete on price. We compete on what the school learns about how its pupils use AI." |
+| **(w5)** "Label agreement shown", "the chatbot labels agree with humans", or any κ from the dry run | The only agreement numbers so far compare a Claude proxy labeller with a Claude-written key: a pipeline test, not agreement evidence (w5-02s-01 ~). | Before the study: "We're checking those labels against two humans." After it: the 02a §3 template, with n and CI. |
+| **(w5)** "We show which tasks a student skipped" | The skip counter recorded about 2% of ignored tasks in simulation, because a new question replaces a pending task without a skip (w5-06g-07 ~). | Nothing, until the 1-line fix is built and tested. Over the mock-up: "this is the design". |
 | **(w3)** "Free on Microsoft", "students use it free through Copilot", "the free route" | Students without an M365 Copilot licence are billable. The "no charge" column covers licensed users under their own identity, and its framing is employee-facing (w3-08m-05 ~, w3-08m-13 ✓). Microsoft's own pages disagree on whether a pro-code declarative agent is free for unlicensed users; that is a test, not a claim (w3-08m-09 ✓). | Line 17. If pressed: "about £22.50 per student per year on our central assumption of 600 turns, range £11–108. That's our estimate on assumed turn counts, and we'll measure real turns in the pilot" (w3-08m-13 ✓). |
 | **(w3)** "Anonymous teacher view", "anonymised data", "anonymous class reports" | Hashed keys, random ids and k ≥ 6 bands are minimisation, not anonymisation. Pseudonymous data is still personal data (ICO; w3-09-18 ~: data can be anonymous only in the hands of others who lack the key). | "Class-level only, groups of 6 or more, never names or chats." |
 | **(w3)** "Preregistrations are underspecified, a Data Colada review shows", or citing Data Colada post 119 for anything about our study | The post doesn't say that. It critiques another paper's verdict on AsPredicted preregistrations (w3-02e-14 ✗). | Nothing. "We committed the protocol, messages and key to git before anyone labelled." |
@@ -228,7 +239,11 @@ These are deduplicated from `judge-panel.md`, with EduX-judge and researcher que
 10. **"Does it improve learning or grades?"**
     "We haven't measured that, and we won't claim it. Even a 100-school trial could detect only about 0.17 of a standard deviation (our calculation, w1-08-08 ✓). So the first pilot tests feasibility: do students meet failure moments, do the scores hold up against a test, do teachers use the view? The design follows what the best trial found: guarded help didn't harm exam scores; unguarded help did (w2-09-08 ✓)."
 
+11. **"Microsoft takes 4.5× your revenue." (wave 5)**
+    "Yes. In our central case Microsoft's meter is about £22.50 a student a year against our £5, and we show it rather than hide it (w5-08u-01 ✓). Each call costs the school about 4p. It's not our margin; our own cost is hosting, because eduX never calls a model. The school can cap a class of 20 at about £65 a month in term (w5-08u-04 ✓). Not calling eduX on chit-chat cuts calls by a few per cent in our model; we'll measure the real figure in the first class. The honest objection isn't the ratio: Microsoft's own Study and Learn is free. A school pays only if it values a learner model it owns and evidence of how its pupils use AI, and neither is validated yet."
+    - Don't say "it might be free"; the declarative-agent route is a tenant test, not a claim. Don't promise a saving above about a fifth: that is our model on a chosen message mix.
+
 **Spare, if asked: "Your multiple-choice options give the answer away."**
-- If the fix landed on Wednesday: "They did. We fixed the option form before filming."
+- If the fix landed on Wednesday: "They did. We fixed the option form before filming." Don't add "so they can't be gamed now": a middle-length cue remains (w5-06g-05 ~).
 - If not: "We found it in our own audit, and it's the first fix" ([05](05-product-features.md) rec 11; [04](04-economics-education.md) rec 1).
 - Then add: "And the wrong options themselves are real: 36% of UK adults read falling inflation as falling prices" (w1-04-07 ✓, UK adults; line 14).

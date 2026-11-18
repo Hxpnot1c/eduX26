@@ -1,6 +1,6 @@
 # 02 · Defining and assessing AI literacy
 
-Waves 1, 2 and 3. Sources:
+Waves 1, 2, 3 and 5. Sources:
 - **Wave 1 scout notes.** `work/w1/w1-02a.md` (framework crosswalk; marks in `verify-D.json`) and `work/w1/w1-02b.md` (validity and reliability; marks in `verify-B.json`).
 - **Wave 2 scout notes.**
   - `work/w2/w2-02.md`: a scoring simulation on the 05e branch's real learner code, plus the literature on missing responses. Marks in `verify-J.json`.
@@ -8,6 +8,7 @@ Waves 1, 2 and 3. Sources:
   - `work/w2/w2-09.md`: how UK 16–18s use chatbots, and new literacy moments. Marks in `verify-E.json`.
 - **Wave 3 scout note.** `work/w3/w3-02e.md`: a ready-to-run label-agreement study, its sample-size maths and a spring 2027 pilot plan. Marks in `verify-O.json`, ids w3-02e-01 to -14. The protocol, the 40 draft messages and the key are in the appendix file [02a](02a-label-agreement-protocol.md).
 - **Wave 3 demo rehearsal.** `work/w3/w3-07.md` drove the 05e branch with the scripted demo. Three Verify scoring bugs from it are added here, marked in `verify-P.json` (w3-07-c5 ✓, w3-07-c7 ✓).
+- **Wave 5.** Gaming red team `work/w5/w5-06g.md` (home: [06](06-settings-simulation.md)); label dry run `work/w5/w5-02s.md` and proxy labels `w5-02r-labels.md` (home: [02a](02a-label-agreement-protocol.md) §4); labelling fixes `w5-fix-labels.md`; integration verifier S (`verify-S.json`; home: [build list](wednesday-build-list.md)). Wave 6's counters 0009b/0010b: `work/w6/w6-fix-counters.md`, verification pending.
 - **Panels.** Wave 1: researcher and student. Wave 2: `panel-judges-researcher.md` and `panel-teacher-student.md`.
 - **Branch.** `build/05e-literacy-coaching`, read-only in `/home/vishnu/edux26`.
 
@@ -47,6 +48,10 @@ Marks: ✓ confirmed; ~ broadly supported, with the stated problem. Findings mar
   - Show the skip count beside the level.
   - Reliability still needs about 12 moments per skill (w1-02-31 ✓). So claim a validity argument and "embedded assessment", not a validated test.
 
+- **Wave 5: Verify could be gamed, and the fix is a cap, not a penalty.** Two bare "the link is broken" reports made Verify secure for 100% of simulated zero-skill students; honest partial-skill students reached secure 65% of the time (w5-06g-01 ~, verifier S). Wave 6's 0009b lets a report count as checking but caps Verify at developing until one real check: gamers 0%, honest 62% vs 64% (verification pending). Never claim "gaming-proof".
+- **Wave 5: label reliability is still unmeasured.** The only agreement numbers are a Claude proxy against a Claude-written key: a pipeline test, not agreement evidence (w5-02s-01 ~). It showed which definitions are unclear, and 0007 now gives the chatbot the rules ([02a](02a-label-agreement-protocol.md) §4).
+- **Wave 5: a request_type bug scored Verify answers as failed Ask questions.** A Verify answer labelled `research` recorded Ask 0/4 (w5-02s-02 ✓). Patch 0007 tells the chatbot to label such answers `other`; patch 0008 guards the server (Ask new 0.256 → developing 0.528 in the mislabelled Plan A take; w5-fix-guard-1 ✓).
+
 ## Ranked recommendations
 "Branch" means `build/05e-literacy-coaching`, which the build team owns. This report edits no code, settings or pack files. Ranks 1–18 can be done before Thursday 23:59. Ranks 19–22 are "maybe". Ranks 23–27 come after Thursday.
 
@@ -85,6 +90,9 @@ Marks: ✓ confirmed; ~ broadly supported, with the stated problem. Findings mar
 | 25 | **Two wrong picks before a misconception shows as "held".** One guess (p = .25) shouldn't label a student. | build | S–M | no | researcher 3 (wave 1) |
 | 26 | **Done in wave 3: the decay-clock asymmetry on economics parts.** It does invert rankings on `main`; the fix recommended there is decay towards the prior plus a "not yet shown" cap ([06](06-settings-simulation.md)). Still open: re-run the How AI works AUC with that fix on the 05e branch. | sims | S | maybe | w2-02-05 ~; w3-06-01 ✓, w3-06-08 ✓ |
 | 27 | **A "feedback" moment.** When the student asks for feedback on their writing, ask "which suggestion would you reject, and why?". This needs a new mark-point design. | design | M | no | w2-09-01 ~ |
+| 28 | **Wave 5: apply 0007 + 0008 (labelling rules, Ask guard)** and confirm the `source_conflict` rule (Option A). | build, text | S | yes | w5-02s-02 ✓, w5-fix-guard-1 ✓, w5-fix-labels-1 ✓ |
+| 29 | **Wave 5–6: apply 0009b, not 0009**, keeping its text line (never tick what only repeats the reply). Pitch: "a reported dead link counts as checking, but secure needs a real check"; never "gaming-proof". | build, pitch | S | yes (verification pending) | w5-06g-01 ~, w5-fix-counter-c2 ~ |
+| 30 | **Fix the 02a key and rater sheet before the study** (§4.3 there), and analyse with `sims/agreement/analyse.py`. | study | S | yes, if the study runs | w5-02s-01 ~, -03 ~ |
 
 ### Settings snippet (our choice, from the simulation; not an edit)
 ```toml
@@ -386,6 +394,36 @@ We checked each problem with `git -C /home/vishnu/edux26 show origin/build/05e-l
 - Progress shows a level per skill, with no `n_moments`.
 - `[literacy]` has no separate half-life.
 - Each how-AI-works part gets at most one check per session.
+
+## Wave 5: gaming Verify, label reliability, and the request_type bug
+
+**Simulation: synthetic students, example pack, 05e branch.** Displayed level is a prediction outcome, not learning.
+
+### Gaming results and counters for Verify
+Full exploit ranking and counters: [06](06-settings-simulation.md), mechanism-design section.
+
+| Verify exploit | before | counter | after | status |
+|---|---|---|---|---|
+| "The link is broken", twice (L1) | 100% Verify secure, under a minute (w5-06g-01 ~) | **0009b**: a report counts, but caps Verify at developing until one real check | 0% secure (developing) | recommended, verification pending |
+| Copy the publisher and date from the citation (L1d) | 100% under a literal labeller | 0009b's text line: never tick what only repeats the reply or its citation | 0% | depends on the real chatbot; untested |
+| Restate the chatbot's reply (L2/L3) | secure under a literal labeller, never under a skeptical one (w5-06g-06 ~) | same text line | — | untested with a real chatbot |
+| One real check, then dead-link reports (L1c) | secure | none: the rule allows it | secure | residual |
+| Ignore every Verify task (L6) | no level gain; skips under-counted (about 2%; w5-06g-07 ~) | record a skip when a task is replaced (1 line, untested) | — | recommended |
+| Honest partial-skill student (L0) | 64–65% secure | 0009b | 62% (N = 300) | small cost |
+
+- **Superseded: 0009** gave a bare or a,d-ticked report no evidence. It cut honest students to 59%, and because 0007 tells the chatbot to tick a and d on a dead link, it turned 6 of 8 Plan A takes to Verify new (w5-fix-counter-c2 ~). 0009b keeps "reporting a dead page counts as checking" (scoring problem 7) and adds only the cap.
+- **This sharpens scoring problem 3.** Verify rests partly on what students report and on the chatbot's ticks. The counters stop cheap reports reaching secure; they do not prove a student checked. Keep ending the demo on How AI works, which the server scores alone.
+
+### Label reliability
+- **No agreement result yet.** The wave-5 dry run compared a Claude proxy labeller with the Claude-drafted key. It tested the analysis pipeline (`sims/agreement/analyse.py`) and showed where definitions let two careful readers diverge: 29 of 33 disagreements traced to ambiguous definitions (w5-02s-03 ~). It says nothing about humans or about the chatbot in use.
+- **What changed:** 0007 gives the chatbot labelling rules for answers, the `concept` feature, `source_conflict` (Option A, our choice: a different figure counts; rounding doesn't) and `points_met`. Raters must read the same wording. The key fixes (V01–V08 request_type → `other`; V01/V08 source_conflict; the V08 rater rule) are in [02a](02a-label-agreement-protocol.md) §4.3.
+- **The pitch line stays "we're checking those labels against two humans"** until the real study runs ([pitch-notes](pitch-notes.md)).
+
+### The request_type bug and its guard
+- **Bug.** The tool text gave no `request_type` for an answer. A Verify answer labelled `research` recorded Ask evidence from empty question features (0/4) and routed the turn to the research plan (w5-02s-02 ✓). Labelling it `concept` instead pulls the course focus. So answers to source-checking and how-AI-works tasks should be `other`.
+- **Text fix (0007):** "an answer is never research". Text alone doesn't change the server: research-labelled answers still wrote Ask 0.0 in 3/3 probe cases (w5-fix-labels-1 ✓).
+- **Server guard (0008, 3 lines):** an answer sent as `research` with no question features becomes `other` or `concept` before anything is recorded. 3/3 → 0/3; an answer plus a real new question keeps its Ask credit (w5-fix-guard-1 ✓). A research label with no answer object is still fixed by the text only.
+- **Side effect (team decision):** a matched Verify answer labelled `other` gets an empty plan, with no feedback step ([build list](wednesday-build-list.md) step 5c).
 
 ## Later (not before Thursday; for the business plan and Q&A)
 - **Frame the spring 2027 pilot as an EEF-style feasibility study, not an efficacy trial** (w3-02e §2; the one-page plan belongs in the [business plan](business-plan.md)).
