@@ -943,6 +943,21 @@ def session_state(student_id: str, at: str | datetime | None = None) -> dict | N
     }
 
 
+def passive_streak(student_id: str, at: str | datetime | None = None) -> int:
+    """How many of the student's latest messages in the current session were labelled passive, in a row, up to
+    engagement.passive_run (engagement-rules). Read from exchange_log, never stored."""
+    limit, conn, at_ts = _settings().engagement.passive_run, _conn(), _event_ts(at)
+    start = session_start(conn, student_id, at_ts)
+    rows = conn.execute("""SELECT engagement FROM exchange_log WHERE student_id = ? AND ts >= ? AND ts <= ?
+                           ORDER BY ts DESC, id DESC LIMIT ?""", (student_id, start, at_ts, limit)).fetchall()
+    run = 0
+    for row in rows:
+        if row["engagement"] != "passive":
+            break
+        run += 1
+    return run
+
+
 def sessions(student_id: str) -> list[dict]:
     """The student's sessions, oldest first: start, minutes, exchange and evidence counts, and the minute fatigue began."""
     s, conn = _settings().session, _conn()

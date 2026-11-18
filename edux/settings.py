@@ -157,6 +157,11 @@ class Session:
 
 
 @dataclass(frozen=True)
+class Engagement:
+    passive_run: int
+
+
+@dataclass(frozen=True)
 class Difficulty:
     default: float
     prior_shift: float
@@ -241,6 +246,7 @@ class Settings:
     mcq: Mcq
     literacy: Literacy
     session: Session
+    engagement: Engagement
     difficulty: Difficulty
     link_weight: LinkWeight
     resolve: Resolve

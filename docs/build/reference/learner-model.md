@@ -191,6 +191,7 @@ Derived from both event logs at read and rebuild time. There are no session even
   - those pieces span at least `session.fatigue_min_parts` parts
 
   It lasts until the session ends. Evidence while fatigued uses the raised slip above, so errors count for less and correct answers still count fully. The "just show me" share and the `surface` share over the last `session.signal_window` exchanges are reported but never trigger fatigue.
+- **Engagement (engagement-rules):** `learner.passive_streak` counts the latest messages in the session labelled `passive`, in a row. It drives a one-off `offer_choice` (see `tools-and-context.md`). Like fatigue it's in-session only, read from the events each turn, and never stored as a trait of the student.
 - **Stuck:** a part the student keeps failing in the session. This calls for a different approach, not a break. Intuition and other prequestion evidence never count.
   - On 0/1 MCQ checks (`mcq_check`, and `ail_how` from step 05e): the same `point_id` missed on its check and again on the re-check after its reteach (a part with no score points counts as one point).
   - On open answers: at least `session.stuck_attempts` of them, mean score below `session.stuck_below`, and a latest score no better than the first.

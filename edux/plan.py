@@ -15,6 +15,8 @@ Order (first match wins for the main step):
   ambiguous focus -> ask_which (no focus at all: the top due review, as ask_mcq)
   just_show_me    -> show the current point, then its check; skip_point ("I know this") -> its check only;
                      a pick from offer_choice: quiz -> the current point's check, extend -> extend, stop -> nothing
+  passive streak  -> offer_choice: quiz, extend or stop (engagement.passive_run passive messages in a row; once a
+                     session, never when fatigued)
   intuition       -> ask_mcq (intuition), once per part
   weak prereq     -> ask_mcq (prereq) (level new, not checked this session)
   held misconc.   -> feedback with the held misconception (unless already corrected this session), then teaching
@@ -368,6 +370,11 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
     if choice in PICKS:
         return picked(turn, focus, settings, progress, choice)
 
+    fatigued = bool(session and session["state"] == "fatigued")
+    if ("passive" not in offered and not fatigued
+            and learner.passive_streak(turn.student_id, turn.at) >= settings.engagement.passive_run):
+        return [offer_choice("passive", ["quiz", "extend", "stop"])]
+
     pq = blocks.get("prequestion")
     asked_before = (progress.get(focus) or {}).get("intuition_asked") or any(
         s["move"] == "ask_mcq" and s["data"].get("purpose") == "intuition" and s["part_id"] == focus for s in last_plan)
@@ -539,10 +546,10 @@ def reask(pending: dict) -> list[dict]:
 
 
 def _urgent(steps: list[dict]) -> bool:
-    """Fatigue or stuck: offer_choice when fatigued, a step back to a prerequisite (ask_mcq with data.stuck) or a
-    re-teach of the whole part. These come before a pending question, a re-teach of missing points and the point loop."""
-    return bool(steps) and (steps[0]["move"] == "reteach" or steps[0]["data"].get("reason") == "fatigued"
-                            or bool(steps[0]["data"].get("stuck")))
+    """Fatigue, stuck or a passive streak: offer_choice, a step back to a prerequisite (ask_mcq with data.stuck) or
+    a re-teach of the whole part. These come before a pending question, a re-teach of missing points and the point
+    loop (a passive student who keeps leaving a question unanswered is offered ways on, not asked it again)."""
+    return bool(steps) and (steps[0]["move"] in ("reteach", "offer_choice") or bool(steps[0]["data"].get("stuck")))
 
 
 def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", answer: dict | None = None,

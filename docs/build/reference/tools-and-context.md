@@ -86,13 +86,14 @@ At most two steps (three from step 05d, for feedback, `teach_point` and `ask_mcq
 3. Focus ambiguous → `ask_which` with the candidates **(stop)**. No focus at all (e.g. "quiz me on what's due") → the top due `review`, if any.
 4. `choice == just_show_me` → `show`: a short worked example. Nothing else follows it.
    - A pick from `offer_choice`, sent back as `this_message.choice` (engagement-rules): `quiz` → the current point's check (as `skip_point`), `extend` → `extend` **(stop)**, `stop` → an empty plan (the chatbot wraps up with a one-line summary).
-5. Pre-question eligible → `prequestion` **(stop)**.
+5. Passive streak (engagement-rules): the student's last `engagement.passive_run` messages this session were all labelled `passive`, they aren't fatigued, and it hasn't been offered this session → `offer_choice` (`reason = passive`, `options` quiz, extend and stop) **(stop)**. It's read from `exchange_log` each turn and never stored as a trait.
+6. Pre-question eligible → `prequestion` **(stop)**.
    - Eligible means the part has no evidence yet, its level is below `support.worked_example_below`, it has enough misconceptions and there was no "just show me" this session.
    - It is never asked twice: not on the turn its answer arrives, and not again when the last plan already asked it.
    - Options are the correct idea and misconception wrong ideas, in an order fixed per student and part.
-6. A weak prerequisite at level new, not checked this session (no evidence on it this session, and not asked in the last plan) → `check_prereq`: one quick question on it **(stop)** (an `ask_mcq` with purpose `prereq` from step 05d; `step_back` likewise, with `data.stuck`).
-7. A misconception held on the focus, not already corrected this session (by feedback or an earlier step; carried in `issued_plan`) → `feedback` with the held misconception (`correct_misconception` before 05c).
-8. Otherwise → `teach` at the support level. The try / hint / show-me line closes the teaching step:
+7. A weak prerequisite at level new, not checked this session (no evidence on it this session, and not asked in the last plan) → `check_prereq`: one quick question on it **(stop)** (an `ask_mcq` with purpose `prereq` from step 05d; `step_back` likewise, with `data.stuck`).
+8. A misconception held on the focus, not already corrected this session (by feedback or an earlier step; carried in `issued_plan`) → `feedback` with the held misconception (`correct_misconception` before 05c).
+9. Otherwise → `teach` at the support level. The try / hint / show-me line closes the teaching step:
    - `worked_example`: a short example, then "try this one, or ask for a hint";
    - `hint`: a completion problem for `calculation` and `diagram` parts, otherwise an example and a guiding question;
    - `explain_back` **(stop)**: ask them to explain it.

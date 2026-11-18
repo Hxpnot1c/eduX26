@@ -121,6 +121,9 @@ stuck_below = 0.5          # and their mean score below this
 quick_parts = 3            # parts offered for a short burst when fatigued
 pattern_min_sessions = 3   # sessions with a fatigue onset before study_pattern is shown
 
+[engagement]               # in-session engagement rules (engagement-rules); never stored as a trait
+passive_run = 4            # passive messages in a row before offer_choice offers ways on (once a session, never when fatigued)
+
 [difficulty]               # optional teacher-set difficulty per node (0 easy – 1 hard), inherited by parts
 default = 0.5              # used when no node above the part has one
 prior_shift = 0.15         # starting p_known moves down (hard) or up (easy) by up to this much
