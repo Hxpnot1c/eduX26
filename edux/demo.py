@@ -8,6 +8,7 @@ These are demo fixtures, not teaching rules: the numbers here only shape the dem
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 
@@ -225,6 +226,29 @@ def _seed_weak(sid: str, roles: dict, clock: _Clock) -> None:
         _evidence(sid, prereq, "explain_back", 0.2, clock.ago(days=2, minutes=80))
     _exchange(sid, [target], clock.ago(days=2, minutes=60), support="hint", choice="try_first", misconceptions=misconceptions)
     _evidence(sid, target, "explain_back", 0.25, clock.ago(days=2, minutes=20), misconceptions)
+    _seed_mock(sid, roles, clock)
+
+
+def _seed_mock(sid: str, roles: dict, clock: _Clock) -> None:
+    """A mock in 5 days on the market-failure topic (else the topic of the first review part), and one part of it
+    answered 8 days ago, so it is due now: "quiz me on what's due" picks it with the reason "on your mock on
+    <day>" (priorities)."""
+    topics = graph.topics()
+    topic = next((t for t in topics if "market failure" in t["name"].lower()), None)
+    if topic is None and roles["review_parts"]:
+        topic = next(t for t in topics if roles["review_parts"][0] in graph.parts_of(t["id"]))
+    if topic is None:
+        return
+    parts = graph.parts_of(topic["id"])
+    busy = near_target(roles["target"]) | {roles["prereq"]}
+    review = next((p for p in parts if p not in busy), None)
+    with learner._conn() as conn:
+        conn.execute("INSERT INTO student_assessment (student_id, name, kind, date, part_ids, created_at) "
+                     "VALUES (?, ?, 'mock', ?, ?, ?)", (sid, "Mock", (clock.now + timedelta(days=5)).date().isoformat(),
+                                                      json.dumps(parts), clock.ago()))
+    if review:
+        _exchange(sid, [review], clock.ago(days=8, minutes=10), choice="try_first")
+        _evidence(sid, review, "explain_back", 1.0, clock.ago(days=8))
 
 
 def _seed_showme(sid: str, roles: dict, clock: _Clock) -> None:
@@ -274,7 +298,7 @@ def remove_students() -> dict[str, str]:
     ids = list(keys)
     with conn:
         for sid in ids:
-            for table in ("exchange_log", "evidence_log", "student_profile", "issued_plan", *learner.DERIVED_TABLES):
+            for table in ("exchange_log", "evidence_log", "student_profile", "student_assessment", "issued_plan", *learner.DERIVED_TABLES):
                 conn.execute(f"DELETE FROM {table} WHERE student_id = ?", (sid,))
             conn.execute("DELETE FROM student WHERE id = ?", (sid,))
     return keys
