@@ -47,9 +47,7 @@ class Turn:
     def valued(self, part_id: str) -> dict:
         values = self.cache.setdefault("values", {})
         if part_id not in values:
-            if "chance" not in self.cache:
-                self.cache["chance"] = learner.move_chance(self.student_id, "mcq_check", self.at)
-            values[part_id] = learner.step_value(self.student_id, part_id, self.cache["chance"], self.at)
+            values[part_id] = learner.step_value(self.student_id, part_id, self.at)
         return values[part_id]
 
     def limit(self, name: str, default: int = 3) -> int:

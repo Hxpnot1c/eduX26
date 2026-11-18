@@ -74,8 +74,7 @@ def _priority_lines(student: str, at: str | None) -> list[str]:
     """Upcoming assessments and the top three due reviews by expected marks (priorities). CLI only."""
     lines = [f"assessment {a['id']}: {a['name']} ({a['kind']}) on {a['date']}, {len(a['part_ids'])} parts"
              for a in learner.assessments(student, at)] or ["assessments: none upcoming"]
-    chance = learner.move_chance(student, "mcq_check", at)
-    valued = sorted(((learner.step_value(student, r["part_id"], chance, at), r["part_id"])
+    valued = sorted(((learner.step_value(student, r["part_id"], at), r["part_id"])
                      for r in learner.due_reviews(student, 10_000, at)), key=lambda v: -v[0]["value"])
     for found, part in valued[:3]:
         why = f" ({learner.reason_text(found['reason'], at)})" if found["reason"] else ""
