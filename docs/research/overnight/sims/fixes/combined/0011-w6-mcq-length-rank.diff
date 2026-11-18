@@ -4,7 +4,7 @@ Date: Wed, 18 Nov 2026 06:30:00 +0000
 Subject: [PATCH] MCQ options of even length rank: the key is no longer usually the middle-length option
 
 Wave 6 (w6-fix-length). Applies on 0008 (independent of 0009/0010/0009b/0010b: no shared file).
-coursepacks/example-mini: 4 mark points and 17 misconceptions reworded so every misconception is within 20% of
+coursepacks/example-mini: 5 mark points and 17 misconceptions reworded so every misconception is within 20% of
 each mark point's length on its part, and the key is shortest, middle or longest about equally often (wording is
 a proposal for the team economist: work/w6/w6-fix-length.md lists every row).
 ingest/validate.py: two load warnings (our thresholds): a misconception more than 20% longer or shorter than a

@@ -1,5 +1,7 @@
 # Wave-4 combined patch series (05e branch)
 
+> **Always use an absolute `PYTHONPATH` when you test a patched copy, and print `edux.__file__` first.** The venv's editable `edux` is the unpatched 05e code (`/home/vishnu/edux26/edux`). A relative path (e.g. `PYTHONPATH=s8` after `cd s8`), or a wrapper given a relative copy path (`cd "$CODE"; PYTHONPATH="$CODE"`: `mcq_run_tw.sh`, `harness/check.sh` and seven others), silently imports that unpatched code. With `python -m` or `-c`, the current directory also comes before `PYTHONPATH`. Check from a neutral directory: `cd /tmp && PYTHONPATH=/abs/path/to/copy $PY -c 'import edux; print(edux.__file__)'`. Verifier V reran the stored wave-4 testwise and wave-5 gaming results with absolute paths: they reproduce (w6-path-1 ~ to w6-path-5 ✓; `work/w6/verify-V.json`).
+
 This is the blind integration check by w4 verifier Q. Five patches turn the 05e export
 (`/tmp/claude-1000/edux-05e-ff`, the tree that `main` fast-forwards to) into the fully fixed tree. Each patch applies
 on top of the one before it. I built them only from the scouts' diffs, scripts and READMEs in `sims/fixes/`.
@@ -280,7 +282,7 @@ On meaning, I read the interactions:
 | +0006 stuck/reviews | 74/74 | identical to s5 (moves and levels) | bare-reteach run **0**, no-MCQ run **1**, stop/switch offer at **turn 8**, 29/30 plans with an MCQ; open-only failer 11/12 → **1/2**; strong student who misses only extend questions: no ladder (0 worked examples). Reviews: patterns 18/18 asks, 0/12 stolen (in-sample); holdout **2/10**; perfect label **28/28**, 0/18 stolen; careless always-true label 28/28 but **8/18 stolen**. Real MCP server, "hit me with a review question": label true → review MCQ, label false → re-ask (on s10). Server instructions unchanged. |
 | +0007 labels text | 74/74 | identical to s6 | text only, so the server can't act on it: answers labelled research still write Ask 0.0 (3/3) |
 | +0008 ask guard | 74/74 | final_research Ask new → **developing (0.528)**, its plan now has no research steps; the other 7 identical | answers labelled research that write Ask 0.0: 3/3 → **0/3**; answer + real new question keeps Ask 1.0; research label with **no** answer object still writes Ask 0.0 (text-only territory) |
-| +0009 broken-link counter (c2) | 74/74 | final and recommended (a,c,d): **developing (0.636)**. **final_ticks_ad, clean, plan_now, then_ped, clean_ticks_ad: new (0.300)** | gaming, N=30: L1 ("link is broken") Verify secure 100% → **0%**; L1d (copies publisher and date) 100% → 100% (literal labeller), 0% (skeptical). Honest L0 Verify secure, N=100 on the same seeds: 65% → **59%**; L0s 100% → 100%. Course strategies unchanged |
+| +0009 broken-link counter (c2) | 74/74 | final, final_research and recommended (a,c,d): **developing (0.636)**. **final_ticks_ad, clean, plan_now, then_ped, clean_ticks_ad: new (0.300)** (3 developing / 5 new; corrected in wave 6 by verifier U, which reran all 8 takes) | gaming, N=30: L1 ("link is broken") Verify secure 100% → **0%**; L1d (copies publisher and date) 100% → 100% (literal labeller), 0% (skeptical). Honest L0 Verify secure, N=100 on the same seeds: 65% → **59%**; L0s 100% → 100%. Course strategies unchanged |
 | +0010 show-then-answer counter (c1) | 74/74 | identical to s9 (all 8) | gaming, N=30: C3 (show me + match) 9 → **0** parts secure; C2m 4.4 → 2.2; C1 false-secure 57% → 17%; C5 2.0 → 0.6. **Honest C0 (N=100): 3.6 → 1.4 parts secure in session, first secure 2.4 → 12.0 min, at +7 days 2.5 → 0.9.** The stuck ladder still holds (same probe numbers), except the student who fails only open answers: **no stop/switch offer in 40 turns** (was turn 15; `results/w5-S/probes_w5long_s{8,10}.txt`), because a later right check resets the miss count; worked examples and MCQs continue, with no bare-reteach runs |
 
 **The Plan A "final" take still ends Verify developing after the whole series, but only at 0.636 and only because the
@@ -316,7 +318,7 @@ so it is a chance clash. 0007 is text only and doesn't touch the shuffle. Three 
 
 ## Wave 6: fairer counters 0009b and 0010b (w6-fix-counters)
 
-These are alternatives to 0009 and 0010. **Use 0009 or 0009b, never both. The same goes for 0010 and 0010b.** Notes are in `work/w6/w6-fix-counters.md`, results in `results/w6/`, and the scripts in `sims/fixes/w6/`.
+**Verified (wave 6, verifier U, `work/w6/verify-U.json`): all 7 claims ✓** (gaming, honest cost, stop/switch offer, Plan A 0.740 in 8/8 takes, clean apply and 74/74). These are alternatives to 0009 and 0010. **Use 0009 or 0009b, never both. The same goes for 0010 and 0010b.** Notes are in `work/w6/w6-fix-counters.md`, results in `results/w6/`, and the scripts in `sims/fixes/w6/`.
 
 | # | file | applies on | touches |
 |---|---|---|---|
@@ -346,7 +348,7 @@ N = 100 for C0, L0 and L0s, 30 for the rest, plus L0 at N = 300. Base = 0001–0
 
 | | base (0008) | 0009 / 0010 | **0009b / 0010b** |
 |---|---|---|---|
-| Plan A, 8 takes: Verify at 4d | developing 0.748 in all 8 | 0.636 in 2 takes, **new (0.300) in 6** | **developing 0.740 in all 8**; Ask 0.528 and plan moves identical |
+| Plan A, 8 takes: Verify at 4d | developing 0.748 in all 8 | 0.636 in 3 takes, **new (0.300) in 5** (verifier U) | **developing 0.740 in all 8**; Ask 0.528 and plan moves identical |
 | L1 "link is broken": Verify secure | 100% | 0% (shown new) | **0%** (developing, 0.740) |
 | L1d with copied details, literal labeller | 100% | 100% | **0%** (developing) |
 | L1c one real check, then reports | 100% | 0% | 100% (the rule allows it: one real check + one report) |
@@ -372,3 +374,56 @@ The other probes are unchanged from 0008:
 - 0010b: 1 h, including a rerun of check_mcp and the probes. Re-check any course progress shot that relies on a part going secure from MCQs straight after teaching. Such a part now needs an explain-back.
 - If short of time, keep 0009b (cheap, and it fixes the demo conflict) and drop 0010b.
 - Don't take 0010b without the "never tick what only repeats your reply" sentence. Without it, C3x still reaches 9/9 under a literal labeller.
+
+## 0011: MCQ options of even length rank (wave 6, w6-fix-length)
+
+**Verified (wave 6, verifier V, `work/w6/verify-V.json`): apply + 74/74, ingest warnings, testwise and gaming numbers ✓; economics ~ (see below).** `0011-w6-mcq-length-rank.diff` applies on 0008. Notes and the full before/after row list for the economist are in
+`work/w6/w6-fix-length.md`; outputs in `../results/w6-length/`.
+
+**The problem.** After 0004, the key in an example-mini MCQ is usually the middle-length option. A student who
+drops the longest and shortest options gets 0.536 of the 28 economics option sets right, and second-longest gets
+0.625, against chance 0.312 (`testwise.py`). In play (gaming_sim C2m) that is 57% right and 4.4 false-secure parts.
+Only 5 sets had an option outside ±20% of the key, so the cue was **rank**, not spread.
+
+**The change.** It touches the pack and the ingest checks only: no edux/, text/, settings or migration change.
+- `coursepacks/example-mini/mark_points.csv`: 5 rows reworded (meaning kept).
+- `coursepacks/example-mini/misconceptions.csv`: 17 `wrong_idea` texts reworded (same wrong idea; the corrections are untouched).
+- Every misconception is now within ±20% of each key on its part. Each part's keys sit at different ranks around its fixed misconceptions, and first words are varied.
+- `ingest/validate.py` `check_option_lengths()` adds two load **warnings** (thresholds are our choice): a misconception more than 20%
+  longer or shorter than a mark point of its part, and a pack where the key is the shortest, middle or longest option 15 points more often
+  than an even spread. On the old pack: 3 rows, plus "middle in 15 of 22 (about 9 if even)". On the new pack: none.
+
+| measure | s8 = 0001–0008 | + 0011 |
+|---|---|---|
+| testwise, economics (28 sets, chance 0.312): middle / second-longest / second-shortest | 0.536 / 0.625 / 0.446 | **0.286 / 0.321 / 0.250** |
+| … odd first word / testwise_length (punct → absolutes → middle) | 0.414 / 0.446 | 0.235 / 0.339 |
+| … highest of every length, position and item-writing cue | 0.625 | **0.375** (target ≤ 0.412) |
+| … key rank shortest / middle / longest / tie | 3 / 13 / 3 / 9 | 8 / 10 / 10 / 0 |
+| … sequence cue (the option not in the previous point's check, 11 sets) | 1.0 | **1.0, not fixed** |
+| gaming C2m (drop longest and shortest), N=30: right / secure parts | 0.57 / 4.4 | **0.19 / 0.2** |
+| gaming C2l2 (second-longest, new), N=30 | 0.65 / 5.2 | 0.19 / 0.2 |
+| gaming C2x (longest or shortest, new), N=30 | 0.19 / 0.6 | 0.33 / 1.8 |
+| gaming C2r (random option, same flow: the control), N=30 | 0.31 / 1.1 | 0.33 / 1.5 (C2x is within noise of this) |
+| honest C0, N=100 | 0.75 / 3.6 | 0.75 / 3.6 |
+| check_mcp | 74/74 | **74/74** |
+| Plan A (6 repo takes) | – | identical moves, evidence and levels |
+
+**Conflicts.** None. 0011 shares no file with 0009, 0010, 0009b or 0010b:
+- applied before or after 0009+0010, or before or after 0009b+0010b, `patch -p1` gives byte-identical trees with no offsets;
+- check_mcp gives 74/74 on 0001–0008 + 0011 + 0009 + 0010 on the second run (the first, at load average 5, failed only the timing check: 135 ms);
+- on 0001–0008 + 0011 + 0009b + 0010b it gave 74/74 on the third run. The first two failed only the 100 ms timing check (128–140 ms) at load average 7–8. That tree without 0011 ran at 96 ms in the same minute.
+
+`git am --keep-cr` works as for 0001–0008.
+
+**On camera.** Only then_ped's turn-5 prerequisite MCQ (ped_definition) shows changed distractor wording. The AI-literacy rows that Plan A uses are untouched.
+
+**Read with care.**
+- The after-numbers are in-sample: the texts were tuned while watching these 28 sets, with a standard error of about ±0.09 per strategy.
+- The ingest warning is the part that generalises to the 9EC0 pack.
+- Two rows need an economist's eye: `tax_incidence_split_p2` and `_m2`. Verifier V (~): both ignore supply elasticity (incidence depends on PED relative to PES), m2 is now absolute ("most of the tax") rather than comparative, and the two read as near mirror images, which is a pair cue. Minor: `yed_definition_m1` ("its own price" has an unclear referent) and `pes_formula_m1` (carries a true clause about PED). Reword, then rerun `testwise.py`.
+- The full stack 0001–0008 + 0011 + 0009b + 0010b passing 74/74 is the scout's result; verifier V checked 0001–0008 + 0011 only.
+- The sequence cue needs point-specific misconceptions (later, L). Don't claim the MCQs can't be gamed.
+
+**Time:** about 1 h: apply and reload (10 min), economist reads the 22 rows (30 min), rerun check_mcp and testwise (10 min).
+**If short:** keep the `validate.py` part and the pack rows the economist approves. Each row stands alone, but rank balance
+needs most of them, so rerun `testwise.py` after a partial take.

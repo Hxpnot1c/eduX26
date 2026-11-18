@@ -6,7 +6,7 @@ Use the wording as written. If you shorten a line, keep the caveat.
 
 **What changed in wave 5.**
 - **Five new avoid rows, marked (w5):** "gaming-proof", "the checks can't be gamed by form", "cheaper than Sparx on Microsoft", "label agreement shown" before the real study, and "we show skipped tasks".
-- **Two lines that are true only with a patch in** (both recommended, verification pending): "A reported dead link counts as checking, but secure needs a real check" needs 0009b. "Picking an option straight after being shown never makes a part secure; secure needs an answer in your own words or a later check" needs 0010b. Check the build before you say either ([wednesday-build-list](wednesday-build-list.md) steps 5d–5e).
+- **Two lines that are true only with a patch in** (both recommended and verified in simulation: w6-c2b, w6-c1b ✓): "A reported dead link counts as checking, but secure needs a real check" needs 0009b. "Picking an option straight after being shown never makes a part secure; secure needs an answer in your own words or a later check" needs 0010b. Check the build before you say either ([wednesday-build-list](wednesday-build-list.md) steps 5d–5e).
 - **New Q&A 11: "Microsoft takes 4.5× your revenue",** with the honest answer (§d).
 - **After the competition:** [roadmap.md](roadmap.md) §5 has a one-slide version (≤ 80 words) and §6 five Q&A answers ("What happens after the competition?", "Can a 16-year-old use it?", "Will you show it improves grades?", "How will you know the scores mean anything?", "Who pays?"). Everything there is "our plan".
 

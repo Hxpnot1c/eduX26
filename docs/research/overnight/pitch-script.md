@@ -24,6 +24,11 @@ The words the team records on Wednesday and Thursday. Written in wave 4 (scout n
 - The leave-behind is 222 words (225 on Plan B).
 - **Plan B has its own voiceover** (§1b), spliced from demo-plan's Plan B with the red team's edits. It speaks no number that isn't a finding.
 - This script makes no new findings. Every number in it is a ✓ finding in [`findings.csv`](findings.csv), our design or our calculation (§4).
+- **Wave 6 (final series 0001–0004, 0006–0008, 0011, 0009b, 0010b if on time; 0005 optional):**
+  - With 0009b, Verify after 4c reads **0.740**, not 0.748: still "developing" on screen (w6-planA ✓). No spoken number changes.
+  - With 0010b, a course part can't go secure from MCQs picked straight after teaching. No shot here claims that; if asked, say "developing; an explain-back makes it secure".
+  - With 0011, the `ped_definition` check in shot 5 has new distractor wording, so re-capture shot 5. The 4c literacy options are unchanged.
+  - Slide 7 and any design insert use the wave-6 mock-ups ([mockups/README](mockups/README.md)), and the voice says "this is the design" over them.
 - **Three things depend on Wednesday's build** ([`wednesday-build-list.md`](wednesday-build-list.md)):
   - Showing 4c's options needs **0004**.
   - Showing Verify rising in 4d needs **0003**, and the chatbot must send `source_conflict` on 4c.
@@ -76,9 +81,12 @@ Pace: about 150 words a minute, i.e. 2.5 words a second at most per shot. Fewer 
 - **If the ONS link really is broken** or really mismatches on the take, you may use it. Keep the caption "Scripted demo" off only in that case. Even then, never say the chatbot invented it.
 - **Verify in 4d.**
   - **With 0003:** a reported mismatch or dead page scores Verify 1, whatever is ticked. Verify ends developing in all six rehearsal takes, but only if the chatbot sends `source_conflict` on 4c (w4-fix-verify-1 ✓). Check that label in the expanded tool call before you keep the take.
+  - **With 0009b as well:** Verify reads 0.740 (developing) in all eight takes, including the dead-page and a,d-ticked lines (w6-planA ✓). A report can't lift Verify to secure before one real check, so a retake without a reset still shows developing.
   - **Without 0003, or with the label missing:** use the mismatch version only if 4c is sent as the Verify answer with points a, c and d. Otherwise the record shows Verify falling (w3-07), so don't show Verify in 4d.
 - **Which 4c to lead with.** In the mismatch version the student says the page exists but says something else, and then guesses "deleted". A cold judge may stumble on that. With 0004 in, the dead-page version may show its options too, so P may prefer it as the main 4c.
-- **Re-capture after build steps 4 and 5.** 0004 changes the option texts. 0005 changes some levels on `demo-secure` and `demo-showme`, which shot 5 uses. Shoot shot 5 on the frozen build.
+- **Re-capture after build steps 4, 5 and 5f.** 0004 changes the option texts. 0005 changes some levels on `demo-secure` and `demo-showme`, which shot 5 uses. 0011 (step 5f) rewords the `ped_definition` distractors in `demo-weak`'s check ("The slope of the demand curve is PED…", "PED measures how far the price changes when the demand changes"). Shoot shot 5 on the frozen build.
+- **No secure claim from picked answers (0010b).** Nothing in shots 4–5 says a course part became secure. Keep it that way: with 0010b, a part picked right straight after teaching reads developing, and an explain-back makes it secure.
+- **Mock-ups.** The video uses none by default. If one is cut in (at most about 8 s, inside the 15-s cap), use [`mockups/teacher-view.html`](mockups/teacher-view.html) at 1280×720 with its tag in the crop, caption "Mock-up · illustrative class data", and say "This is the design: teachers see what to reteach, never who said what." Never use `student-progress.html` in place of the live 4d shot.
 - **The board.** The end card is the only place the video names the board, and it carries the disclaimer.
 
 ---
@@ -160,16 +168,16 @@ One idea per slide. Plain words: keep technical names (BKT, MCP, evidence-centre
 *Add this only if the three literacy settings are merged on Wednesday (build list step 6, outside the tested patch series; w2-02-08 ✓, simulation on the pre-wave-4 branch code):* "In our main simulation, 5% or fewer no-skill synthetic students were ever shown secure; 7% in one harsher setting."
 
 ### Slide 7 · Who it helps, how it runs (3:00–3:30)
-**Lead:** "34%". **Source:** w1-08-04 ✓ (teachers' perceptions), w1-05-02 ✓, w2-05-04 ✓, w2-05-03 ✓. **On slide:** a teacher-view mock-up, labelled "mock-up".
+**Lead:** "34%". **Source:** w1-08-04 ✓ (teachers' perceptions), w1-05-02 ✓, w2-05-04 ✓, w2-05-03 ✓. **On slide:** [`mockups/teacher-view.html`](mockups/teacher-view.html) captured at 1280×720 (after E's light and dark check), with its "Mock-up · illustrative data · not a live feature" tag in the crop and the caption "Mock-up · illustrative class data". It is not built, so the speaker says "this is the design". Every number on it is invented: never read one out.
 
-> "Only 34% of secondary schools in England had a policy on safe AI use, while 73% of secondary teachers think pupils have used generative AI for homework. eduX never calls an AI model; the school still pays its chatbot provider. We tested on claude.ai, adults only. For pupils, the documented route is Microsoft 365 Education, where Copilot Chat is off by default for 13- to 17-year-olds. Schools add eduX through Copilot Studio. That's documented, not yet tested."
+> "Only 34% of secondary schools in England had a policy on safe AI use, while 73% of secondary teachers think pupils have used generative AI for homework. This is the design: teachers see what to reteach, never who said what. eduX never calls an AI model; the school still pays its chatbot provider. We tested on claude.ai, adults only. For pupils, the documented route is Microsoft 365 Education, where Copilot Chat is off by default for 13- to 17-year-olds. Schools add eduX through Copilot Studio. That's documented, not yet tested."
 
 ### Slide 8 · Next (3:30–4:00)
 **Lead:** "About 21,000". **Source:** w4-08-08 ✓ (Ofqual market report, England, certificates, 2024–25; the share is our arithmetic), w1-08-08 ✓ (our calculation). **On slide:** team roles. **Footnote:** "Ofqual, England, A level certificates 2024–25: 9EC0 21,005 of 40,795 (51.5%, our arithmetic). Built for Pearson Edexcel 9EC0. Not affiliated with or endorsed by Pearson."
 
 > "In England, about 21,000 A level certificates in 2024–25 were Pearson Edexcel Economics A: just over half of all A level Economics. That's who we start with. Next: merge, sign-in, a Copilot Studio test, then a feasibility pilot. It is not a learning claim: even a 100-school trial could detect only about 0.17 of a standard deviation, by our calculation. Here's who does what."
 
-**Word count:** 522 spoken words without the slide-6 add-on, and 541 with it (after the red-team edits). Both are under 560, leaving room for pauses.
+**Word count:** 535 spoken words without the slide-6 add-on, and 554 with it (522/541 after the red-team edits, plus 13 for the wave-6 mock-up line on slide 7). Both are under 560; drop the slide-6 add-on first if pauses run long.
 
 ---
 
@@ -259,7 +267,7 @@ V = video, D = deck, L = leave-behind.
 | "The guarded tutor raised practice 127%" | w2-09-08 ✓, but it invites a learning-gain reading. Left out. |
 | 36% of UK adults read falling inflation as falling prices | w1-04-07 ✓; dropped for time. Spare Q&A line. |
 | Judging-noise statistics (68% vs 32% by narrator's voice, NIH reviewer disagreement) | w3-01-03 and -05 are ✓, but they come from grant and investor settings, not expo judging, and pitch-notes bans them from slides. Used only as advice (short captions), never as a claim. |
-| Verify 0.748 / 0.143; How AI works AUC 0.40 → 0.85/0.88 with the decay patch | Simulations on synthetic students (w4-fix-verify-1 ✓, w4-fix-core-4 ✓). Q&A only, labelled "simulation", and the AUC only if 0005 is merged. Never on a slide as "we can rank AI literacy". |
+| Verify 0.748 / 0.143 (0.740 with 0009b; w6-planA ✓); How AI works AUC 0.40 → 0.85/0.88 with the decay patch | Simulations on synthetic students (w4-fix-verify-1 ✓, w4-fix-core-4 ✓). Q&A only, labelled "simulation", and the AUC only if 0005 is merged. Never on a slide as "we can rank AI literacy". |
 | "Catching a fake link raises your Verify score" | True on the patched build **only** with 0003 merged and the chatbot sending `source_conflict` (w4-fix-verify-1 ✓). False on the bare branch (w3-07). Not spoken; the 4d notes say when Verify may be shown. |
 | "46,365 A level Economics entries in England in 2026. That's who we start with." | w1-08-01 ✓, but it counts all boards and eduX is built for 9EC0 only (red team). Slide 8 now uses the Edexcel-only certificate count. Keep 46,365 for Q&A, saying "all boards". |
 | "9EC0 certificates up 42% in four years" | w4-08-08 ✓ (our arithmetic). Left out for word budget; a spare Q&A or footnote line, with "England, certificates". |

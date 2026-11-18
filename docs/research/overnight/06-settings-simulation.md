@@ -46,7 +46,7 @@ Waves 1, 3 and 5 (overnight 17–18 Nov 2026). Wave 2 added no 06 scout note.
   - **#2: "just show me", then pick the matching option.** All 9 course parts read secure (w5-06g-03 ~).
   - **A new MCQ cue after patch 0004:** dropping the longest and shortest options gets 58% right against about 31% chance (w5-06g-05 ~).
   - **The skip counter is nearly blind** (about 2% of ignored tasks counted; w5-06g-07 ~).
-  - **Counters:** wave 6's 0009b and 0010b take these gamers to 0 secure at a small honest cost (verification pending). Guessers still gain "developing". **Never claim "gaming-proof".**
+  - **Counters:** wave 6's 0009b and 0010b take these gamers to 0 secure at a small honest cost (verified: w6-c2b, w6-c1b ✓). Guessers still gain "developing". **Never claim "gaming-proof".**
 
 ## Ranked recommendations
 
@@ -201,7 +201,7 @@ A settings-only alternative to 0010 (raising the immediate guess to 0.6) left C3
 - **One real check, then dead-link reports** (L1c) still reaches Verify secure: the rule allows it.
 - **Pasting the shown point back as an explain-back** (C3x) reaches 9/9 under a literal labeller, 0/9 under a skeptical one. It depends on the chatbot following 0009b's text line, which is untested with a real chatbot.
 - **The skip counter is nearly blind.** About 2% of ignored tasks are counted, because a new research question replaces a pending task without a skip. Topic-switch dodges are recorded nowhere (w5-06g-07 ~, -08 ~).
-- **The 58% middle-length cue: fix in progress.** 0010b stops it making parts secure (4.4 → 0 parts; verification pending). The cue itself remains in the options after 0004 and still needs the pack fix (rec 18, later).
+- **The 58% middle-length cue: fixed in sample by 0011 (0.536 → 0.286; w6-len ✓; point-order cue remains).** 0010b stops it making parts secure (4.4 → 0 parts; verified, w6-c1b ✓). The cue itself remains in the options after 0004 and still needs the pack fix (rec 18, later).
 
 **Say:** "We red-teamed our own scoring. A reported dead link counts as checking, but secure needs a real check" (only with 0009b in). **Never say "gaming-proof".**
 
@@ -359,7 +359,7 @@ Sources: `results/population.md`, w3-06-08 ✓ and w3-06-09 ~. Notes:
 - **Raising `levels.secure` to 0.85–0.95.** The scout reports that pilot exam-day false secure stayed at 71–73% while coverage fell. The false secures sit near p ≈ 1 because of half-life inflation, not near the threshold. This was **not verified, and the output was not saved**. The direction is consistent with the immediate-share data above.
 
 ## Panel objections this report answers or leaves open
-- **Wave 5, "Can a student game the levels?": partly.** Red-teamed (mechanism-design section): the worst exploits have counters (0009b, 0010b; recommended, verification pending), guessers still gain "developing", and a 58% middle-length cue remains in the options.
+- **Wave 5, "Can a student game the levels?": partly.** Red-teamed (mechanism-design section): the worst exploits have counters (0009b, 0010b; recommended, verified in simulation), guessers still gain "developing", and a 58% middle-length cue remains in the options.
 - **Teacher #2 / #3 and student #3, "What stops a student picking the shortest option?": partly.** The sim's guesser always picks "A", not the shortest option. Open-answer evidence held it near 0 secure parts (w1-06-10 ~). A shortest-option guesser is still untested. The wave-3 option-form audit found the opposite cue: in 7 of 9 example-pack parts the correct option is longer than every distractor (w3-05-08 ~, [05](05-product-features.md)), so a longest-option guesser would do well.
 - **Judges #3, "Why believe a 'secure' Verify?": open here.** That objection is about AI-literacy levels; this report covers course parts only. See [02](02-ai-literacy-assessment.md).
 - **Judges (expected), "Can a student chat their way to secure?": recommended.** Yes, on `main`: 14 exchanges with no check reach .763 (w3-06-06 ~). Rec 10 caps never-right parts at the prior and shows "not yet shown". Not built.
