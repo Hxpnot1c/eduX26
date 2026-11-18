@@ -13,7 +13,8 @@ Order (first match wins for the main step):
                      stuck moves)
   stuck on focus  -> ask_mcq on the weakest prerequisite (prereq, stuck) / reteach of the whole part (through the anchor)
   ambiguous focus -> ask_which (no focus at all: the top due review, as ask_mcq)
-  just_show_me    -> show the current point, then its check; skip_point ("I know this") -> its check only;
+  just_show_me    -> show the current point, then its check (after show.max_per_part_session shows of the part this
+                     session: a 2-option check on the point first); skip_point ("I know this") -> its check only;
                      a pick from offer_choice: quiz -> the current point's check, extend -> extend, stop -> nothing
   passive streak  -> offer_choice: quiz, extend or stop (engagement.passive_run passive messages in a row; once a
                      session, never when fatigued)
@@ -449,15 +450,28 @@ def picked(turn: Turn, part_id: str, settings: Settings, progress: dict, choice:
     return []
 
 
+def two_option_check(turn: Turn, part_id: str, index: int, settings: Settings) -> dict:
+    """ask_mcq (check) on one point with two options: the point and the part's first misconception (or one the
+    chatbot writes, when it has none). Asked before a repeated show; its guess is 1/2 (bkt.mcq_guess_from_options)."""
+    point = _points(part_id)[index - 1]
+    q = question(part_id, "check", point["point"], settings, point_id=point["id"])
+    q = {**q, "wrong": q["wrong"][:1], "extra": not q["wrong"]}
+    return ask_mcq(turn, q, {"index": index})
+
+
 def shown_or_skipped(turn: Turn, part_id: str, settings: Settings, progress: dict, choice: str) -> list[dict]:
     """"I know this" (skip_point): the current point's check only, with no teaching. "Just show me": show, a
-    one-line intuition (from the same source as the intuition question) and the point, then its check."""
+    one-line intuition (from the same source as the intuition question) and the point, then its check; after
+    show.max_per_part_session shows of the part this session, a 2-option check first instead, whose feedback
+    gives the point."""
     state = _progress(progress, part_id)
     points = _points(part_id)
     index = min(state["index"], len(points))
     asked = check(turn, part_id, index, settings)
     if choice == "skip_point":
         return [asked]
+    if learner.shows_this_session(turn.student_id, part_id, turn.at) > settings.show.max_per_part_session:
+        return [two_option_check(turn, part_id, index, settings)]   # try it first: the answer's feedback shows the point
     data = {"point": points[index - 1]["point"]}
     source = intuition_source(turn, part_id)
     if source:

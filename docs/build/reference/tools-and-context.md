@@ -85,6 +85,7 @@ At most two steps (three from step 05d, for feedback, `teach_point` and `ask_mcq
    - or, when it has no prerequisite, `reteach` of the whole part (through the anchor, or a different example; `switch_approach` before 05c).
 3. Focus ambiguous → `ask_which` with the candidates **(stop)**. No focus at all (e.g. "quiz me on what's due") → the top due `review`, if any.
 4. `choice == just_show_me` → `show`: a short worked example. Nothing else follows it.
+   - After `show.max_per_part_session` shows of the part this session (engagement-rules), the next "just show me" first gets a 2-option `ask_mcq` (`check`) on the current point **(stop)**: the point plus the part's first misconception (or one the chatbot writes, when it has none). Its guess is 1/2, from the options shown. The answer's feedback gives the point either way; a wrong answer re-teaches it as for any check.
    - A pick from `offer_choice`, sent back as `this_message.choice` (engagement-rules): `quiz` → the current point's check (as `skip_point`), `extend` → `extend` **(stop)**, `stop` → an empty plan (the chatbot wraps up with a one-line summary).
 5. Passive streak (engagement-rules): the student's last `engagement.passive_run` messages this session were all labelled `passive`, they aren't fatigued, and it hasn't been offered this session → `offer_choice` (`reason = passive`, `options` quiz, extend and stop) **(stop)**. It's read from `exchange_log` each turn and never stored as a trait.
 6. Pre-question eligible → `prequestion` **(stop)**.

@@ -162,6 +162,11 @@ class Engagement:
 
 
 @dataclass(frozen=True)
+class Show:
+    max_per_part_session: int
+
+
+@dataclass(frozen=True)
 class Difficulty:
     default: float
     prior_shift: float
@@ -247,6 +252,7 @@ class Settings:
     literacy: Literacy
     session: Session
     engagement: Engagement
+    show: Show
     difficulty: Difficulty
     link_weight: LinkWeight
     resolve: Resolve

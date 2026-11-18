@@ -958,6 +958,16 @@ def passive_streak(student_id: str, at: str | datetime | None = None) -> int:
     return run
 
 
+def shows_this_session(student_id: str, part_id: str, at: str | datetime | None = None) -> int:
+    """How many messages this session asked to be shown the part ("just show me", or labelled offloading),
+    including one at at itself (engagement-rules)."""
+    conn, at_ts = _conn(), _event_ts(at)
+    start = session_start(conn, student_id, at_ts)
+    rows = conn.execute("""SELECT node_ids FROM exchange_log WHERE student_id = ? AND ts >= ? AND ts <= ?
+                           AND (offloading = 1 OR choice_taken = 'just_show_me')""", (student_id, start, at_ts))
+    return sum(1 for r in rows if part_id in _tagged_parts(split(r["node_ids"])))
+
+
 def sessions(student_id: str) -> list[dict]:
     """The student's sessions, oldest first: start, minutes, exchange and evidence counts, and the minute fatigue began."""
     s, conn = _settings().session, _conn()

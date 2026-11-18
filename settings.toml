@@ -118,6 +118,9 @@ pattern_min_sessions = 3   # sessions with a fatigue onset before study_pattern 
 [engagement]               # in-session engagement rules (engagement-rules); never stored as a trait
 passive_run = 4            # passive messages in a row before offer_choice offers ways on (once a session, never when fatigued)
 
+[show]                     # "just show me" (engagement-rules)
+max_per_part_session = 2   # after this many shows of one part in a session, the next first asks a 2-option question on the point
+
 [difficulty]               # optional teacher-set difficulty per node (0 easy – 1 hard), inherited by parts
 default = 0.5              # used when no node above the part has one
 prior_shift = 0.15         # starting p_known moves down (hard) or up (easy) by up to this much
