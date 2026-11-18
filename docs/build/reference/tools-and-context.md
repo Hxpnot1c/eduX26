@@ -174,7 +174,7 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
 | `show` | no: an `ask_mcq` check follows | 05b | | `point`, `note` | notes | 30 |
 | `explain_back` | yes **(stop)** | 05b | `teach_explain_back` | `point`, `point_id` (one point, for a coasting student) | none | 35 |
 | `extend` | yes **(stop)** | 05b | | | causal | 35 |
-| `feedback` | no | 05b | `correct_misconception` (05c) | `correct`, `points_met`, `misconceptions` (picked, shown or held), `secure` (a right answer on a part at secure: confirm, no why) | misconceptions | 45 |
+| `feedback` | no | 05b | `correct_misconception` (05c) | `correct`, `points_met`, `misconceptions` (picked, shown or held), `secure` (a right answer on a part that was secure **before** this answer: confirm, no why; the answer that tips a part to secure still gets its why. Read from `evidence_derived.p_before`, step 05k) | misconceptions | 45 |
 | `reteach` | yes **(stop)**, unless an `ask_mcq` check follows | 05c | `reteach_gap`, `switch_approach` (05c), `reteach_point` (05d) | `missing` or `point`, `anchor`, `answer_type` | notes, anchor | 45 |
 | `answer_brief` | no | 05c | | | notes | 20 |
 | `reask` | yes **(stop)** | 05c | `literacy_followup` (05e) | `pending` | none | 20 |
