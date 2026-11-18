@@ -64,9 +64,13 @@ CREATE INDEX idx_qnode_node ON question_node(node_id);
 CREATE TABLE schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL);
 
 -- who
-CREATE TABLE student (id TEXT PRIMARY KEY, key TEXT UNIQUE NOT NULL, display_name TEXT, course_id TEXT,
+CREATE TABLE student (id TEXT PRIMARY KEY,   -- opaque: s-<8 hex>, never made from a name (demo students have fixed ids)
+  key_hash TEXT UNIQUE,              -- SHA-256 of the student's key; the key itself is shown once, at creation (migration 014)
+  key TEXT UNIQUE,                   -- only a student from before migration 014 has one, until their first request hashes it
+  display_name TEXT, course_id TEXT,
   profile TEXT,                      -- context profile name; NULL = default from context.toml
-  created TEXT NOT NULL);
+  created TEXT NOT NULL,
+  left_on TEXT);                     -- set by leave-student; purge deletes the student's data after retention.after_leaving_days
 CREATE TABLE student_profile (student_id TEXT PRIMARY KEY, interests TEXT DEFAULT '', exam_date_override TEXT, answer_length INTEGER);
 
 -- events (append-only; the source of truth)
@@ -74,8 +78,7 @@ CREATE TABLE exchange_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT
   node_ids TEXT NOT NULL, question_depth TEXT, engagement TEXT, offloading INTEGER NOT NULL DEFAULT 0,
   support_given TEXT, choice_taken TEXT, misconception_ids TEXT DEFAULT '', conflict_flagged INTEGER NOT NULL DEFAULT 0,
   protocol TEXT NOT NULL,            -- e.g. v0.1/full
-  settings_hash TEXT NOT NULL,
-  prompt_text TEXT);                 -- only when STORE_PROMPTS=1
+  settings_hash TEXT NOT NULL);      -- (prompt_text, once stored when STORE_PROMPTS=1, was dropped in migration 014)
 -- evidence_log is added by migration 003 (below)
 
 -- derived (rebuilt from events by learner.rebuild_state)
@@ -197,3 +200,11 @@ CREATE TABLE literacy_skip (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEX
   part_id TEXT NOT NULL);                -- the skill's part (ail_ask, ail_verify) or the how-AI-works part
 CREATE INDEX idx_literacy_skip_student ON literacy_skip(student_id, part_id);
 ```
+
+## Data handling (step 05x, migration 014)
+
+- **Keys** are stored as SHA-256 hashes (`student.key_hash`). A student from before the migration keeps a plaintext `key` until their first request, which replaces it with the hash. The demo students' keys are kept in `demo-keys.json` in the data folder, because the demo script prints them and `seed-demo --reset` keeps them; they are fixtures with fixed ids and no personal data.
+- **Ids** are random (`s-<8 hex>`). The display name, if given, lives in `student.display_name` only. The call log and the console print the id.
+- **Message text is never stored.** The `prompt_text` column and `STORE_PROMPTS` are gone.
+- **Delete, export, retention** (`python -m edux.cli`): `delete-student --student <id> --yes` removes every row about a student from every table that has a `student_id` column, found from the schema so a table added later is covered; `export-student` writes all of it as JSON (never the key or its hash); `leave-student` marks a student as having left; `purge` deletes call-log rows older than `retention.call_log_days` and students who left more than `retention.after_leaving_days` ago.
+- **Event sourcing and deletion:** deleting a student deletes their events, so there is nothing to replay; other students' state is unaffected, and a rebuild after a deletion gives the same state for everyone else (tested).

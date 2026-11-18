@@ -245,7 +245,7 @@ Each block is data for the plan or for reference, without instructions:
 
 Unknown blocks in a profile are skipped with a warning. `python -m edux.cli context --student <id> --message "..."` prints a message's blocks, numbers included, without recording anything.
 
-`prompt_text` is stored on the exchange only when `STORE_PROMPTS=1` (tutor_turn doesn't send it).
+The student's message text is never stored: `STORE_PROMPTS` and the `prompt_text` column were removed in step 05x.
 
 **Trade-off:** an answer in the student's very last message of a chat is never scored, because no later `tutor_turn` call carries it.
 
