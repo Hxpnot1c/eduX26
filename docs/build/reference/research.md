@@ -17,6 +17,8 @@ The evidence behind teaching and modelling decisions. Effect sizes are as report
 | Fatigue within a session | Randles, Harlow & Inzlicht (2017), *PLOS ONE* | Fatigue within an hour on task; negligible time-of-day effect | Online self-testing, not school chatbots |
 | Stuck vs tired | Beck & Gong (2013), AIED | Wheel-spinning: repeated failure to master a skill | Definitions vary across studies |
 | Spacing anchored to the exam | Cepeda et al. (2008) | The best gap shrinks as the test gets closer | |
+| Spacing towards the student's own tests | Cepeda et al. (2008) | The best gap depends on how far away the test is, so a mock pulls spacing towards it (step 05i) | Lab and online studies, not school tests |
+| Hand-set priorities before a learned policy | Doroudi, Aleven & Brunskill (2019), *International Journal of Artificial Intelligence in Education* | Reinforcement-learning instructional policies mostly didn't beat sensible rule-based baselines | So the `[priorities]` weights stay hand-set until there is real data (step 05i) |
 | One point per message | Rey et al. (2019), *Educational Psychology Review*, meta-analysis | Meaningful, learner-paced segments improve retention and transfer, and reduce load | Mostly multimedia, not chat |
 | Check after each point | Chan, Meissner & Davis (2018), *Psychological Bulletin*, meta-analysis | Testing earlier material improves learning of the next material | |
 | Not too often | Davis, Chan & Wilford (2017) | Frequent switching between retrieval and study can impair new learning | |

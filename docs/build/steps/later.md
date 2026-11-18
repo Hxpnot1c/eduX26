@@ -98,6 +98,11 @@ A simple read-only page at `/me?key=` showing:
 - Class-level weak parts and misconceptions only, never chats.
 - Content review: list flagged and draft rows with approve, reject and edit, writing to the teacher feedback CSV.
 
+### Priorities, next (after step 05i)
+- Teachers setting assessments for a whole class.
+- Mock marks counted as evidence.
+- Learning the `[priorities]` weights from the `considered` logs: a contextual bandit, checked first against old logs (offline evaluation) before it changes any choice.
+
 ## Extras (only if time allows)
 - **Investigate activity.** An optional guided research task: ask → predict → AI answer with tagged claims → verify two claims → apply in a paragraph → reflect. It scores the AI-literacy skills from 05e (`ail_ask`, `ail_verify`), plus `think_first`, `apply` and `reflect`.
 - Automated extraction from the specification, papers and textbook into a draft pack.
