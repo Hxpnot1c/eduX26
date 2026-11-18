@@ -518,6 +518,9 @@ def tutor_turn(
                                     request={k: this_message.get(k) for k in REQUEST_LABELS})
         except ValueError as e:
             return {"ok": False, "error": str(e)}
+        if evidence:   # feedback judges "secure" on the level before this answer was applied
+            before = learner.answer_p_before(student["id"], evidence["part_id"], at)
+            evidence = {**evidence, "p_before": before} if before is not None else evidence
 
     parts = context_blocks.order_parts(student, resolution["parts"], message or "")
     turn = context_blocks.Turn(student=student, parts=parts, message=message or "", at=at,

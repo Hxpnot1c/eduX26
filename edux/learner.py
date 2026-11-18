@@ -935,6 +935,17 @@ def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, sli
     _queue_review(conn, student_id, part_id, t + timedelta(days=gap), reason, replace=True)
 
 
+def answer_p_before(student_id: str, part_id: str, ts: str) -> float | None:
+    """The student's p_now on the part just before the answer recorded at ts was applied (stored in
+    evidence_derived), or None when no evidence was recorded then. Feedback reads this, not the level after the
+    answer: the answer that tips a part to secure may be a lucky guess and still deserves its why."""
+    row = _conn().execute(
+        """SELECT d.p_before FROM evidence_derived d JOIN evidence_log l ON l.id = d.evidence_id
+           WHERE l.student_id = ? AND l.part_id = ? AND l.ts = ? ORDER BY l.id DESC LIMIT 1""",
+        (student_id, graph.canonical(part_id), ts)).fetchone()
+    return row["p_before"] if row else None
+
+
 def days_until_below(state: dict, threshold: float) -> float | None:
     """Days from the clock's start until p_now decays below threshold, or None when it never crosses it: no clock
     yet (nothing learnt, nothing to forget) or p_known already at or below it."""

@@ -789,7 +789,9 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
     misses = 0
     if answer and evidence:
         first, retry = feedback(answer, evidence)
-        if evidence["score"] >= settings.bkt.correct_share and learner.level(turn.p(evidence["part_id"])) == "secure":
+        was = evidence.get("p_before")   # the level before this answer: the one that tips a part to secure still gets its why
+        was = turn.p(evidence["part_id"]) if was is None else was
+        if evidence["score"] >= settings.bkt.correct_share and learner.level(was) == "secure":
             first = _refill({**first, "data": {**first["data"], "secure": True}})   # right at secure: confirm, no why
         steps.append(first)
         handled |= set(evidence["misconception_ids"])
