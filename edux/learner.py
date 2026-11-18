@@ -8,6 +8,7 @@ Every rule runs at the event's own timestamp, so replaying gives the same state.
 from __future__ import annotations
 
 import functools
+import json
 import math
 import os
 import queue
@@ -543,8 +544,24 @@ def _activate_misconceptions(conn: sqlite3.Connection, student_id: str, misconce
                          "VALUES (?, ?, 1, ?)", (student_id, misconception_id, ts))
 
 
-def days_to_exam(student_id: str, part_id: str, at: datetime) -> float | None:
-    """Days from at to the student's next exam on this part: their exam_date_override if set and ahead,
+ASSESSMENT_KINDS = ("homework", "class_test", "mock")   # a student's own upcoming tests (priorities)
+
+
+def assessments(student_id: str, at: datetime | str | None = None) -> list[dict]:
+    """The student's upcoming assessments (dated after at, default now), soonest first: {id, name, kind, date,
+    part_ids}. Profile data, like exam_date_override: a rebuild uses them as they are now."""
+    day = parse_ts(at or now_iso()).date().isoformat()
+    rows = _conn().execute("SELECT id, name, kind, date, part_ids FROM student_assessment WHERE student_id = ? "
+                           "AND date > ? ORDER BY date, id", (student_id, day)).fetchall()
+    return [{**dict(r), "part_ids": json.loads(r["part_ids"])} for r in rows]
+
+
+def _days_until(date_text: str, at: datetime) -> float:
+    return (parse_ts(date_text) - at).total_seconds() / 86400
+
+
+def final_exam_days(student_id: str, part_id: str, at: datetime) -> float | None:
+    """Days from at to the student's final exam on this part: their exam_date_override if set and ahead,
     otherwise the soonest exam paper covering the part. None if there is no exam ahead."""
     row = _conn().execute("SELECT exam_date_override FROM student_profile WHERE student_id = ?", (student_id,)).fetchone()
     dates = [row["exam_date_override"]] if row and row["exam_date_override"] else []
@@ -552,6 +569,15 @@ def days_to_exam(student_id: str, part_id: str, at: datetime) -> float | None:
         dates = [paper["date"] for paper in graph.exam_papers_for(part_id) if paper["date"]]
     ahead = [(parse_ts(d) - at).total_seconds() / 86400 for d in dates]
     ahead = [d for d in ahead if d > 0]
+    return min(ahead) if ahead else None
+
+
+def days_to_exam(student_id: str, part_id: str, at: datetime) -> float | None:
+    """Days from at to the student's next test on this part: the final exam (final_exam_days) or the soonest of
+    their own upcoming assessments covering it (priorities). None if there is none ahead."""
+    ahead = [_days_until(a["date"], at) for a in assessments(student_id, at) if part_id in a["part_ids"]]
+    final = final_exam_days(student_id, part_id, at)
+    ahead = [d for d in ahead + ([final] if final is not None else []) if d > 0]
     return min(ahead) if ahead else None
 
 

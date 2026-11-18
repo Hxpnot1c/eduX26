@@ -161,7 +161,7 @@ After any evidence on a part:
 gap = share × days_to_exam
 ```
 
-- `share` comes from `scheduling` based on days to the student's next relevant exam paper (`exam_date_override` wins if set).
+- `share` comes from `scheduling` based on days to the student's next test on the part (`learner.days_to_exam`): the soonest of the final exam (`exam_date_override` if set and ahead, else the pack's exam papers) and the student's own upcoming assessments covering the part (priorities: homework, class tests, mocks). Spacing works towards the nearest test, and goes back to the final exam once that test has passed (Cepeda et al., 2008).
 - The gap is floored at `min_gap_days`.
 - **Recall threshold:** when a clock is running and `p_known > scheduling.review_when_below`, the part is also due when `p_now` is expected to fall below that threshold, `half_life × log2(p_known / review_when_below)` days on. If that comes first, it replaces the share gap (still floored at `min_gap_days`) with reason `recall_below`. A part already below the threshold, or with no clock, uses the share gap only.
 - `due = now + gap`, with reason `scheduled` (or `recall_below`)
@@ -234,4 +234,4 @@ Personalisation never uses learning styles.
 
 `rebuild_all()` does every student. Events keep the `protocol` and `settings_hash` they were recorded under, for analysis.
 
-A rebuild uses the student's current `exam_date_override`, not the value it had when each event happened.
+A rebuild uses the student's current `exam_date_override`, not the value it had when each event happened. The same goes for their assessments (`student_assessment`, priorities): they are profile, not events, so a rebuild uses the assessments as they are now, and adding then removing one leaves the state as if it was never added.
