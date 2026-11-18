@@ -66,13 +66,15 @@ A student's answers can't reliably show tiredness at chat pace. Our simulation o
 - **Persistence varies between people** (Wu, Debeer et al., 2019), hence the per-student curves.
 - Full rows are in `reference/research.md`, under "Fatigue, timing and rapid guesses".
 
-## Decision needed: who sees the per-student curve
-`docs/research/personalisation.md` §5 lists "fatigue/usage shown to teachers" as **non-core, off by default**. Proposed:
-- the per-student curve is CLI-only, for the student's own view and for debugging;
-- the teacher-facing output is the class aggregate only, with small bins hidden;
-- `fatigue.teacher_student_view = false` gates any per-student teacher view until the school instructs it.
-
-Confirm or change.
+## Who sees the curves
+`docs/research/personalisation.md` §5 says fatigue shown to teachers is non-core and off by default, and personal traits are never shown as labels. So:
+- **The class aggregate** sits behind a school setting, `fatigue.class_curve_enabled`. It is off by default.
+  - It is on in the demo seed, labelled "seeded data": `scripts/demo.sh` sets `EDUX_FATIGUE_CLASS_CURVE=1`, like `EDUX_PERSONALISATION`.
+  - With it off, `fatigue-curve --class` says it's off and shows nothing.
+  - Bins with fewer than 5 students are hidden.
+  - It is listed in `docs/build/reference/dpia-notes.md`.
+- **Per-student curves are CLI only.** There is no per-student teacher view.
+- `later.md` gets a line saying a per-student teacher view would come only behind a DPIA.
 
 ## Files
 - **Migration:** the next free number when you start. It adds:
@@ -94,6 +96,8 @@ Confirm or change.
 - `edux/demo.py`: seeded sessions long enough to show a curve.
 - `text/moves/offer_choice_break.cue.md`, `offer_choice_rapid.cue.md`, and `text/tools/tutor_turn.md` (`this_message.words`).
 - `settings.toml`: remove the old keys; add `[fatigue]`.
+- `scripts/demo.sh`: turns the class curve on for the demo.
+- `docs/build/reference/dpia-notes.md`: lists the class fatigue curve (non-core, school setting, off by default).
 - `scripts/check_mcp.py`: a `fatigue` run.
 - **Docs:**
   - this file;
@@ -116,7 +120,7 @@ read_wpm = 300               # from research: Brysbaert (2019), top of the 175�
 type_wpm = 52                # from research: Dhakal et al. (2018) keyboards; Palin et al. (2019) phones are slower
 min_students_per_bin = 5     # from personalisation.md §5: minimum cell size
 bin_minutes = 10             # judgement call
-teacher_student_view = false # pending your decision (see above)
+class_curve_enabled = false  # school setting, off by default (personalisation.md §5: non-core); on in the demo seed
 ```
 
 ## Commits
@@ -138,6 +142,7 @@ teacher_student_view = false # pending your decision (see above)
 - Fatigued mode starts at 50 minutes or on the 2nd rapid guess, and ends with a new session.
 - There's no break offer before 50 minutes.
 - Curve bins are correct, and small-class suppression works.
+- The class curve is off by default, and on with the school setting.
 - The gate passes:
   - `check_mcp` passes;
   - no result is over 2,400 characters;
