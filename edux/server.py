@@ -8,7 +8,9 @@ Requests without a known key are refused with 401 before they reach MCP.
 from __future__ import annotations
 
 import functools
+import inspect
 import os
+import sys
 import time
 from collections.abc import Callable
 from datetime import datetime, timezone
@@ -18,6 +20,7 @@ from urllib.parse import parse_qs
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
 from mcp.server.transport_security import TransportSecuritySettings
+from mcp.types import CallToolResult, TextContent
 from pydantic import BaseModel, Field
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
@@ -166,33 +169,42 @@ def _student_id(ctx: Context | None) -> str | None:
         return None
 
 
-def timed(name: str, fn: Callable[..., dict]) -> Callable[..., dict]:
-    """Wrap a tool adapter: time it, write a call_log row and print one console line such as
+ERROR_CHARS = 200   # stored and printed error text is cut to this (a validation message can echo the input)
+
+
+def timed(name: str, fn: Callable[..., dict]) -> Callable[..., CallToolResult]:
+    """Wrap a tool adapter: time it, write a call_log row, print one console line such as
     "tutor_turn demo-weak 18ms 3.1k chars ok", ending in OVER BUDGET when a tutor_turn result is still over
-    results.max_chars. The key is never printed or stored."""
+    results.max_chars, and send the result as compact JSON, the same text the size is counted from. The key is
+    never printed or stored. A failure to log is reported on stderr and never replaces the tool's result."""
 
     @functools.wraps(fn)
-    def wrapper(*args: object, **kwargs: object) -> dict:
+    def wrapper(*args: object, **kwargs: object) -> CallToolResult:
         started, t0 = datetime.now(timezone.utc), time.perf_counter()
         result, error = None, None
         try:
             result = fn(*args, **kwargs)
-            return result
         except Exception as e:
-            error = str(e) or type(e).__name__
+            error = (str(e) or type(e).__name__)[:ERROR_CHARS]
             raise
         finally:
-            ms = (time.perf_counter() - t0) * 1000
-            if error is None and isinstance(result, dict) and result.get("ok") is False:
-                error = str(result.get("error") or "ok: false")
-            chars = service.result_size(result) if result is not None else 0
-            ctx = kwargs.get("ctx") or next((a for a in args if isinstance(a, Context)), None)
-            student_id = _student_id(ctx)
-            over = service.over_budget(name, chars)
-            service.log_call(student_id, name, started, ms, chars, error is None, error, over)
-            print(f"{name} {student_id or '-'} {ms:.0f}ms {chars / 1000:.1f}k chars "
-                  f"{'ok' if error is None else 'error: ' + error}{' OVER BUDGET' if over else ''}", flush=True)
+            try:
+                ms = (time.perf_counter() - t0) * 1000
+                if error is None and isinstance(result, dict) and result.get("ok") is False:
+                    error = str(result.get("error") or "ok: false")[:ERROR_CHARS]
+                chars = service.result_size(result) if result is not None else 0
+                ctx = kwargs.get("ctx") or next((a for a in args if isinstance(a, Context)), None)
+                student_id = _student_id(ctx)
+                over = service.over_budget(name, chars)
+                service.log_call(student_id, name, started, ms, chars, error is None, error, over)
+                print(f"{name} {student_id or '-'} {ms:.0f}ms {chars / 1000:.1f}k chars "
+                      f"{'ok' if error is None else 'error: ' + error}{' OVER BUDGET' if over else ''}", flush=True)
+            except Exception as log_error:   # logging is not the tool's job: keep the result
+                print(f"call log failed for {name}: {type(log_error).__name__}", file=sys.stderr, flush=True)
+        return CallToolResult(content=[TextContent(type="text", text=service.compact_json(result))])
 
+    # FastMCP reads the return type from the signature: CallToolResult is sent as it is, with no schema check.
+    wrapper.__signature__ = inspect.signature(fn, eval_str=True).replace(return_annotation=CallToolResult)   # type: ignore[attr-defined]
     return wrapper
 
 

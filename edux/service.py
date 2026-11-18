@@ -240,9 +240,15 @@ def _mcq_after(steps: list[dict], last: dict) -> dict | None:
     return step["mcq"] if step and step["move"] == "ask_mcq" else None
 
 
+def compact_json(result: object) -> str:
+    """A tool result as the text the chatbot receives: JSON without spaces or newlines, non-ASCII characters
+    written as they are (a "£" is one character, not six)."""
+    return json.dumps(result, default=str, ensure_ascii=False, separators=(",", ":"))
+
+
 def result_size(result: object) -> int:
-    """Characters in a tool result's JSON, as the call log counts them."""
-    return len(json.dumps(result, default=str))
+    """Characters in a tool result as sent (compact_json), which is what the call log and the budget count."""
+    return len(compact_json(result))
 
 
 def fit_budget(out: dict) -> dict:
@@ -712,7 +718,7 @@ def my_progress(student: dict, include_parts: bool = False, at: str | None = Non
     at = at or learner.now_iso()
     s, student_id = _settings(), student["id"]
     reviews = learner.due_reviews(student_id, _context().limits.get("reviews_due", 3), at)
-    return {
+    out = {
         "tree": _tree(student_id, at, include_parts),
         "levers": _levers(student_id, at, s.progress.levers),
         "weak_links": _weak_links(student_id, at, s.progress.weak_links),
@@ -722,6 +728,21 @@ def my_progress(student: dict, include_parts: bool = False, at: str | None = Non
         "ai_literacy": _ai_literacy(student_id, at),
         "study_pattern": _study_pattern(student_id),
     }
+    return out if include_parts else fit_progress(out)
+
+
+PROGRESS_TRIM_ORDER = ("weak_links", "reviews_due", "levers")   # lowest-ranked item first: each list is ranked best first
+
+
+def fit_progress(out: dict) -> dict:
+    """Keep the levels-only get_my_progress within results.max_chars by dropping the last, lowest-ranked item of
+    weak_links, then reviews_due, then levers, until it fits. The tree, trends, ai_literacy and study_pattern are
+    never cut, and the every-part view (include_parts) is left as it is: the student asked for it."""
+    limit = _settings().results.max_chars
+    for name in PROGRESS_TRIM_ORDER:
+        while out.get(name) and result_size(out) > limit:
+            out[name] = out[name][:-1]
+    return out
 
 
 # --- profile -------------------------------------------------------------------
@@ -839,8 +860,9 @@ def log_call(student_id: str | None, tool: str, started: datetime, ms: float, re
 
 
 def over_budget(tool: str, result_chars: int) -> bool:
-    """A tutor_turn result over results.max_chars, after fit_budget dropped what it could."""
-    return tool == "tutor_turn" and result_chars > _settings().results.max_chars
+    """A tutor_turn or get_my_progress result over results.max_chars, after fit_budget or fit_progress dropped what
+    they could. (The every-part view of get_my_progress is over by design and is flagged.)"""
+    return tool in ("tutor_turn", "get_my_progress") and result_chars > _settings().results.max_chars
 
 
 def _percentile(values: list[float], share: float) -> float:
