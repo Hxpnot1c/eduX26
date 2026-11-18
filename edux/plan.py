@@ -58,7 +58,7 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "ask_mcq_how_ai_works": ({"purpose", "options", "answer_type"}, {"extra_option"}),
     "extend": ({"answer_type"}, set()),
     "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "correct_option", "purpose", "points_met", "missing",
-                                             "intuition"}),
+                                             "intuition", "secure"}),
     "offer_stop": ({"minutes", "quick_parts"}, set()),
     "reask": ({"asked"}, {"answer_type", "skill"}),
     "reteach": (set(), {"missing", "anchor", "point", "level", "answer_type"}),
@@ -546,6 +546,8 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
         return urgent if _urgent(urgent) else reask(pending)
     if answer and evidence:
         first, retry = feedback(answer, evidence)
+        if evidence["score"] >= settings.bkt.correct_share and learner.level(turn.p(evidence["part_id"])) == "secure":
+            first = _refill({**first, "data": {**first["data"], "secure": True}})   # right at secure: confirm, no why
         steps.append(first)
         handled |= set(evidence["misconception_ids"])
         if answer["type"] == "prequestion" or evidence.get("purpose") == "intuition":

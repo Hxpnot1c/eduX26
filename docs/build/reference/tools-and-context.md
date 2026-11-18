@@ -154,7 +154,7 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
 | `show` | no: an `ask_mcq` check follows | 05b | | `point`, `note` | notes | 30 |
 | `explain_back` | yes **(stop)** | 05b | `teach_explain_back` | | none | 25 |
 | `extend` | yes **(stop)** | 05b | | | causal | 35 |
-| `feedback` | no | 05b | `correct_misconception` (05c) | `correct`, `points_met`, `misconceptions` (picked, shown or held) | misconceptions | 45 |
+| `feedback` | no | 05b | `correct_misconception` (05c) | `correct`, `points_met`, `misconceptions` (picked, shown or held), `secure` (a right answer on a part at secure: confirm, no why) | misconceptions | 45 |
 | `reteach` | yes **(stop)**, unless an `ask_mcq` check follows | 05c | `reteach_gap`, `switch_approach` (05c), `reteach_point` (05d) | `missing` or `point`, `anchor`, `answer_type` | notes, anchor | 45 |
 | `answer_brief` | no | 05c | | | notes | 20 |
 | `reask` | yes **(stop)** | 05c | `literacy_followup` (05e) | `pending` | none | 20 |
@@ -164,7 +164,7 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
 | `literacy_task` | yes **(stop)** when `data.task` | 05e | | `skill`, `level`, `task`, `features`, `pattern` | none | 35 |
 | `source_conflict` | no | 05e | | | none | 25 |
 
-- **Sharing.** `feedback` is the only move that names a misconception (picked, shown or held) and corrects it, in one line each. `reteach` never repeats that: it re-teaches only what was missed, a different way in.
+- **Sharing.** `feedback` is the only move that names a misconception (picked, shown or held) and corrects it: the wrong idea, one line on why it's wrong, then the right idea, with no praise. A right answer gets one line on why it's right, unless the part is at secure (`data.secure`, tune-from-research). `reteach` never repeats that: it re-teaches only what was missed, a different way in.
 - **Interim set (05c).** Step 05c builds the sections and cues for the moves that exist before server-built MCQs: `prequestion`, `check_prereq`, `step_back`, `review_recall`, `review_transfer`, `teach_worked_example`, `teach_hint_procedural`, `teach_hint_conceptual`, `teach_explain_back`, `show`, `feedback`, `reteach`, `extend`, `answer_brief`, `reask`, `offer_stop` and `ask_which` (17). It already merges `correct_misconception` into `feedback`, and `reteach_gap` and `switch_approach` into `reteach`.
 - **05d** replaces the asking moves with `ask_mcq`, the teach levels with `teach_point`, and renames `teach_explain_back` to `explain_back`, deleting the old texts. **05e** adds three moves and folds `literacy_followup` into `reask`.
 - **Word budget.** The sections above total about 510 words with their headings. With `server_instructions.md` (about 200) and `style.md` (about 90), the whole is about 800, under `instructions.max_words = 900`. As built in 05c, the 17 interim sections with the 10 rules come to about 880 words, so 05d's cut to 11 moves must land before 05e adds three.
@@ -186,7 +186,7 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
 - `score_next` ids are letters, `a`, `b`, `c`… per part in point order (step 05c). A research turn's `score_next` always includes `ail_verify`'s ticks (step 05e).
 - `style`, sent only on the first `tutor_turn` of a session or when `client`, `interests` or `max_words` changed since it was last sent (step 05c):
   - `max_words`: the profile's `answer_length`, else `style.max_words`. It limits the explanation only; MCQ options don't count.
-  - `interests`: from the profile.
+  - `interests`: from the profile. When empty, the chatbot uses a neutral everyday example (tune-from-research: it no longer guesses from what it knows about the student).
   - `format`: `text/format/<client>.md`, the first of `claude`, `chatgpt` or `gemini` contained in `client`, else `default`.
 - `reference`: only the blocks the plan's moves use, from `[moves.<move>] reference` in `context.toml` (step 05c), and only those in the profile. `misconceptions.held` is the step part's held misconceptions, in full. `misconceptions.watch_for` goes only with moves that ask something (`[watch_for] moves`), as `id` and `wrong_idea` only, so the chatbot can tag a new one. `exam_relevance` is added only when the message mentions an exam or a command word. Before 05c: the profile's blocks that are not plan inputs. Plan inputs are `focus`, `prequestion`, `support`, `session` and `reviews_due`; `teaching_note` is never sent. A block that is only `{"items": [...]}` is sent as the list. The move texts say to use reference only when it helps the current step.
 - `candidates` appears when the focus is ambiguous, and `unknown_ids` when `node_ids` had unknown ids.

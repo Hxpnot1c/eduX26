@@ -1,1 +1,1 @@
-One line on their answer; correct each listed wrong idea in one line.
+One line on their answer; each listed wrong idea: name it, why, the right idea.
