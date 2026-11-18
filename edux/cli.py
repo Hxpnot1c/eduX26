@@ -70,6 +70,17 @@ def cmd_evidence(student: str, part: str, evidence_type: str, score: float, ts: 
     return 0
 
 
+def _learning_line(student: str, at: str | None) -> str:
+    """The personal learning-rate offset for the current (or next) session: CLI only, never shown to students or
+    teachers (personal-learning-rate)."""
+    if not learner.personalisation_on():
+        return "learning rate: personalisation off"
+    session = learner.session_state(student, at)
+    found = learner.learning_offset(student, session["session_id"] if session else at)
+    return (f"learning rate: offset {found['offset']:+.2f} log-odds (x{found['weight']:.2f} odds) "
+            f"from n={found['n']} pieces of evidence")
+
+
 def cmd_state(student: str, node: str | None = None, at: str | None = None) -> int:
     """Print parts with p_now, level and due date."""
     if learner.get_student(student) is None:
@@ -84,6 +95,7 @@ def cmd_state(student: str, node: str | None = None, at: str | None = None) -> i
     roots = [graph.get_node(node)] if node else graph.topics()
 
     print(_session_line(learner.session_state(student, at)))
+    print(_learning_line(student, at))
     print(f"{'part':24} {'level':10} {'p_now':>5} {'p_known':>7} {'half-life':>9} {'checks':>6} {'chats':>5}  "
           f"{'last correct':12} review due")
     for root in roots:
