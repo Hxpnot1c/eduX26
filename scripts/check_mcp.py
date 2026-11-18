@@ -9,7 +9,7 @@ example-mini pack loaded and the demo students seeded. It:
 - runs the point-by-point loop on ped_formula as the student through tutor_turn (intuition MCQ answered wrongly, each point and its
   check, a wrong letter and its re-teach, the explain-back), then an explain-back missing a point and a question
   asked instead of an answer, and checks each plan, the letters scored from the stored map, the misconception
-  state, that every reply in the loop ends in one question, result sizes against the budget, style, known terms,
+  state, that every reply in the loop ends in one question, every tutor_turn result and the levels-only get_my_progress within the budget (counted as sent), style, known terms,
   watch-for misconceptions, and that no p_now reaches the chatbot;
 - checks "I know this", "just show me" (and no discount after it), a lost letter map, a wrong intuition answer
   followed by teaching (demo-weak), a prerequisite check and a
@@ -50,7 +50,7 @@ import httpx
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
-from edux import graph, learner
+from edux import graph, learner, service
 from edux.settings import load_settings
 
 EXPECTED_TOOLS = {"tutor_turn", "get_my_progress", "update_my_profile"}
@@ -234,12 +234,12 @@ async def conversation(keyed: str, student: str) -> None:
     check("style" in turns[0] and not any("style" in t for t in turns[1:]),
           "style comes with the first call of a session only", ", ".join(str("style" in t) for t in turns))
     for i, t in enumerate(turns, 1):
-        print(f"     turn {i}: {len(json.dumps(t))} chars")
-    sizes = [len(json.dumps(t)) for t in turns]
+        print(f"     turn {i}: {service.result_size(t)} chars")
+    sizes = [service.result_size(t) for t in turns]
     limit = load_settings().results.max_chars
     over = learner._conn().execute("SELECT COALESCE(SUM(over_budget), 0) FROM call_log WHERE student_id = ? AND tool = 'tutor_turn'",
                                    (student,)).fetchone()[0]
-    check(statistics.median(sizes) <= limit and over == 0, f"the median result is at most {limit} characters, none over budget",
+    check(max(sizes) <= limit and over == 0, f"no tutor_turn result is over {limit} characters, none over budget",
           f"median {statistics.median(sizes):.0f}, largest {max(sizes)}, {over} over budget")
     leaked = [i + 1 for i, t in enumerate(turns) if "p_now" in json.dumps(t)]
     check(not leaked, "no p_now in tutor_turn output", f"found in turn(s) {leaked}" if leaked else "")
@@ -918,6 +918,9 @@ async def main(url: str, key: str, student: str) -> None:
     progress = await call(keyed, "get_my_progress", {})
     check({"tree", "levers", "reviews_due", "trends"} <= set(progress) and "p_now" not in json.dumps(progress),
           "get_my_progress (levels only)", f"{len(progress.get('levers', []))} levers")
+    check(service.result_size(progress) <= load_settings().results.max_chars,
+          f"get_my_progress (levels only) is at most {load_settings().results.max_chars} characters",
+          f"{service.result_size(progress)} characters")
     profile = await call(keyed, "update_my_profile", {"interests": "football"})
     check(profile.get("ok") is True, "update_my_profile", json.dumps(profile.get("profile")))
 
