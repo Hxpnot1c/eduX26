@@ -5,7 +5,7 @@ Branch `build/fix-result-size`, from `main` once step 05v (#46) is merged.
 ## What
 - Tool results are sent as compact JSON text and sized from that same text, so the number in `call_log.result_chars` is the number the chatbot receives.
 - `service.fit_progress` keeps the levels-only `get_my_progress` within `results.max_chars` by dropping the lowest-ranked list items (`weak_links`, then `reviews_due`, then `levers`).
-- `over_budget` covers `get_my_progress` as well as `tutor_turn`.
+- `over_budget` covers every tool. The every-part view of `get_my_progress` has its own limit, `results.max_chars_full_progress` (4,000, an engineering budget), and is trimmed to it.
 - `scripts/check_mcp.py` requires every `tutor_turn` result in the loop, and the levels-only `get_my_progress`, to be within the limit. It used to check the median.
 - A failed `call_log` write is printed on stderr and never replaces the tool's result; stored error text is cut to 200 characters.
 
@@ -27,4 +27,4 @@ The MCP SDK pretty-prints results with `indent=2`, so the old count (`json.dumps
 - No migration, and the instruction word count is unchanged.
 
 ## Notes
-`get_my_progress` with `include_parts` is over the limit by design (about 3,100 characters for `demo-secure`). It is flagged, not trimmed. Whether to trim it is Vishnu's call.
+The 2,400 gate covers every tool; the every-part view is the only exception. Before the freeze, run the demo once in claude.ai and confirm the chatbot reads the compact JSON normally; if any client needs the indented form, follow decision 0004's fallback.

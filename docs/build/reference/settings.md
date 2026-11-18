@@ -193,7 +193,8 @@ length_known_share = 0.5   # a review or check on a part at developing or above:
 length_fatigued_share = 0.4   # every step while fatigued; neither shrinks a student's own answer_length
 
 [results]                  # size of a tutor_turn or levels-only get_my_progress result, in characters of compact JSON as sent (steps 05c, 05w)
-max_chars = 2400           # engineering budget, about 600 tokens, not from research; over this, reference blocks (tutor_turn) or the lowest-ranked list items (get_my_progress) are dropped, then the call is logged as over budget
+max_chars = 2400           # engineering budget, about 600 tokens, not from research; every tool. Over this, reference blocks (tutor_turn) or the lowest-ranked list items (get_my_progress) are dropped, then the call is logged as over budget
+max_chars_full_progress = 4000   # engineering budget, not from research: get_my_progress with include_parts, the one view allowed to be larger
 
 [instructions]             # the MCP server instructions, sent once per chat (step 05c)
 max_words = 900            # server_instructions.md + style.md + every move section; over this is a startup error

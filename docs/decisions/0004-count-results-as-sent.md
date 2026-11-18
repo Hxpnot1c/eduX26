@@ -18,8 +18,9 @@ Separately, the `finally` block in `timed()` called `service.log_call` without p
 ## Decision
 
 - Send every tool result as **compact JSON text** (no spaces or newlines, non-ASCII characters unescaped) and count its size from that same text (`service.compact_json`, `service.result_size`). Counted equals sent.
-- Add `service.fit_progress`: when the levels-only `get_my_progress` is over `results.max_chars`, drop the last, lowest-ranked item of `weak_links`, then `reviews_due`, then `levers`, until it fits. The tree, trends, AI-literacy block and study pattern are never cut. The every-part view (`include_parts`) is left whole because the student asked for it, and is flagged over budget.
-- Extend `over_budget` to `get_my_progress`.
+- Add `service.fit_progress`: when the levels-only `get_my_progress` is over `results.max_chars`, drop the last, lowest-ranked item of `weak_links`, then `reviews_due`, then `levers`, until it fits. The tree, trends, AI-literacy block and study pattern are never cut. The every-part view (`include_parts`) is trimmed the same way, to its own larger limit.
+- Extend `over_budget` to every tool.
+- Give the every-part view (`get_my_progress` with `include_parts`) its own limit, `results.max_chars_full_progress = 4000`, so it is trimmed to that instead of being flagged. It is an engineering budget, not a research finding. The 2,400 gate covers every tool; this view is the only exception (Vishnu's decision, 18 November).
 - Make `scripts/check_mcp.py` require that **every** `tutor_turn` result in the loop, and the levels-only `get_my_progress`, is within the limit, counted as sent.
 - Wrap logging in `timed()` so a logging failure is printed on stderr and the result is still returned. Cut stored and printed error text to 200 characters.
 - `results.max_chars` stays 2,400. It is an engineering budget (about 600 tokens), not a research finding.
@@ -33,7 +34,8 @@ The only external fact is how the SDK serialises results: `pydantic_core.to_json
 ## Alternatives considered
 
 - **Count the indented text instead.** Honest, but it makes the same limit about 35% tighter, so more reference blocks would be dropped from `tutor_turn` and the teaching content would change a day before the freeze. Sending compact text keeps the content and removes the whitespace the chatbot does not need.
-- **Raise the limit.** Rejected: the gate is the handover's number.
+- **Raise the single limit.** Rejected: the gate is the handover's number. Only the every-part view gets a second limit.
+- **Flag the every-part view and leave it whole.** The first version of this pull request did that. Vishnu preferred a separate limit that is enforced.
 - **Drop whole blocks from `get_my_progress`** (for example `trends`). Rejected: it changes what a student sees. Trailing list items are the lowest-ranked by construction.
 - **Fix only the count and leave the check as a median.** Rejected: the gate says "no tool result is over".
 
@@ -41,7 +43,7 @@ The only external fact is how the SDK serialises results: `pydantic_core.to_json
 
 - Chatbots receive compact JSON instead of indented JSON. The content is identical, and the model reads either. Characters sent fall by roughly a quarter to a third.
 - A student with many reviews or weak links may see one or two fewer list items in `get_my_progress`, only when the result would otherwise be over budget.
-- `get_my_progress` with `include_parts` is flagged `OVER BUDGET` in the console and the call log whenever it exceeds the limit (it did, at about 3,100 characters for `demo-secure`). That is accurate, and it is a decision for Vishnu whether to trim that view too.
+- `get_my_progress` with `include_parts` is allowed up to 4,000 characters (about 3,200 for `demo-secure`) and is flagged `OVER BUDGET` only above that. The 4,000 is a judgement call, labelled as an engineering budget.
 - No migration. Instruction word count unchanged (897 of 900).
 
 ## Verification
@@ -51,8 +53,8 @@ The only external fact is how the SDK serialises results: `pydantic_core.to_json
 python scripts/check_mcp.py --url http://127.0.0.1:8765/mcp   # all checks passed
 ```
 
-Measured on the seeded demo: levels-only `get_my_progress` 2,355 characters sent (was 3,571); after the check run's own activity 2,149 (was 2,425 before trimming); largest `tutor_turn` in the loop 2,278; none flagged over budget. New tests cover the compact text, counted equals sent, a failing `log_call` not replacing the result, error cutting, and `fit_progress`.
+Measured on the seeded demo (every-part view 3,196 against its 4,000 limit): levels-only `get_my_progress` 2,355 characters sent (was 3,571); after the check run's own activity 2,149 (was 2,425 before trimming); largest `tutor_turn` in the loop 2,278; none flagged over budget. New tests cover the compact text, counted equals sent, a failing `log_call` not replacing the result, error cutting, and `fit_progress`.
 
 ## What would change our mind
 
-If a chatbot client proves to need the indented form or `structuredContent`, send both and count the larger. If the 2,400 budget turns out to hurt teaching (reference blocks dropped too often in real use), raise it from measured token counts, not by feel.
+If a chatbot client proves to need the indented form or `structuredContent`, send both and count the larger. The compact form still has to be confirmed in claude.ai once, before the freeze: run the demo with it and check the chatbot reads results normally. If the 2,400 budget turns out to hurt teaching (reference blocks dropped too often in real use), raise it from measured token counts, not by feel.
