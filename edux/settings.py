@@ -159,6 +159,7 @@ class Session:
 @dataclass(frozen=True)
 class Engagement:
     passive_run: int
+    low_share: float
 
 
 @dataclass(frozen=True)

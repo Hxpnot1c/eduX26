@@ -22,7 +22,8 @@ Order (first match wins for the main step):
   weak prereq     -> ask_mcq (prereq) (level new, not checked this session)
   held misconc.   -> feedback with the held misconception (unless already corrected this session), then teaching
   otherwise       -> teaching: teach_point and ask_mcq (check) on the point reached; after the last point, or
-                     for a secure part, explain_back of the whole part
+                     for a secure part, explain_back of the whole part (a coasting student, passive or "just show
+                     me" for engagement.low_share of recent messages: their weakest point only)
 Every multiple-choice question is built, lettered and scored by the server (ask_mcq). Without an answer, or after
 a complete explain-back, a plan with no stop step gets extend or one due review. feedback is the only move that
 names misconceptions; reteach never repeats them.
@@ -70,6 +71,7 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "reteach": (set(), {"missing", "anchor", "point", "level", "answer_type"}),
     "show": ({"point"}, {"note"}),
     "explain_back": ({"answer_type"}, set()),
+    "explain_back_point": ({"answer_type", "point", "point_id"}, set()),
     "teach_point": ({"index", "total", "point", "exemplar", "level", "max_words"}, set()),
     "answer_with_sources": ({"trusted_sources"}, set()),
     "literacy_task": ({"skill", "level", "task", "features", "pattern"}, {"answer_type"}),
@@ -294,6 +296,8 @@ def feedback(answer: dict, evidence: dict) -> tuple[dict, dict | None]:
         return _step("feedback", part, {"type": "prequestion", "correct": evidence["score"] == 1.0,
                                         "correct_idea": core_idea(part), "misconceptions": shown}), None
     points = graph.score_points(part)
+    if evidence.get("scope"):   # an explain-back of one point is answered on that point only
+        points = [p for p in points if p["id"] in evidence["scope"]]
     met = set(evidence.get("points_met") or [])
     first = _step("feedback", part, {"type": answer["type"], "points_met": [p["point"] for p in points if p["id"] in met],
                                      "misconceptions": shown})
@@ -426,7 +430,7 @@ def teach(turn: Turn, part_id: str, settings: Settings, progress: dict) -> list[
         return [check(turn, part_id, state["index"], settings)]
     if level == "explain_back" or state["index"] > len(points):
         progress.pop(part_id, None)
-        return [_step("explain_back", part_id)]
+        return [explain_back(turn, part_id, points, settings)]
     point = points[state["index"] - 1]
     return [_step("teach_point", part_id, {"index": state["index"], "total": len(points), "point": point["point"],
                                            "exemplar": point["exemplar"], "level": level,
@@ -457,6 +461,18 @@ def two_option_check(turn: Turn, part_id: str, index: int, settings: Settings) -
     q = question(part_id, "check", point["point"], settings, point_id=point["id"])
     q = {**q, "wrong": q["wrong"][:1], "extra": not q["wrong"]}
     return ask_mcq(turn, q, {"index": index})
+
+
+def explain_back(turn: Turn, part_id: str, points: list[dict], settings: Settings) -> dict:
+    """explain_back of the whole part; for a coasting student (passive or "just show me" for at least
+    engagement.low_share of their recent messages), of their weakest point only, scored on that point."""
+    ids = [p["id"] for p in points if p["id"]]
+    share = learner.coasting_share(turn.student_id, turn.at)
+    if len(ids) < 2 or share is None or share < settings.engagement.low_share:
+        return _step("explain_back", part_id)
+    weakest = learner.weakest_point(turn.student_id, part_id, ids)
+    point = next(p for p in points if p["id"] == weakest)
+    return _step("explain_back", part_id, {"point": point["point"], "point_id": weakest}, key="explain_back_point")
 
 
 def shown_or_skipped(turn: Turn, part_id: str, settings: Settings, progress: dict, choice: str) -> list[dict]:
@@ -728,6 +744,9 @@ def score_next(plan: list[dict]) -> dict[str, list[dict]]:
             continue
         if step["move"] in ASKS and not by_option and step["part_id"] and step["part_id"] not in out:
             points = lettered(step["part_id"])
+            if step["data"].get("point_id") and step["move"] == "explain_back":   # one point: its own letter only
+                ids = [p["id"] for p in graph.score_points(step["part_id"])]
+                points = [points[ids.index(step["data"]["point_id"])]] if step["data"]["point_id"] in ids else points
             if points:
                 out[step["part_id"]] = points
     return out

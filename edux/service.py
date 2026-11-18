@@ -56,6 +56,17 @@ def offered_in(steps: list[dict]) -> set[str]:
     return {step["data"].get("reason", "fatigued") for step in steps if step["move"] in ("offer_choice", "offer_stop")}
 
 
+def _narrowed(evidence: dict, last_plan: list[dict]) -> dict:
+    """An explain-back the last plan asked about one point (a coasting student, engagement-rules) is scored on
+    that point only: 1 if they produced it, else 0, with its point_id."""
+    step = next((s for s in last_plan if s["move"] == "explain_back" and s["part_id"] == evidence["part_id"]
+                 and s["data"].get("point_id")), None)
+    if step is None:
+        return evidence
+    point = step["data"]["point_id"]
+    return {**evidence, "score": float(point in (evidence.get("points_met") or [])), "point_id": point, "scope": [point]}
+
+
 def _this_session(student_id: str, last: dict, at: str) -> tuple[set[str], frozenset[str]]:
     """(misconceptions already corrected, offer_choice reasons already offered) this session, carried in
     issued_plan while the session lasts."""
@@ -349,6 +360,8 @@ def tutor_turn(
         evidence, lost = None, True
     except ValueError as e:
         return {"ok": False, "error": str(e)}
+    if evidence and evidence["type"] == "explain_back":
+        evidence = _narrowed(evidence, last["plan"])
 
     if not node_ids and (evidence or lost):   # an answer continues the last turn's topic (after a prereq check or review too)
         # an AI-literacy part never becomes the course focus

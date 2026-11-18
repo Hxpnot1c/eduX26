@@ -97,7 +97,7 @@ At most two steps (three from step 05d, for feedback, `teach_point` and `ask_mcq
 9. Otherwise → `teach` at the support level. The try / hint / show-me line closes the teaching step:
    - `worked_example`: a short example, then "try this one, or ask for a hint";
    - `hint`: a completion problem for `calculation` and `diagram` parts, otherwise an example and a guiding question;
-   - `explain_back` **(stop)**: ask them to explain it.
+   - `explain_back` **(stop)**: ask them to explain it. For a coasting student (engagement-rules), when at least `engagement.low_share` of their last `session.signal_window` messages this session were `passive` or "just show me", it asks about their weakest point only (`data.point`, `data.point_id`, cue `explain_back_point`). The weakest point has the lowest mean score on evidence that asked it; a point never asked counts as 0.5, and ties go to the earlier point. The answer is scored on that point alone (1 or 0, with its `point_id`), `score_next` lists only its letter, and feedback and reteach cover only that point.
 
 **Without an answer,** when the main step isn't a stop step or `show`, a second step is added: `extend` if earned, otherwise the top due `review` (in its mode, `recall` or `transfer`; an `ask_mcq` with purpose `review` from step 05d), otherwise nothing.
 
@@ -155,7 +155,7 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
 | `ask_mcq` | yes **(stop)** | 05d | `prequestion`, `intuition_mcq`, `check_mcq`, `check_prereq`, `step_back`, `review_recall`, `review_transfer` | `purpose` (`intuition` / `check` / `prereq` / `review` / `how_ai_works`, 05e), `options`, `extra_option`; `note` and `via` (intuition), `stuck` (prereq), `mode` and `new_context` (review) | none | 60 |
 | `teach_point` | no: an `ask_mcq` check follows | 05d | `teach_worked_example`, `teach_hint_procedural`, `teach_hint_conceptual` | `index`, `total`, `point`, `exemplar`, `level` | notes, misconceptions | 45 |
 | `show` | no: an `ask_mcq` check follows | 05b | | `point`, `note` | notes | 30 |
-| `explain_back` | yes **(stop)** | 05b | `teach_explain_back` | | none | 25 |
+| `explain_back` | yes **(stop)** | 05b | `teach_explain_back` | `point`, `point_id` (one point, for a coasting student) | none | 35 |
 | `extend` | yes **(stop)** | 05b | | | causal | 35 |
 | `feedback` | no | 05b | `correct_misconception` (05c) | `correct`, `points_met`, `misconceptions` (picked, shown or held), `secure` (a right answer on a part at secure: confirm, no why) | misconceptions | 45 |
 | `reteach` | yes **(stop)**, unless an `ask_mcq` check follows | 05c | `reteach_gap`, `switch_approach` (05c), `reteach_point` (05d) | `missing` or `point`, `anchor`, `answer_type` | notes, anchor | 45 |

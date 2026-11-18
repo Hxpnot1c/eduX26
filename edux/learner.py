@@ -958,6 +958,28 @@ def passive_streak(student_id: str, at: str | datetime | None = None) -> int:
     return run
 
 
+def coasting_share(student_id: str, at: str | datetime | None = None) -> float | None:
+    """The share of the student's last session.signal_window messages this session that were passive or asked to
+    be shown ("just show me", or labelled offloading), or None with no messages (engagement-rules)."""
+    conn, at_ts = _conn(), _event_ts(at)
+    start = session_start(conn, student_id, at_ts)
+    rows = conn.execute("""SELECT engagement, offloading, choice_taken FROM exchange_log WHERE student_id = ? AND ts >= ?
+                           AND ts <= ? ORDER BY ts DESC, id DESC LIMIT ?""",
+                        (student_id, start, at_ts, _settings().session.signal_window)).fetchall()
+    if not rows:
+        return None
+    return sum(1 for r in rows if r["engagement"] == "passive" or r["offloading"] or r["choice_taken"] == "just_show_me") / len(rows)
+
+
+def weakest_point(student_id: str, part_id: str, point_ids: list[str]) -> str:
+    """The point the student has done worst on: the lowest mean score of evidence that asked that point
+    (point_id), with a point never asked counting as 0.5; the earlier point on a tie."""
+    rows = _conn().execute("SELECT point_id, AVG(score) AS mean FROM evidence_log WHERE student_id = ? AND part_id = ? "
+                           "AND point_id IS NOT NULL GROUP BY point_id", (student_id, graph.canonical(part_id))).fetchall()
+    means = {r["point_id"]: r["mean"] for r in rows}
+    return min(point_ids, key=lambda p: (means.get(p, 0.5), point_ids.index(p)))
+
+
 def shows_this_session(student_id: str, part_id: str, at: str | datetime | None = None) -> int:
     """How many messages this session asked to be shown the part ("just show me", or labelled offloading),
     including one at at itself (engagement-rules)."""

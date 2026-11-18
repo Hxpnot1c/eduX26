@@ -117,6 +117,8 @@ pattern_min_sessions = 3   # sessions with a fatigue onset before study_pattern 
 
 [engagement]               # in-session engagement rules (engagement-rules); never stored as a trait
 passive_run = 4            # passive messages in a row before offer_choice offers ways on (once a session, never when fatigued)
+low_share = 0.5            # passive or "just show me" share of the last session.signal_window messages at or above which the
+                           # explain-back asks for the weakest point only
 
 [show]                     # "just show me" (engagement-rules)
 max_per_part_session = 2   # after this many shows of one part in a session, the next first asks a 2-option question on the point
