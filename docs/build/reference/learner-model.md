@@ -131,7 +131,7 @@ A review queued by an exchange keeps any earlier due date already in the queue. 
 ### 7. AI-literacy skills (step 05e)
 The parts `ail_ask`, `ail_verify` and the four `ail_how_*` parts (`fabrication`, `confidence`, `cutoff`, `agreement`), loaded with every pack (see `course-pack-format.md`), are tracked like any other part: decay, spacing and levels. They have a fixed importance (`literacy.importance`) and are left out of the course tree, levers, candidates, search and course reviews (they are practised through their tasks and checks).
 - **`ail_question`** on `ail_ask`, on every research question: score = question features present / 4.
-- **`ail_task`** on `ail_verify`: the student's reply to a verify task, scored by the ticks they produced / 4. An ignored task (any skill) is recorded as `ail_task` with score 0 on that skill's part after `literacy.max_followups` re-asks.
+- **`ail_task`** on `ail_verify`: the student's reply to a verify task, scored by the ticks they produced / 4. An ignored task (any skill) is recorded as `ail_task` with score 0 on that skill's part after `literacy.max_followups` re-asks. A task that was never re-asked expires at session end with no score.
 - **`ail_unprompted`** on `ail_verify`: the student reports checking a claim without being asked. Its slip is lower, so it counts more.
 - **`ail_how`** on an `ail_how_*` part: a how-AI-works multiple-choice check, scored 1 or 0 from the letter. A wrong pick activates that misconception (section 5). An ignored check is recorded as 0 after `literacy.max_followups` re-asks.
 

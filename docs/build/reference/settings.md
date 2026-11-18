@@ -33,9 +33,6 @@ ail_task = { slip = 0.10, guess = 0.15 }         # the answer to a verify task, 
 ail_unprompted = { slip = 0.05, guess = 0.10 }   # checking a claim without being asked: counts more
 ail_how = { slip = 0.10, guess = 0.25 }          # a how-AI-works check: 4-option multiple choice
 mcq_check = { slip = 0.10, guess = 0.25 }   # a multiple-choice check on one point (step 05d); guess about 1 in 4 options
-ail_question = { slip = 0.15, guess = 0.20 }    # question features of a research question (step 05e)
-ail_task = { slip = 0.10, guess = 0.15 }        # a literacy task done when asked
-ail_unprompted = { slip = 0.05, guess = 0.10 }  # checking a claim without being asked: counts more
 
 [nudges]                   # small odds multipliers from an ordinary exchange
 depth = { surface = 1.0, mechanism = 1.0, transfer = 1.1 }   # a basic question doesn't lower the estimate; evidence does that
@@ -180,15 +177,6 @@ warn_max = 4               # and above this many
 max_options = 4            # correct option plus up to this many minus one misconceptions
 min_distractors = 2        # fewer misconceptions: the chatbot may write one extra distractor; also a validation warning
 # one intuition question per part, whatever the answer; teaching follows it
-
-[literacy]                 # AI-literacy coaching (step 05e)
-secure_every = 3           # at secure, a task every this many research turns
-max_followups = 1          # re-asks of an ignored task before it scores 0
-max_followups = 1          # re-asks of an ignored literacy task before it scores 0
-max_waits = 2              # replies a literacy task waits behind a course question before it takes the question slot
-ask_min_features = 2       # fewer question features than this: coach the question (Ask), else Verify
-how_secure_every = 3       # at secure, a how-AI-works check every this many triggers for that part
-importance = 0.5           # fixed importance of the AI-literacy parts
 ```
 
 ## context.toml
