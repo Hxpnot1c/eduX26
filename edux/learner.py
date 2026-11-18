@@ -8,6 +8,7 @@ Every rule runs at the event's own timestamp, so replaying gives the same state.
 from __future__ import annotations
 
 import functools
+import math
 import os
 import queue
 import re
@@ -741,8 +742,20 @@ def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, sli
         """UPDATE approach_record SET next_check_correct = ? WHERE id = (SELECT id FROM approach_record
            WHERE student_id = ? AND part_id = ? AND next_check_correct IS NULL ORDER BY ts DESC, id DESC LIMIT 1)""",
         (int(correct), student_id, part_id))
-    gap = max(s.scheduling.min_gap_days, review_gap_days(student_id, part_id, t))
-    _queue_review(conn, student_id, part_id, t + timedelta(days=gap), "scheduled", replace=True)
+    gap, reason = review_gap_days(student_id, part_id, t), "scheduled"
+    below = days_until_below(state, s.scheduling.review_when_below)
+    if below is not None and below < gap:
+        gap, reason = below, "recall_below"
+    gap = max(s.scheduling.min_gap_days, gap)
+    _queue_review(conn, student_id, part_id, t + timedelta(days=gap), reason, replace=True)
+
+
+def days_until_below(state: dict, threshold: float) -> float | None:
+    """Days from the clock's start until p_now decays below threshold, or None when it never crosses it: no clock
+    yet (nothing learnt, nothing to forget) or p_known already at or below it."""
+    if not state["clock_start"] or state["p_known"] <= threshold:
+        return None
+    return state["half_life_days"] * math.log2(state["p_known"] / threshold)
 
 
 # --- reading state ---------------------------------------------------------

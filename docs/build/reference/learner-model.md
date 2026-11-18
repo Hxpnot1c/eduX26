@@ -152,7 +152,8 @@ gap = share × days_to_exam
 
 - `share` comes from `scheduling` based on days to the student's next relevant exam paper (`exam_date_override` wins if set).
 - The gap is floored at `min_gap_days`.
-- `due = now + gap`, with reason `scheduled`
+- **Recall threshold:** when a clock is running and `p_known > scheduling.review_when_below`, the part is also due when `p_now` is expected to fall below that threshold, `half_life × log2(p_known / review_when_below)` days on. If that comes first, it replaces the share gap (still floored at `min_gap_days`) with reason `recall_below`. A part already below the threshold, or with no clock, uses the share gap only.
+- `due = now + gap`, with reason `scheduled` (or `recall_below`)
 
 Shares are adapted from Cepeda et al. (2008): the optimal gap shrinks as the test gets closer, but it is a larger share of the time left (0.10 far, 0.19 mid, 0.30 near; tune-from-research). With no exam date, `base_half_life_days` is used as the gap.
 
