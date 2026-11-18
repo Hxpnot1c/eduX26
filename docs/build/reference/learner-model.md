@@ -123,7 +123,7 @@ odds ×= depth[question_depth] × engagement[engagement]
 p = max(p_before, min(odds / (1 + odds), nudges.ceiling))
 ```
 
-**The ceiling (protocol v0.3).** Talk is not evidence, so an exchange can lift a part only up to `nudges.ceiling` (0.40, never above `levels.new`). It never lowers a part, and it does nothing to a part that evidence has already lifted past the ceiling. Before v0.3 about 14 messages labelled both `transfer` and `constructive` could reach "secure" with no answer tested. Decision record 0003 has the reasoning.
+**The ceiling (protocol v0.3).** Talk is not evidence, so an exchange can lift a part only up to `nudges.ceiling` (0.35, strictly below `levels.new`, so a part moved by talk alone always shows "new"). It never lowers a part, and it does nothing to a part that evidence has already lifted past the ceiling. Before v0.3 about 14 messages labelled both `transfer` and `constructive` could reach "secure" with no answer tested. Decision record 0003 has the reasoning.
 
 If the exchange is tagged with a concept rather than parts, each of its parts gets the nudge at `concept_tag_strength` (the multiplier's distance from 1 is scaled). The same strength scales the clock refresh.
 
