@@ -324,20 +324,21 @@ CHECKS = ("check", "review", "prereq")   # ask_mcq purposes that check a part (r
 
 
 def reply_style(steps: list[dict], student: dict, turn: context_blocks.Turn, blocks: dict) -> list[dict]:
-    """Per-step reply length (reply-style).
+    """Per-step reply length and diagram flag (reply-style).
 
     Length: style.max_words (or the profile's answer_length) is the ceiling. A step gets data.max_words only below
     it: length_fatigued_share of it on every step while fatigued, otherwise length_known_share of it on a review or
     check of a part at developing or above (Kalyuga et al., 2003: full explanations slow down students who already
     know the material). A student's own answer_length always wins: nothing shrinks, and teach_point's word budget
-    becomes it."""
+    becomes it. Diagram: steps on a part the pack marks as a diagram carry data.diagram, and the first of them
+    on each part gets the diagram line added to its cue. That follows the content, never the student."""
     s = _settings().style
     row = learner._conn().execute("SELECT answer_length FROM student_profile WHERE student_id = ?",
                                   (student["id"],)).fetchone()
     own = row["answer_length"] if row else None
     ceiling = own or s.max_words
     fatigued = (blocks.get("session") or {}).get("state") == "fatigued"
-    out = []
+    out, drawn = [], set()
     for step in steps:
         data, part = dict(step["data"]), step["part_id"]
         if own:
@@ -350,7 +351,14 @@ def reply_style(steps: list[dict], student: dict, turn: context_blocks.Turn, blo
             target = round(ceiling * share)
             if target < ceiling:
                 data["max_words"] = min(data.get("max_words") or target, target)
-        out.append(plan._refill({**step, "data": data}) if data != step["data"] else step)
+        diagram = bool(part) and graph.is_diagram(part)
+        if diagram:
+            data["diagram"] = True
+        new = plan._refill({**step, "data": data}) if data != step["data"] else step
+        if diagram and part not in drawn:
+            drawn.add(part)
+            new = {**new, "cue": f"{new['cue']} {read_text('cues/diagram.md').strip()}"}
+        out.append(new)
     return out
 
 
