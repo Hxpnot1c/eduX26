@@ -46,6 +46,7 @@ class ThisMessage(BaseModel):
     web_access: bool | None = Field(None, description="research only: can you search the web in this chat")
     asks_recent: bool = Field(False, description="research only: the question is about recent data or events")
     pushback_changed: bool = Field(False, description="true when the student challenged your last answer and you are changing it")
+    asks_for_reviews: bool = Field(False, description="true when they ask to be quizzed or to revise without naming a topic: quiz me, what should I revise, do my reviews")
 
 
 class Answer(BaseModel):

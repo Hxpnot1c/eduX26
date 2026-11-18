@@ -36,7 +36,7 @@ Called once, at the start of every reply (from step 05e, research questions abou
 | arg | what it is |
 |---|---|
 | `message` | the student's message, word for word |
-| `this_message` | labels for the student's message: `question_depth` (`surface` / `mechanism` / `transfer`), `engagement` (`passive` / `active` / `constructive`), `choice` (`try_first` / `hint` / `just_show_me` / `skip_point` / `none`, default `none`; `skip_point` is "I know this", step 05d), `request_type` (`concept` / `research` / `homework` / `other`, step 05e), `question_features` (research only: any of `concept`, `context`, `asks_sources`, `asks_reasoning`), `source_conflict` (a link failed or didn't say what was claimed), `web_access` (research only: the chatbot can search the web in this chat), `asks_recent` (research only: about recent data or events), `pushback_changed` (the student challenged the last answer and the chatbot changed it), `conflict_flagged` (the chatbot corrected its own earlier mistake this turn, step 05c) |
+| `this_message` | labels for the student's message: `question_depth` (`surface` / `mechanism` / `transfer`), `engagement` (`passive` / `active` / `constructive`), `choice` (`try_first` / `hint` / `just_show_me` / `skip_point` / `none`, default `none`; `skip_point` is "I know this", step 05d), `request_type` (`concept` / `research` / `homework` / `other`, step 05e), `question_features` (research only: any of `concept`, `context`, `asks_sources`, `asks_reasoning`), `source_conflict` (a link failed or didn't say what was claimed), `web_access` (research only: the chatbot can search the web in this chat), `asks_recent` (research only: about recent data or events), `pushback_changed` (the student challenged the last answer and the chatbot changed it), `asks_for_reviews` (they ask to be quizzed or to revise without naming a topic; research fixes, 0006), `conflict_flagged` (the chatbot corrected its own earlier mistake this turn, step 05c) |
 | `node_ids` | optional: part ids from an earlier plan or focus |
 | `answer` | optional: only when the message answers something asked last turn (see below). Not sent when the student asks something instead of answering |
 | `client` | e.g. `claude`, `chatgpt`, `gemini`; picks the formatting note |
@@ -84,7 +84,19 @@ At most two steps (three from step 05d, for feedback, `teach_point` and `ask_mcq
    - `step_back` to its weakest prerequisite **(stop)**;
    - or, when it has no prerequisite, `reteach` of the whole part (through the anchor, or a different example; `switch_approach` before 05c).
    - Once per stuck part per session (research fixes, 0001): the session it was done in is kept in `issued_plan` (`points._stuck_handled`), and after that teaching carries on.
-3. Focus ambiguous → `ask_which` with the candidates **(stop)**. No focus at all (e.g. "quiz me on what's due") → the top due `review`, if any. The `review_due` prompt's wording (any case or punctuation) never falls back to the last turn's focus (research fixes, 0001).
+   - **The stuck ladder (research fixes, 0006).** After that step back, each further miss on the focus part that session (a wrong check, or an open answer with points missing; counted in `points._misses`) climbs one rung:
+     1. a worked example (`show`, cue `show_stuck`) and its check;
+     2. an easier prerequisite check (`ask_mcq` prereq, stuck), preferring one not checked this session;
+     3. an offer to stop or switch (`offer_choice`, `reason = stuck`, cue `offer_choice_stuck`, `quick_parts` other than this part), skipped once stopping has been offered this session, for fatigue or for being stuck;
+     4. beyond that, worked examples moving round the part's points, each with its check.
+
+     A rung that can't be built falls through to the next. A right check or a complete open answer resets the count, except a right check straight after a worked example. A missed `extend` neither counts nor resets. Before any step back, a second open-answer miss in a row gets the worked example instead of a second bare reteach. The numbers are our choice (`plan.LADDER`, `OPEN_RETEACHES_IN_A_ROW`).
+3. Focus ambiguous → `ask_which` with the candidates **(stop)**. No focus at all (e.g. "quiz me on what's due") → the top due `review`, if any. A request for the due reviews never falls back to the last turn's focus (research fixes, 0001 and 0006). It is recognised from:
+   - the `review_due` prompt's wording, in any case or punctuation;
+   - the `this_message.asks_for_reviews` label, which is the main signal;
+   - a few paraphrase patterns, as a fallback.
+
+   It is honoured only when the message names no course node, isn't a research question and has no answer, and a review with mark points is due. Same-topic wordings ("quiz me on this") and questions about how to revise are excluded. A recognised request also skips the `other` early-out and drops a pending question.
 4. `choice == just_show_me` → `show`: a short worked example. Nothing else follows it.
    - After `show.max_per_part_session` shows of the part this session (engagement-rules), the next "just show me" first gets a 2-option `ask_mcq` (`check`) on the current point **(stop)**: the point plus the part's first misconception (or one the chatbot writes, when it has none). Its guess is 1/2, from the options shown. The answer's feedback gives the point either way; a wrong answer re-teaches it as for any check.
    - A pick from `offer_choice`, sent back as `this_message.choice` (engagement-rules): `quiz` → the current point's check (as `skip_point`), `extend` → `extend` **(stop)**, `stop` → an empty plan (the chatbot wraps up with a one-line summary).

@@ -336,11 +336,53 @@ def style(student: dict, client: str | None) -> dict:
             "interests": (row and row["interests"]) or "", "format": _format_for(client)}
 
 
-def _asks_for_reviews(message: str) -> bool:
-    """The message is the review_due prompt ("Quiz me on what's due."), in any case or punctuation: it names no
-    part, but it asks for the due reviews, not the last turn's focus."""
-    words = lambda m: " " + re.sub(r"[^a-z]+", " ", m.lower()).strip() + " "
-    return words(read_text("prompts/review_due.md")) in words(message)
+# Asking for the due reviews in other words than the review_due prompt (research fixes, 0006). Only consulted for
+# a message that names no course part, and only acted on when a review is due. Matched on lower-case words with
+# punctuation removed. The asks_for_reviews label is the real signal; these patterns are a fallback.
+_REVIEW_ASKS = [re.compile(p) for p in (
+    r"\b(quiz|test|drill|grill|check) (me|us)\b",                              # quiz me / test me (on ...)
+    r"\b(do|start|begin|go through|run through|work through|get through|catch up on|lets do|can we do) "
+    r"(a |my |some |the |todays |today s )?(reviews?|review questions|revision|flashcards|due ones)\b",
+    r"\bwhat (should|shall|do|can|could) (i|we) (revise|review|go over|practise|practice|work on|study)\b",
+    r"\bwhat (needs|need) (revising|reviewing|revision|a review)\b",
+    r"\b(whats|what s|what is|anything|something|any reviews|reviews|is anything) (due|up for review)\b(?! to\b)",
+    r"\bhelp me (revise|review)\b",
+    r"\b(revise|revision|review) (time|session)\b",
+)]
+# The same words about the current topic, or about how revising works, stay on the topic.
+_NOT_REVIEW_ASKS = [re.compile(p) for p in (
+    r"\b(on|about|with) (this|that|it|these|those|what we (just )?(did|covered|went over|looked at|have done)|"
+    r"what you (just )?(said|explained|taught)|the last (one|bit|point|question))\b",
+    r"\bhow (should|do|can|could|would|does|do the|do my) (i|we|you|reviews|review|revision|my reviews)\b",
+    r"\breview (of|for) (this|that|my|the|an?)\b",
+)]
+
+
+def _words(message: str) -> str:
+    return " " + re.sub(r"[^a-z]+", " ", message.lower().replace("'", "")).strip() + " "
+
+
+def _asks_for_reviews(message: str, labelled: bool = False) -> bool:
+    """The message asks for the due reviews: the review_due prompt ("Quiz me on what's due.") in any case or
+    punctuation, or the chatbot's asks_for_reviews label, or a common paraphrase ("test me on my reviews", "what
+    should I revise", "do my reviews"); but not the same words about the current topic ("quiz me on this") or about
+    how to revise."""
+    said = _words(message)
+    if _words(read_text("prompts/review_due.md")) in said:
+        return True
+    return ((labelled or any(p.search(said) for p in _REVIEW_ASKS))
+            and not any(p.search(said) for p in _NOT_REVIEW_ASKS))
+
+
+def _names_course_topic(message: str) -> bool:
+    """The message names a course node (name, alias or description; not the notes, whose everyday words like "time"
+    or "practice questions" match by chance)."""
+    return any(not graph.is_literacy(node_id) for node_id, _ in graph.search_nodes(message, 5))
+
+
+def _reviews_waiting(student_id: str, at: str) -> bool:
+    """A course review with multiple-choice points is due (what a review request can be answered with)."""
+    return any(plan.mcq_points(r["part_id"]) for r in learner.due_reviews(student_id, 10_000, at))
 
 
 CHECKS = ("check", "review", "prereq")   # ask_mcq purposes that check a part (reply-style)
@@ -440,7 +482,16 @@ def tutor_turn(
         evidence = _found_problem(last, evidence, at)
     side_turn = not node_ids and this_message.get("request_type") in ("research", "other")
     resolution = graph.resolve(message or "", node_ids)
-    if not resolution["parts"] and not resolution["candidates"] and last["focus"] and not _asks_for_reviews(message or ""):
+    # "quiz me on what's due" and its paraphrases name no course topic: the due reviews, not the last focus or a
+    # chance match in the notes (when one is due; with none due the message stays on the last focus). A research
+    # question is never one.
+    wants_reviews = (not node_ids and not answer and this_message.get("request_type") != "research"
+                     and _asks_for_reviews(message or "", bool(this_message.get("asks_for_reviews")))
+                     and not _names_course_topic(message or "")
+                     and _reviews_waiting(student["id"], at))
+    if wants_reviews:
+        resolution = {"parts": [], "candidates": [], "matched": None, "unknown": resolution["unknown"]}
+    if not resolution["parts"] and not resolution["candidates"] and last["focus"] and not wants_reviews:
         resolution = {**graph.resolve("", last["focus"]), "unknown": resolution["unknown"]}
     # a research question is Ask evidence; a verify answer is AI-literacy evidence, not an answer on the course
     recorded = ([evidence] if evidence else []) + (
@@ -466,14 +517,14 @@ def tutor_turn(
     blocks = context_blocks.assemble(profile, turn, s, _context())
     config = _context().profiles.get(profile, _context().profiles[_context().default_profile])
     corrected, offered = _this_session(student["id"], last, at)
-    pending = _open_question(last, parts, answer, choice, at)
+    pending = None if wants_reviews else _open_question(last, parts, answer, choice, at)   # they asked to move on
     points = dict(last["points"] or {})
     again = last.get("pending") if lost else None
     if again and not (again["move"] == "ask_mcq" and again["part_id"] == answer["part_id"] and again.get("question")):
         again = None
     request = this_message.get("request_type") or "concept"
     course_answer = None if lost or literacy_answer else answer
-    if not config.plan or (request == "other" and not course_answer):
+    if not config.plan or (request == "other" and not course_answer and not wants_reviews):
         steps = []
     elif again:   # the letter can't be scored: the same question, freshly shuffled
         steps = plan.add_terms(turn, [plan.ask_again(turn, again)])

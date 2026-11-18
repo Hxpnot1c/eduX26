@@ -11,7 +11,9 @@ Order (first match wins for the main step):
   question instead of the pending answer -> answer_brief, then reask the same question (fatigue and stuck first)
   fatigued        -> offer_choice: stop or quick questions (once a session; also replaces reteach's re-ask, as do
                      stuck moves)
-  stuck on focus  -> ask_mcq on the weakest prerequisite (prereq, stuck) / reteach of the whole part (through the anchor)
+  stuck on focus  -> ask_mcq on the weakest prerequisite (prereq, stuck) / reteach of the whole part (through the anchor);
+                     each later miss on it that session climbs the stuck ladder (stuck_ladder): a worked example and
+                     its check, an easier prerequisite check, an offer to stop or switch, then worked examples
   ambiguous focus -> ask_which (no focus at all: the top due review, as ask_mcq)
   just_show_me    -> show the current point, then its check (after show.max_per_part_session shows of the part this
                      session: a 2-option check on the point first); skip_point ("I know this") -> its check only;
@@ -38,7 +40,8 @@ import random
 import re
 
 from edux import graph, learner
-from edux.context_blocks import Turn, core_idea, held_misconceptions, intuition_source, known_parts, known_terms
+from edux.context_blocks import (Turn, _quick_parts, core_idea, held_misconceptions, intuition_source, known_parts,
+                                 known_terms)
 from edux.settings import TEXT_DIR, Settings, SettingsError, read_text
 
 log = logging.getLogger(__name__)
@@ -71,6 +74,8 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "reask": ({"asked"}, {"answer_type", "skill"}),
     "reteach": (set(), {"missing", "anchor", "point", "level", "answer_type"}),
     "show": ({"point"}, {"note"}),
+    "show_stuck": ({"point"}, {"note", "stuck"}),
+    "offer_choice_stuck": ({"reason", "options"}, {"minutes", "quick_parts"}),
     "explain_back": ({"answer_type"}, set()),
     "explain_back_point": ({"answer_type", "point", "point_id"}, set()),
     "teach_point": ({"index", "total", "point", "exemplar", "level", "max_words"}, set()),
@@ -375,6 +380,7 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
         session_id = (learner.session_state(turn.student_id, turn.at) or {}).get("session_id") if stuck else None
         if stuck and handled.get(focus) != session_id:
             handled[focus] = session_id
+            progress.pop("_misses", None)   # the stuck ladder counts misses from this step back on
             back = stuck["step_back_to"]
             stepped = prereq_check(turn, back["id"], focus, settings, stuck=True) if back else None
             if stepped:
@@ -608,6 +614,116 @@ def _second_step(turn: Turn, blocks: dict, settings: Settings, reviews_only: boo
     return step
 
 
+# --- the stuck ladder (research fixes, 0006) -------------------------------------------
+
+# What a miss on the focus part gets once its step back has been done this session (misses counted from the step
+# back): 1 a worked example and its check, 2 an easier prerequisite check, 3 an offer to stop or switch, 4+ a worked
+# example of the next point (round the part's points), so it is never the same item again and again. Without a step
+# back, a second miss in a row on an open answer gets the worked example instead of a second bare reteach. A right
+# check straight after a worked example doesn't reset the count (they had just been shown it). Our choice; a rung that
+# can't be built (no prerequisite, stopping already offered this session, for fatigue or being stuck) falls through.
+LADDER = ("worked_example", "easier_prereq", "offer_choice")
+OPEN_RETEACHES_IN_A_ROW = 1
+
+
+def _misses(turn: Turn, progress: dict, evidence: dict, retry: dict | None, last_plan: list[dict]) -> int:
+    """Count consecutive misses on the focus part this session in progress["_misses"] (kept under its own key, as
+    teach() drops a part's own progress): a wrong check or an open answer with points missing adds one, a right
+    check (unless just after a worked example) or a complete open answer resets it. A harder (extend) question
+    neither counts nor resets: missing a stretch question isn't being stuck. Returns the count (0 when the evidence
+    isn't on the focus or isn't a miss)."""
+    focus = turn.parts[0] if turn.parts else None
+    if evidence["type"] == "extend":
+        return 0
+    open_answer = evidence["type"] not in ("mcq_check", "prequestion", "ail_how") and "correct" not in evidence
+    if focus is None or evidence["part_id"] != focus or not (open_answer or evidence.get("purpose") == "check"):
+        return 0
+    session_id = (learner.session_state(turn.student_id, turn.at) or {}).get("session_id")
+    state = progress.get("_misses")
+    if not state or state.get("part") != focus or state.get("session") != session_id:
+        state = progress["_misses"] = {"part": focus, "session": session_id, "n": 0}
+    missed = retry is not None if open_answer else not evidence["correct"]
+    just_shown = any(s.get("key") == "show_stuck" for s in last_plan)
+    state["n"] = state["n"] + 1 if missed else (state["n"] if just_shown and not open_answer else 0)
+    return state["n"] if missed else 0
+
+
+def _point_index(part_id: str, point_id: str | None = None, text: str | None = None) -> int:
+    """The 1-based index of a point of the part, by id or wording (1 if not found)."""
+    for i, p in enumerate(_points(part_id), 1):
+        if (point_id and p["id"] == point_id) or (text and p["point"] == text):
+            return i
+    return 1
+
+
+def worked_example(turn: Turn, part_id: str, index: int, settings: Settings, progress: dict,
+                   avoid: list[str] | None = None) -> list[dict]:
+    """show (stuck): the point as a worked example, then its check (the point loop carries on from it); a part with
+    no mark points: the worked points, then its explain-back."""
+    if not mcq_points(part_id):
+        progress.pop(part_id, None)
+        return [_step("show", part_id, {"point": "; ".join(p["point"] for p in _points(part_id)), "stuck": True},
+                      key="show_stuck"), _step("explain_back", part_id)]
+    _progress(progress, part_id)["index"] = index
+    data = {"point": _points(part_id)[index - 1]["point"], "stuck": True}
+    source = intuition_source(turn, part_id)
+    if source:
+        data["note"] = source["note"]
+    return [_step("show", part_id, data, key="show_stuck"), check(turn, part_id, index, settings, avoid)]
+
+
+def easier_prereq(turn: Turn, part_id: str, settings: Settings, last_plan: list[dict]) -> dict | None:
+    """A prerequisite check (stuck) on the weakest prerequisite of the part not yet checked this session (else the
+    weakest one); None when the part has no prerequisite with mark points."""
+    pres = sorted({pre for edge in graph.prerequisites(part_id, 1) for pre in graph.parts_of(edge["other"])
+                   if mcq_points(pre)}, key=lambda p: (turn.p(p), p))
+    if not pres:
+        return None
+    fresh = [p for p in pres if not _checked_this_session(turn, p, last_plan)]
+    return prereq_check(turn, (fresh or pres)[0], part_id, settings, stuck=True)
+
+
+def stop_or_switch(turn: Turn, part_id: str, settings: Settings) -> dict:
+    """offer_choice (stuck): stopping, or switching to a few developing parts other than the one they're stuck on."""
+    session = learner.session_state(turn.student_id, turn.at) or {}
+    quick = _quick_parts(turn, settings, {part_id})
+    return _step("offer_choice", None, {"reason": "stuck", "options": ["stop"] + (["quick"] if quick else []),
+                                        "minutes": round(session.get("minutes") or 0), "quick_parts": quick},
+                 key="offer_choice_stuck")
+
+
+def stuck_ladder(turn: Turn, settings: Settings, evidence: dict, retry: dict | None, progress: dict,
+                 offered: frozenset[str], last_plan: list[dict], last_mcq: dict | None, misses: int) -> list[dict] | None:
+    """The steps for a miss on the focus part instead of another reteach (see LADDER), or None to carry on as
+    before. misses is the count _misses returned this turn."""
+    if not misses:
+        return None
+    part = evidence["part_id"]
+    session_id = (learner.session_state(turn.student_id, turn.at) or {}).get("session_id")
+    stepped_back = (progress.get("_stuck_handled") or {}).get(part) == session_id
+    if retry is not None:
+        index = _point_index(part, text=(retry["data"].get("missing") or [None])[0])
+    else:
+        index = _point_index(part, point_id=evidence.get("point_id"))
+    avoid = [o["id"] for _, o in sorted((last_mcq or {}).get("options", {}).items())] or None
+    if not stepped_back:   # not stuck yet: cap bare reteaches of an open answer
+        if retry is not None and misses > OPEN_RETEACHES_IN_A_ROW:
+            return worked_example(turn, part, index, settings, progress, avoid)
+        return None
+    for rung in LADDER[misses - 1:]:   # empty past the last rung
+        if rung == "worked_example":
+            return worked_example(turn, part, index, settings, progress, avoid)
+        if rung == "easier_prereq":
+            asked = easier_prereq(turn, part, settings, last_plan)
+            if asked:
+                return [asked]
+        if rung == "offer_choice" and not {"fatigued", "stuck"} & offered:   # stopping already offered this session
+            return [stop_or_switch(turn, part, settings)]
+    if misses > len(LADDER):   # past the ladder: the next point's worked example
+        index = index % len(_points(part)) + 1
+    return worked_example(turn, part, index, settings, progress, avoid)
+
+
 # --- the plan -----------------------------------------------------------------------
 
 
@@ -665,6 +781,7 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
     if pending and not answer:
         urgent = main()
         return urgent if _urgent(urgent) else reask(pending)
+    misses = 0
     if answer and evidence:
         first, retry = feedback(answer, evidence)
         if evidence["score"] >= settings.bkt.correct_share and learner.level(turn.p(evidence["part_id"])) == "secure":
@@ -674,12 +791,19 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
         if answer["type"] == "prequestion" or evidence.get("purpose") == "intuition":
             answered_prequestion = evidence["part_id"]
             _progress(progress, evidence["part_id"])["intuition_asked"] = True
+        misses = _misses(turn, progress, evidence, retry, last_plan)
         if retry:   # reteach ends the plan, unless they're tired or stuck: then say what's missing and do that instead
             urgent = main()
+            if not _urgent(urgent):   # missed again: the next rung of the stuck ladder, not another reteach
+                urgent = stuck_ladder(turn, settings, evidence, retry, progress, offered, last_plan, last_mcq,
+                                      misses) or urgent
             if _urgent(urgent):
-                return [_refill({**first, "data": {**first["data"], "missing": retry["data"]["missing"]}}), urgent[0]]
+                return ([_refill({**first, "data": {**first["data"], "missing": retry["data"]["missing"]}})]
+                        + urgent)[:MAX_STEPS]
             return [first, retry]
     rest = main()
+    if misses and not _urgent(rest):   # a missed check after the step back: the ladder, not the reteach loop
+        rest = stuck_ladder(turn, settings, evidence, None, progress, offered, last_plan, last_mcq, misses) or rest
     # all points met on an explain-back or a harder question (a retry returned above): the part is done for now
     finished = bool(answer and evidence and answer["type"] in ("explain_back", "extend"))
     if not _urgent(rest):
