@@ -118,14 +118,33 @@ def get_my_progress(ctx: Context, include_parts: bool = False) -> dict:
     return service.my_progress(student_from_request(ctx), include_parts)
 
 
+class AddAssessment(BaseModel):
+    """An upcoming test of the student's own."""
+
+    name: str = Field(description="what they call it, e.g. Year 12 mock")
+    kind: Literal[learner.ASSESSMENT_KINDS] = Field(description="homework, class_test or mock")  # type: ignore[valid-type]
+    date: str = Field(description="YYYY-MM-DD, in the future")
+    topics: list[str] = Field(description="the topics it covers, as the student names them (topic names or spec codes)")
+
+
+class RemoveAssessment(BaseModel):
+    """An assessment to remove."""
+
+    id: int = Field(description="its id, from the profile's assessments")
+
+
 def update_my_profile(
     ctx: Context,
     interests: str | None = None,
     exam_date_override: str | None = None,
     answer_length: int | None = None,
+    add_assessment: AddAssessment | None = None,
+    remove_assessment: RemoveAssessment | None = None,
 ) -> dict:
     """Tool adapter for service.update_profile."""
-    return service.update_profile(student_from_request(ctx), interests, exam_date_override, answer_length)
+    return service.update_profile(student_from_request(ctx), interests, exam_date_override, answer_length,
+                                  add_assessment.model_dump() if add_assessment else None,
+                                  remove_assessment.id if remove_assessment else None)
 
 
 def review_due() -> str:

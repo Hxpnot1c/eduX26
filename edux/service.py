@@ -599,8 +599,21 @@ def update_profile(
     interests: str | None = None,
     exam_date_override: str | None = None,
     answer_length: int | None = None,
+    add_assessment: dict | None = None,
+    remove_assessment: int | None = None,
 ) -> dict:
-    """Update student_profile and return it. An empty exam_date_override clears it."""
+    """Update student_profile and return it, with the student's upcoming assessments. An empty exam_date_override
+    clears it. add_assessment {name, kind, date, topics} adds an upcoming test once its topics match the pack's
+    topic names or spec codes (case and spacing aside); with no match nothing is added and the pack's topics come
+    back to pick from. remove_assessment is an assessment id."""
+    added = None
+    if add_assessment is not None:
+        added = _check_assessment(add_assessment)
+        if not added.get("ok"):
+            return added
+    if remove_assessment is not None and not learner._conn().execute(
+            "SELECT 1 FROM student_assessment WHERE id = ? AND student_id = ?", (remove_assessment, student["id"])).fetchone():
+        return {"ok": False, "error": f"no assessment {remove_assessment} for this student"}
     changes: dict[str, object] = {}
     if interests is not None:
         changes["interests"] = interests.strip()
@@ -621,9 +634,61 @@ def update_profile(
         conn.execute("INSERT OR IGNORE INTO student_profile (student_id) VALUES (?)", (student["id"],))
         for column, value in changes.items():
             conn.execute(f"UPDATE student_profile SET {column} = ? WHERE student_id = ?", (value, student["id"]))
+        if added:
+            cur = conn.execute("INSERT INTO student_assessment (student_id, name, kind, date, part_ids, created_at) "
+                               "VALUES (?, ?, ?, ?, ?, ?)", (student["id"], added["name"], added["kind"], added["date"],
+                                                            json.dumps(added["part_ids"]), learner.now_iso()))
+            added["id"] = cur.lastrowid
+        if remove_assessment is not None:
+            conn.execute("DELETE FROM student_assessment WHERE id = ? AND student_id = ?", (remove_assessment, student["id"]))
     row = conn.execute("SELECT interests, exam_date_override, answer_length FROM student_profile WHERE student_id = ?",
                        (student["id"],)).fetchone()
-    return {"ok": True, "profile": dict(row)}
+    out = {"ok": True, "profile": {**dict(row), "assessments": [
+        {k: a[k] for k in ("id", "name", "kind", "date")} for a in learner.assessments(student["id"])]}}
+    if added:
+        out["added"] = {"id": added["id"], "name": added["name"], "kind": added["kind"], "date": added["date"],
+                        "topics": added["topics"], "parts": len(added["part_ids"])}
+        if added["unmatched"]:
+            out["added"]["unmatched"] = added["unmatched"]
+    return out
+
+
+def _topic_key(text: str) -> str:
+    return " ".join(str(text).split()).casefold()
+
+
+def _pack_topics() -> list[dict]:
+    """The pack's course topics, as the student can name them: {name, spec_ref}."""
+    return [{"name": t["name"], "spec_ref": t.get("spec_ref") or ""} for t in graph.topics()]
+
+
+def _check_assessment(item: dict) -> dict:
+    """Validate an assessment to add and match its topics. Returns {ok: True, name, kind, date, part_ids, topics,
+    unmatched}, or {ok: False, error} (with the pack's topics when nothing matched)."""
+    kind, name = item.get("kind"), str(item.get("name") or "").strip()
+    if kind not in learner.ASSESSMENT_KINDS:
+        return {"ok": False, "error": f"add_assessment.kind must be one of {', '.join(learner.ASSESSMENT_KINDS)}"}
+    if not name:
+        return {"ok": False, "error": "add_assessment.name is empty"}
+    try:
+        day = date.fromisoformat(str(item.get("date") or "").strip())
+    except ValueError:
+        return {"ok": False, "error": "add_assessment.date must be a date like 2027-03-14"}
+    if day <= learner.parse_ts(learner.now_iso()).date():
+        return {"ok": False, "error": f"add_assessment.date {day.isoformat()} is not in the future"}
+    index = {}
+    for topic in graph.topics():
+        for key in (topic["name"], topic.get("spec_ref")):
+            if key:
+                index.setdefault(_topic_key(key), topic)
+    asked = [str(t) for t in item.get("topics") or [] if str(t).strip()]
+    matched = list({index[_topic_key(t)]["id"]: index[_topic_key(t)] for t in asked if _topic_key(t) in index}.values())
+    if not matched:
+        return {"ok": False, "error": "no topic matched; ask the student which of these it covers",
+                "topics": _pack_topics()}
+    parts = list(dict.fromkeys(p for t in matched for p in graph.parts_of(t["id"])))
+    return {"ok": True, "name": name, "kind": kind, "date": day.isoformat(), "part_ids": parts,
+            "topics": [t["name"] for t in matched], "unmatched": [t for t in asked if _topic_key(t) not in index]}
 
 
 # --- call timing ---------------------------------------------------------------

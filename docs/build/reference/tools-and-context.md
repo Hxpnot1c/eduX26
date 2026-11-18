@@ -231,8 +231,16 @@ For students. Levels only, never numbers.
 - `ai_literacy` (step 05e): `ask` and `verify`, each with the `level` of `ail_ask` and `ail_verify`; `how_ai_works`, the rollup `level` of its parts and `held`, the wrong ideas about AI the student still holds; and `question_features`: for each feature, the share of research questions showing it over the last `progress.trend_days` against before (`recent`, `before`, `direction` up, down or steady, as for `trends`). These parts are left out of the tree, levers and reviews above.
 - `study_pattern`: "your answers tend to drop after about N minutes" (median fatigue onset), when at least `session.pattern_min_sessions` sessions had one; otherwise `null`.
 
-### update_my_profile(interests?, exam_date_override?, answer_length?)
-Updates `student_profile`. `interests` and `answer_length` come back in every turn's `style`.
+### update_my_profile(interests?, exam_date_override?, answer_length?, add_assessment?, remove_assessment?)
+Updates `student_profile`. `interests` and `answer_length` come back in every turn's `style`. The result's `profile` lists the student's upcoming `assessments` (`id`, `name`, `kind`, `date`).
+- `add_assessment {name, kind, date, topics}` (priorities): one of the student's own upcoming tests. It is stored in `student_assessment`.
+  - `kind` is `homework`, `class_test` or `mock`.
+  - `date` must be in the future.
+  - `topics` are matched to the pack's topic names and spec codes, ignoring only case and spacing (no fuzzy guessing). The test covers every part under the matched topics.
+  - The result's `added` gives the matched `topics` and the number of `parts`, plus any `unmatched` names, so the chatbot can confirm with the student.
+  - If nothing matches, nothing is added: the result is an error with the pack's `topics` (`name`, `spec_ref`) to pick from.
+  - An unknown `kind` or a past date is a clear error.
+- `remove_assessment {id}`: removes one. Past assessments are ignored everywhere but stay in the table.
 
 ## Prompts
 - `review_due`: "Quiz me on what's due."
