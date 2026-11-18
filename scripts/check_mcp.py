@@ -26,6 +26,7 @@ example-mini pack loaded and the demo students seeded. It:
 - checks a bad answer is refused and records nothing, get_my_progress, update_my_profile, that a wrong or
   missing key is refused with 401, and that the minimal profile returns no plan;
 - checks the engagement rules (a passive streak and its picks, a repeated show, a coasting explain-back) with throwaway students;
+- checks the personal learning rate (within bounds, earlier sessions only, never shown);
 - checks rebuild gives identical state for every demo student and tutor_turn's median server time is under 100 ms;
 - resets the demo students again, so the demo is left as seeded (--keep leaves the run's events).
 Exits non-zero if any check fails. The key is read from the database when --key is not given.
@@ -786,6 +787,35 @@ async def main(url: str, key: str, student: str) -> None:
     check(kinds == {"mcq_check", "ail_how"} and all((r["n_options"] or 0) >= 2 for r in rows),
           "multiple-choice answers from chat store how many options they showed",
           f"{len(rows)} rows, types {sorted(kinds)}, n_options {sorted({r['n_options'] for r in rows}, key=str)}")
+
+    personal = load_settings().personalisation
+    found = learner.learning_offset("demo-secure")
+    low, high = personal.learn_rate_weight_bounds
+    progress = await call(keyed, "get_my_progress", {})
+    shown = json.dumps(progress) + json.dumps(await call(keyed, "tutor_turn", {
+        "message": "How do I calculate PED?", "client": "check_mcp",
+        "this_message": {"question_depth": "surface", "engagement": "active"}}))
+    check(not learner.personalisation_on() or (found["n"] >= personal.min_observations
+                                                and low <= found["weight"] <= high and found["offset"] != 0),
+          "the personal learning rate has an offset within its bounds once there is enough earlier evidence",
+          json.dumps(found))
+    check("offset" not in shown and "learning_rate" not in shown,
+          "the learning-rate offset is never shown in tutor_turn or get_my_progress")
+    lone = "check-lone"
+    new_student(lone)
+    try:   # one session's evidence only: nothing earlier, so no offset yet
+        now = learner.parse_ts(learner.now_iso())
+        for i in range(12):
+            learner.record_evidence(lone, ["ped_definition", "ped_formula", "yed_definition"][i % 3], "explain_back", 1.0,
+                                    ts=learner._event_ts(now - timedelta(minutes=24 - 2 * i)), apply="now")
+        current = learner.learning_offset(lone, learner.session_state(lone)["session_id"])
+        derived = learner._conn().execute("SELECT COUNT(DISTINCT session_id) FROM evidence_derived WHERE student_id = ?",
+                                          (lone,)).fetchone()[0]
+        check(derived == 1 and current["offset"] == 0.0,
+              "evidence from the current session alone gives no offset (only earlier sessions count)",
+              f"{derived} session(s) {json.dumps(current)}")
+    finally:
+        drop_student(lone)
 
     for who in sorted({student, "demo-secure", "demo-weak", "demo-showme"}):   # every student the run wrote events for
         before_rebuild = state(who)
