@@ -46,7 +46,7 @@ from edux.settings import TEXT_DIR, Settings, SettingsError, read_text
 
 log = logging.getLogger(__name__)
 
-STOP = {"reteach", "offer_choice", "ask_which", "ask_mcq", "explain_back", "reask"}
+STOP = {"reteach", "offer_choice", "ask_which", "ask_mcq", "explain_back", "reask", "session_summary"}
 PICKS = ("quiz", "extend", "stop")   # ways on from offer_choice the student picks, sent back as this_message.choice
 ASKS = {"reteach", "ask_mcq", "explain_back", "extend", "reask"}
 MAX_STEPS = 3
@@ -71,6 +71,7 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "correct_option", "purpose", "points_met", "missing",
                                              "intuition", "secure"}),
     "offer_choice": ({"reason", "options"}, {"minutes", "quick_parts"}),
+    "session_summary": ({"covered"}, {"next_review"}),
     "reask": ({"asked"}, {"answer_type", "skill"}),
     "reteach": (set(), {"missing", "anchor", "point", "level", "answer_type"}),
     "show": ({"point"}, {"note"}),
@@ -398,14 +399,15 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
         return [review] if review else []
 
     if choice in ("just_show_me", "skip_point"):
-        return shown_or_skipped(turn, focus, settings, progress, choice)
+        return shown_or_skipped(turn, focus, settings, progress, choice, blocks)
     if choice in PICKS:
         return picked(turn, focus, settings, progress, choice)
 
     fatigued = bool(session and session["state"] == "fatigued")
     if ("passive" not in offered and not fatigued
             and learner.passive_streak(turn.student_id, turn.at) >= settings.engagement.passive_run):
-        return [offer_choice("passive", ["quiz", "extend", "stop"])]
+        earned = bool((blocks.get("support") or {}).get("extend"))   # extend is offered only when it is earned
+        return [offer_choice("passive", ["quiz"] + (["extend"] if earned else []) + ["stop"])]
 
     pq = blocks.get("prequestion")
     asked_before = (progress.get(focus) or {}).get("intuition_asked") or any(
@@ -486,21 +488,42 @@ def offer_choice(reason: str, options: list[str], data: dict | None = None) -> d
 
 def picked(turn: Turn, part_id: str, settings: Settings, progress: dict, choice: str) -> list[dict]:
     """The way on the student picked from offer_choice: quiz, the current point's check (as "I know this");
-    extend, a harder question on the part; stop, nothing (the chatbot wraps up with a one-line summary)."""
+    extend, a harder question on the part; stop, a session summary (what they covered, when to come back)."""
     if choice == "quiz":
         return shown_or_skipped(turn, part_id, settings, progress, "skip_point")
     if choice == "extend":
         return [_step("extend", part_id)]
-    return []
+    return [session_summary(turn)]
 
 
-def two_option_check(turn: Turn, part_id: str, index: int, settings: Settings) -> dict:
-    """ask_mcq (check) on one point with two options: the point and the part's first misconception (or one the
-    chatbot writes, when it has none). Asked before a repeated show; its guess is 1/2 (bkt.mcq_guess_from_options)."""
+def session_summary(turn: Turn) -> dict:
+    """session_summary (stop): the parts worked on this session by name, and the next review (name and date), if any."""
+    covered = [graph.get_node(p)["name"] for p in learner.session_parts(turn.student_id, turn.at)]
+    due = learner.next_review(turn.student_id)
+    nxt = {"name": graph.get_node(due["part_id"])["name"], "due": due["due"][:10]} if due else None
+    return _step("session_summary", None, {"covered": covered, "next_review": nxt})
+
+
+def two_option_wrong(turn: Turn, part_id: str, blocks: dict | None = None) -> dict | None:
+    """The wrong option for a two-option question, as {id, text}: a misconception the student holds on the part,
+    else a watch-for one, else the first in pack order; None when the part has none (the chatbot writes one).
+    A held misconception is the most useful wrong option: picking it and getting feedback corrects it."""
+    found = {m["id"]: m for m in graph.misconceptions_for([part_id])}
+    held = [m["id"] for m in held_misconceptions(turn.student_id, [part_id])]
+    watch = [m["id"] for m in ((blocks or {}).get("misconceptions") or {}).get("watch_for", []) if m.get("part_id") == part_id]
+    pick = next((i for i in held + watch + list(found) if i in found), None)
+    return {"id": pick, "text": option_form(found[pick]["wrong_idea"])} if pick else None
+
+
+def two_option_check(turn: Turn, part_id: str, index: int, settings: Settings, blocks: dict | None = None) -> dict:
+    """ask_mcq (check) on one point with two options: the point and one wrong option (two_option_wrong, or one the
+    chatbot writes, when the part has none). Asked before a repeated show, marked data.then_show: its answer gets
+    feedback and then the full show. Its guess is 1/2 (bkt.mcq_guess_from_options)."""
     point = _points(part_id)[index - 1]
     q = question(part_id, "check", point["point"], settings, point_id=point["id"])
-    q = {**q, "wrong": q["wrong"][:1], "extra": not q["wrong"]}
-    return ask_mcq(turn, q, {"index": index})
+    wrong = two_option_wrong(turn, part_id, blocks)
+    q = {**q, "wrong": [wrong] if wrong else [], "extra": wrong is None}
+    return ask_mcq(turn, q, {"index": index, "then_show": True})
 
 
 def explain_back(turn: Turn, part_id: str, points: list[dict], settings: Settings) -> dict:
@@ -515,11 +538,12 @@ def explain_back(turn: Turn, part_id: str, points: list[dict], settings: Setting
     return _step("explain_back", part_id, {"point": point["point"], "point_id": weakest}, key="explain_back_point")
 
 
-def shown_or_skipped(turn: Turn, part_id: str, settings: Settings, progress: dict, choice: str) -> list[dict]:
+def shown_or_skipped(turn: Turn, part_id: str, settings: Settings, progress: dict, choice: str,
+                     blocks: dict | None = None) -> list[dict]:
     """"I know this" (skip_point): the current point's check only, with no teaching. "Just show me": show, a
     one-line intuition (from the same source as the intuition question) and the point, then its check; after
-    show.max_per_part_session shows of the part this session, a 2-option check first instead, whose feedback
-    gives the point. A part with no mark points gets its open check."""
+    show.max_per_part_session shows of the part this session, a 2-option check first instead; its answer gets
+    feedback and then the full show (full_show). A part with no mark points gets its open check."""
     if not mcq_points(part_id):
         progress.pop(part_id, None)
         return open_check(turn, part_id)
@@ -530,12 +554,24 @@ def shown_or_skipped(turn: Turn, part_id: str, settings: Settings, progress: dic
     if choice == "skip_point":
         return [asked]
     if learner.shows_this_session(turn.student_id, part_id, turn.at) > settings.show.max_per_part_session:
-        return [two_option_check(turn, part_id, index, settings)]   # try it first: the answer's feedback shows the point
+        return [two_option_check(turn, part_id, index, settings, blocks)]   # try it first; the show follows its answer
+    return full_show(turn, part_id, settings, progress)
+
+
+def full_show(turn: Turn, part_id: str, settings: Settings, progress: dict) -> list[dict]:
+    """The show of the current point (a one-line intuition if there is one, then the point), then its check."""
+    points = _points(part_id)
+    index = min(_progress(progress, part_id)["index"], len(points))
     data = {"point": points[index - 1]["point"]}
     source = intuition_source(turn, part_id)
     if source:
         data["note"] = source["note"]
-    return [_step("show", part_id, data), asked]
+    return [_step("show", part_id, data), check(turn, part_id, index, settings)]
+
+
+def _then_show(last_plan: list[dict]) -> bool:
+    """The last plan asked a two-option question that is followed by the full show once answered."""
+    return any(s["move"] == "ask_mcq" and s["data"].get("then_show") for s in last_plan)
 
 
 def after_check(turn: Turn, evidence: dict, settings: Settings, progress: dict, last_mcq: dict | None) -> list[dict]:
@@ -798,6 +834,8 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
         if answer["type"] == "prequestion" or evidence.get("purpose") == "intuition":
             answered_prequestion = evidence["part_id"]
             _progress(progress, evidence["part_id"])["intuition_asked"] = True
+        if evidence.get("purpose") == "check" and _then_show(last_plan):   # the repeated show's question: feedback, then the show
+            return ([first] + full_show(turn, evidence["part_id"], settings, progress))[:MAX_STEPS]
         misses = _misses(turn, progress, evidence, retry, last_plan)
         if retry:   # reteach ends the plan, unless they're tired or stuck: then say what's missing and do that instead
             urgent = main()

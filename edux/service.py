@@ -103,13 +103,13 @@ def _how_ai_works(turn: context_blocks.Turn, blocks: dict, last: dict, steps: li
     """A one-question how-AI-works check at the moment a chatbot fails (step 05e); returns (steps, the check still
     pending).
 
-    Nothing while the student is fatigued (a pending check is dropped unscored). A pending check not answered this
+    Nothing while the student is fatigued or has just chosen to stop (a pending check is dropped unscored). A pending check not answered this
     turn is re-asked (reask, with the same options and letter map) up to literacy.max_followups times; not answered
     after that, it is counted as a skip (missing, not wrong: no evidence). Otherwise the first trigger in this turn's labels
     (plan.HOW_TRIGGERS) adds the check as the plan's last step, unless its part already had a check this session, or, with the part at secure, the trigger count isn't a multiple of
     literacy.how_secure_every. The check wins over the plan's own question and any literacy task."""
     s, sid = _settings(), turn.student_id
-    if (blocks.get("session") or {}).get("state") == "fatigued":   # no checks while tired: a pending one is dropped
+    if (blocks.get("session") or {}).get("state") == "fatigued" or labels.get("choice") == "stop":   # none while tired or stopping: a pending one is dropped
         return steps, None
     pending = last.get("how")
     if pending and last["ts"] is not None:
@@ -159,7 +159,7 @@ def _found_problem(last: dict, evidence: dict | None, at: str) -> dict | None:
 
 
 def _literacy_followup(student_id: str, last: dict, steps: list[dict], evidence: dict | None, request: str,
-                       at: str) -> tuple[list[dict], dict | None]:
+                       at: str, stopping: bool = False) -> tuple[list[dict], dict | None]:
     """Follow up the literacy task set last turn (step 05e); returns (steps, the task still pending).
 
     The task is done when a verify task is answered (ail_task) or, for an ask task, when this message is a research
@@ -169,9 +169,12 @@ def _literacy_followup(student_id: str, last: dict, steps: list[dict], evidence:
     - the plan doesn't end in a question: reask re-asks it in one line;
     - the plan ends in a question: it waits; after literacy.max_waits replies waiting, it takes the next reply's
       question slot in place of the course question (never a how-AI-works check's), and the course resumes after.
-    A new session drops it unscored (a task never re-asked is never scored). A new task replaces it."""
+    A new session drops it unscored (a task never re-asked is never scored), and so does the student choosing to stop
+    (stopping), which is treated like fatigue: no re-ask. A new task replaces it."""
     s = _settings().literacy
     task = last.get("literacy")
+    if stopping:
+        return steps, None
     if task and last["ts"] is not None:
         task = {"waited": 0, **task}
         gap = (learner.parse_ts(at) - learner.parse_ts(last["ts"])).total_seconds() / 60
@@ -552,7 +555,7 @@ def tutor_turn(
     how, literacy, course_steps = None, None, steps
     if config.plan:
         steps, how = _how_ai_works(turn, blocks, last, steps, evidence, this_message)
-        steps, literacy = _literacy_followup(student["id"], last, steps, evidence, request, at)
+        steps, literacy = _literacy_followup(student["id"], last, steps, evidence, request, at, stopping=choice == "stop")
         _unchecked(course_steps, steps, points)
     considered = [c for step in steps for c in step.pop("considered", [])]   # add-on candidates not picked (priorities)
     steps = reply_style(steps, student, turn, blocks)
