@@ -220,7 +220,7 @@ def build_server() -> FastMCP:
     The instructions include every move's section; a bad move text or going over instructions.max_words stops
     the server starting."""
     mcp = FastMCP(
-        name="eduX",
+        name="Synapse",
         instructions=plan.server_instructions(load_settings()),
         streamable_http_path="/mcp",
         stateless_http=True,

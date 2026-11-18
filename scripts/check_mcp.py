@@ -1,4 +1,4 @@
-"""Check a running eduX server through the Python MCP client, without Node or MCP Inspector.
+"""Check a running Synapse server through the Python MCP client, without Node or MCP Inspector.
 
     python scripts/check_mcp.py [--student demo-secure] [--key <key>] [--url http://127.0.0.1:8000/mcp]
 
@@ -21,7 +21,7 @@ example-mini pack loaded and the demo students seeded. It:
   link's fabrication check with 4 options, one per part per session, an ignored check re-asked then skipped, a
   self-correction's check, and the AI-literacy section of get_my_progress; and, with throwaway students that are
   removed after, no check or task for a fatigued student, and a literacy task taking the question slot after waiting;
-- checks the server instructions' length, that points_met scores the same as letters, full ids, a mix or with
+- checks the server reports its name as Synapse, and the server instructions' length, that points_met scores the same as letters, full ids, a mix or with
   no saved plan, and that another part's point is refused;
 - checks a bad answer is refused and records nothing, get_my_progress, update_my_profile, that a wrong or
   missing key is refused with 401, and that the minimal profile returns no plan;
@@ -872,6 +872,7 @@ async def main(url: str, key: str, student: str) -> None:
     keyed = f"{url}?key={key}"
     async with streamablehttp_client(keyed) as (read, write, _), ClientSession(read, write) as session:
         init = await session.initialize()
+        check(init.serverInfo.name == "Synapse", "the server reports its name as Synapse", init.serverInfo.name)
         instructions = init.instructions or ""
         words = len(instructions.split())
         sections = instructions.count(chr(10) + "## ")
