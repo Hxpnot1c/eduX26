@@ -531,8 +531,8 @@ def apply_exchange(event: dict) -> None:
     """Apply one exchange event: nudges, the "just show me" review, misconception activation, untested reviews,
     last_seen.
 
-    An exchange is not evidence: it nudges p_known a little by its labels and moves the forgetting
-    clock only decay.seen_refresh of the way to now. Being shown doesn't change understanding (step 05d): a
+    An exchange is not evidence: it nudges p_known a little by its labels, only up to nudges.ceiling, and moves
+    the forgetting clock only decay.seen_refresh of the way to now. Being shown doesn't change understanding (step 05d): a
     "just show me" exchange gets no nudge and doesn't discount later evidence (the immediate-recall rule
     already lowers credit straight after being shown); it still queues a review. Old ids are resolved through id_map.
     """
@@ -548,7 +548,10 @@ def apply_exchange(event: dict) -> None:
         if not offloaded:
             odds = _clamp(state["p_known"]) / (1 - _clamp(state["p_known"]))   # also a 1.0 saved before the clamp
             odds *= 1 + (multiplier - 1) * strength
-            state["p_known"] = odds / (1 + odds)
+            nudged = odds / (1 + odds)
+            # Talk is not evidence (nudges.ceiling): it can raise a part towards the ceiling, never past it, and
+            # never lowers a part that evidence has already lifted above it.
+            state["p_known"] = max(state["p_known"], min(nudged, s.nudges.ceiling))
         if state["clock_start"]:
             clock = parse_ts(state["clock_start"])
             clock += (t - clock) * s.decay.seen_refresh * strength

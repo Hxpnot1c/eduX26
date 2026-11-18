@@ -53,6 +53,7 @@ class Bkt:
 class Nudges:
     depth: dict[str, float]
     engagement: dict[str, float]
+    ceiling: float
     concept_tag_strength: float
 
 
@@ -388,6 +389,8 @@ def load_settings(path: Path = SETTINGS_PATH) -> Settings:
     settings = _build(Settings, _read_toml(path), "")
     if not 0 < settings.levels.new < settings.levels.secure < 1:
         raise SettingsError("levels: expected 0 < new < secure < 1")
+    if not 0 < settings.nudges.ceiling <= settings.levels.new:
+        raise SettingsError("nudges.ceiling: expected 0 < ceiling <= levels.new, so conversation alone never leaves 'new'")
     low, high = settings.personalisation.learn_rate_weight_bounds
     if not 0 < low <= 1 <= high:
         raise SettingsError("personalisation.learn_rate_weight_bounds: expected 0 < low <= 1 <= high")
