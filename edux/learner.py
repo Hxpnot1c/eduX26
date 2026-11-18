@@ -249,6 +249,28 @@ def question_evidence(features: list[str] | None) -> dict:
     return {"part_id": AIL_ASK, "type": "ail_question", "score": len(shown) / len(QUESTION_FEATURES), "misconception_ids": []}
 
 
+def found_problem(kind: str = "ail_task", points_met: list[str] | None = None) -> dict:
+    """Verify evidence for a reported dead or mismatched source (research fixes, 0003): finding the problem is a
+    successful check, so it scores 1 whatever was ticked (a dead page has no publisher, date or figure to tick)."""
+    return {"part_id": AIL_VERIFY, "type": kind, "score": 1.0, "misconception_ids": [], "points_met": list(points_met or [])}
+
+
+def record_skip(student_id: str, part_id: str, ts: str | None = None) -> None:
+    """An AI-literacy task or check left unanswered after its re-ask (research fixes, 0003): missing, not wrong, so
+    no evidence is written; the skip is counted for the progress view."""
+    conn = _conn()
+    with conn:
+        conn.execute("INSERT INTO literacy_skip (student_id, ts, part_id) VALUES (?, ?, ?)",
+                     (student_id, _event_ts(ts), part_id))
+
+
+def skips(student_id: str, part_ids: list[str], at: str | None = None) -> int:
+    """How many literacy tasks or checks on part_ids the student skipped up to at (default now)."""
+    marks = ", ".join("?" * len(part_ids))
+    return _conn().execute(f"SELECT COUNT(*) FROM literacy_skip WHERE student_id = ? AND part_id IN ({marks}) AND ts <= ?",
+                           (student_id, *part_ids, _event_ts(at))).fetchone()[0]
+
+
 def _write_evidence(conn: sqlite3.Connection, student: dict, ts: str, rows: list, origin: str,
                     exchange_id: int | None = None, check_id: str | None = None) -> list[int]:
     s = _settings()
@@ -792,6 +814,8 @@ def apply_evidence_event(event: dict) -> None:
         _activate_misconceptions(conn, student_id, split(event.get("misconception_ids")), ts)
     if weight > 0:  # an untaught pre-question is diagnostic only
         slip_add = _settings().session.fatigue_slip_add if fatigued else 0.0
+        if part_id == AIL_VERIFY and correct:   # Verify is graded: 3 of 4 ticks moves it 3/4 as far as 4 of 4
+            weight *= event["score"]
         learn_rate = personal_learn_rate(s.bkt.learn_rate, learning_offset(student_id, session_id)["offset"])
         _apply_evidence(conn, student_id, part_id, slip, guess, correct, ts, weight=weight, slip_add=slip_add,
                         learn_rate=learn_rate)

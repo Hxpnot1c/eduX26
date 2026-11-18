@@ -30,7 +30,7 @@ mcq = { slip = 0.10, guess = 0.25 }
 extend = { slip = 0.10, guess = 0.20 }      # an answer to a harder, extending question
 immediate = { slip = 0.10, guess = 0.30 }   # chat evidence straight after a worked example or hint; guess is at least the type's own
 ail_question = { slip = 0.15, guess = 0.20 }     # a research question, scored by its features (step 05e)
-ail_task = { slip = 0.10, guess = 0.15 }         # the answer to a verify task, or 0 for an ignored task
+ail_task = { slip = 0.10, guess = 0.15 }         # the answer to a verify task (a reported dead or mismatched source scores 1)
 ail_unprompted = { slip = 0.05, guess = 0.10 }   # checking a claim without being asked: counts more
 ail_how = { slip = 0.10, guess = 0.25 }          # a how-AI-works check: 4-option multiple choice
 mcq_check = { slip = 0.10, guess = 0.25 }   # a multiple-choice check on one point (step 05d); guess about 1 in 4 options
@@ -101,7 +101,7 @@ full_weight_at = 3.0       # coverage at which a pre-question counts as full evi
 
 [literacy]                 # AI-literacy coaching (step 05e)
 secure_every = 3           # at secure, a task every this many research questions (others: the feedback line only)
-max_followups = 1          # re-asks of an ignored literacy task before it scores 0
+max_followups = 1          # re-asks of an ignored literacy task or check before it counts as skipped (missing, not 0)
 max_waits = 2              # replies a literacy task waits behind a course question before it takes the question slot
 ask_min_features = 2       # fewer question features than this: coach the question (Ask), else Verify
 how_secure_every = 3       # at secure, a how-AI-works check every this many triggers for that part

@@ -105,7 +105,7 @@ def _how_ai_works(turn: context_blocks.Turn, blocks: dict, last: dict, steps: li
 
     Nothing while the student is fatigued (a pending check is dropped unscored). A pending check not answered this
     turn is re-asked (reask, with the same options and letter map) up to literacy.max_followups times; not answered
-    after that, it is recorded as ail_how with score 0. Otherwise the first trigger in this turn's labels
+    after that, it is counted as a skip (missing, not wrong: no evidence). Otherwise the first trigger in this turn's labels
     (plan.HOW_TRIGGERS) adds the check as the plan's last step, unless its part already had a check this session, or, with the part at secure, the trigger count isn't a multiple of
     literacy.how_secure_every. The check wins over the plan's own question and any literacy task."""
     s, sid = _settings(), turn.student_id
@@ -119,10 +119,7 @@ def _how_ai_works(turn: context_blocks.Turn, blocks: dict, last: dict, steps: li
             if pending["followups"] < s.literacy.max_followups:
                 return (plan.with_check(steps, plan.reask(pending["step"])[1]),
                         {**pending, "followups": pending["followups"] + 1})
-            asked = pending["step"].get("question") or {}
-            learner.record_evidence(sid, pending["part_id"], "ail_how", 0.0, ts=turn.at, apply="now",
-                                    point_id=asked.get("point_id"),
-                                    n_options=(1 + len(asked["wrong"]) + int(asked["extra"])) if asked else None)
+            learner.record_skip(sid, pending["part_id"], ts=turn.at)   # missing, not wrong
     session = learner.session_state(sid, turn.at)
     start = session["session_id"] if session else turn.at
     conn = learner._conn()
@@ -143,14 +140,30 @@ def _how_ai_works(turn: context_blocks.Turn, blocks: dict, last: dict, steps: li
     return steps, None
 
 
+def _found_problem(last: dict, evidence: dict | None, at: str) -> dict | None:
+    """The student reported a dead or mismatched source (source_conflict) as a Verify answer, or while a verify task
+    is pending this session: finding the problem is a successful check (learner.found_problem), always as ail_task
+    so that one report can't make Verify secure (ail_unprompted's low slip would). Any other answer is kept as it
+    is, and a report with no verify task or answer is left to the how-AI-works check (research fixes, 0003)."""
+    if evidence is not None:
+        if evidence["part_id"] == learner.AIL_VERIFY and evidence["type"] in learner.LITERACY_ANSWERS:
+            return learner.found_problem("ail_task", evidence.get("points_met"))
+        return evidence
+    task = last.get("literacy")
+    if task and task["skill"] == "verify" and last["ts"] is not None and (
+            (learner.parse_ts(at) - learner.parse_ts(last["ts"])).total_seconds() / 60 <= _settings().session.gap_minutes):
+        return learner.found_problem()
+    return None
+
+
 def _literacy_followup(student_id: str, last: dict, steps: list[dict], evidence: dict | None, request: str,
                        at: str) -> tuple[list[dict], dict | None]:
     """Follow up the literacy task set last turn (step 05e); returns (steps, the task still pending).
 
     The task is done when a verify task is answered (ail_task) or, for an ask task, when this message is a research
     question (its ail_question is the score). Not done:
-    - re-asked already (literacy.max_followups times) and still not done: recorded as ail_task with score 0 on its
-      skill's part, and dropped;
+    - re-asked already (literacy.max_followups times) and still not done: counted as a skip on its skill's part
+      (missing, not wrong: no evidence), and dropped;
     - the plan doesn't end in a question: reask re-asks it in one line;
     - the plan ends in a question: it waits; after literacy.max_waits replies waiting, it takes the next reply's
       question slot in place of the course question (never a how-AI-works check's), and the course resumes after.
@@ -167,7 +180,7 @@ def _literacy_followup(student_id: str, last: dict, steps: list[dict], evidence:
         if done or gap > _settings().session.gap_minutes:
             task = None
         elif task["followups"] >= s.max_followups:
-            learner.record_evidence(student_id, task["part_id"], "ail_task", 0.0, ts=at, apply="now")
+            learner.record_skip(student_id, task["part_id"], ts=at)   # missing, not wrong
             task = None
         elif has_room:
             steps = steps + [plan.literacy_reask(task)]
@@ -421,6 +434,8 @@ def tutor_turn(
         node_ids = last["focus"] or ([] if graph.is_literacy(answer["part_id"]) else [answer["part_id"]])
     # a research question or other message (not an answer, no ids given) never sets or changes the course focus:
     # its matches serve this turn only (trusted sources), and the focus stays where it was
+    if this_message.get("source_conflict") and not lost:   # a dead or mismatched source found while checking
+        evidence = _found_problem(last, evidence, at)
     side_turn = not node_ids and this_message.get("request_type") in ("research", "other")
     resolution = graph.resolve(message or "", node_ids)
     if not resolution["parts"] and not resolution["candidates"] and last["focus"] and not _asks_for_reviews(message or ""):
@@ -611,11 +626,15 @@ def _ai_literacy(student_id: str, at: str) -> dict:
         return sum(feature in r["question_features"].split(";") for r in chosen) / len(chosen) if chosen else None
 
     recent, before = [r for r in rows if r["ts"] > cut], [r for r in rows if r["ts"] <= cut]
-    held = [m["wrong_idea"] for m in context_blocks.held_misconceptions(student_id, graph.parts_of(learner.AIL_HOW))]
-    return {
-        "ask": {"level": learner.level(learner.part_p(student_id, learner.AIL_ASK, at))},
-        "verify": {"level": learner.level(learner.part_p(student_id, learner.AIL_VERIFY, at))},
-        "how_ai_works": {"level": learner.level(learner.rollup(student_id, learner.AIL_HOW, at)), "held": held},
+    how_parts = graph.parts_of(learner.AIL_HOW)
+    held = [m["wrong_idea"] for m in context_blocks.held_misconceptions(student_id, how_parts)]
+    return {   # skipped: tasks or checks left unanswered, which count as missing, not wrong
+        "ask": {"level": learner.level(learner.part_p(student_id, learner.AIL_ASK, at)),
+                "skipped": learner.skips(student_id, [learner.AIL_ASK], at)},
+        "verify": {"level": learner.level(learner.part_p(student_id, learner.AIL_VERIFY, at)),
+                   "skipped": learner.skips(student_id, [learner.AIL_VERIFY], at)},
+        "how_ai_works": {"level": learner.level(learner.rollup(student_id, learner.AIL_HOW, at)), "held": held,
+                         "skipped": learner.skips(student_id, how_parts, at)},
         "question_features": {f: _trend(share(f, recent), share(f, before)) for f in learner.QUESTION_FEATURES},
     }
 

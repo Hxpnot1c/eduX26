@@ -16,9 +16,9 @@ example-mini pack loaded and the demo students seeded. It:
   due review as MCQs (demo-weak, demo-showme), a step back when the same point is missed again after its
   re-teach (demo-showme), and that options are shuffled differently per student;
 - runs research questions (demo-weak): answer_with_sources and a literacy task, an ignored task re-asked once then
-  scored 0, Ask and Verify raised, no task on a course question; a task only every literacy.secure_every research
+  counted as a skip with no evidence, Ask and Verify raised, no task on a course question; a task only every literacy.secure_every research
   questions at secure (demo-showme); and how-AI-works checks (demo-secure): cutoff only without web access, a bad
-  link's fabrication check with 4 options, one per part per session, an ignored check re-asked then scored 0, a
+  link's fabrication check with 4 options, one per part per session, an ignored check re-asked then skipped, a
   self-correction's check, and the AI-literacy section of get_my_progress; and, with throwaway students that are
   removed after, no check or task for a fatigued student, and a literacy task taking the question slot after waiting;
 - checks the server instructions' length, that points_met scores the same as letters, full ids, a mix or with
@@ -358,7 +358,7 @@ async def stuck_on_point(url: str) -> None:
 
 async def research_questions(url: str) -> None:
     """Research questions and the literacy task (step 05e, demo-weak): answer_with_sources then literacy_task, an
-    ignored task re-asked once then scored 0, Ask and Verify raised by a well-phrased question and an answered
+    ignored task re-asked once then counted as a skip (missing, not 0), Ask and Verify raised by a well-phrased question and an answered
     verify task, and no literacy task on a course question."""
     student = "demo-weak"
     keyed = f"{url}?key={learner.get_student(student)['key']}"
@@ -391,11 +391,12 @@ async def research_questions(url: str) -> None:
     got = await turn("ok thanks", {"request_type": "other"})
     check(moves(got) == ["reask"] and got["plan"][0]["data"].get("asked") == "literacy_task",
           "an ignored literacy task is re-asked once", json.dumps(moves(got)))
-    before = max_evidence_id()
+    before, skipped = max_evidence_id(), learner.skips(student, ["ail_ask"])
     got = await turn("nice", {"request_type": "other"})
     zero = [(e["part_id"], e["evidence_type"], e["score"]) for e in evidence(student, before)]
-    check(moves(got) == [] and zero == [("ail_ask", "ail_task", 0.0)] and plan_json(student).get("literacy") is None,
-          "still ignored, it is recorded as ail_task 0 and dropped", f"{moves(got)} {json.dumps(zero)}")
+    check(moves(got) == [] and zero == [] and learner.skips(student, ["ail_ask"]) == skipped + 1
+          and plan_json(student).get("literacy") is None,
+          "still ignored, it is counted as a skip (no evidence) and dropped", f"{moves(got)} {json.dumps(zero)}")
 
     ask_before = p("ail_ask")
     sharp = {"request_type": "research", "question_features": ["concept", "context", "asks_sources", "asks_reasoning"],
@@ -444,7 +445,7 @@ async def secure_every(url: str) -> None:
 async def how_ai_works(url: str) -> None:
     """How-AI-works checks (step 05e, demo-secure): cutoff only with asks_recent and no web access; a bad link
     gets the correction then a 4-option check on fabrication (a right letter raises it, a wrong one activates the
-    misconception); one check per part per session; an ignored check re-asked once then scored 0; a
+    misconception); one check per part per session; an ignored check re-asked once then skipped (no evidence); a
     self-correction gets a check on confidence and is stored."""
     student = "demo-secure"
     keyed = f"{url}?key={learner.get_student(student)['key']}"
@@ -500,11 +501,11 @@ async def how_ai_works(url: str) -> None:
           json.dumps(moves(got)))
     got = await turn("ok", {"request_type": "other"})
     check(moves(got) == ["reask"], "an ignored check is re-asked once", json.dumps(moves(got)))
-    before = max_evidence_id()
+    before, skipped = max_evidence_id(), learner.skips(student, ["ail_how_agreement"])
     await turn("fine", {"request_type": "other"})
     zero = [(e["part_id"], e["evidence_type"], e["score"], e["point_id"]) for e in evidence(student, before)]
-    check(zero == [("ail_how_agreement", "ail_how", 0.0, "ail_how_agreement_p1")],
-          "still not answered, it is recorded as ail_how 0", json.dumps(zero))
+    check(zero == [] and learner.skips(student, ["ail_how_agreement"]) == skipped + 1,
+          "still not answered, it is counted as a skip, with no evidence", json.dumps(zero))
 
     got = await turn("Sorry, which formula was it?", {"request_type": "concept", "conflict_flagged": True})
     flagged = learner._conn().execute("SELECT conflict_flagged FROM exchange_log WHERE student_id = ? ORDER BY id DESC LIMIT 1",
@@ -522,7 +523,7 @@ async def how_ai_works(url: str) -> None:
 
 
 THROWAWAY_TABLES = ("student_profile", "student_assessment", "exchange_log", "part_state", "student_misconception", "approach_record",
-                    "review_queue", "evidence_derived", "evidence_log", "call_log", "issued_plan")
+                    "review_queue", "evidence_derived", "evidence_log", "call_log", "issued_plan", "literacy_skip")
 
 
 def drop_student(student: str) -> None:
@@ -567,7 +568,7 @@ async def fatigued_student(url: str) -> None:
 
 async def waiting_task(url: str) -> None:
     """A literacy task behind course questions waits two replies, then takes the next reply's question slot; the
-    course check it displaced comes alone in the reply after, and the ignored re-ask scores 0 (step 05e)."""
+    course check it displaced comes alone in the reply after, and the ignored re-ask is a skip (step 05e)."""
     student = "check-waiting"
     keyed = f"{url}?key={new_student(student)}"
     labels = {"question_depth": "surface", "engagement": "active", "request_type": "concept"}
@@ -592,11 +593,10 @@ async def waiting_task(url: str) -> None:
         second = await right()                                           # waits: 2
         third = await right()                                            # takes the question slot
         fourth = await turn("Sorry, can we carry on?")                   # the displaced check, alone
-        zero = learner._conn().execute("SELECT evidence_type, score FROM evidence_log WHERE student_id = ? "
-                                       "ORDER BY id DESC LIMIT 1", (student,)).fetchone()
+        skipped = learner.skips(student, ["ail_ask", "ail_verify"])
         check(purposes(first)[-1].startswith("ask_mcq") and purposes(second)[-1] == "ask_mcq:check"
               and purposes(third)[-1] == "reask:literacy_task" and purposes(fourth) == ["ask_mcq:check"]
-              and tuple(zero) == ("ail_task", 0.0),
+              and skipped == 1,
               "a waiting literacy task takes the question slot after 2 replies; the skipped check comes next, alone",
               " | ".join(", ".join(purposes(t)) for t in (first, second, third, fourth)))
     finally:

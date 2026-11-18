@@ -189,3 +189,11 @@ CREATE TABLE student_assessment (id INTEGER PRIMARY KEY AUTOINCREMENT, student_i
   created_at TEXT NOT NULL);
 CREATE INDEX idx_student_assessment_student ON student_assessment(student_id, date);
 ```
+
+`migrations/013_literacy_skip.sql` (research fixes, 0003) records an AI-literacy task or how-AI-works check left unanswered after its re-ask. It is missing, not wrong: no evidence row is written, and this event only counts the skips shown beside the level in progress. It is append-only, and rebuild ignores it.
+
+```sql
+CREATE TABLE literacy_skip (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT NOT NULL, ts TEXT NOT NULL,
+  part_id TEXT NOT NULL);                -- the skill's part (ail_ask, ail_verify) or the how-AI-works part
+CREATE INDEX idx_literacy_skip_student ON literacy_skip(student_id, part_id);
+```

@@ -298,7 +298,7 @@ def remove_students() -> dict[str, str]:
     ids = list(keys)
     with conn:
         for sid in ids:
-            for table in ("exchange_log", "evidence_log", "student_profile", "student_assessment", "issued_plan", *learner.DERIVED_TABLES):
+            for table in ("exchange_log", "evidence_log", "literacy_skip", "student_profile", "student_assessment", "issued_plan", *learner.DERIVED_TABLES):
                 conn.execute(f"DELETE FROM {table} WHERE student_id = ?", (sid,))
             conn.execute("DELETE FROM student WHERE id = ?", (sid,))
     return keys
