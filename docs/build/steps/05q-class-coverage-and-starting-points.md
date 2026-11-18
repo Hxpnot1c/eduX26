@@ -21,10 +21,12 @@ Branch `build/class-coverage-and-starting-points`, from `main` after step 05p.
    - **Coverage is profile, not events,** like assessments. A coverage row counts for an event only when `taught_on` is on or before the event's date, so a rebuild gives the same state.
 3. **The starting point depends on coverage.** This applies only to parts with no evidence yet.
    - **Not covered:** `bkt.prior` with the difficulty shift, as now.
-   - **Covered in class:** `coverage.prior_default` (0.50), with the difficulty shift. Once the class has first answers on covered parts, this is replaced per class by an estimate from them:
+   - **Covered in class:** `coverage.prior_default` (0.50), with the difficulty shift.
+   - **The class estimate** is only used when `coverage.class_estimate_enabled` is on (see "The class estimate and the privacy rules" below). It is off by default, and covered parts then use `coverage.prior_default`. When it's on, the default is replaced per class by an estimate from the class's own first answers on covered parts:
      - it's shrunk towards the default with k = `coverage.class_k` (25) first answers;
-     - it's converted to a prior the same way as the personal adjustment (item 4).
-     - It's computed from the raw evidence of class members before the time asked, against the default covered prior, so there's no circularity and a rebuild gives the same state.
+     - it's converted to a prior the same way as the personal adjustment (item 4), with the same smoothing;
+     - it's never more than `coverage.class_max_down` (0.075) below `coverage.prior_default`. So by this route a covered topic never starts below 0.425, before the difficulty shift.
+     - It's computed from the raw evidence of class members before the time asked, against the default covered prior. So there's no circularity, and a rebuild gives the same state.
    - **The forgetting clock starts at `taught_on`** for covered parts with no evidence. `p_now` decays from the covered prior since then.
      - `due_reviews` includes covered parts with no evidence, due at `taught_on` + the share gap, floored at `min_gap_days`, with reason `taught_in_class`.
      - So topics taught in class but never practised in Synapse get reviews.
@@ -36,7 +38,9 @@ Branch `build/class-coverage-and-starting-points`, from `main` after step 05p.
      - an explain-back before any teach step on it.
 
      "Teaching" means an earlier issued `teach_point`, `show`, `reteach` or worked example on that part, or an exchange with support `worked_example` or `hint` on it. Each answer's sector is its part's coverage at that time.
-   - **The estimate** is n/(n + k) × (logit(mean score) − logit(mean expected success under the part's starting point)), with the mean score clamped to [0.02, 0.98].
+   - **The estimate** is n/(n + k) × (logit(smoothed score) − logit(smoothed expected)). Both are smoothed before the logit, so an all-right or all-wrong start can't give an infinite offset:
+     - smoothed score = (sum of scores + 0.5) / (n + 1);
+     - smoothed expected = (sum of expected success under the part's starting point + 0.5) / (n + 1).
    - It is built from evidence in earlier sessions, like the learning-rate offset, so it is stable within a session and cacheable (step 05r).
    - **Shrinkage:** k = `starting.k` (25) first answers. **Bounds:** ±`starting.bound_logits` (1.5).
    - **Applies to:** parts in that sector with no evidence yet.
@@ -76,16 +80,19 @@ The difficulty shift on the half-life is unchanged.
 - **The forgetting clock from `taught_on`:** the decay model plus Cepeda et al. (2008).
 - Full rows are in `reference/research.md`, under "Learner model and settings" and "Personalisation".
 
-## Decision needed: the class estimate and the privacy rules
-`docs/research/personalisation.md` §5 and §7 treat a class-level starting estimate as **cross-student profiling**. It is turned on only when the school gives a written instruction. It must be aggregate per part with a minimum cell size of 5, listed in the DPIA, with a just-in-time notice, and capped downward at 0.075. The spec above has no switch, size minimum or cap.
+## The class estimate and the privacy rules
+`docs/research/personalisation.md` §5 and §7 treat a class-level starting estimate as **cross-student profiling**. So, as §7 requires:
+- **It is off by default.** `coverage.class_estimate_enabled = false`. It is turned on only by the school's written instruction, recorded as this setting.
+- **One school's data only.** It reads only members of the student's own class.
+- **At least 5 students.** There's no class estimate from fewer than `coverage.class_min_students` students with first answers on covered parts.
+- **It's listed in the DPIA notes,** `docs/build/reference/dpia-notes.md`, which this step creates.
+- **Students are told.** While it's on, a one-line notice (`text/notices/class_estimate.md`) tells students that their class's results shape their starting point:
+  - in `get_my_progress`;
+  - on the first `tutor_turn` of a session, once.
+- **The downward cap is 0.075** (`coverage.class_max_down`), so by this route a covered topic never starts below 0.425.
+- **It stays off in the demo seed.** Covered topics use `coverage.prior_default`.
 
-Proposed defaults, for you to confirm or change:
-- `coverage.class_estimate_enabled = false`. With it off, covered parts use `coverage.prior_default`, so the coverage record still works without cross-student data.
-- When on, there is no class estimate from fewer than 5 students with first answers on covered parts.
-- **A downward limit.** The class estimate is bounded at ±1.5 logits, like the personal offset, so a weak class's covered prior can fall to about 0.18 (sigmoid(−1.5)). That is below the not-covered 0.30, and would give "a strong student in a low set a low expectation". Choose one:
-  1. floor the covered prior at the part's not-covered starting point (recommended: a topic taught in class never starts lower than one not yet taught);
-  2. §7's cap: at most 0.075 below `coverage.prior_default`;
-  3. no limit, relying on the personal covered offset (item 4) to correct the individual.
+With it off, the coverage record still works fully: covered parts start at the default and their clock starts at `taught_on`.
 
 ## Files
 - **Migrations:** the next free number when you start (014 at time of writing, if no earlier step has taken one):
@@ -105,6 +112,8 @@ Proposed defaults, for you to confirm or change:
   - the demo class has covered the first few Theme 1 sections of the example pack (3.1.1 PED, 3.1.2 PES), taught 3–4 weeks back;
   - demo-weak's covered topics have faded since then.
 - `text/tools/update_my_profile.md`: `covered_in_class`.
+- `text/notices/class_estimate.md`: the student notice, shown only while the class estimate is on.
+- `docs/build/reference/dpia-notes.md` (new): lists the class estimate (cross-student, school-instructed, off by default).
 - `scripts/check_mcp.py`: a `coverage` run.
 - **Docs:**
   - this file;
@@ -112,16 +121,16 @@ Proposed defaults, for you to confirm or change:
   - `reference/learner-model.md` (the starting point, sectors, feed-forward, the clock);
   - `reference/settings.md` (labels);
   - `reference/tools-and-context.md` (`covered_in_class`);
-  - `reference/research.md` rows if anything ends up different.
+  - `reference/research.md`: the "Starting points depend on whether the class has covered the topic" caveat now says the class estimate is off by default, school-instructed and capped at 0.075. Other rows change too if anything ends up different.
 
 ## Settings
 ```toml
 [coverage]
 prior_default = 0.50             # judgement call, starting value
 class_k = 25                     # from research: Simpson et al. (2024) spread plus our simulation
-class_estimate_enabled = false   # pending your decision (see above)
-class_min_students = 5           # from personalisation.md §5: minimum cell size
-class_floor = "not_covered"      # pending your decision (see above): not_covered / cap_0075 / none
+class_estimate_enabled = false   # off by default: on only with the school's written instruction (personalisation.md §7)
+class_min_students = 5           # from personalisation.md §5/§7: minimum cell size
+class_max_down = 0.075           # from personalisation.md §7: the class estimate never goes more than this below prior_default
 
 [starting]
 k = 25                           # from research: Simpson et al. (2024) intercept SD 0.57–0.90 logits → k ≈ 18–44 in our simulation
@@ -158,6 +167,8 @@ The startup identifiability check covers the new guesses.
 - Pre-teaching evidence moves the offset; post-teaching evidence doesn't.
 - Feed-forward moves a new part, and stops once the part has evidence.
 - The explain-back guess is 0.20 / 0.15 / 0.10 by number of points.
+- An all-right and an all-wrong start give finite offsets within ±1.5 logits.
+- With the class estimate off, covered parts start at `coverage.prior_default`. With it on, it needs 5 students, never goes below 0.425 before the difficulty shift, and the notice appears.
 - `ail_*` starting points are unchanged.
 - Every demo student's levels per part are re-captured and listed in the PR.
 - The gate passes:
@@ -174,5 +185,7 @@ In `scripts/check_mcp.py` (`coverage`):
 - pre-teaching evidence feeds the offset, post-teaching doesn't;
 - feed-forward moves a new part and stops once it has evidence;
 - the explain-back guess by number of points;
+- an all-right and an all-wrong start (finite, bounded offsets);
+- the class estimate: off by default; with it on, fewer than 5 students gives no estimate, the 0.075 cap holds, and the notice appears;
 - `ail_*` untouched;
 - rebuild identical.
