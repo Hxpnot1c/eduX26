@@ -86,6 +86,7 @@ full_weight_at = 3.0       # coverage at which a pre-question counts as full evi
 
 [points]                   # point-by-point teaching (step 05d)
 max_words = 80             # words of explanation per teach_point (MCQ options don't count)
+max_words_requested = 120  # judgement call, starting value (= style.max_words): a longer answer_length raises teach_point only to this, so it stays one point per message
 reteach_limit = 1          # re-teaches of a missed point before moving on
 warn_min = 2               # validation warning below this many points per part
 warn_max = 4               # and above this many

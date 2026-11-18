@@ -121,6 +121,7 @@ class Prequestion:
 @dataclass(frozen=True)
 class Points:
     max_words: int
+    max_words_requested: int
     reteach_limit: int
     warn_min: int
     warn_max: int
@@ -395,6 +396,8 @@ def load_settings(path: Path = SETTINGS_PATH) -> Settings:
     low, high = settings.personalisation.learn_rate_weight_bounds
     if not 0 < low <= 1 <= high:
         raise SettingsError("personalisation.learn_rate_weight_bounds: expected 0 < low <= 1 <= high")
+    if settings.points.max_words_requested < settings.points.max_words:
+        raise SettingsError("points.max_words_requested: expected at least points.max_words")
     check_identifiable(settings)
     return settings
 

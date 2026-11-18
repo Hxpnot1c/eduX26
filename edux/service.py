@@ -401,7 +401,7 @@ def reply_style(steps: list[dict], student: dict, turn: context_blocks.Turn, blo
     it: length_fatigued_share of it on every step while fatigued, otherwise length_known_share of it on a review or
     check of a part at developing or above (Kalyuga et al., 2003: full explanations slow down students who already
     know the material). A student's own answer_length always wins: nothing shrinks, and teach_point's word budget
-    becomes it. Diagram: steps on a part the pack marks as a diagram carry data.diagram, and the first of them
+    becomes it, up to points.max_words_requested (so a longer length never turns one point into several). Diagram: steps on a part the pack marks as a diagram carry data.diagram, and the first of them
     on each part gets the diagram line added to its cue. That follows the content, never the student."""
     s = _settings().style
     row = learner._conn().execute("SELECT answer_length FROM student_profile WHERE student_id = ?",
@@ -413,8 +413,8 @@ def reply_style(steps: list[dict], student: dict, turn: context_blocks.Turn, blo
     for step in steps:
         data, part = dict(step["data"]), step["part_id"]
         if own:
-            if step["move"] == "teach_point":
-                data["max_words"] = own
+            if step["move"] == "teach_point":   # a shorter length always wins; a longer one only up to one point's worth
+                data["max_words"] = min(own, _settings().points.max_words_requested)
         else:
             share = s.length_fatigued_share if fatigued else (
                 s.length_known_share if step["move"] == "ask_mcq" and data.get("purpose") in CHECKS and part
