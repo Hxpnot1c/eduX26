@@ -14,5 +14,11 @@ dependencies = [
     "uvicorn",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [tool.setuptools]
 packages = ["edux", "ingest"]
