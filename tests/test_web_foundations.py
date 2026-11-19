@@ -160,7 +160,9 @@ def test_the_teacher_commands(course, capsys):
 
 
 def _static_files(*suffixes):
-    return [p for p in STATIC.rglob("*") if p.suffix in suffixes]
+    """The site's own files. The design pages in static/demo are served as they are, in demo mode only, under a policy of
+    their own (decision 0031; tests/test_web_demo_pages.py), so the site's rules below don't apply to them."""
+    return [p for p in STATIC.rglob("*") if p.suffix in suffixes and "demo" not in p.relative_to(STATIC).parts[:1]]
 
 
 def test_no_page_asks_another_origin_for_anything():
