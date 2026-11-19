@@ -46,6 +46,17 @@ def graph_part() -> str:
 
 
 @pytest.fixture(autouse=True)
+def _throwaway_data_dir(tmp_path, monkeypatch):
+    """Every test gets its own data folder, even one that never asks for a course: without this, a test that logs a
+    call (server.timed) or opens the learner model wrote to the real ./data. The cached connection is dropped before
+    and after, so no test reuses another's database."""
+    monkeypatch.setenv("EDUX_DATA_DIR", str(tmp_path))
+    learner.use_database(None, None)
+    yield
+    learner.use_database(None, None)
+
+
+@pytest.fixture(autouse=True)
 def _default_switches(monkeypatch):
     """Tests run with the shipped defaults whatever the shell has set; a test that wants a switch sets it itself."""
     for name in ("EDUX_FIND_ERROR", "EDUX_PERSONALISATION", "EDUX_CONFIDENCE"):
