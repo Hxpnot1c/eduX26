@@ -18,6 +18,15 @@ A student who asks the chatbot about their progress should be able to open their
 4. **Link previews.** A chat app that builds a preview by running the page's JavaScript could use the token up before the student clicks. Most preview fetchers never see it: the fragment isn't sent to the server, and they don't run scripts. When it does happen, the page doesn't show an error or a blank page. It says: "This link has already been used or has expired. Ask Synapse for your progress again to get a new one." (tested in a real browser).
 5. **What the chatbot is told.** Server instructions rule 12: "Share map_url only if asked about progress or the map." The tool description adds that it works once and soon expires, that a new call gives a new one, not to repeat it unprompted, and that it is not the student's key. The instructions stay within 900 words (899). Room was made by cutting words without changing meaning, as in 0019.
 
+## Measured on the real pack, and the progress limits
+
+The 2,400-character figure (decisions 0004 and 0023) was measured on `example-mini`. On the real Edexcel Theme 1 pack (seeded with `seed-demo --parts target=welfare_loss`, 19 November), `get_my_progress` was over it even without a link: the parts that are never cut (tree, trends, AI literacy) came to 2,670 characters for demo-weak and 2,556 for demo-secure, so every lever, weak link and review was dropped and the call was still over budget. The every-part view was 6,265 and 5,877 against 4,000. The map link was left out in all four cases.
+
+So, on this pull request:
+- `ai_literacy.question_features` leaves out a feature with no research questions in either window (it was four entries of nulls, 262 characters, for a student who hasn't asked any).
+- `get_my_progress` has its own limits, with the link counted: `results.max_chars_progress = 3000` (levels view) and `max_chars_full_progress = 6500` (every part, was 4,000). Every other tool keeps `results.max_chars = 2400`. `fit_progress` cuts in the same order as before. Both are engineering budgets, not research findings.
+- A tree that shrinks properly on full-size packs (rather than a bigger limit) is a later step.
+
 ## Consequences
 
 - The student's key never appears in a tool result or the chat. A link that leaks from the chat log is useless after one use or 15 minutes, and a session after 2 hours or when the tab closes.
