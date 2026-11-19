@@ -12,6 +12,7 @@ from typing import Any
 
 from edux import context_blocks, graph, learner, plan
 from edux.settings import TEXT_DIR, ContextConfig, Settings, load_context, load_settings, read_text
+from edux.web import links
 
 
 @functools.cache
@@ -944,8 +945,20 @@ def _ai_literacy(student_id: str, at: str) -> dict:
 
 def my_progress(student: dict, include_parts: bool = False, at: str | None = None) -> dict:
     """Tree with levels, the biggest levers, weak links, reviews due, AI-literacy trends and AI-literacy skills (step
-    05e), cut to the result size limit. AI-literacy parts are left out of the tree, levers and reviews."""
-    return fit_progress(progress_parts(student, include_parts, at), result_limit(include_parts))
+    05e), cut to the result size limit. AI-literacy parts are left out of the tree, levers and reviews. With a public base
+    URL set, also map_url: a single-use link to the student's own page that never carries their key (decision 0026),
+    added before the cut so it counts towards the limit. If the result still doesn't fit (the tree and AI literacy are
+    never cut), the link is left out; its token simply expires unused."""
+    limit = result_limit(include_parts)
+    out = progress_parts(student, include_parts, at)
+    url = links.map_url(student["id"])
+    if url:
+        out["map_url"] = url
+        out["map_url_expires_minutes"] = _settings().web.link_minutes
+    out = fit_progress(out, limit)
+    if url and result_size(out) > limit:
+        del out["map_url"], out["map_url_expires_minutes"]
+    return out
 
 
 def progress_parts(student: dict, include_parts: bool = False, at: str | None = None, reviews_limit: int | None = None) -> dict:
