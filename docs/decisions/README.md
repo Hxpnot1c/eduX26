@@ -111,5 +111,6 @@ The result that would make us revisit this.
 | [0028](0028-open-questions-between-multiple-choice.md) | Two open questions after every multiple-choice question | Proposed |
 | [0029](0029-concept-network-on-the-student-page.md) | The concept network replaces the map on the student's page | Proposed |
 | [0030](0030-per-student-teacher-view-and-the-demo-teacher.md) | The per-student teacher view (off by default, after a DPIA) and the demo teacher | Proposed |
+| [0031](0031-demo-design-pages.md) | Serve the two design pages as they are, in demo mode only | Proposed |
 
 Each later record is added to this table in the pull request that introduces it.
