@@ -133,7 +133,9 @@ The evidence behind Synapse's teaching and modelling decisions. Effect sizes are
 | Reteach as refutation: name the wrong idea, then ask a probe | Schroeder & Kucera (2022), refutation-text meta-analysis; Danielson et al. (2025) | Refutation texts g = 0.41 | |
 | Guiding question at the gap | Asher, Cao & Carvalho (2026) | Socratic tutoring +0.24 SD | Preprint |
 | Twin-concept contrasts | Alfieri, Nokes-Malach & Schunn (2013), *Educational Psychologist* (w2-03-01, w2-04-10) | Case comparisons d = 0.50 (57 experiments) | |
-| Planted-error "spot the error" Verify task | Fan & Chang (2026) | d = 0.35, with 12 planted errors | Must always be labelled as practice |
+| Planted-error "spot the error" practice (scoped, not built: decision 0012) | Fan & Chang (2026), *Behavioral Sciences* 16(9), 1671 (abstract only). **Corrected 19 Nov:** this paper planted 12 errors in AI-assisted student writing, and undergraduates caught about 54%; it is not a test of practice, and the 0.35 in its contrast table could not be identified, so no effect size is claimed | People miss about half of planted errors in AI output; telling them to evaluate does not make it happen | Undergraduates; no study of 16 to 18 year olds, of economics, or of whether practice transfers |
+| … erroneous examples | Alemdag, Eichelmann & Narciss (2025), *Review of Educational Research* (42 papers, abstract only); McLaren, Adams & Mayer (2015), delayed d = .33 | Small pooled effect (g = .136), larger with error explanations; sometimes only at a delay | Mostly maths, younger learners; prior-knowledge moderation conflicts (Große & Renkl 2007; Barbieri & Booth 2016) |
+| … always give the correct statement afterwards | Marsh & Fazio (2006); Eslick, Fazio & Marsh (2011) (abstracts only) | Readers pick up false statements, generic warnings did not reduce it, per-item prompts did | Reading tasks |
 | Literacy expansion: rare How AI works checks, new parts, "whose view is missing?" | AILit (2026) competence crosswalk (overnight report 02) | Raises coverage from 8 to about 14 of 19 competences, partly | |
 
 ## Product and context
