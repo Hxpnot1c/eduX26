@@ -53,7 +53,7 @@ from mcp.client.streamable_http import streamablehttp_client
 from edux import demo, graph, learner, service
 from edux.settings import load_settings
 
-EXPECTED_TOOLS = {"tutor_turn", "get_my_progress", "update_my_profile"}
+EXPECTED_TOOLS = {"tutor_turn", "get_my_progress", "update_my_profile", "plan_my_study"}
 EXPECTED_PROMPTS = {"review_due", "check_me"}
 PART = "ped_formula"
 STATE_TABLES = ("part_state", "student_misconception", "review_queue", "approach_record", "evidence_derived")
@@ -539,6 +539,46 @@ def new_student(student: str) -> str:
     return learner.add_student(student, course, student_id=student)["key"]
 
 
+async def class_assessments(url: str) -> None:
+    """Class assessments, reminders and study plans (step 05u): a teacher-set test reaches a member, the first call of a
+    session mentions what is due this week (once, and not a test 16 days away), plan_my_study gives a day-by-day plan
+    within the budget, and a written assignment gets stages that say what to do, never what to write."""
+    student = "check-class"
+    keyed = f"{url}?key={new_student(student)}"
+    class_id = learner.add_class("Check class")
+    try:
+        learner.add_students_to_class(class_id, [student])
+        today = learner.parse_ts(learner.now_iso()).date()
+        parts = graph.parts_of("elasticities")
+        learner.add_class_assessment(class_id, "Class test", "class_test", (today + timedelta(days=3)).isoformat(), parts)
+        essay = learner.add_class_assessment(class_id, "Essay", "written_assignment", (today + timedelta(days=16)).isoformat(), parts)
+        labels = {"question_depth": "surface", "engagement": "active"}
+        first = await call(keyed, "tutor_turn", {"message": "How do I calculate PED?", "client": "check_mcp", "node_ids": [PART], "this_message": labels})
+        time.sleep(1.1)
+        second = await call(keyed, "tutor_turn", {"message": "And what does a value of 2 mean?", "client": "check_mcp", "node_ids": [PART], "this_message": labels})
+        names = [i["name"] for i in (first.get("upcoming") or {}).get("items", [])]
+        check(names == ["Class test"] and "upcoming" not in second,
+              "the first call of a session mentions a test due this week, once, and not one 16 days away", f"{names} then {'upcoming' in second}")
+        plan_out = await call(keyed, "plan_my_study", {})
+        check(plan_out.get("ok") and plan_out["assessment"]["name"] == "Class test" and plan_out["sessions"][-1]["kind"] == "mixed practice"
+              and service.result_size(plan_out) <= load_settings().results.max_chars,
+              "plan_my_study gives a dated plan for the soonest test, ending with mixed practice, within the budget",
+              f"{len(plan_out.get('sessions', []))} sessions, {service.result_size(plan_out)} characters")
+        written = await call(keyed, "plan_my_study", {"assessment_id": essay})
+        check(written.get("ok") and [x["stage"] for x in written["stages"]] == ["knowledge", "application", "analysis", "evaluation"]
+              and "sessions" not in written, "a written assignment gets four dated stages and no sessions",
+              json.dumps([x["stage"] for x in written.get("stages", [])]))
+        removed = await call(keyed, "update_my_profile", {"remove_assessment": {"id": essay}})
+        check(removed.get("ok") is False and "teacher" in removed.get("error", ""),
+              "a student cannot remove an assessment their teacher set", json.dumps(removed)[:100])
+    finally:
+        with learner._conn() as conn:
+            conn.execute("DELETE FROM student_assessment WHERE class_id = ?", (class_id,))
+            conn.execute("UPDATE student SET class_id = NULL WHERE class_id = ?", (class_id,))
+            conn.execute("DELETE FROM class WHERE id = ?", (class_id,))
+        drop_student(student)
+
+
 async def bridge(url: str) -> None:
     """The reply's ending (step 05t): when a part is finished, the ending is a bridge question towards the next topic
     (the pre-question move, with data.link); after its answer the first teach step says they can stop or switch, and
@@ -1017,6 +1057,7 @@ async def main(url: str, key: str, student: str) -> None:
     await rushing_student(url)
     await coverage(url)
     await bridge(url)
+    await class_assessments(url)
     await waiting_task(url)
     await engagement_rules(url)
     await priorities(url)
