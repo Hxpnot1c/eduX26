@@ -1,6 +1,6 @@
 # Build plan
 
-This folder is the build plan for the learning service: an MCP server that a school's chatbot connects to. It holds the course as a knowledge graph built from real exam material, keeps a learner model for each student, and tells the chatbot how to teach that student each turn.
+This folder is the build plan for Synapse, the learning service: an MCP server that a school's chatbot connects to. It holds the course as a knowledge graph built from real exam material, keeps a learner model for each student, and tells the chatbot how to teach that student each turn.
 
 - `reference/`: what we're building. Read the relevant reference file before each step.
 - `steps/`: the order to build it in, one branch and pull request per step.

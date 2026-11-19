@@ -116,10 +116,10 @@ A simple read-only page at `/me?key=` showing:
 - Real calendar reminders. Synapse can only remind in chat, at the start of a session.
 
 ### Rename, after the competition
-- Rename the internal identifiers (the `edux/` package and imports, `EDUX_*` environment variables, the repo) to Synapse in one commit.
+- Rename the internal identifiers (the `edux/` package and imports, `EDUX_*` environment variables, the `edux_ai_literacy` source id) to Synapse in one commit, after the competition. The GitHub repository is already `synapse-eduX26`.
 
 ### Diagrams, next (after step 05j)
-- Server-drawn diagrams: eduX draws standard diagrams (supply and demand shifts, a tax wedge, externalities, AD/AS) by rule and returns an image link, for chatbots that can't draw.
+- Server-drawn diagrams: Synapse draws standard diagrams (supply and demand shifts, a tax wedge, externalities, AD/AS) by rule and returns an image link, for chatbots that can't draw.
 
 ## Extras (only if time allows)
 - **Investigate activity.** An optional guided research task: ask → predict → AI answer with tagged claims → verify two claims → apply in a paragraph → reflect. It scores the AI-literacy skills from 05e (`ail_ask`, `ail_verify`), plus `think_first`, `apply` and `reflect`.

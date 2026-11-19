@@ -52,7 +52,7 @@ Whether the answer is right or wrong, the feedback should explain why.
 ### 4b. A review picked for a test (demo-weak, about 30 seconds)
 The seed gives demo-weak a mock in 5 days on the market-failure topic, and one part of it answered 8 days ago, so it is due now.
 1. In demo-weak's chat, ask **"Quiz me on what's due"**. The review is on that part, and the chatbot says it's for the mock, e.g. "Quick review of shifting supply, for your mock on Monday".
-2. Say on camera: **"eduX knows this student has a mock on Monday, so of what's due it picks what the mock covers and the student is weakest on, and says why. It never makes something due just because a test is coming: no cramming."**
+2. Say on camera: **"Synapse knows this student has a mock on Monday, so of what's due it picks what the mock covers and the student is weakest on, and says why. It never makes something due just because a test is coming: no cramming."**
 3. Optionally, in the terminal, `state --student demo-weak` lists the mock and the top candidates with their values.
 
 ## 5. Offloading and study pattern (demo-showme, about 1.5 minutes)
