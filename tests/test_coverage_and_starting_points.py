@@ -64,9 +64,12 @@ def test_the_forgetting_clock_starts_on_the_taught_date(student, klass, part):
     start = learner.starting_point(student["id"], part)
     assert start["clock_start"] == day
     taught = learner.parse_ts(day)
-    assert learner.p_now(start["p"], start["half_life"], start["clock_start"], taught) == pytest.approx(start["p"])
+    floor = learner.decay_floor(part)  # the normal start (decision 0025)
+    assert learner.part_p(student["id"], part, taught) == pytest.approx(start["p"])
     one_half_life = taught + timedelta(days=start["half_life"])
-    assert learner.p_now(start["p"], start["half_life"], start["clock_start"], one_half_life) == pytest.approx(start["p"] / 2)
+    assert learner.p_now(start["p"], start["half_life"], start["clock_start"], one_half_life, floor) == pytest.approx(
+        floor + (start["p"] - floor) / 2
+    )
 
 
 def test_a_covered_part_never_practised_is_due_for_review_and_not_listed_twice(student, klass, part):

@@ -14,7 +14,7 @@
     "confusable:out": "Often confused with", "confusable:in": "Often confused with", "causal:out": "Leads to", "causal:in": "Comes from",
   };
   const LEVEL_WORDS = {
-    new: "new", developing: "developing", secure: "secure", taught: "taught in class, not yet checked", none: "no answers yet",
+    new: "new", review: "needs review", developing: "developing", secure: "secure", taught: "taught in class, not yet checked", none: "no answers yet",
   };
 
   function svgEl(name, attrs, parent) {
@@ -82,6 +82,7 @@
       if (ov && typeof ov.fade === "number") g.setAttribute("opacity", String(ov.fade));
       svgEl("circle", { class: "ring", r: r, cx: 0, cy: 0 }, g);
       if (level(n.id) === "developing") svgEl("path", { class: "half", d: `M0 ${-r} A${r} ${r} 0 0 0 0 ${r} Z` }, g);
+      if (level(n.id) === "review") svgEl("circle", { class: "mark", r: (r * 0.35).toFixed(1), cx: 0, cy: 0 }, g);
       lines(n.name, 17).forEach((t, i) => { if (t) svgEl("text", { y: r + 14 + i * 14, "text-anchor": "middle" }, g).textContent = t; });
       g.addEventListener("click", () => select(n.id));
       g.addEventListener("keydown", (ev) => keys(ev, n.id));
@@ -98,10 +99,10 @@
       const ps = kids.get(concept.id) || [], g = svgEl("g", { class: "node collapsed", tabindex: -1, role: "button", transform: `translate(${x},${y})`, "data-id": concept.id }, parent);
       g.setAttribute("aria-label", concept.name + ", " + ps.length + " parts, press to open");
       svgEl("circle", { class: "ring plain", r: 30 }, g);
-      const counts = { new: 0, developing: 0, secure: 0, taught: 0, none: 0, plain: 0 };
+      const counts = { new: 0, review: 0, developing: 0, secure: 0, taught: 0, none: 0, plain: 0 };
       ps.forEach((p) => { counts[level(p.id)] += 1; });
       let a0 = -Math.PI / 2;
-      ["new", "developing", "secure"].forEach((lv) => {
+      ["new", "review", "developing", "secure"].forEach((lv) => {
         if (!counts[lv]) return;
         const a1 = a0 + (counts[lv] / ps.length) * 2 * Math.PI, big = a1 - a0 > Math.PI ? 1 : 0;
         const pt = (a) => `${(30 * Math.cos(a)).toFixed(2)} ${(30 * Math.sin(a)).toFixed(2)}`;

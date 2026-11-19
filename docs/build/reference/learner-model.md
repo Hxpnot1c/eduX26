@@ -36,9 +36,9 @@ A part the student hasn't met starts at `bkt.prior` with `decay.base_half_life_d
 3. **Plus the prerequisite shift:** `propagation.forward_weight × mean over its direct prerequisites of (logit p_now − logit starting point)`, counting only prerequisites the student has answered on (the others contribute 0). One hop; zero once the part has its own evidence.
 4. Back to a probability within [0.01, `starting.cap`] (0.65); answers can take a part anywhere.
 
-AI-literacy parts get none of this. **The forgetting clock starts at the date the part was taught** (`taught_on`), and a covered part with no answer is due for review (reason `taught_in_class`) at `taught_on` + the share gap. Because the half-life is short, a part taught weeks ago and never answered would decay to nothing, weaker than an untaught one, so **its forgetting stops at its normal start**; the same floor applies to its first answer's `p_before`. Coverage is profile, not events: a coverage row counts for an event only from its `taught_on` date, so a rebuild gives the same state.
+AI-literacy parts get none of this. **The forgetting clock starts at the date the part was taught** (`taught_on`), and a covered part with no answer is due for review (reason `taught_in_class`) at `taught_on` + the share gap. Like every part, it **fades towards its normal start, never below it** (the decay floor, below), so a part taught weeks ago and never answered never reads weaker than an untaught one; the same applies to its first answer's `p_before`. Coverage is profile, not events: a coverage row counts for an event only from its `taught_on` date, so a rebuild gives the same state.
 
-**What the student sees.** Until a part has its first answer it never shows developing or secure: a covered part shows `taught_in_class` ("taught in class, not yet checked"), any other shows `new` (`learner.shown_level`, `shown_rollup`). The planner uses the number.
+**What the student sees.** Until a part has its first answer it never shows developing or secure: a covered part shows `taught_in_class` ("taught in class, not yet checked"), any other shows `new` (`learner.shown_level`, `shown_rollup`). A part answered right at least once whose `p_now` has faded below `levels.new` shows `needs_review`, not `new`, so *new* means "not shown yet" (decision 0025). AI-literacy parts show their level as it is. The planner, the prerequisite gates and the queue band use the number.
 
 Later, a cross-student estimate (`learner.difficulty_signal`, e.g. first-attempt failure rates) is blended in at share `difficulty.w_cross`. It's 0 until there is enough evidence across students.
 
@@ -46,8 +46,10 @@ Later, a cross-student estimate (`learner.difficulty_signal`, e.g. first-attempt
 Read time only, never written back:
 
 ```
-p_now = p_known × 0.5 ^ (days_since(clock_start) / half_life_days)
+p_now = floor + (p_known − floor) × 0.5 ^ (days_since(clock_start) / half_life_days)
 ```
+
+The floor (`learner.decay_floor`, `decay.floor = "start"`) is the part's normal start (`initial_state`, the same for every student), so stale evidence counts for less instead of making a part read below an untouched one (research.md row 53, decision 0025). It is not the covered start, which is above `levels.new`. Ask and Verify fade towards `decay.literacy_floor` (0), so passing once doesn't keep a student near secure. The fade works both ways: a `p_known` below the floor, after a wrong answer, rises towards it. `decay.floor = "zero"` gives the old rule, `p_known × 0.5 ^ (…)`.
 
 Forgetting runs from the last time the student **got the part right**, not from when they last saw it. Seeing something isn't the same as knowing it.
 - **A correct answer** restarts the clock (`clock_start = last_correct = now`).
@@ -181,8 +183,9 @@ gap = share × days_to_exam
 
 - `share` comes from `scheduling` based on days to the student's next test on the part (`learner.days_to_exam`): the soonest of the final exam (`exam_date_override` if set and ahead, else the pack's exam papers) and the student's own upcoming assessments covering the part (priorities: homework, class tests, mocks). Spacing works towards the nearest test, and goes back to the final exam once that test has passed (Cepeda et al., 2008).
 - The gap is floored at `min_gap_days`.
-- **Recall threshold:** when a clock is running and `p_known > scheduling.review_when_below`, the part is also due when `p_now` is expected to fall below that threshold, `half_life × log2(p_known / review_when_below)` days on. If that comes first, it replaces the share gap (still floored at `min_gap_days`) with reason `recall_below`. A part already at or below the threshold, or with no clock, uses the share gap only. A crossing sooner than `min_gap_days` is floored to `min_gap_days` (pinned by tests, step 05k).
-- `due = now + gap`, with reason `scheduled` (or `recall_below`)
+- **Recall threshold:** when a clock is running and `p_known > scheduling.review_when_below`, the part is also due when `p_now` is expected to fall below that threshold, `half_life × log2((p_known − floor) / (review_when_below − floor))` days on (never, if the threshold is at or below the floor). If that comes first, it replaces the share gap (still floored at `min_gap_days`) with reason `recall_below`. A part already at or below the threshold, or with no clock, uses the share gap only. A crossing sooner than `min_gap_days` is floored to `min_gap_days` (pinned by tests, step 05k).
+- **Before it fades to new** (decision 0025): after a right answer, with `scheduling.review_before_new` on, the part is also due when `p_now` is expected to fall below `levels.new`, the same way; if that comes before the gap so far, it replaces it with reason `fading`. Since `levels.new` (0.40) is below `review_when_below` (0.50), it decides only when `p_known` is in (0.40, 0.50] after the answer.
+- `due = now + gap`, with reason `scheduled` (or `recall_below`, or `fading`)
 
 Shares are adapted from Cepeda et al. (2008): the optimal gap shrinks as the test gets closer, but it is a larger share of the time left (0.10 far, 0.19 mid, 0.30 near; tune-from-research). With no exam date, `base_half_life_days` is used as the gap.
 

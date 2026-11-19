@@ -38,3 +38,13 @@ It is **not** a finding about 0.50 against 0.75. The only source is Eglington & 
 
 ## Recommendation (Vishnu decides)
 Keep `review_when_below = 0.50`, label it a judgement call (as `settings.md` now does), and do not claim 0.70 to 0.80 as research for this setting. If the review backlog matters for the demo, the cap (`max_reviews_per_reply`) and the half-life are the levers that moved the numbers in this simulation, not the threshold.
+
+## After decision 0025 (fading to the normal start, "needs review", the fading review)
+The same simulation, rerun on 19 November once learnt parts fade towards their normal start instead of 0 and are reviewed before they fade below new (`scripts/simulate_review_threshold.py --thresholds 0.5 0.75`; synthetic students, not learning gains):
+
+| `review_when_below` | reviews a week | true retention on exam day | false secure | truly secure | due reviews over the cap |
+|---|---|---|---|---|---|
+| **0.50 (now)** | 4.99 ± 0.06 | 0.221 ± 0.014 | 0.00 | 1.07 ± 0.11 | 50.1 ± 0.9 |
+| **0.75** | 4.95 ± 0.06 | 0.211 ± 0.012 | 0.00 | 1.13 ± 0.10 | 48.0 ± 0.8 |
+
+Both thresholds now keep more parts truly secure (about 1.1 against 0.73 and 0.45), at slightly more reviews a week and a slightly larger backlog over the cap. The gap between 0.50 and 0.75 is now within noise; why has not been tested. This does not change the recommendation to keep 0.50; the cap and the half-life are still the levers.

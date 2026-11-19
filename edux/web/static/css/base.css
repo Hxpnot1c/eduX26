@@ -95,6 +95,8 @@ input[type="date"] { font: inherit; color: var(--ink); background: var(--paper-s
 /* discs: one drawing for a part's level, used by the key and (later) the map. Colour says the level; ring and fill repeat it. */
 .disc .ring { fill: none; stroke-width: 1.5; }
 .disc.new .ring { fill: var(--lv-new-fill); stroke: var(--lv-new-ring); }
+.disc.review .ring { fill: var(--lv-new-fill); stroke: var(--lv-new-ring); }
+.disc.review .mark { fill: var(--lv-new-ring); }
 .disc.developing .ring { fill: var(--paper); stroke: var(--lv-developing-ring); }
 .disc.developing .half { fill: var(--lv-developing-fill); }
 .disc.secure .ring { fill: var(--lv-secure-fill); stroke: var(--lv-secure-ring); }

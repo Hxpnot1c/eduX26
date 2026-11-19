@@ -83,6 +83,7 @@ def course_map(course_id: str | None = None) -> dict | None:
 REVIEW_WHY = {
     "scheduled": "Time to check that you still remember it.",
     "recall_below": "Your answers suggest this is slipping, so a short check helps.",
+    "fading": "You got this right before. A short check now keeps it from fading.",
     "taught_in_class": "Your class has covered this and you have not answered on it yet.",
     "just_show_me": "You were shown this. Trying it yourself is what makes it stick.",
     "untested": "You have talked about this but not been checked on it yet.",
@@ -129,12 +130,15 @@ def student_overlay(student_id: str, at: str) -> dict[str, dict]:
             if days <= FADE_FULL_DAYS
             else max(FADE_FLOOR, 1 - (1 - FADE_FLOOR) * (days - FADE_FULL_DAYS) / (FADE_FLOOR_DAYS - FADE_FULL_DAYS))
         )
-        overlay[part] = {"level": shown, "note": f"{n} answer{'s' if n != 1 else ''}, last {_ago(days)}", "fade": round(fade, 2)}
+        overlay[part] = {"level": _word(shown), "note": f"{n} answer{'s' if n != 1 else ''}, last {_ago(days)}", "fade": round(fade, 2)}
     return overlay
 
 
+LEVEL_CLASS = {"taught_in_class": "taught", "needs_review": "review"}  # shown_level -> the pages' level key (shell.js LEVELS)
+
+
 def _word(level: str) -> str:
-    return "taught" if level == "taught_in_class" else level
+    return LEVEL_CLASS.get(level, level)
 
 
 def chatbot_setup() -> dict:
@@ -258,7 +262,9 @@ def _class_overlay(members: list[str], at: str, minimum: int) -> dict[str, dict]
                 "fade": 1.0,
             }
             continue
-        practised = sum(learner.shown_level(sid, part, at) in ("developing", "secure") for sid in who)
+        shown = [learner.shown_level(sid, part, at) for sid in who]
+        practised = sum(lv in ("developing", "secure") for lv in shown)
+        fading = shown.count("needs_review")  # answered right before, now faded below new (decision 0025)
         share = practised / len(who)
         band = "few" if share < BAND_LOW else "mixed" if share <= BAND_HIGH else "most"
         last = max(who.values())[:10]
@@ -267,7 +273,10 @@ def _class_overlay(members: list[str], at: str, minimum: int) -> dict[str, dict]
             "level": BAND_LEVEL[band],
             "band": band,
             "label": BAND_WORDS[band],
-            "note": f"{len(who)} students have answered. Latest answer {last}." + (" Thin: this rests on few students." if thin else ""),
+            "note": f"{len(who)} students have answered. Latest answer {last}."
+            # never the count itself: with the answered count it would show a small group by subtraction (decision 0024)
+            + (f" {minimum} or more need review: they got it right before and it has faded." if fading >= minimum else "")
+            + (" Thin: this rests on few students." if thin else ""),
             "fade": 0.6 if thin else 1.0,
         }
     return overlay

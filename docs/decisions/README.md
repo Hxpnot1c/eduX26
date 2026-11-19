@@ -105,5 +105,6 @@ The result that would make us revisit this.
 | [0022](0022-aided-and-unaided-evidence-scoping.md) | Aided and unaided evidence: scoping (not built) | Held |
 | [0023](0023-web-pages-and-teacher-access.md) | Web pages, bearer-only sign-in and teacher keys | Proposed |
 | [0024](0024-visual-language-and-what-the-pages-will-not-show.md) | Visual language, and what the pages will not show | Proposed |
+| [0025](0025-decay-towards-the-starting-estimate.md) | Fade learnt parts towards their normal start, show "needs review", and review before a part fades | Proposed |
 
 Each later record is added to this table in the pull request that introduces it.
