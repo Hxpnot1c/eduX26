@@ -516,7 +516,13 @@ def tutor_turn(
         answer = None                          # this message is the confidence word, not an answer
     lost = False
     try:
-        evidence = learner.score_answer(answer, last.get("mcq")) if answer else None
+        if answer and answer.get("type") == "find_error":      # scored against the item kept from the last plan (decision 0012)
+            item = next((s["item"] for s in last["plan"] if s.get("key") == "say_line_find_error" and s.get("item")), None)
+            if item is None or item["part_id"] != graph.canonical(answer.get("part_id") or ""):
+                raise learner.LostQuestion("no find-the-error practice is waiting for an answer")
+            evidence = learner.score_find_error(answer, item)
+        else:
+            evidence = learner.score_answer(answer, last.get("mcq")) if answer else None
     except learner.LostQuestion:
         evidence, lost = None, True
     except ValueError as e:
@@ -549,6 +555,8 @@ def tutor_turn(
         resolution = {**graph.resolve("", last["focus"]), "unknown": resolution["unknown"]}
     # a research question is Ask evidence; a verify answer is AI-literacy evidence, not an answer on the course
     recorded = ([evidence] if evidence else []) + (
+        [{"part_id": learner.AIL_VERIFY, "type": "ail_find_error", "score": evidence["score"], "misconception_ids": []}]
+        if evidence and evidence["type"] == "find_error" else []) + (
         [learner.question_evidence(this_message.get("question_features"),
                                    sources_credit=learner.verified_this_session(student["id"], at))]
         if this_message.get("request_type") == "research" else [])

@@ -1,1 +1,1 @@
-Say data.line and wait. Don't say yet whether they were right.
+Say data.line exactly and wait; don't hint at the answer.

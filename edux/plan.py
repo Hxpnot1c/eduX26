@@ -46,7 +46,7 @@ from edux.settings import TEXT_DIR, Settings, SettingsError, read_text
 
 log = logging.getLogger(__name__)
 
-STOP = {"reteach", "offer_choice", "ask_which", "ask_mcq", "explain_back", "reask", "session_summary", "extend", "ask_confidence"}   # each ends in a question or the end of the chat
+STOP = {"reteach", "offer_choice", "ask_which", "ask_mcq", "explain_back", "reask", "session_summary", "extend", "say_line"}   # each ends in a question or the end of the chat
 PICKS = ("quiz", "extend", "stop")   # ways on from offer_choice the student picks, sent back as this_message.choice
 ASKS = {"reteach", "ask_mcq", "explain_back", "extend", "reask"}
 MAX_STEPS = 3
@@ -61,7 +61,8 @@ LETTERS = "ABCDEFGHIJ"
 TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "answer_brief": (set(), set()),
     "ask_which": ({"candidates"}, set()),
-    "ask_confidence": ({"line"}, set()),
+    "say_line_confidence": ({"line"}, set()),
+    "say_line_find_error": ({"line", "answer_type"}, set()),
     "ask_mcq_intuition": ({"purpose", "options", "answer_type"}, {"note", "via", "extra_option"}),
     "ask_mcq_check": ({"purpose", "options", "index", "answer_type"}, {"extra_option"}),
     "ask_mcq_prereq": ({"purpose", "options", "name", "for", "answer_type"}, {"note", "stuck", "extra_option"}),
@@ -317,6 +318,11 @@ def feedback(answer: dict, evidence: dict) -> tuple[dict, dict | None]:
         if evidence["purpose"] == "how_ai_works":   # why chatbots do this, in one everyday line
             data["intuition"] = graph.get_node(part)["intuition"]
         return _step("feedback", part, data), None
+    if answer["type"] == "find_error":   # always show the correct statement afterwards; never leave the planted error standing
+        wrong = graph.get_misconception(evidence["shown_misconception"]) if evidence.get("shown_misconception") else None
+        return _step("feedback", part, {"type": "find_error", "purpose": "find_error", "correct": evidence["hit"],
+                                        "correct_option": evidence["correct_option"],
+                                        "misconceptions": [_misconception(wrong)] if wrong else []}), None
     if answer["type"] == "prequestion":   # the picked option comes first in misconception_ids
         return _step("feedback", part, {"type": "prequestion", "correct": evidence["score"] == 1.0,
                                         "correct_idea": core_idea(part), "misconceptions": shown}), None
@@ -534,7 +540,7 @@ def two_option_check(turn: Turn, part_id: str, index: int, settings: Settings, b
 def ask_confidence(turn: Turn, part_id: str) -> dict:
     """ask_confidence (stop): "how sure are you?" after an answer to a check, before the feedback (step 05z). The plan with
     the feedback is kept back one turn (service). The wording is data.line, so the move text stays short."""
-    return _step("ask_confidence", part_id, {"line": read_text("confidence/ask.md").strip()})
+    return _step("say_line", part_id, {"line": read_text("confidence/ask.md").strip()}, key="say_line_confidence")
 
 
 def explain_back(turn: Turn, part_id: str, points: list[dict], settings: Settings) -> dict:
@@ -694,6 +700,60 @@ def bridge_question(turn: Turn, target: dict, settings: Settings) -> dict:
     return _refill({**step, "key": "ask_mcq_prequestion_bridge_reason" if target["from_class"] else "ask_mcq_prequestion_bridge"})
 
 
+def find_error_step(turn: Turn, blocks: dict, settings: Settings) -> dict | None:
+    """A find-the-error practice item (decision 0012), or None. Rare and off unless switched on (find_error.enabled or
+    EDUX_FIND_ERROR=1): at most find_error.max_per_session a session, only on a focus part at developing or above that
+    the student has answered on, never in long-session or rushing mode.
+
+    The item is the part's own mark points as a short numbered explanation. With probability 1 - find_error.clean_share
+    one sentence is swapped for one of the part's misconceptions (the sentence its correction most resembles); otherwise
+    it is left whole, a clean control, so doubting everything is not rewarded. Items rotate: a misconception already
+    used on this part is not used again. Always labelled as practice. The item (kind, which misconception, what to
+    reveal) stays on the server; the chatbot sees only the text."""
+    if not learner.find_error_on() or not turn.parts or (blocks.get("session") or {}).get("state") == "fatigued":
+        return None
+    part, conn = turn.parts[0], learner._conn()
+    if graph.is_literacy(part) or not learner.has_evidence(turn.student_id, part, turn.at) or turn.p(part) < settings.levels.new:
+        return None
+    state = learner.session_state(turn.student_id, turn.at)
+    start = state["session_id"] if state else turn.at
+    done = [r["point_id"] for r in conn.execute(
+        "SELECT point_id, ts FROM evidence_log WHERE student_id = ? AND evidence_type = 'find_error' ORDER BY id", (turn.student_id,))]
+    this_session = conn.execute("SELECT COUNT(*) FROM evidence_log WHERE student_id = ? AND evidence_type = 'find_error' AND ts >= ?",
+                                (turn.student_id, start)).fetchone()[0]
+    points, wrongs = graph.score_points(part), graph.misconceptions_for([part])
+    if this_session >= settings.find_error.max_per_session or len(points) < 2 or not wrongs:
+        return None
+    roll = int(hashlib.sha256(f"{turn.student_id}:{part}:{start}".encode()).hexdigest(), 16) % 100
+    clean_id = f"clean:{part}"
+    want_clean = roll < settings.find_error.clean_share * 100 and clean_id not in done
+    name, sentences = graph.get_node(part)["name"], [p["point"].strip().rstrip(".") + "." for p in points]
+    item = None
+    if want_clean:
+        item = {"id": clean_id, "kind": "clean", "part_id": part, "misconception_id": None,
+                "reveal": read_text("find_error/reveal_clean.md").strip()}
+    else:
+        for m in wrongs:
+            item_id = f"err:{part}:{m['id']}"
+            if item_id in done:
+                continue
+            scores = graph.relevance(m["correction"], {p["id"]: p["point"] for p in points})
+            best = max(range(len(points)), key=lambda i: scores[points[i]["id"]])
+            if scores[points[best]["id"]] <= 0:
+                continue
+            sentences[best] = m["wrong_idea"].strip().rstrip(".") + "."
+            item = {"id": item_id, "kind": "error", "part_id": part, "misconception_id": m["id"], "sentence": best + 1,
+                    "reveal": read_text("find_error/reveal_error.md").strip().format(n=best + 1, correction=m["correction"].strip())}
+            break
+    if item is None:
+        return None
+    statement = "\n".join(f"{i}. {s}" for i, s in enumerate(sentences, 1))
+    step = _step("say_line", part, {"line": read_text("find_error/intro.md").strip().format(name=name, statement=statement),
+                                    "answer_type": "find_error"}, key="say_line_find_error")
+    step["item"] = item
+    return step
+
+
 def _urgent_review(turn: Turn, part_id: str, settings: Settings) -> bool:
     """A test covering the part is within priorities.horizon_days."""
     for a in learner.assessments(turn.student_id, turn.at):
@@ -716,6 +776,9 @@ def ending_tiers(turn: Turn, blocks: dict, settings: Settings, reviews_only: boo
     urgent = sorted((r for r in reviews if _urgent_review(turn, r["part_id"], settings)), key=lambda r: -valued[r["part_id"]]["value"])
     tiers += [{"tier": 1, "kind": "review", "part_id": r["part_id"], "value": valued[r["part_id"]]["value"], "review": r} for r in urgent]
     if not reviews_only:
+        item = find_error_step(turn, blocks, settings)
+        if item:     # rare (once a session, off unless switched on): ahead of the bridge in the same tier
+            tiers.append({"tier": 2, "kind": "find_error", "part_id": item["part_id"], "value": 0.0, "step": item})
         target = bridge_target(turn, settings)
         if target:
             tiers.append({"tier": 2, "kind": "bridge", "part_id": target["part_id"], "value": turn.valued(target["part_id"])["value"],
@@ -738,6 +801,8 @@ def _second_step(turn: Turn, blocks: dict, settings: Settings, reviews_only: boo
     pick = tiers[0]
     if pick["kind"] == "extend":
         step = _step("extend", pick["part_id"])
+    elif pick["kind"] == "find_error":
+        step = pick["step"]
     elif pick["kind"] == "bridge":
         step = bridge_question(turn, pick["target"], settings)
     else:
@@ -772,7 +837,7 @@ def _misses(turn: Turn, progress: dict, evidence: dict, retry: dict | None, last
     neither counts nor resets: missing a stretch question isn't being stuck. Returns the count (0 when the evidence
     isn't on the focus or isn't a miss)."""
     focus = turn.parts[0] if turn.parts else None
-    if evidence["type"] == "extend":
+    if evidence["type"] in ("extend", "find_error"):
         return 0
     open_answer = evidence["type"] not in ("mcq_check", "prequestion", "ail_how") and "correct" not in evidence
     if focus is None or evidence["part_id"] != focus or not (open_answer or evidence.get("purpose") == "check"):
@@ -1070,6 +1135,9 @@ def score_next(plan: list[dict]) -> dict[str, list[dict]]:
     course content when the answer comes back, so no mapping is saved."""
     out: dict[str, list[dict]] = {}
     for step in plan:
+        if step.get("key") == "say_line_find_error":   # the same four letters for every item, so they give nothing away
+            out[step["part_id"]] = [{"id": k, "point": text} for k, text in learner.FIND_ERROR_POINTS]
+            continue
         if step["move"] == "offer_choice":   # the short burst of quick questions, if they choose it
             for part in step["data"].get("quick_parts") or []:
                 points = lettered(part["id"])
