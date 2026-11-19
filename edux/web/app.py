@@ -16,7 +16,7 @@ from pathlib import Path
 
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import FileResponse, JSONResponse, Response
+from starlette.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from starlette.routing import BaseRoute, Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -222,7 +222,8 @@ async def api_link(request: Request) -> Response:
     swapped = links.exchange(token) if isinstance(token, str) else None
     if swapped is None:
         return JSONResponse({"error": "this link has already been used or has expired"}, status_code=401)
-    return JSONResponse(swapped)
+    # in demo mode the page goes on to the student design page after a successful swap
+    return JSONResponse(swapped | ({"demo": True} if links.demo_teacher_on() else {}))
 
 
 async def api_public_map(request: Request) -> Response:
@@ -277,11 +278,40 @@ async def api_teacher_student(request: Request) -> Response:
     return JSONResponse(data)
 
 
+# Vishnu's two self-contained design pages (inline CSS, JS, data and logo), served byte for byte in demo mode only, with
+# a policy of their own that lets their inline code and Google Fonts run. Every other route keeps SECURITY_HEADERS.
+DEMO_PAGES = {"/teacher": "demo/synapse-teacher-demo.html", "/me/demo": "demo/synapse-student-demo.html"}
+DEMO_CSP = (
+    "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; "
+    "font-src https://fonts.gstatic.com; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+)
+
+
+def _demo_page(path: str) -> Response:
+    """A design page exactly as its file holds it: no templating and nothing injected."""
+    body = (STATIC / DEMO_PAGES[path]).read_bytes()
+    return Response(body, media_type="text/html; charset=utf-8", headers={"Cache-Control": "no-cache", "Content-Security-Policy": DEMO_CSP})
+
+
 def _page(name: str):
     async def handler(request: Request) -> Response:
+        if request.url.path in DEMO_PAGES and links.demo_teacher_on():  # /teacher shows the design page in demo mode
+            return _demo_page(request.url.path)
         return FileResponse(STATIC / name, media_type="text/html; charset=utf-8", headers={"Cache-Control": "no-cache"})
 
     return handler
+
+
+async def demo_student_page(request: Request) -> Response:
+    """/me/demo: the student design page, in demo mode only; 404 otherwise."""
+    if not links.demo_teacher_on():
+        return PlainTextResponse("Not Found", status_code=404)
+    return _demo_page("/me/demo")
+
+
+async def no_static_demo(request: Request) -> Response:
+    """The design pages are only served through their own routes, never as /static files."""
+    return PlainTextResponse("Not Found", status_code=404)
 
 
 class _Headers:
@@ -330,12 +360,14 @@ def build_web_app() -> ASGIApp:
     routes.append(Route("/api/demo/teacher", api_demo_teacher, methods=["GET", "POST"]))
     routes.append(Route("/api/teacher/class/{class_id}/review", api_teacher_review, methods=["GET"]))
     routes.append(Route("/api/teacher/class/{class_id}/student/{student_id}", api_teacher_student, methods=["GET"]))
+    routes.append(Route("/me/demo", demo_student_page, methods=["GET"]))
+    routes.append(Route("/static/demo/{rest:path}", no_static_demo, methods=["GET", "HEAD"]))
     routes.append(Mount("/static", StaticFiles(directory=STATIC), name="static"))
     return _Headers(Starlette(routes=routes))
 
 
 def is_web_path(path: str) -> bool:
-    return path in PAGES or path == "/favicon.ico" or path.startswith(("/static/", "/api/"))
+    return path in PAGES or path in ("/favicon.ico", "/me/demo") or path.startswith(("/static/", "/api/"))
 
 
 class WebLayer:

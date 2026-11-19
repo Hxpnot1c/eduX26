@@ -30,9 +30,10 @@
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: token }), cache: "no-store",
     }).then(async (res) => {
       if (!res.ok) { linkFailed = true; return; }
-      const session = (await res.json()).session;
+      const swapped = await res.json(), session = swapped.session;
       try { sessionStorage.setItem(STORE, session); } catch (e) { /* storage blocked: this load only */ }
       window.__synapseKey = session;
+      if (swapped.demo) location.replace("/me/demo");  // demo mode: the student design page (sample data only)
     }).catch(() => { linkFailed = true; });
   }
 
