@@ -21,8 +21,8 @@ from starlette.routing import BaseRoute, Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from edux import learner, teachers
-from edux.web import actions, links, views
+from edux import demo, learner, teachers
+from edux.web import actions, links, review, views
 
 STATIC = Path(__file__).resolve().parent / "static"
 
@@ -56,7 +56,7 @@ def principal(request: Request) -> tuple[str, dict] | None:
     student = learner.student_by_key(key) or links.student_by_session(key)
     if student:
         return "student", student
-    teacher = teachers.teacher_by_key(key)
+    teacher = teachers.teacher_by_key(key) or links.teacher_by_session(key)
     return ("teacher", teacher) if teacher else None
 
 
@@ -137,8 +137,9 @@ async def api_teacher_class(request: Request) -> Response:
 MAX_BODY = 16_000
 
 
-async def _teacher_class(request: Request) -> tuple[dict, str] | Response:
-    """The signed-in teacher and the class from the path, or the response to send instead (401, 400, 403 or 404)."""
+async def _teacher_class(request: Request, write: bool = True) -> tuple[dict, str] | Response:
+    """The signed-in teacher and the class from the path, or the response to send instead (401, 400, 403 or 404). A
+    session (the demo teacher's sign-in) is read-only: a change is refused with 403."""
     refused = refuse_url_key(request)
     if refused:
         return refused
@@ -151,6 +152,8 @@ async def _teacher_class(request: Request) -> tuple[dict, str] | Response:
     class_id = request.path_params["class_id"]
     if not teachers.may_see(who["id"], class_id):
         return JSONResponse({"error": "no such class"}, status_code=404)
+    if write and who.get("read_only"):
+        return JSONResponse({"error": "the demo is read-only: nothing was changed"}, status_code=403)
     return who, class_id
 
 
@@ -232,6 +235,48 @@ async def api_public_map(request: Request) -> Response:
     return JSONResponse(data)
 
 
+async def api_demo_teacher(request: Request) -> Response:
+    """GET: whether the demo-teacher button is offered. POST: sign in as the seeded demo teacher, with a short read-only
+    session (never a key, never in a URL). Both 404 unless demo mode is on and the demo class holds only seeded
+    synthetic students (decision 0030)."""
+    refused = refuse_url_key(request)
+    if refused:
+        return refused
+    if not (links.demo_teacher_on() and teachers.get_teacher(demo.DEMO_TEACHER_ID) and demo.is_synthetic_class(demo.DEMO_CLASS_ID)):
+        return JSONResponse({"error": "not available"}, status_code=404)
+    if request.method == "GET":
+        return JSONResponse({"available": True})
+    return JSONResponse(links.teacher_session(demo.DEMO_TEACHER_ID) | {"class_id": demo.DEMO_CLASS_ID})
+
+
+async def _review_class(request: Request) -> tuple[dict, str] | Response:
+    got = await _teacher_class(request, write=False)
+    if isinstance(got, Response):
+        return got
+    if not review.allowed(got[1]):
+        return JSONResponse({"error": "not available"}, status_code=404)
+    return got
+
+
+async def api_teacher_review(request: Request) -> Response:
+    """The class with each student's card (the per-student view, decision 0030); 404 when it is not turned on."""
+    got = await _review_class(request)
+    if isinstance(got, Response):
+        return got
+    return JSONResponse(review.class_review(got[1]))
+
+
+async def api_teacher_student(request: Request) -> Response:
+    """One student's review (the per-student view, decision 0030); 404 when it is off or the student is not in the class."""
+    got = await _review_class(request)
+    if isinstance(got, Response):
+        return got
+    data = review.student_review(got[1], request.path_params["student_id"])
+    if data is None:
+        return JSONResponse({"error": "no such student in this class"}, status_code=404)
+    return JSONResponse(data)
+
+
 def _page(name: str):
     async def handler(request: Request) -> Response:
         return FileResponse(STATIC / name, media_type="text/html; charset=utf-8", headers={"Cache-Control": "no-cache"})
@@ -282,6 +327,9 @@ def build_web_app() -> ASGIApp:
     routes.append(Route("/api/teacher/class/{class_id}/assessments", api_teacher_assessment, methods=["POST"]))
     routes.append(Route("/api/teacher/class/{class_id}/assessments/remove", api_teacher_assessment_remove, methods=["POST"]))
     routes.append(Route("/api/teacher/class/{class_id}/coverage", api_teacher_coverage, methods=["POST"]))
+    routes.append(Route("/api/demo/teacher", api_demo_teacher, methods=["GET", "POST"]))
+    routes.append(Route("/api/teacher/class/{class_id}/review", api_teacher_review, methods=["GET"]))
+    routes.append(Route("/api/teacher/class/{class_id}/student/{student_id}", api_teacher_student, methods=["GET"]))
     routes.append(Mount("/static", StaticFiles(directory=STATIC), name="static"))
     return _Headers(Starlette(routes=routes))
 

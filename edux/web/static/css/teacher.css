@@ -1,0 +1,60 @@
+/* The per-student teacher view (decision 0030): paper background, display headings, highlighter for wrong ideas, a dark
+   panel for the header band. Uses only the self-hosted fonts and the tokens in tokens.css. */
+
+:root { --highlight: #f6e27a; --highlight-ink: #1b1a17; --band-dark: #1f2620; --band-ink: #f4f1ea; }
+
+.review-on #class-body, .review-on [data-classes] { display: none; }
+.review-on.show-forms #class-body { display: block; }
+
+#review { margin-top: calc(var(--space) * 3); }
+.rv-head {
+  display: flex; flex-wrap: wrap; gap: calc(var(--space) * 2); justify-content: space-between; align-items: flex-end;
+  background: var(--band-dark); color: var(--band-ink); padding: calc(var(--space) * 3); border-radius: 4px;
+}
+.rv-head .muted, .rv-head .eyebrow { color: #cfc8b5; }
+.rv-title { font-family: var(--font-display); font-size: var(--step-3); font-weight: 500; margin: 0; }
+.eyebrow { font-size: var(--step--1); letter-spacing: 0.06em; text-transform: uppercase; margin: 0; color: var(--muted); }
+.rv-actions { display: flex; gap: var(--space); flex-wrap: wrap; }
+.rv-actions button { color: var(--band-ink); border-color: #cfc8b5; }
+
+.rv-tools { display: flex; flex-wrap: wrap; gap: var(--space); align-items: center; justify-content: space-between; margin: calc(var(--space) * 2) 0; }
+.chips { display: flex; flex-wrap: wrap; gap: var(--space); }
+.chip-btn { border: 1px solid var(--rule); background: var(--paper); color: var(--ink); border-radius: 999px; padding: 0.25rem 0.75rem; font: inherit; font-size: var(--step--1); cursor: pointer; }
+.chip-btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.search input { font: inherit; padding: 0.35rem 0.6rem; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); min-width: 14rem; }
+
+.rv-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: calc(var(--space) * 3); margin-top: calc(var(--space) * 2); }
+#review-student .rv-grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+@media (max-width: 52rem) { .rv-grid, #review-student .rv-grid { grid-template-columns: 1fr; } }
+
+.rv-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: calc(var(--space) * 2); align-content: start; }
+.card { border: 1px solid var(--rule); background: var(--paper); padding: calc(var(--space) * 2); border-radius: 4px; cursor: pointer; display: flex; flex-direction: column; gap: 0.25rem; }
+.card:hover { border-color: var(--ink); }
+.card h3 { font-family: var(--font-display); font-weight: 500; font-size: var(--step-1); margin: 0; }
+.card .weak { list-style: none; padding: 0; margin: 0; font-size: var(--step--1); }
+.card .open { margin-top: auto; font-size: var(--step--1); }
+
+.panel { border-top: 2px solid var(--ink); padding-top: var(--space); margin-bottom: calc(var(--space) * 3); }
+.panel h3 { font-family: var(--font-display); font-weight: 500; font-size: var(--step-1); margin: 0 0 0.25rem; }
+.panel .plain-list > li { padding: var(--space) 0; border-bottom: 1px solid var(--rule); }
+.row-head { display: flex; flex-wrap: wrap; gap: var(--space); align-items: center; justify-content: space-between; }
+.sub { margin: 0.2rem 0 0; font-size: var(--step--1); }
+mark { background: var(--highlight); color: var(--highlight-ink); padding: 0 0.15em; }
+.band { display: block; font-size: var(--step--1); color: var(--muted); }
+.band.lv-new { border-left: 4px solid var(--lv-new-ring); padding-left: 0.4rem; }
+.band.lv-developing { border-left: 4px solid var(--lv-developing-fill); padding-left: 0.4rem; }
+.band.lv-secure { border-left: 4px solid var(--lv-secure-fill); padding-left: 0.4rem; }
+.chip { display: inline-block; font-size: 0.75rem; border: 1px solid var(--rule); border-radius: 999px; padding: 0 0.5rem; }
+.chip.tag { border-color: var(--accent); color: var(--accent); }
+.chip.badge { background: var(--paper-sunk); }
+.unchecked strong { color: var(--muted); }
+
+.steps { display: inline-flex; gap: 3px; }
+.step { width: 2rem; height: 0.5rem; border: 1px solid var(--rule); background: var(--paper-sunk); }
+.step.on.lv-new { background: var(--lv-new-fill); border-color: var(--lv-new-ring); }
+.step.on.lv-developing { background: var(--lv-developing-fill); border-color: var(--lv-developing-ring); }
+.step.on.lv-secure { background: var(--lv-secure-fill); border-color: var(--lv-secure-ring); }
+
+.back { display: inline-block; margin-bottom: var(--space); }
+.rv-foot { margin-top: calc(var(--space) * 3); border-top: 1px solid var(--rule); padding-top: var(--space); font-size: var(--step--1); }
+[data-demo] { margin-top: var(--space); }

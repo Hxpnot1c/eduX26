@@ -229,6 +229,8 @@ class Web:
     public_base_url: str  # where the pages are served, for links in tool results; "" means no links (EDUX_PUBLIC_BASE_URL overrides)
     link_minutes: int
     session_minutes: int
+    demo_teacher: bool  # EDUX_DEMO_TEACHER overrides it (decision 0030)
+    teacher_student_view: bool
 
 
 @dataclass(frozen=True)
