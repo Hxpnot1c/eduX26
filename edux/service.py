@@ -36,7 +36,20 @@ def learning_context(student: dict, message: str, node_ids: list[str] | None = N
     turn = context_blocks.Turn(student=student, parts=parts, message=message or "", at=at,
                                limits=_context().limits, resolution=resolution)
     profile = learner.profile_of(student)
-    return {"profile": profile, "blocks": context_blocks.assemble(profile, turn, _settings(), _context())}
+    blocks = context_blocks.assemble(profile, turn, _settings(), _context())
+    return {"profile": profile, "blocks": blocks, "ending_tiers": ending_view(turn, blocks)}
+
+
+def ending_view(turn: context_blocks.Turn, blocks: dict) -> list[dict]:
+    """The reply's ending candidates by tier, with their values (step 05t): for the CLI's student view, never sent to
+    the chatbot. Each: {tier, kind, part_id, value}, plus the link and reason for a bridge."""
+    out = []
+    for t in plan.ending_tiers(turn, blocks, _settings()):
+        item = {k: t[k] for k in ("tier", "kind", "part_id")} | {"value": round(t["value"], 5)}
+        if t["kind"] == "bridge":
+            item["link"] = {"from": t["target"]["from"], "text": t["target"]["text"], "from_class": t["target"]["from_class"]}
+        out.append(item)
+    return out
 
 
 # Blocks the plan is built from; every other block the profile produces goes to reference.

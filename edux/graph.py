@@ -121,6 +121,15 @@ def ancestors(node_id: str) -> list[dict]:
     return chain
 
 
+def linked(node_id: str) -> list[dict]:
+    """Every pack edge touching the node (or its concept), of any type, each with the far end (other), type, note and
+    weight. Pack edges only: no inferred or student-derived links."""
+    found: list[dict] = []
+    for edge_type in ("prerequisite", "analogous", "confusable", "causal"):
+        found += _edges(node_id, edge_type, "both")
+    return found
+
+
 def match_sections(keys: list[str]) -> tuple[list[dict], list[str]]:
     """Match what a teacher or student calls a section to nodes anywhere in the tree: a node id, a spec code or a name,
     ignoring case and spacing. Returns (matched nodes, keys that matched nothing). The AI-literacy topic never matches."""

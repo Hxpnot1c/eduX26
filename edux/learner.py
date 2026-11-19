@@ -841,6 +841,25 @@ def starting_point(student_id: str, part_id: str, at: str | datetime | None = No
             "clock_start": own["taught_on"], "taught_on": own["taught_on"]}
 
 
+def not_yet_taught(student_id: str, part_id: str, at: str | datetime | None = None) -> bool:
+    """No evidence on the part and no teaching of it yet (a worked example, a hint or "just show me" on it)."""
+    return not has_evidence(student_id, part_id, at) and not _taught_before(_conn(), student_id, graph.canonical(part_id),
+                                                                              _event_ts(at))
+
+
+def uncovered_sections(student_id: str, at: str | datetime | None = None) -> list[dict]:
+    """The course's concepts, in spec (pack) order, that the student's coverage record has not covered: no part of the
+    concept is covered as of `at`. Empty when there is no coverage record at all (nothing says where the class is)."""
+    if not covered_parts(student_id, at):
+        return []
+    out = []
+    for topic in graph.topics():
+        for concept in graph.children(topic["id"]):
+            if concept["level"] == "concept" and not any(covered_since(student_id, p, at) for p in graph.parts_of(concept["id"])):
+                out.append(concept)
+    return out
+
+
 def shown_level(student_id: str, part_id: str, at: str | datetime | None = None) -> str:
     """The level to show a student for a part: new, developing or secure once they have an answer on it; before that
     never developing or secure, whatever the starting number: "taught_in_class" if their class covered it ("taught in

@@ -40,13 +40,13 @@ import random
 import re
 
 from edux import graph, learner
-from edux.context_blocks import (Turn, _quick_parts, core_idea, held_misconceptions, intuition_source, known_parts,
+from edux.context_blocks import (Turn, link_weight, _quick_parts, core_idea, held_misconceptions, intuition_source, known_parts,
                                  known_terms)
 from edux.settings import TEXT_DIR, Settings, SettingsError, read_text
 
 log = logging.getLogger(__name__)
 
-STOP = {"reteach", "offer_choice", "ask_which", "ask_mcq", "explain_back", "reask", "session_summary"}
+STOP = {"reteach", "offer_choice", "ask_which", "ask_mcq", "explain_back", "reask", "session_summary", "extend"}   # each ends in a question or the end of the chat
 PICKS = ("quiz", "extend", "stop")   # ways on from offer_choice the student picks, sent back as this_message.choice
 ASKS = {"reteach", "ask_mcq", "explain_back", "extend", "reask"}
 MAX_STEPS = 3
@@ -67,6 +67,8 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "ask_mcq_review": ({"purpose", "options", "name", "mode", "answer_type"}, {"new_context", "extra_option"}),
     "ask_mcq_review_reason": ({"purpose", "options", "name", "mode", "reason", "answer_type"}, {"new_context", "extra_option"}),
     "ask_mcq_how_ai_works": ({"purpose", "options", "answer_type"}, {"extra_option"}),
+    "ask_mcq_prequestion_bridge": ({"purpose", "options", "name", "answer_type"}, {"extra_option"}),
+    "ask_mcq_prequestion_bridge_reason": ({"purpose", "options", "name", "reason", "answer_type"}, {"extra_option"}),
     "extend": ({"answer_type"}, set()),
     "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "correct_option", "purpose", "points_met", "missing",
                                              "intuition", "secure"}),
@@ -80,6 +82,7 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "explain_back": ({"answer_type"}, set()),
     "explain_back_point": ({"answer_type", "point", "point_id"}, set()),
     "teach_point": ({"index", "total", "point", "exemplar", "level", "max_words"}, set()),
+    "teach_point_bridge": ({"index", "total", "point", "exemplar", "level", "max_words"}, {"can_stop"}),
     "answer_with_sources": ({"trusted_sources"}, set()),
     "literacy_task": ({"skill", "level", "task", "features", "pattern"}, {"answer_type"}),
     "source_conflict": (set(), set()),
@@ -570,6 +573,11 @@ def full_show(turn: Turn, part_id: str, settings: Settings, progress: dict) -> l
     return [_step("show", part_id, data), check(turn, part_id, index, settings)]
 
 
+def _bridge_in(last_plan: list[dict]) -> bool:
+    """The last plan asked a bridge question (a pre-question towards the next topic, step 05t)."""
+    return any(s["move"] == "ask_mcq" and s["data"].get("bridge") for s in last_plan)
+
+
 def _then_show(last_plan: list[dict]) -> bool:
     """The last plan asked a two-option question that is followed by the full show once answered."""
     return any(s["move"] == "ask_mcq" and s["data"].get("then_show") for s in last_plan)
@@ -621,33 +629,118 @@ def review_check(turn: Turn, r: dict, settings: Settings) -> dict:
     return ask_mcq(turn, question(r["part_id"], "review", point["point"], settings, point_id=point["id"]), data)
 
 
-def _second_step(turn: Turn, blocks: dict, settings: Settings, reviews_only: bool = False) -> dict | None:
-    """The add-on step with the most expected marks (learner.step_value, priorities): extend when earned, or a due
-    review (not on a focus part) as an MCQ, otherwise nothing. Ties keep the old order: extend, then reviews in
-    reviews_due order. Only due reviews are candidates; a test never makes a review due. A review picked because of
-    one of the student's tests carries data.reason. The candidates not picked go on the step as considered (with
-    their values), which service saves in issued_plan and never sends."""
-    candidates = []
-    support = blocks.get("support")
-    if support and support.get("extend") and not reviews_only:
-        candidates.append(("extend", support["part_id"], None))
+def _prereqs_at_least_developing(turn: Turn, part_id: str, settings: Settings) -> bool:
+    """Every direct prerequisite of the part is at least developing by the number (p_now >= levels.new)."""
+    pre = [pp for edge in graph.prerequisites(part_id, 1) for pp in graph.parts_of(edge["other"])]
+    return all(turn.p(pp) >= settings.levels.new for pp in pre)
+
+
+def _first_key_point(part_id: str) -> dict | None:
+    points = mcq_points(part_id)
+    return points[0] if points else None
+
+
+def bridge_target(turn: Turn, settings: Settings) -> dict | None:
+    """The part to ask a bridge question about, with the link and why: {part_id, from, text, from_class}, or None.
+
+    1. The class's next not-yet-covered section in spec order (the coverage record, step 05q), when a pack edge links
+       it to the current part and its prerequisites are at least developing.
+    2. Otherwise the not-yet-taught part with the strongest link (link_weight) to the current part whose
+       prerequisites are at least developing.
+    3. Otherwise None. Not yet taught means no evidence and no teaching step on the part."""
+    if not turn.parts:
+        return None
+    here = turn.parts[0]
+    edges = graph.linked(here)
+
+    def candidate(part: str) -> bool:
+        return (part != here and not graph.is_literacy(part) and _first_key_point(part) is not None
+                and learner.not_yet_taught(turn.student_id, part, turn.at) and _prereqs_at_least_developing(turn, part, settings))
+
+    for section in learner.uncovered_sections(turn.student_id, turn.at)[:1]:       # only the very next section
+        parts = graph.parts_of(section["id"])
+        link = next((e for e in edges if e["other"] in parts or e["other"] == section["id"]), None)
+        if link is None:
+            break
+        part = next((p for p in parts if candidate(p)), None)
+        if part:
+            return {"part_id": part, "from": here, "text": link["note"], "from_class": True}
+    best = None
+    for edge in edges:
+        w = link_weight(edge, here, settings)
+        for part in graph.parts_of(edge["other"]):
+            if candidate(part) and (best is None or w > best[0]):
+                best = (w, part, edge)
+    return {"part_id": best[1], "from": here, "text": best[2]["note"], "from_class": False} if best else None
+
+
+def bridge_question(turn: Turn, target: dict, settings: Settings) -> dict:
+    """The bridge: the pre-question move (ask_mcq, purpose intuition) on the target part's first key point, carrying
+    data.link and a cue of its own. Being pre-teaching, its answer feeds the starting offset of the target's sector."""
+    point = _first_key_point(target["part_id"])
+    q = question(target["part_id"], "intuition", point["point"], settings, point_id=point["id"])
+    data = {"name": graph.get_node(target["part_id"])["name"], "bridge": True,
+            "link": {"from": target["from"], "to": target["part_id"], "text": target["text"]}}
+    if target["from_class"]:
+        data["reason"] = read_text("bridge/reason.md").strip()
+    step = ask_mcq(turn, q, data)
+    return _refill({**step, "key": "ask_mcq_prequestion_bridge_reason" if target["from_class"] else "ask_mcq_prequestion_bridge"})
+
+
+def _urgent_review(turn: Turn, part_id: str, settings: Settings) -> bool:
+    """A test covering the part is within priorities.horizon_days."""
+    for a in learner.assessments(turn.student_id, turn.at):
+        if part_id in a["part_ids"] and 0 <= learner._days_until(a["date"], learner.parse_ts(turn.at)) <= settings.priorities.horizon_days:
+            return True
+    return False
+
+
+def ending_tiers(turn: Turn, blocks: dict, settings: Settings, reviews_only: bool = False) -> list[dict]:
+    """The reply's possible endings in four tiers, each tier's candidates ordered by the value score (priorities):
+    1. a due review on a part covered by a test within priorities.horizon_days; 2. a bridge question towards the next
+    topic; 3. extend, when earned; 4. any other due review. With reviews_only (a request to be quizzed), only reviews.
+    Returns [{tier, kind, part_id, value, step?}, ...] in tier order."""
+    reviews = []
     for r in (blocks.get("reviews_due") or {}).get("items") or []:
         if r["part_id"] not in turn.parts and mcq_points(r["part_id"]):
-            candidates.append(("review", r["part_id"], r))
-    if not candidates:
+            reviews.append(r)
+    valued = {r["part_id"]: turn.valued(r["part_id"]) for r in reviews}
+    tiers: list[dict] = []
+    urgent = sorted((r for r in reviews if _urgent_review(turn, r["part_id"], settings)), key=lambda r: -valued[r["part_id"]]["value"])
+    tiers += [{"tier": 1, "kind": "review", "part_id": r["part_id"], "value": valued[r["part_id"]]["value"], "review": r} for r in urgent]
+    if not reviews_only:
+        target = bridge_target(turn, settings)
+        if target:
+            tiers.append({"tier": 2, "kind": "bridge", "part_id": target["part_id"], "value": turn.valued(target["part_id"])["value"],
+                          "target": target})
+        support = blocks.get("support")
+        if support and support.get("extend"):
+            tiers.append({"tier": 3, "kind": "extend", "part_id": support["part_id"], "value": turn.valued(support["part_id"])["value"]})
+    rest = sorted((r for r in reviews if r not in urgent), key=lambda r: -valued[r["part_id"]]["value"])
+    tiers += [{"tier": 4, "kind": "review", "part_id": r["part_id"], "value": valued[r["part_id"]]["value"], "review": r} for r in rest]
+    return tiers
+
+
+def _second_step(turn: Turn, blocks: dict, settings: Settings, reviews_only: bool = False) -> dict | None:
+    """The reply's ending (ending_tiers): the first candidate of the first non-empty tier. A review picked because of one
+    of the student's tests carries data.reason. The candidates not picked go on the step as considered (with their
+    tier and value), which service saves in issued_plan and never sends."""
+    tiers = ending_tiers(turn, blocks, settings, reviews_only)
+    if not tiers:
         return None
-    valued = [(turn.valued(part), kind, part, r) for kind, part, r in candidates]
-    best = max(range(len(valued)), key=lambda i: (valued[i][0]["value"], -i))
-    found, kind, part, r = valued[best]
-    if kind == "extend":
-        step = _step("extend", part)
+    pick = tiers[0]
+    if pick["kind"] == "extend":
+        step = _step("extend", pick["part_id"])
+    elif pick["kind"] == "bridge":
+        step = bridge_question(turn, pick["target"], settings)
     else:
-        step = review_check(turn, r, settings)
+        step = review_check(turn, pick["review"], settings)
+        found = turn.valued(pick["part_id"])
         if found["reason"]:
             step = _refill({**step, "key": "ask_mcq_review_reason",
                             "data": {**step["data"], "reason": learner.reason_text(found["reason"], turn.at)}})
-    step["considered"] = [{"move": k, "part_id": p, "value": round(v["value"], 5)}
-                          for i, (v, k, p, _) in enumerate(valued) if i != best]
+    step["considered"] = [{"tier": t["tier"], "move": t["kind"], "part_id": t["part_id"], "value": round(t["value"], 5)}
+                          for t in tiers[1:]]
     return step
 
 
@@ -861,6 +954,8 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
             rest = rest[1:]
         if evidence and evidence.get("purpose") == "intuition":   # whatever the answer, teaching starts
             rest = teach(turn, evidence["part_id"], settings, progress)
+            if _bridge_in(last_plan) and rest and rest[0]["move"] == "teach_point":   # after a bridge they can still stop or switch
+                rest[0] = _refill({**rest[0], "key": "teach_point_bridge", "data": {**rest[0]["data"], "can_stop": True}})
         elif evidence and evidence.get("purpose") == "how_ai_works" and not turn.parts:
             rest = []   # back to what they were doing: with no course focus, nothing more
         elif evidence and evidence.get("purpose") == "check":
