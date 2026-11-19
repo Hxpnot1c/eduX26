@@ -175,6 +175,8 @@ public_example_map = true  # judgement call: serve the course map of the synthet
 public_base_url = ""       # where the pages are served, e.g. https://synapse.example.org; get_my_progress links the student's map only when this is set. EDUX_PUBLIC_BASE_URL overrides it without editing this file (decision 0026)
 link_minutes = 15          # judgement call: a map link from get_my_progress works once, within this many minutes
 session_minutes = 120      # judgement call: the browser session a map link opens (the student's own pages, read-only) ends after this many minutes, or when the tab closes
+demo_teacher = false       # judgement call: off by default. When on, /teacher offers "Sign in as demo teacher" for a class of seeded synthetic students only (seed-demo --class). EDUX_DEMO_TEACHER=1 turns it on without editing this file (decision 0030)
+teacher_student_view = false   # judgement call: off by default. A school turns it on after its DPIA, with students and parents told; it lets a teacher open one student's review (never chats or message text). Demo mode turns it on for the demo class only (decision 0030)
 
 [reminders]               # in-chat deadline reminders (step 05u). Synapse cannot push notifications
 days_ahead = 7             # judgement call, starting value: tests due within this many days are mentioned, once, at the start of a session

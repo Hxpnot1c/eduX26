@@ -429,3 +429,132 @@ def seed(course: str | None = None, reset: bool = False, overrides: str | None =
     if pupils > 0:
         seed_pupils(pupils, course_id, clock)
     return {"course": course_id, "roles": roles, "warnings": warnings, "students": keys, "pupils": pupils}
+
+
+# --- the demo teacher's class (decision 0030) -------------------------------------------------------------------------
+
+DEMO_CLASS_ID = "demo-set-1"
+DEMO_CLASS_NAME = "Economics Set 1"
+SYNTH_PREFIX = "demo-synth-"  # SYNTHETIC students for the demo teacher view; the id prefix is the flag, never a real student
+DEMO_TEACHER_ID = "t-demo"
+DEMO_TEACHER_NAME = "Demo teacher"
+CLASS_NAMES = (  # made-up names, from the design; synthetic, not real people
+    "Oscar Bennett",
+    "Liam Chen",
+    "Ethan Clarke",
+    "Garry David",
+    "Zara Hussain",
+    "George Kul",
+    "Sofia Marin",
+    "Jack Murray",
+    "Priya Nair",
+    "Amara Okafor",
+    "Nyle Rahman",
+    "Harry Wood",
+)
+TEST_TOPICS = 4  # the demo class test covers this many topics
+TAUGHT_TOPICS = 5  # and the class has been taught this many (one more than the test, so a taught topic is outside it)
+CLASS_SEED = 27
+
+
+def class_topics() -> list[dict]:
+    """The course topics that hold parts, in pack order, without the AI-literacy ones."""
+    return [t for t in graph.topics() if not graph.is_literacy(t["id"]) and graph.parts_of(t["id"])]
+
+
+def is_synthetic_class(class_id: str) -> bool:
+    """True if the class has members and every one of them is a seeded synthetic student."""
+    rows = learner._conn().execute("SELECT id FROM student WHERE class_id = ?", (class_id,)).fetchall()
+    return bool(rows) and all(r["id"].startswith(SYNTH_PREFIX) for r in rows)
+
+
+def remove_class_demo() -> None:
+    """Delete the synthetic class's students, its tests, its coverage and the demo teacher."""
+    conn = learner._conn()
+    for row in conn.execute("SELECT id FROM student WHERE id LIKE ?", (SYNTH_PREFIX + "%",)).fetchall():
+        learner.delete_student(row["id"])
+    with conn:
+        conn.execute("DELETE FROM student_assessment WHERE class_id = ?", (DEMO_CLASS_ID,))
+        conn.execute("DELETE FROM class_coverage WHERE class_id = ?", (DEMO_CLASS_ID,))
+        conn.execute("DELETE FROM teacher_class WHERE teacher_id = ?", (DEMO_TEACHER_ID,))
+        conn.execute("DELETE FROM web_link WHERE student_id = ?", (DEMO_TEACHER_ID,))
+        conn.execute("DELETE FROM teacher WHERE id = ?", (DEMO_TEACHER_ID,))
+
+
+def _demo_teacher() -> None:
+    """The demo teacher, with a fixed id and a key nobody is given: the demo signs in with a short session instead."""
+    import secrets
+
+    from edux import teachers
+
+    conn = learner._conn()
+    with conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO teacher (id, name, key_hash, created_on) VALUES (?, ?, ?, ?)",
+            (DEMO_TEACHER_ID, DEMO_TEACHER_NAME, learner.key_hash(secrets.token_urlsafe(16)), learner.now_iso()[:10]),
+        )
+    teachers.assign_class(DEMO_TEACHER_ID, DEMO_CLASS_ID)
+
+
+def _next_friday(now: datetime, at_least: int = 3) -> str:
+    day = (now + timedelta(days=at_least)).date()
+    return (day + timedelta(days=(4 - day.weekday()) % 7)).isoformat()
+
+
+def seed_class_demo(course: str | None = None, reset: bool = False, seed: int = CLASS_SEED) -> dict:
+    """The demo teacher's class: CLASS_NAMES as synthetic students, run through the real engine on the loaded pack.
+    TAUGHT_TOPICS topics are marked taught, a class test on the next Friday covers the first TEST_TOPICS of them, and each
+    student gets a different history from a seeded generator: answers (some wrong, with wrong ideas from the pack), and
+    AI-literacy evidence on Ask, Verify and How AI works. Returns {"class", "students", "test"}."""
+    course_id = _course(course)
+    conn = learner._conn()
+    if conn.execute("SELECT 1 FROM student WHERE id LIKE ?", (SYNTH_PREFIX + "%",)).fetchone() is not None:
+        if not reset:
+            raise DemoError("the demo class already exists; use --reset to recreate it")
+    remove_class_demo()
+    rng = random.Random(seed)
+    clock = _Clock()
+    if conn.execute("SELECT 1 FROM class WHERE id = ?", (DEMO_CLASS_ID,)).fetchone() is None:
+        learner.add_class(DEMO_CLASS_NAME, None, class_id=DEMO_CLASS_ID)
+    topics = class_topics()
+    if not topics:
+        raise DemoError("the loaded pack has no topics with parts")
+    taught = topics[:TAUGHT_TOPICS]
+    learner.set_class_coverage(DEMO_CLASS_ID, [t["id"] for t in taught], (clock.now - timedelta(days=28)).date().isoformat(), "seed")
+    how_parts = graph.parts_of(learner.AIL_HOW)
+    ids = []
+    for i, name in enumerate(CLASS_NAMES, start=1):
+        sid = f"{SYNTH_PREFIX}{i:02d}"
+        learner.add_student(name, course_id, student_id=sid)
+        learner.add_students_to_class(DEMO_CLASS_ID, [sid])
+        ids.append(sid)
+        ability = 0.3 + 0.65 * rng.random()
+        for topic in taught:
+            for part in graph.parts_of(topic["id"]):
+                if graph.is_literacy(part) or rng.random() < 0.3:
+                    continue  # not answered yet: "not yet checked" on the review
+                wrong_ideas = [m["id"] for m in graph.misconceptions_for([part])]
+                days = sorted(rng.sample(range(1, 26), rng.randint(1, 4)), reverse=True)
+                for d in days:
+                    ts = clock.session(d, rng.randint(0, 40))
+                    right = rng.random() < ability
+                    kind = rng.choice(["explain_back", "mcq_check"])
+                    held = None
+                    if not right and wrong_ideas:
+                        held = [wrong_ideas[0] if rng.random() < 0.6 else rng.choice(wrong_ideas)]
+                    _exchange(sid, [part], ts, choice="try_first")
+                    _evidence(sid, part, kind, 1.0 if right else 0.0, ts, held)
+        for part, kind in ((learner.AIL_ASK, "ail_task"), (learner.AIL_VERIFY, "ail_task")):
+            for _ in range(rng.randint(0, 7)):
+                ts = clock.session(rng.randint(1, 20), rng.randint(41, 50))
+                _evidence(sid, part, kind, 1.0 if rng.random() < ability else 0.0, ts)
+        for part in how_parts:
+            if rng.random() < 0.5:
+                ts = clock.session(rng.randint(1, 20), rng.randint(51, 55))
+                _evidence(sid, part, "ail_how", 1.0 if rng.random() < ability else 0.0, ts)
+    _flush()
+    test_parts = [p for t in taught[:TEST_TOPICS] for p in graph.parts_of(t["id"])]
+    test_day = _next_friday(clock.now)
+    learner.add_class_assessment(DEMO_CLASS_ID, "Class test", "class_test", test_day, test_parts)
+    _demo_teacher()
+    return {"class": DEMO_CLASS_ID, "students": ids, "test": test_day}

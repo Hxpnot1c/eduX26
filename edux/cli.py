@@ -443,10 +443,20 @@ def cmd_serve(host: str | None = None, port: int | None = None) -> int:
     return 0
 
 
-def cmd_seed_demo(course: str | None = None, reset: bool = False, parts: str | None = None, pupils: int = 0) -> int:
-    """Create the three demo students by replaying scripted events; print the roles picked and their keys."""
+def cmd_seed_demo(course: str | None = None, reset: bool = False, parts: str | None = None, pupils: int = 0, demo_class: bool = False) -> int:
+    """Create the three demo students by replaying scripted events; print the roles picked and their keys. With
+    demo_class, create the demo teacher's synthetic class instead (decision 0030)."""
     from edux import demo
 
+    if demo_class:
+        try:
+            made = demo.seed_class_demo(course, reset)
+        except ValueError as e:
+            print(e, file=sys.stderr)
+            return 1
+        print(f"{len(made['students'])} synthetic students in {made['class']} ({demo.DEMO_CLASS_NAME}), class test on {made['test']}")
+        print("demo teacher ready: set EDUX_DEMO_TEACHER=1 and open /teacher (synthetic data, for the demo only)")
+        return 0
     try:
         result = demo.seed(course, reset, parts, pupils)
     except ValueError as e:
@@ -585,6 +595,7 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--course", help="course id (default: the only loaded course)")
     p.add_argument("--reset", action="store_true", help="remove the demo students and their events first")
     p.add_argument("--pupils", type=int, default=0, help="also add this many synthetic pupils to the demo class, for the teacher page")
+    p.add_argument("--class", dest="demo_class", action="store_true", help="instead, seed the demo teacher's class of 12 synthetic students")
     p.add_argument(
         "--parts", help="override roles, e.g. target=ped_values,prereq=ped_formula (review_parts and showme_parts take ;-separated ids)"
     )
@@ -651,7 +662,7 @@ def main(argv: list[str] | None = None) -> None:
     elif args.command == "calls":
         code = cmd_calls(args.student, args.last)
     elif args.command == "seed-demo":
-        code = cmd_seed_demo(args.course, args.reset, args.parts, args.pupils)
+        code = cmd_seed_demo(args.course, args.reset, args.parts, args.pupils, args.demo_class)
     elif args.command == "serve":
         code = cmd_serve(args.host, args.port)
     else:

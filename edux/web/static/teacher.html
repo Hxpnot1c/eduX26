@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="/static/css/base.css">
 <link rel="stylesheet" href="/static/css/map.css">
 <link rel="stylesheet" href="/static/css/me.css">
+<link rel="stylesheet" href="/static/css/teacher.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to the page</a>
@@ -27,9 +28,11 @@
 <h1 class="visually-hidden">For teachers</h1>
 <section class="row" data-signin="teacher">
 <div class="label"><h2>Sign in</h2></div>
-<div><p class="status" role="status">Checking…</p><button type="button" class="quiet" data-forget hidden>Forget this device</button></div>
+<div><p class="status" role="status">Checking…</p><button type="button" class="quiet" data-forget hidden>Forget this device</button>
+<div data-demo hidden><button type="button">Sign in as demo teacher</button><p class="muted">A synthetic class made up for the demo. Read-only, and it ends when you close the tab.</p><p class="said" role="status" data-said></p></div></div>
 </section>
-<section class="row"><div class="label"><h2>Your classes</h2></div><div data-fill="pick"><p class="muted">Sign in to see your classes.</p></div></section>
+<div id="review" hidden><div id="review-class"></div><div id="review-student" hidden></div></div>
+<section class="row" data-classes><div class="label"><h2>Your classes</h2></div><div data-fill="pick"><p class="muted">Sign in to see your classes.</p></div></section>
 <div id="class-body" hidden>
 <section class="row" data-fill="seeded" hidden><div class="label"><h2>Seeded data</h2></div><div><p>These are synthetic pupils made up to show what this page looks like. They are not real students.</p></div></section>
 <section class="row span">
@@ -72,6 +75,7 @@
 <script src="/static/js/shell.js"></script>
 <script src="/static/js/graph.js"></script>
 <script src="/static/js/teacher.js"></script>
+<script src="/static/js/teacher-review.js"></script>
 
 </body>
 </html>

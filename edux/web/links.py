@@ -82,3 +82,34 @@ def student_by_session(token: str | None) -> dict | None:
         .fetchone()
     )
     return learner.get_student(row["student_id"]) if row else None
+
+
+def demo_teacher_on() -> bool:
+    """web.demo_teacher (off by default), unless EDUX_DEMO_TEACHER is set: 1 turns it on, 0 off (decision 0030)."""
+    switch = os.environ.get("EDUX_DEMO_TEACHER", "").strip()
+    return switch == "1" if switch in ("0", "1") else learner._settings().web.demo_teacher
+
+
+def teacher_session(teacher_id: str) -> dict:
+    """A short read-only session for a teacher (the demo teacher's sign-in): {"session", "expires_in"}. It is stored like
+    a map-link session, hashed, in the same table; the teacher id (t-...) can never match a student id."""
+    minutes = learner._settings().web.session_minutes
+    return {"session": _store(teacher_id, "session", minutes), "expires_in": minutes * 60}
+
+
+def teacher_by_session(token: str | None) -> dict | None:
+    """The teacher a live session token belongs to, marked read_only, or None."""
+    from edux import teachers
+
+    if not token:
+        return None
+    row = (
+        learner._conn()
+        .execute(
+            "SELECT student_id FROM web_link WHERE token_hash = ? AND kind = 'session' AND expires_at > ?",
+            (learner.key_hash(token), learner.now_iso()),
+        )
+        .fetchone()
+    )
+    found = teachers.get_teacher(row["student_id"]) if row else None
+    return found | {"read_only": True} if found and not found.get("left_on") else None
