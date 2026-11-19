@@ -130,25 +130,82 @@ def test_the_link_counts_towards_the_limit_and_the_result_still_fits(student, ba
     monkeypatch.setattr(service, "progress_parts", lambda *a, **k: {k2: (list(v) if isinstance(v, list) else v) for k2, v in big.items()})
     lists = ("levers", "weak_links", "reviews_due")
     out = service.my_progress(student)
-    assert "map_url" in out and service.result_size(out) <= service.result_limit() == 2400
+    assert "map_url" in out and service.result_size(out) <= service.result_limit("get_my_progress") == 3000
     monkeypatch.delenv("EDUX_PUBLIC_BASE_URL")
     without = service.my_progress(student)
     assert sum(len(out[n]) for n in lists) < sum(len(without[n]) for n in lists)  # the link's characters were counted
 
 
 def test_the_link_is_left_out_if_the_uncuttable_parts_leave_no_room(student, base, monkeypatch):
-    huge = {"tree": {"t": "x" * 2300}, "levers": [], "weak_links": [], "reviews_due": [], "trends": {}, "ai_literacy": {}}
+    huge = {"tree": {"t": "x" * 2900}, "levers": [], "weak_links": [], "reviews_due": [], "trends": {}, "ai_literacy": {}}
     monkeypatch.setattr(service, "progress_parts", lambda *a, **k: dict(huge))
     out = service.my_progress(student)
     assert "map_url" not in out and "map_url_expires_minutes" not in out
-    assert service.result_size(out) <= 2400
+    assert service.result_size(out) <= 3000
+
+
+def _pack_sized(include_parts):
+    """A progress result shaped and sized like the real Edexcel Theme 1 pack's, measured 19 Nov (the pack itself can't be
+    in the tests): a tree of 1 topic, 5 subtopics and 16 concepts (about 1,900 characters; about 5,450 with its parts),
+    5 levers, 3 reviews, 2 weak links, trends, and AI literacy for a student with no research questions yet."""
+    concepts_per = [5, 3, 3, 3, 2]
+
+    def concept(i, j):
+        entry = {"id": f"concept_{i}_{j}_name", "name": f"Concept {i}.{j} with a typical name", "level": "taught_in_class"}
+        if include_parts:
+            entry["children"] = [
+                {"id": f"part_{i}_{j}_{k}", "name": f"Part {i}.{j}.{k} with a typical name", "level": "new"} for k in range(3)
+            ]
+        return entry
+
+    tree = [
+        {
+            "id": "theme1",
+            "name": "Theme 1: Markets and market failure",
+            "level": "new",
+            "children": [
+                {"id": f"subtopic_{i}", "name": f"Subtopic {i} name", "level": "new", "children": [concept(i, j) for j in range(n)]}
+                for i, n in enumerate(concepts_per)
+            ],
+        }
+    ]
+    item = {"part_id": "a_part_id_of_usual_length", "name": "A part name of a usual length", "level": "new"}
+    return {
+        "tree": tree,
+        "levers": [dict(item, score=0.5) for _ in range(5)],
+        "weak_links": [{"from": dict(item), "to": dict(item), "type": "causal", "note": "x" * 90} for _ in range(2)],
+        "reviews_due": [dict(item, reason="fading", due="2026-11-20", note="x" * 60) for _ in range(3)],
+        "trends": {k: {"recent": 0.5, "before": None, "direction": None} for k in ("deep_questions", "constructive", "just_show_me")},
+        "ai_literacy": {
+            "formative": "practice feedback, not a grade",
+            **{k: {"level": "new", "evidence": {"checks": 0, "over_days": 0}, "skipped": 0} for k in ("ask", "verify")},
+            "how_ai_works": {"level": "new", "held": [], "evidence": {"checks": 0, "over_days": 0}, "skipped": 0},
+            "question_features": {},
+        },
+    }
+
+
+@pytest.mark.parametrize("include_parts, tree_at_least", [(False, 1900), (True, 5400)])
+def test_the_link_survives_on_a_result_the_size_of_the_real_pack(student, base, monkeypatch, include_parts, tree_at_least):
+    sized = _pack_sized(include_parts)
+    assert service.result_size(sized["tree"]) >= tree_at_least  # as big as the real pack's tree
+    assert service.result_size(sized) > 2400  # it would not have fitted the old limit
+    monkeypatch.setattr(service, "progress_parts", lambda *a, **k: _pack_sized(include_parts))
+    out = service.my_progress(student, include_parts)
+    assert "map_url" in out
+    assert service.result_size(out) <= service.result_limit("get_my_progress", include_parts) == (6500 if include_parts else 3000)
+    assert len(out["levers"]) >= 1  # something still says what to do next
+
+
+def test_question_features_with_no_data_are_left_out(student):
+    assert service.my_progress(student)["ai_literacy"]["question_features"] == {}
 
 
 def test_a_real_progress_view_with_the_link_fits(student, part, base):
     learner.record_evidence(student["id"], part, "explain_back", 1.0, apply="now")
     for include_parts in (False, True):
         out = service.my_progress(student, include_parts)
-        assert "map_url" in out and service.result_size(out) <= service.result_limit(include_parts)
+        assert "map_url" in out and service.result_size(out) <= service.result_limit("get_my_progress", include_parts)
 
 
 # --- swapping the link ---------------------------------------------------------------------------------------------

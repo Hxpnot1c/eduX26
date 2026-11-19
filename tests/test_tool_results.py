@@ -60,7 +60,7 @@ def _progress(n):
 
 
 def test_the_levels_view_is_trimmed_from_the_lowest_ranked_items_to_fit():
-    limit = service._settings().results.max_chars
+    limit = service._settings().results.max_chars_progress
     fitted = service.fit_progress(_progress(12))
     assert service.result_size(fitted) <= limit
     assert fitted["weak_links"] == [] or len(fitted["weak_links"]) < 12  # trimmed first
@@ -73,10 +73,18 @@ def test_a_progress_view_that_already_fits_is_left_alone():
 
 
 def test_over_budget_covers_every_tool():
-    limit = service._settings().results.max_chars
-    for tool in ("tutor_turn", "get_my_progress", "update_my_profile"):
+    results = service._settings().results
+    for tool in ("tutor_turn", "get_my_progress", "update_my_profile", "plan_my_study"):
+        limit = results.max_chars_progress if tool == "get_my_progress" else results.max_chars
         assert service.over_budget(tool, limit + 1)
         assert not service.over_budget(tool, limit)
+
+
+def test_get_my_progress_has_its_own_limits_and_no_other_tool_does():
+    results = service._settings().results
+    assert (results.max_chars, results.max_chars_progress, results.max_chars_full_progress) == (2400, 3000, 6500)
+    assert service.result_limit("get_my_progress") == 3000 and service.result_limit("get_my_progress", True) == 6500
+    assert service.result_limit("tutor_turn") == service.result_limit("plan_my_study", True) == service.result_limit() == 2400
 
 
 def test_the_every_part_progress_view_has_its_own_larger_limit():
