@@ -944,10 +944,16 @@ def _ai_literacy(student_id: str, at: str) -> dict:
 
 def my_progress(student: dict, include_parts: bool = False, at: str | None = None) -> dict:
     """Tree with levels, the biggest levers, weak links, reviews due, AI-literacy trends and AI-literacy skills (step
-    05e). AI-literacy parts are left out of the tree, levers and reviews."""
+    05e), cut to the result size limit. AI-literacy parts are left out of the tree, levers and reviews."""
+    return fit_progress(progress_parts(student, include_parts, at), result_limit(include_parts))
+
+
+def progress_parts(student: dict, include_parts: bool = False, at: str | None = None, reviews_limit: int | None = None) -> dict:
+    """The progress data before any size limit: what get_my_progress sends is this, trimmed. The web pages use it whole
+    (and may ask for more reviews than the chatbot's short list)."""
     at = at or learner.now_iso()
     s, student_id = _settings(), student["id"]
-    reviews = learner.due_reviews(student_id, _context().limits.get("reviews_due", 3), at)
+    reviews = learner.due_reviews(student_id, reviews_limit or _context().limits.get("reviews_due", 3), at)
     out = {
         "tree": _tree(student_id, at, include_parts),
         "levers": _levers(student_id, at, s.progress.levers),
@@ -971,7 +977,7 @@ def my_progress(student: dict, include_parts: bool = False, at: str | None = Non
     notice = _class_notice(student_id)
     if notice:
         out["notice"] = notice
-    return fit_progress(out, result_limit(include_parts))
+    return out
 
 
 def _confidence_due(

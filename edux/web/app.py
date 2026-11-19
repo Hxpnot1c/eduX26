@@ -99,6 +99,20 @@ async def api_map(request: Request) -> Response:
     return JSONResponse(data)
 
 
+async def api_me(request: Request) -> Response:
+    """The signed-in student's own page data. A teacher key is refused: a teacher never reads one student's record."""
+    refused = refuse_url_key(request)
+    if refused:
+        return refused
+    found = principal(request)
+    if found is None:
+        return unauthorised()
+    role, who = found
+    if role != "student":
+        return JSONResponse({"error": "this page is for students; teachers see classes, not one student's record"}, status_code=403)
+    return JSONResponse(views.student_page(who))
+
+
 async def api_public_map(request: Request) -> Response:
     """The map of the synthetic example pack, with no key, if web.public_example_map is on. Any other pack: 404."""
     if not learner._settings().web.public_example_map:
@@ -147,6 +161,7 @@ def build_web_app() -> ASGIApp:
     routes.append(Route("/api/whoami", whoami, methods=["GET"]))
     routes.append(Route("/api/map", api_map, methods=["GET"]))
     routes.append(Route("/api/public/map", api_public_map, methods=["GET"]))
+    routes.append(Route("/api/me", api_me, methods=["GET"]))
     routes.append(Mount("/static", StaticFiles(directory=STATIC), name="static"))
     return _Headers(Starlette(routes=routes))
 
