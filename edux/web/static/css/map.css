@@ -1,0 +1,59 @@
+/* The map, the path and the list (decision 0024). Colour is only a part's level; edge type is line style. */
+.viewbar { display: flex; gap: var(--space); margin-bottom: calc(var(--space) * 3); }
+.viewbar button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.stage svg { display: block; max-width: 100%; height: auto; overflow: visible; }
+.stage text { font: 400 12px/1 var(--font-ui); fill: var(--ink); }
+.stage text.topic { font: 500 22px/1 var(--font-display); }
+.stage text.concept { fill: var(--muted); font-size: 12px; }
+.stage text.count { font: 600 14px var(--font-ui); }
+.stage rect.cell { fill: none; stroke: var(--rule); stroke-width: 1; }
+
+.node { cursor: pointer; outline: none; transition: opacity var(--motion); }
+.node .ring { stroke-width: 1.5; }
+.node.plain .ring { fill: var(--paper); stroke: var(--muted); }
+.node.disc.new .ring { fill: var(--lv-new-fill); stroke: var(--lv-new-ring); }
+.node.disc.developing .ring { fill: var(--paper); stroke: var(--lv-developing-ring); }
+.node .half { fill: var(--lv-developing-fill); }
+.node.disc.secure .ring { fill: var(--lv-secure-fill); stroke: var(--lv-secure-ring); }
+.node.disc.taught .ring { fill: var(--paper); stroke: var(--muted); stroke-dasharray: 3 3; }
+.node.disc.none .ring { fill: var(--paper); stroke: var(--rule); }
+.node.collapsed .ring { fill: var(--paper); stroke: var(--rule); stroke-width: 6; }
+.node .seg { fill: none; stroke-width: 6; }
+.node .seg.new { stroke: var(--lv-new-ring); }
+.node .seg.developing { stroke: var(--lv-developing-fill); }
+.node .seg.secure { stroke: var(--lv-secure-fill); }
+.stage.dimmed .node { opacity: 0.32; }
+.stage.dimmed .node.near, .stage.dimmed .node.selected { opacity: 1; }
+.node:focus-visible .ring, .node.selected .ring { stroke: var(--accent); stroke-width: 3; }
+
+.edge { fill: none; stroke: var(--muted); stroke-width: 1.25; }
+.edge.analogous { stroke-dasharray: 6 4; }
+.edge.confusable { stroke-dasharray: 1.5 4; stroke-linecap: round; stroke-width: 2; }
+.edge.causal { stroke-width: 4; }
+.edge.causal.inner { stroke: var(--paper); stroke-width: 1.5; }
+.terminus { fill: var(--muted); }
+.neq { font: 600 14px var(--font-ui); fill: var(--muted); }
+.edges.always .edge { opacity: 0.7; }
+
+.panel { margin-top: calc(var(--space) * 4); max-width: var(--measure); min-height: 4rem; }
+.map { display: grid; grid-template-columns: minmax(0, 1fr); }
+.map .viewbar { grid-column: 1 / -1; }
+@media (min-width: 960px) {
+  .map { grid-template-columns: minmax(0, 1fr) 19rem; column-gap: calc(var(--space) * 5); }
+  .map .panel { margin-top: 0; position: sticky; top: calc(var(--space) * 2); align-self: start; border-left: 1px solid var(--rule); padding-left: calc(var(--space) * 3); }
+}
+.panel h3 { font-family: var(--font-display); font-weight: 500; font-size: var(--step-1); margin-bottom: var(--space); }
+.panel .levelline { font-weight: 600; }
+.related { display: grid; grid-template-columns: 1fr; gap: 2px 0; padding: var(--space) 0; border-top: 1px solid var(--rule); }
+.related .note { color: var(--muted); }
+.panel button.quiet { text-align: left; border: 0; border-bottom: 1px solid var(--rule); padding: 0 0 2px; }
+
+table.list { width: 100%; border-collapse: collapse; font-size: var(--step--1); }
+table.list caption { text-align: left; color: var(--muted); padding-bottom: var(--space); }
+table.list th, table.list td { text-align: left; vertical-align: top; padding: var(--space) calc(var(--space) * 2) var(--space) 0; border-top: 1px solid var(--rule); }
+table.list thead th { color: var(--muted); font-weight: 400; border-top: 0; }
+table.list tbody th { font-weight: 400; }
+table.list button.quiet { border: 0; padding: 0; text-align: left; border-bottom: 1px solid var(--rule); }
+
+@media (max-width: 719px) { table.list { display: block; overflow-x: auto; } }
+@media print { .viewbar, .panel { display: none; } }

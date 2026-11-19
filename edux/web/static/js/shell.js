@@ -47,9 +47,16 @@
     const state = line.querySelector(".status");
     const form = line.querySelector("form");
     const forget = line.querySelector("[data-forget]");
-    const show = (html) => { state.innerHTML = html; };
+    const show = (text, strong) => {       // plain text, with one bold word if given: never HTML
+      state.textContent = "";
+      if (!strong) { state.textContent = text; return; }
+      const [before, after] = text.split("{}");
+      state.appendChild(document.createTextNode(before));
+      const b = document.createElement("strong"); b.textContent = strong; state.appendChild(b);
+      state.appendChild(document.createTextNode(after));
+    };
     if (!Synapse.key()) {
-      show("Open the link you were given. It ends in <strong>#key=…</strong> and signs you in on this tab only.");
+      show(line.getAttribute("data-nokey") || "Open the link you were given. It ends in {} and signs you in on this tab only.", "#key=…");
       if (forget) forget.hidden = true;
       return;
     }
@@ -58,7 +65,7 @@
       if (wants !== "any" && who.role !== wants) {
         show("This key is for a " + who.role + ", and this page is for a " + wants + ".");
       } else {
-        show("Signed in as a <strong>" + who.role + "</strong> on this tab only.");
+        show("Signed in as a {} on this tab only.", who.role);
         document.dispatchEvent(new CustomEvent("synapse:signed-in", { detail: who }));
       }
       if (forget) forget.hidden = false;

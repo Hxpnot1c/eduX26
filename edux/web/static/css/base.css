@@ -46,6 +46,8 @@ hr { border: 0; border-top: 1px solid var(--rule); margin: calc(var(--space) * 4
 .row > .label { color: var(--muted); font-size: var(--step--1); }
 .row > .label h2 { color: var(--ink); margin-bottom: var(--space); }
 .row.wide > * { min-width: 0; }
+.row.span { grid-template-columns: 1fr; }
+.row.span > .label p { max-width: 36rem; }
 @media (min-width: 720px) { .row { grid-template-columns: 13rem minmax(0, 1fr); } }
 
 .lede { font-family: var(--font-display); font-size: var(--step-2); line-height: 1.25; max-width: 30ch; margin-bottom: calc(var(--space) * 3); }
