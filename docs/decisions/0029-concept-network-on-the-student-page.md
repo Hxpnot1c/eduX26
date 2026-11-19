@@ -3,7 +3,7 @@
 - **Status:** Proposed
 - **Date:** 2026-11-19
 - **Decision owner:** Vishnu (his design preview `synapse-concept-network.html`, 19 November)
-- **Pull request:** see the branch `build/concept-network-map`
+- **Pull request:** #88 (stacked on #87)
 - **Amends:** [0024](0024-visual-language-and-what-the-pages-will-not-show.md) (the colour ramp and look of this one map only)
 
 ## Context
