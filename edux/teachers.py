@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 from edux import learner
 
 PREFIX = "t"  # teacher ids start with t-, student ids with s-
+FORMER = "former teacher"
 
 
 def _conn():
@@ -91,6 +92,9 @@ def delete_teacher(teacher_id: str) -> None:
         raise ValueError(f"unknown teacher {teacher_id!r}")
     with conn:
         conn.execute("DELETE FROM teacher_class WHERE teacher_id = ?", (teacher_id,))
+        conn.execute(
+            "UPDATE teacher_action SET teacher_id = ? WHERE teacher_id = ?", (FORMER, teacher_id)
+        )  # the trail stays, the person goes
         conn.execute("DELETE FROM teacher WHERE id = ?", (teacher_id,))
 
 
@@ -102,3 +106,23 @@ def purge_left_teachers(today: datetime | None = None) -> int:
     for teacher_id in ids:
         delete_teacher(teacher_id)
     return len(ids)
+
+
+def log_action(teacher_id: str, class_id: str, action: str, detail: str) -> None:
+    """Record a change a teacher made to a class through the web pages."""
+    conn = _conn()
+    with conn:
+        conn.execute(
+            "INSERT INTO teacher_action (ts, teacher_id, class_id, action, detail) VALUES (?, ?, ?, ?, ?)",
+            (learner.now_iso(), teacher_id, class_id, action, detail),
+        )
+
+
+def recent_actions(class_id: str, limit: int = 6) -> list[dict]:
+    """The latest changes to a class: {when, who, action, detail}. Who is the teacher's name, or 'former teacher'."""
+    rows = _conn().execute(
+        """SELECT a.ts, a.action, a.detail, COALESCE(t.name, a.teacher_id) AS who FROM teacher_action a
+           LEFT JOIN teacher t ON t.id = a.teacher_id WHERE a.class_id = ? ORDER BY a.id DESC LIMIT ?""",
+        (class_id, limit),
+    )
+    return [{"when": r["ts"][:10], "who": r["who"], "action": r["action"], "detail": r["detail"]} for r in rows]

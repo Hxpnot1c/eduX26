@@ -1332,6 +1332,13 @@ def add_class_assessment(class_id: str, name: str, kind: str, day: str, part_ids
     return cur.lastrowid
 
 
+def remove_class_assessment(class_id: str, assessment_id: int) -> bool:
+    """Remove a test or assignment a teacher set for a class. True if it was there (and was this class's)."""
+    conn = _conn()
+    with conn:
+        return conn.execute("DELETE FROM student_assessment WHERE id = ? AND class_id = ?", (assessment_id, class_id)).rowcount > 0
+
+
 WRITTEN_STAGES = ("knowledge", "application", "analysis", "evaluation")  # how a written answer is marked (AO1 to AO4)
 
 
