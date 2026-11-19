@@ -215,6 +215,11 @@ class FindError:
 
 
 @dataclass(frozen=True)
+class Web:
+    public_example_map: bool
+
+
+@dataclass(frozen=True)
 class Reminders:
     days_ahead: float
 
@@ -354,6 +359,7 @@ class Settings:
     show: Show
     confidence: Confidence
     find_error: FindError
+    web: Web
     reminders: Reminders
     plan: Plan
     personalisation: Personalisation

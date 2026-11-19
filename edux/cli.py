@@ -8,7 +8,7 @@ import os
 import sys
 from pathlib import Path
 
-from edux import graph, learner
+from edux import graph, learner, teachers
 
 
 def cmd_load(pack: Path) -> int:
@@ -92,6 +92,39 @@ def cmd_purge() -> int:
         f"purged {done['call_log']} call-log row(s) and {len(done['students'])} student(s)"
         + (": " + ", ".join(done["students"]) if done["students"] else "")
     )
+    gone = teachers.purge_left_teachers()
+    if gone:
+        print(f"purged {gone} teacher(s) who left")
+    return 0
+
+
+def cmd_teacher(action: str, name: str | None = None, teacher: str | None = None, class_id: str | None = None, yes: bool = False) -> int:
+    """Teachers for the web pages: add (prints the key once), assign a class, list, leave, delete."""
+    try:
+        if action == "add":
+            created = teachers.add_teacher(name or "")
+            print(f"teacher: {created['id']}")
+            print(f"key:     {created['key']}   (shown once; open /teacher#key=<key>)")
+        elif action == "assign":
+            teachers.assign_class(teacher or "", class_id or "")
+            print(f"{teacher}: may now see class {class_id}")
+        elif action == "list":
+            rows = learner._conn().execute("SELECT id, name, left_on FROM teacher ORDER BY id").fetchall()
+            for r in rows:
+                names = ", ".join(c["id"] for c in teachers.classes_of(r["id"])) or "no classes"
+                print(f"{r['id']}  {r['name']}  [{names}]" + (f"  left {r['left_on']}" if r["left_on"] else ""))
+        elif action == "leave":
+            teachers.leave_teacher(teacher or "")
+            print(f"{teacher}: marked as having left; the key no longer works")
+        else:
+            if not yes:
+                print("this deletes the teacher and their class assignments; pass --yes to confirm", file=sys.stderr)
+                return 1
+            teachers.delete_teacher(teacher or "")
+            print(f"{teacher}: deleted")
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
     return 0
 
 
@@ -467,6 +500,19 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--student", required=True)
     p.add_argument("--on", help="the date they left, YYYY-MM-DD (default: today)")
     p = sub.add_parser("purge", help="apply the retention settings: old call-log rows and students who left")
+    p = sub.add_parser("teacher", help="teachers for the web pages: teacher add, assign, list, leave, delete")
+    tsub = p.add_subparsers(dest="teacher_command", required=True)
+    q = tsub.add_parser("add", help="create a teacher and print their key once")
+    q.add_argument("--name", required=True)
+    q = tsub.add_parser("assign", help="let a teacher see a class")
+    q.add_argument("--teacher", required=True)
+    q.add_argument("--class", dest="class_id", required=True)
+    tsub.add_parser("list", help="list teachers and their classes")
+    q = tsub.add_parser("leave", help="mark a teacher as having left (the key stops working)")
+    q.add_argument("--teacher", required=True)
+    q = tsub.add_parser("delete", help="delete a teacher and their class assignments")
+    q.add_argument("--teacher", required=True)
+    q.add_argument("--yes", action="store_true", help="confirm")
     p = sub.add_parser("class", help="classes: class add, class add-students")
     csub = p.add_subparsers(dest="class_command", required=True)
     q = csub.add_parser("add", help="create a class")
@@ -556,6 +602,14 @@ def main(argv: list[str] | None = None) -> None:
         code = cmd_leave_student(args.student, args.on)
     elif args.command == "purge":
         code = cmd_purge()
+    elif args.command == "teacher":
+        code = cmd_teacher(
+            args.teacher_command,
+            getattr(args, "name", None),
+            getattr(args, "teacher", None),
+            getattr(args, "class_id", None),
+            getattr(args, "yes", False),
+        )
     elif args.command == "class":
         code = cmd_class_add(args.name, args.pack) if args.class_command == "add" else cmd_class_add_students(args.class_id, args.students)
     elif args.command == "assessment":
