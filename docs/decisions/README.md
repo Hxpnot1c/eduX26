@@ -94,5 +94,6 @@ The result that would make us revisit this.
 | [0010](0010-engagement-rule-fixes.md) | Engagement rules: question first, a session summary on stop, and less noisy signals | Proposed |
 | [0011](0011-data-handling.md) | Opaque ids, hashed keys, and delete, export and retention | Proposed |
 | [0013](0013-fatigue-as-pacing.md) | Fatigue becomes pacing: time on task and rapid guesses | Proposed |
+| [0014](0014-formative-literacy-and-ask-scoring.md) | Ask and Verify are formative practice feedback, and asking for sources earns nothing alone | Proposed |
 
 Each later record is added to this table in the pull request that introduces it.

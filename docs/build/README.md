@@ -39,6 +39,7 @@ This folder is the build plan for Synapse, the learning service: an MCP server t
 | [05v](steps/05v-exchange-nudge-ceiling.md) | `build/fix-exchange-nudge` | An ordinary exchange can raise a part only up to `nudges.ceiling` (0.40); `protocol` v0.3 (C1) |
 | [05w](steps/05w-result-size-as-sent.md) | `build/fix-result-size` | Results sent as compact JSON and sized as sent; levels-only progress kept within the budget; a logging failure can't replace a result (C15, C16) |
 | [05x](steps/05x-data-handling.md) | `build/data-handling` | Opaque student ids, hashed keys, `delete-student`, `export-student`, `leave-student` and `purge`, retention settings, no stored message text (migration 014) |
+| [05y](steps/05y-formative-literacy-wording.md) | `build/formative-literacy-wording` | Ask and Verify shown as formative with the evidence behind each level; asking for sources earns Ask credit only alongside a Verify moment (C3) |
 | [06](steps/06-demo.md) | `build/06-demo` | Demo seeding script, README, tunnel and connector set-up |
 | [08](steps/08-tests.md) | `build/08-tests` | Unit tests with pytest: a fixture that loads the example pack into a throwaway folder, settings checks, learner-model core, rebuild, and the instruction and result size gates |
 | [Later](steps/later.md) | | Checks (past-question, explain-back, link, find-the-error), automated tests, student and teacher pages, extras |
