@@ -8,9 +8,11 @@ Pages and a small JSON API, served by the same process as the MCP endpoint. See 
 | `/mcp` | a student key in `?key=` (as before) | the MCP endpoint; unchanged |
 | `/`, `/map`, `/me`, `/teacher` | anyone | static pages with no data; they fetch data from `/api` |
 | `/static/*` | anyone | CSS, JavaScript, fonts |
+| `/api/public/map` | anyone | the structure of the synthetic example pack (`views.EXAMPLE_COURSE_ID`), only if `web.public_example_map`; 404 for any other pack |
+| `/api/map` | a student or teacher key (bearer) | the course structure: `{course, nodes, edges}`; a student gets their own course, a teacher may add `?course=` |
 | `/api/whoami` | a student or teacher key, as `Authorization: Bearer` | `{"role": "student"}`, or for a teacher `{"role": "teacher", "name", "classes": [{id, name}]}` |
 
-An `/api` request with `?key=` is refused with 400. A teacher key never opens `/mcp`; a student key never opens the teacher API. Later pull requests add `/api/map`, `/api/public/map`, `/api/me/*` and `/api/teacher/*`.
+An `/api` request with `?key=` is refused with 400. A teacher key never opens `/mcp`; a student key never opens the teacher API. Later pull requests add `/api/me/*` and `/api/teacher/*`.
 
 ## Headers (every response from this layer)
 `Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, a restrictive `Permissions-Policy`; `Cache-Control: no-store` on `/api`.
@@ -23,3 +25,6 @@ Open `/me#key=<key>` or `/teacher#key=<key>`. The fragment is never sent to a se
 
 ## Design tokens
 `edux/web/static/css/tokens.css`. `python scripts/check_contrast.py` checks every pair against WCAG 2.2 and the level fills' luminance order. Fonts are self-hosted OFL subsets in `static/fonts/` with their licences.
+
+## The map data (`/api/map`, `/api/public/map`)
+`nodes`: `{id, parent, level (topic|concept|part), name, spec_ref}` and for parts also `part_type`, `description`, `importance` (0 to 1, for disc size), `mark_points` and `misconceptions` (counts only). `edges`: `{from, to, type (prerequisite|analogous|confusable|causal), note, weight}`. Structure only: no student data, and no mark point or misconception text.

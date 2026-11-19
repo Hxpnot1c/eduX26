@@ -6,7 +6,7 @@ Decisions [0023](../../decisions/0023-web-pages-and-teacher-access.md) (access) 
 | # | Pull request | What | State |
 |---|---|---|---|
 | 1 | Foundations (`build/web-foundations`) | `edux/web` layer, routing next to `/mcp`, bearer-only sign-in, security headers, teacher keys and CLI, design tokens, fonts, level key, page shells | **built** |
-| 2 | Course map | `/api/map`, the map and path views, text alternative, public example map | planned |
+| 2 | Course map (`build/web-course-map`) | `/api/map` and `/api/public/map`, the map, path and list views, detail panel, keyboard movement, public example map | **built** |
 | 3 | Student page | `/me`: map, what next, reviews, coming up, AI-literacy practice, my record, chatbot set-up | planned |
 | 4 | Teacher page (read-only) | `/teacher`: class map (≥5 per cell), coverage, misconceptions, assessments, help-seeking pattern | planned |
 | 5 | Teacher actions | assessment and coverage forms, content review writing the teacher feedback CSV | planned |
@@ -18,6 +18,13 @@ Decisions [0023](../../decisions/0023-web-pages-and-teacher-access.md) (access) 
 - **`edux/web/static/`:** `css/tokens.css` (the palette and type scale, light and dark), `css/base.css`, `js/api.js` (fragment key to `sessionStorage`, bearer header), `js/shell.js` (the level key and the sign-in line), four page shells, six font files (Atkinson Hyperlegible Next, Newsreader; OFL licences alongside).
 - **`scripts/check_contrast.py`:** WCAG contrast for every token pair in both schemes, and the level fills' luminance order.
 - **`[web]` settings:** `public_example_map`.
+
+## What pull request 2 added
+- **`edux/web/views.py` `course_map`:** topics, concepts and parts as a flat list (each with its parent, a 0 to 1 importance for disc size, and counts of mark points and common wrong ideas, never their text) plus the four link types. AI-literacy parts and rejected or hidden rows are left out. No student data.
+- **Routes:** `GET /api/public/map` (no key; only the synthetic `example-mini` pack, only if `web.public_example_map`) and `GET /api/map` (any student or teacher key; a student gets their own course, a teacher may name one with `?course=`).
+- **`js/graph.js`:** three views of the same data. **Map**: topics hold concepts hold parts, a disc per part sized by importance; a concept with more than 12 parts collapses to one disc whose ring shows how its parts are spread. **Path**: the prerequisite chain left to right, linked parts only, the rest in a quiet row beneath. **List**: a table with the same information, the accessible alternative. Links stay hidden until a part is focused (hover, focus or select), then they are drawn rim to rim by line style: solid with a dot for prerequisite, dashed for analogous, dotted with ≠ for confusable, double for causal. A detail panel (beside the map on wide screens) names what a part needs first and what it is related to. Arrow keys move between parts, Enter selects, Escape clears. All text from the API is set with `textContent`; a test forbids `innerHTML` in any script.
+- **Deep links:** `/map?view=path|list` and `/map?select=<id>`.
+- **Tests:** `test_web_map.py` (view, routes, setting) and `test_web_browser.py` (a real Chromium against a live server: a disc per part, the three views, selection, sign-in; skipped when no browser is installed).
 
 ## Try it
 ```bash
