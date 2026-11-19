@@ -1,1 +1,1 @@
-Review {name}: ask them to recall {point} in their own words, with no options, framed in data.new_context if given; wait.
+Review {name}: have them recall {point} in their own words, in data.new_context if given; wait.

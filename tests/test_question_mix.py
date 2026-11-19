@@ -124,7 +124,7 @@ def test_open_and_multiple_choice_conversions(course):
     assert out[0]["key"] == "explain_back_check" and out[0]["data"]["index"] == 1 and out[0]["data"]["answer_type"] == "explain_back"
     r = plan.open_instead(turn, [review])[0]
     assert r["key"] == "explain_back_review" and r["data"]["answer_type"] == "review" and r["data"]["new_context"] == "cinema"
-    assert "PED" in r["cue"] and point["point"] in r["cue"]
+    assert "PED" in r["cue"] and point["point"] in r["cue"] and "new_context" in r["cue"]
     p = plan.open_instead(turn, [prereq])[0]
     assert p["key"] == "explain_back_check" and p["data"]["purpose"] == "prereq" and p["data"]["for"] == "x"
     assert plan.open_instead(turn, [intuition]) == []  # no open form: dropped
