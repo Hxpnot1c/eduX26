@@ -1,6 +1,6 @@
 # 0019. Ask "how sure are you?" after a check and show a calibration line
 
-- **Status:** Proposed
+- **Status:** Proposed; when it is asked is amended by [0027](0027-confidence-after-rapid-guesses.md)
 - **Date:** 2026-11-19
 - **Decision owner:** Vishnu (new student-facing behaviour; his design of 18 November)
 - **Pull request:** #62

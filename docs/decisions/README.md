@@ -107,5 +107,6 @@ The result that would make us revisit this.
 | [0024](0024-visual-language-and-what-the-pages-will-not-show.md) | Visual language, and what the pages will not show | Proposed |
 | [0025](0025-decay-towards-the-starting-estimate.md) | Fade learnt parts towards their normal start, show "needs review", and review before a part fades | Proposed |
 | [0026](0026-map-links-from-the-chatbot.md) | Map links from the chatbot: single-use tokens, never the key | Proposed |
+| [0027](0027-confidence-after-rapid-guesses.md) | "How sure are you?" only after rapid guesses in a row, once a session; the break offer waits | Proposed |
 
 Each later record is added to this table in the pull request that introduces it.

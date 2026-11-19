@@ -6,7 +6,7 @@ All questions below are written by us in the style of Pearson Edexcel A level Ec
 
 ## What changed on 19 November (read this before you film)
 The demo path has these differences from the earlier script. Each is on a pull request; none is merged yet.
-- **"How sure are you?" (step 05z).** After an answer to a *check, review or prerequisite check*, the chatbot asks "How sure are you: guess, fairly sure or certain? (You can skip this.)" and gives the feedback on the next message. It adds one short exchange to section 4 (reviews) and to any MCQ check. Skip it by saying "skip", or turn it off for filming with `EDUX_CONFIDENCE=0` on the server. It is not asked after the pre-question in section 2 or on ordinary chat. The progress view shows a calibration line only after 5 rated answers in a level, so it will not appear in a short take.
+- **"How sure are you?" (step 05z, decision 0027).** Asked only on the *second rapid-guess answer in a row* to a check, review or prerequisite check (answered faster than the question can be read, which needs the chatbot to send the word count), and at most once a session. The chatbot asks "How sure are you: guess, fairly sure or certain? (You can skip this.)" and gives the feedback on the next message; the break offer for rushing then waits until a later answer is rushed again. At normal speed it never appears in the takes below. Skip it by saying "skip", or turn it off for filming with `EDUX_CONFIDENCE=0` on the server. The progress view shows a calibration line only after 5 rated answers in a level, so it will not appear in a short take.
 - **"Taught in class" (step 05q).** The demo class has covered the first two Theme 1 concepts (PED, PES), so parts the student has not answered on show "taught in class, not yet checked" in `get_my_progress`, never "developing" or "secure". `state --student …` marks covered parts with `*`.
 - **A bridge question (step 05t).** When a part finishes, the reply can end with a short lead-in question on a linked, untaught part ("this links to what's next in class"), then a teaching step that says they can stop or switch.
 - **Study pattern is gone (step 05s).** Section 5 no longer says "your answers drop after about 35 minutes": that line came from a rule our own simulation found unreliable.
@@ -62,7 +62,7 @@ Optionally show the plans side by side (`python -m edux.cli context --student <i
 3. Give an explanation that misses one point, e.g. "you divide the change in quantity by the change in price". The chatbot ticks the points you made, and the server scores them (points met / points). The plan is `feedback` then `reteach` with only the missing point: the chatbot says what was good, re-teaches just the missing point and asks you to try again.
 
 ## 4. Reviews: recall and transfer (demo-secure, about 1 minute)
-Ask **"Quiz me on what's due"** (the `review_due` prompt). After each answer the chatbot asks how sure they are (skip it, or set `EDUX_CONFIDENCE=0`), then gives the feedback. Three reviews are due:
+Ask **"Quiz me on what's due"** (the `review_due` prompt). Each answer gets its feedback at once ("how sure are you?" comes only after rapid guesses). Three reviews are due:
 - `tax_incidence_split`, needs review (answered right once, now below `levels.new`): a **recall** question ("who bears an indirect tax, and what decides the split?")
 - `tax_supply_shift`, developing after several right answers, now due: a **transfer** question
 - `pes_definition`, developing: a **transfer** question in a new context, e.g. a linked idea from the graph
