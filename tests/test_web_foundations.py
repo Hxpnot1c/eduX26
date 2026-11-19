@@ -214,3 +214,10 @@ def test_the_contrast_check_catches_a_weak_palette():
     css = module.TOKENS.read_text(encoding="utf-8")
     assert module.check(css.replace("--muted: #5a5548", "--muted: #b0aa99", 1))  # muted text too pale
     assert module.check(css.replace("--lv-developing-fill: #5b9a97", "--lv-developing-fill: #e8dfc4", 1))  # two levels merge
+
+
+def test_no_script_builds_html_from_strings():
+    """Everything from the API is set with textContent, so a name or a note can never become markup."""
+    for path in _static_files(".js"):
+        text = path.read_text(encoding="utf-8")
+        assert "innerHTML" not in text and "outerHTML" not in text and "insertAdjacentHTML" not in text and "eval(" not in text, path.name
