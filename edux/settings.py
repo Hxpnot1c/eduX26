@@ -207,6 +207,13 @@ class Confidence:
 
 
 @dataclass(frozen=True)
+class FindError:
+    enabled: bool
+    clean_share: float
+    max_per_session: int
+
+
+@dataclass(frozen=True)
 class Reminders:
     days_ahead: float
 
@@ -345,6 +352,7 @@ class Settings:
     engagement: Engagement
     show: Show
     confidence: Confidence
+    find_error: FindError
     reminders: Reminders
     plan: Plan
     personalisation: Personalisation

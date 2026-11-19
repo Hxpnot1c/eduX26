@@ -30,7 +30,8 @@ SUPPORT_GIVEN = ("worked_example", "hint", "explain_back", "none")
 CHOICE_TAKEN = ("try_first", "hint", "just_show_me", "skip_point", "quiz", "extend", "stop", "none")   # skip_point: "I know this" (step 05d); quiz, extend, stop: a pick from offer_choice
 # What a student's answer can be to, as sent by the chatbot; each is also a key of [bkt.evidence].
 # "mcq" is any server-built multiple-choice question (step 05d), scored from the letter picked.
-ANSWER_TYPES = ("prequestion", "mcq", "explain_back", "review", "extend", "past_question", "ail_task", "ail_unprompted")
+ANSWER_TYPES = ("prequestion", "mcq", "explain_back", "review", "extend", "past_question", "ail_task", "ail_unprompted",
+                "find_error")
 OPEN_ANSWERS = ("explain_back", "extend", "past_question", "link")   # answers the student writes, not picks
 LITERACY_ANSWERS = ("ail_task", "ail_unprompted")   # a verify task's answer, or checking a claim unprompted (step 05e)
 AIL_ASK, AIL_VERIFY = "ail_ask", "ail_verify"       # the AI-literacy skills Ask and Verify (ingest/ai_literacy/)
@@ -247,6 +248,38 @@ def _evidence_rows(evidence: list[dict]) -> list[tuple[str, str, float, list[str
     return rows
 
 
+FIND_ERROR_POINTS = (("a", "Says the explanation has a mistake"), ("b", "Says which sentence is wrong"),
+                     ("c", "Says what the right idea is"), ("d", "Says the explanation has no mistake"))
+
+
+def find_error_on() -> bool:
+    """find_error.enabled, unless the environment sets EDUX_FIND_ERROR (1 on, 0 off). Off by default (decision 0012)."""
+    switch = os.environ.get("EDUX_FIND_ERROR")
+    return _settings().find_error.enabled if switch is None else switch == "1"
+
+
+def score_find_error(answer: dict, item: dict) -> dict:
+    """Score a find-the-error answer against the item that was shown (kept on the server, never sent). The chatbot ticks
+    four letters, the same four for every item so the letters give nothing away: a (says there is a mistake), b (says
+    which sentence), c (says what is right), d (says there is no mistake). Hits and false alarms are scored apart:
+    an item with an error scores 1 only if they say where it is and what is right (b and c); "there is a mistake"
+    alone scores nothing. A clean item scores 1 only for "no mistake" with no claim of one (d, and none of a, b, c);
+    claiming a mistake there is a false alarm and scores 0. Returns evidence {part_id, type, score, ...} with
+    hit, kind (error or clean) and the text to reveal."""
+    ticked = {str(x).strip().lower() for x in answer.get("points_met") or []}
+    bad = ticked - {k for k, _ in FIND_ERROR_POINTS}
+    if bad:
+        raise ValueError(f"answer.points_met: {', '.join(sorted(bad))} is not a point; use the letters from score_next")
+    if item["kind"] == "error":
+        hit = {"b", "c"} <= ticked
+    else:
+        hit = "d" in ticked and not ({"a", "b", "c"} & ticked)
+    return {"part_id": item["part_id"], "type": "find_error", "score": 1.0 if hit else 0.0, "misconception_ids": [],
+            "point_id": item["id"], "points_met": sorted(ticked), "hit": hit, "kind": item["kind"],
+            "purpose": "find_error", "correct": hit, "correct_option": item["reveal"],
+            "shown_misconception": item.get("misconception_id")}
+
+
 def score_answer(answer: dict, mcq: dict | None = None) -> dict:
     """Turn a chatbot's answer report into an evidence item {part_id, type, score, misconception_ids}.
 
@@ -370,11 +403,13 @@ def calibration(student_id: str, at: str | datetime | None = None) -> dict:
 
 
 def verified_this_session(student_id: str, at: str | datetime | None = None) -> bool:
-    """Whether the student has checked a claim (Verify evidence) in the current session."""
+    """Whether the student has checked a claim (Verify evidence) in the current session. Find-the-error practice
+    (ail_find_error) is not checking a source, so it does not count."""
     state = session_state(student_id, at)
     if state is None:
         return False
-    return _conn().execute("SELECT 1 FROM evidence_log WHERE student_id = ? AND part_id = ? AND ts >= ? AND ts <= ? LIMIT 1",
+    return _conn().execute("SELECT 1 FROM evidence_log WHERE student_id = ? AND part_id = ? AND evidence_type != 'ail_find_error' "
+                           "AND ts >= ? AND ts <= ? LIMIT 1",
                            (student_id, AIL_VERIFY, state["session_id"], _event_ts(at))).fetchone() is not None
 
 
