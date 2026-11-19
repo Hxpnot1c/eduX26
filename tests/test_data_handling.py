@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from edux import learner, service
+from edux import db, learner, service
 
 
 def _count_rows_about(student_id):
@@ -155,3 +155,10 @@ def test_the_migration_keeps_an_existing_students_key_working(tmp_path, monkeypa
     row = conn.execute("SELECT key, key_hash, left_on FROM student WHERE id = 'old-1'").fetchone()
     assert (row["key"], row["key_hash"], row["left_on"]) == ("plain-key", None, None)
     assert "prompt_text" not in [c["name"] for c in conn.execute("PRAGMA table_info(exchange_log)")]
+
+
+def test_tests_never_use_the_real_data_folder(tmp_path):
+    """The autouse fixture in conftest.py gives every test its own folder, so logging a call can't write to ./data."""
+    assert db.data_dir() == tmp_path != db.ROOT / "data"
+    service.log_call(None, "get_my_progress", learner.parse_ts(learner.now_iso()), 1.0, 10, True)
+    assert (tmp_path / "learner.db").exists()
