@@ -127,6 +127,7 @@ The evidence behind Synapse's teaching and modelling decisions. Effect sizes are
 | Options alike in form, and right-option length rank checked | Haladyna, Downing & Rodriguez (2002), item-writing guidelines (via w3-05-08 ~) | Every example-pack part's right option differed in form from its wrong options | |
 | … and the effect of fixing it | w4-fix-mcq-1 ✓; w5-06g-05 ~; w6-len-1 ✓ | A testwise student who knows nothing fell from 0.96 to 0.28 right (chance 0.31). A remaining cue (drop longest and shortest) got 58%, addressed by patch 0011's rewording and ingest warnings | Our simulation; the wording needs an economist's read |
 | Rotating wrong options (held) | Roediger & Marsh (2005) | Seeing the same wrong option repeatedly can teach it | Held item |
+| After any multiple-choice question, the next 2 questions are open (`questions.min_open_between_mcq`), except while fatigued or rushing; checks, prerequisite checks and reviews become one-point written answers (decision 0028) | Kang, McDermott & Roediger (2007); the generation effect (Slamecka & Graf, 1978) | Producing an answer, with feedback, is retained better than recognising one | Judgement call (Vishnu, 19 Nov) for the number; lab evidence, not A-level. Fewer server-checked wrong-option picks for the teacher view |
 
 ## Confidence and calibration (step 05z)
 
@@ -180,6 +181,7 @@ Each value that comes from one of these is labelled "from our simulation" in `se
 
   Assumes one answer every 2 minutes and a 10-point drop when tired (the middle of the 5–18% research range).
 - **Learning rate (18 Nov):** how much average surprise reveals the true learning rate. BKT prior 0.30, learn rate 0.10, slip 0.10, guess 0.25; true spreads of 10%, 15% and 30%; 48 answers per student.
+- **Open checks (19 Nov, `scripts/simulate_open_checks.py`):** answers to secure with all-MCQ, MCQ-open-open and all-open point checks; delayed answers differ by at most 0.04, and one-point answers straight after teaching never make a part secure (decision 0028).
 - **Starting point (18 Nov):** how quickly first answers reveal starting knowledge, using Simpson et al.'s spread of 0.57–0.90 logits.
 
 ## Considered and not adopted

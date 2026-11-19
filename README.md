@@ -78,7 +78,7 @@ To check a running server without a chatbot (on `example-mini` with the demo stu
 ```bash
 .venv/bin/python scripts/check_mcp.py --url http://127.0.0.1:8000/mcp
 ```
-It runs a three-message conversation as `demo-secure` and checks each plan, the scores recorded, rebuild and timing. It reseeds the demo students before and after (keys stay the same).
+It runs a three-message conversation as `demo-secure` and checks each plan, the scores recorded, rebuild and timing. It reseeds the demo students before and after (keys stay the same). The full run needs the question gap off: start the server and run the script with `EDUX_QUESTION_GAP=0`. With the gap on, it checks only that two open questions follow each multiple-choice one (decision 0028).
 
 ### Tunnel
 claude.ai and ChatGPT can't reach `localhost`, so give the server a public HTTPS address with either tool:

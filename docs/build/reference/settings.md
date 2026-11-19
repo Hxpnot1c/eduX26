@@ -163,6 +163,9 @@ max_per_session = 1        # judgement call (Vishnu, 19 Nov): at most this many 
 stop_after_skips = 2       # judgement call, starting value: this many skipped asks in a row, across sessions, and it stops asking for good (no penalty for skipping)
 min_per_group = 5          # judgement call (Vishnu, 18 Nov): the calibration line shows a group only after this many rated answers in it
 
+[questions]                # the mix of question types (decision 0028)
+min_open_between_mcq = 2   # judgement call (Vishnu, 19 Nov): after any multiple-choice question, this many open (written) questions before the next one; not while fatigued or rushing. 0 turns the gap off
+
 [find_error]               # find-the-error practice (decision 0012). Built but OFF until Vishnu approves it: the evidence is thin
 enabled = false            # judgement call: EDUX_FIND_ERROR=1 turns it on without editing this file
 clean_share = 0.4          # judgement call, starting value: share of items with no error at all (the review's design rules say 30 to 50%; no study gives a ratio)
