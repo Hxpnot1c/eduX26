@@ -20,7 +20,7 @@ from urllib.parse import parse_qs
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
 from mcp.server.transport_security import TransportSecuritySettings
-from mcp.types import CallToolResult, TextContent
+from mcp.types import CallToolResult, Icon, TextContent
 from pydantic import BaseModel, Field
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
@@ -280,6 +280,16 @@ TOOLS: dict[str, Callable[..., Any]] = {
 }
 
 
+def server_icons() -> list[Icon] | None:
+    """The Synapse icons for the MCP serverInfo, at public URLs under web.public_base_url; None when no base URL is set."""
+    from edux.web import links
+
+    base = links.public_base_url()
+    if not base:
+        return None
+    return [Icon(src=f"{base}/static/brand/synapse-icon-{n}.png", mimeType="image/png", sizes=[f"{n}x{n}"]) for n in (192, 512)]
+
+
 def build_server() -> FastMCP:
     """Create the FastMCP server with instructions, tools, prompts and transport security from ALLOWED_HOSTS.
     The instructions include every move's section; a bad move text or going over instructions.max_words stops
@@ -287,6 +297,7 @@ def build_server() -> FastMCP:
     mcp = FastMCP(
         name="Synapse",
         instructions=plan.server_instructions(load_settings()),
+        icons=server_icons(),
         streamable_http_path="/mcp",
         stateless_http=True,
         json_response=True,
