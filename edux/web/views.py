@@ -83,6 +83,7 @@ def course_map(course_id: str | None = None) -> dict | None:
 REVIEW_WHY = {
     "scheduled": "Time to check that you still remember it.",
     "recall_below": "Your answers suggest this is slipping, so a short check helps.",
+    "fading": "You got this right before. A short check now keeps it from fading.",
     "taught_in_class": "Your class has covered this and you have not answered on it yet.",
     "just_show_me": "You were shown this. Trying it yourself is what makes it stick.",
     "untested": "You have talked about this but not been checked on it yet.",

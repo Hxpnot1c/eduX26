@@ -118,6 +118,7 @@ class Scheduling:
     share_near: float
     min_gap_days: float
     review_when_below: float
+    review_before_new: bool
     just_show_me_gap_days: float
     max_reviews_per_reply: int
     untested_after: int

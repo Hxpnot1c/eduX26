@@ -1912,9 +1912,14 @@ def _apply_evidence(
         (int(correct), student_id, part_id),
     )
     gap, reason = review_gap_days(student_id, part_id, t), "scheduled"
-    below = days_until_below(state, s.scheduling.review_when_below, decay_floor(part_id))
+    floor = decay_floor(part_id)
+    below = days_until_below(state, s.scheduling.review_when_below, floor)
     if below is not None and below < gap:
         gap, reason = below, "recall_below"
+    if correct and s.scheduling.review_before_new:  # a learnt part comes up again before it would read "needs review"
+        fading = days_until_below(state, s.levels.new, floor)
+        if fading is not None and fading < gap:
+            gap, reason = fading, "fading"
     gap = max(s.scheduling.min_gap_days, gap)
     _queue_review(conn, student_id, part_id, t + timedelta(days=gap), reason, replace=True)
 

@@ -89,6 +89,7 @@ share_mid = 0.19           # 14–60 days
 share_near = 0.30          # < 14 days
 min_gap_days = 1
 review_when_below = 0.50   # judgement call, starting value: also due when recall is expected to fall below this, if that comes before the share gap. Not from research: the nearest study (Eglington & Pavlik, 2020) tested recall thresholds of 0.40 to 0.98 for adults learning word pairs, a different quantity; see docs/research/review-threshold-simulation.md
+review_before_new = true   # judgement call (Vishnu, 19 Nov), mirrors review_when_below: after a right answer, also due when p_now is expected to fade below levels.new, if that comes before the share gap (reason "fading")
 just_show_me_gap_days = 1.5
 max_reviews_per_reply = 3
 untested_after = 4         # this many exchanges on a part with no check
