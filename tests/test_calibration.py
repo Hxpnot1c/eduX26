@@ -4,7 +4,7 @@ import dataclasses
 
 import pytest
 
-from edux import graph, learner, service
+from edux import learner, service
 
 PART = "ped_formula"
 LABELS = {"question_depth": "mechanism", "engagement": "active"}

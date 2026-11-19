@@ -1,6 +1,5 @@
 """Step 05o: a student's answer_length decides teach_point's word budget, up to one point's worth."""
 
-import pytest
 
 from edux import plan, service
 
