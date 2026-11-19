@@ -41,12 +41,20 @@ class SlipGuess:
 
 
 @dataclass(frozen=True)
+class ExplainBackGuess:
+    up_to_2: float
+    three: float
+    four_plus: float
+
+
+@dataclass(frozen=True)
 class Bkt:
     prior: float
     learn_rate: float
     correct_share: float
     mcq_guess_from_options: bool
     evidence: dict[str, SlipGuess]
+    explain_back_guess: ExplainBackGuess
 
 
 @dataclass(frozen=True)
@@ -75,6 +83,23 @@ class Decay:
 class Propagation:
     prereq_boost: float
     queue_band: tuple[float, float]
+    forward_weight: float
+
+
+@dataclass(frozen=True)
+class Coverage:
+    boost_logit: float
+    class_k: float
+    class_estimate_enabled: bool
+    class_min_students: int
+    class_max_down: float
+
+
+@dataclass(frozen=True)
+class Starting:
+    k: float
+    bound_logits: float
+    cap: float
 
 
 @dataclass(frozen=True)
@@ -282,6 +307,8 @@ class Settings:
     levels: Levels
     bkt: Bkt
     nudges: Nudges
+    coverage: Coverage
+    starting: Starting
     evidence: Evidence
     decay: Decay
     propagation: Propagation

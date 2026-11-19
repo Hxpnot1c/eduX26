@@ -121,6 +121,28 @@ def ancestors(node_id: str) -> list[dict]:
     return chain
 
 
+def match_sections(keys: list[str]) -> tuple[list[dict], list[str]]:
+    """Match what a teacher or student calls a section to nodes anywhere in the tree: a node id, a spec code or a name,
+    ignoring case and spacing. Returns (matched nodes, keys that matched nothing). The AI-literacy topic never matches."""
+    index: dict[str, dict] = {}
+    for row in _conn().execute(f"{VISIBLE} SELECT n.* FROM node n JOIN visible v ON v.id = n.id ORDER BY n.rowid"):
+        node = _node_dict(row)
+        if is_literacy(node["id"]):
+            continue
+        for key in (node["id"], node.get("spec_ref"), node["name"]):
+            if key:
+                index.setdefault(" ".join(str(key).split()).casefold(), node)
+    matched: dict[str, dict] = {}
+    unmatched = []
+    for key in keys:
+        found = index.get(" ".join(str(key).split()).casefold())
+        if found:
+            matched.setdefault(found["id"], found)
+        elif str(key).strip():
+            unmatched.append(str(key))
+    return list(matched.values()), unmatched
+
+
 def parts_of(node_id: str) -> list[str]:
     """All parts under any node (recursive); a part returns itself."""
     node_id = canonical(node_id)

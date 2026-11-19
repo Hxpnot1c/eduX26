@@ -10,6 +10,11 @@ learn_rate = 0.10          # chance of learning from one piece of evidence
 correct_share = 0.67       # share of a link/check score that counts as "correct"
 mcq_guess_from_options = true   # a multiple-choice guess is 1 / the options shown (mcq_check, ail_how, an intuition question)
 
+[bkt.explain_back_guess]   # judgement call: a complete multi-point answer is far harder to produce by luck
+up_to_2 = 0.20             # explain-back guess when the answer needs 1 or 2 mark points
+three = 0.15               # 3 mark points
+four_plus = 0.10           # 4 or more
+
 [bkt.evidence]             # slip / guess per evidence type
 explain_back = { slip = 0.10, guess = 0.20 }    # open answers: 0.20, so one reply can't reach secure
 past_question = { slip = 0.10, guess = 0.20 }
@@ -44,6 +49,19 @@ seen_refresh = 0.2         # an exchange moves the forgetting clock this share o
 [propagation]
 prereq_boost = 0.20        # share of a gain passed one hop to prerequisites
 queue_band = [0.30, 0.75]  # parts in this band are candidates to teach next
+forward_weight = 0.5       # judgement call, starting value: Kaser et al. (2014, 2017) model skill links but give no weight; shifts a new part by this share of its prerequisites' log-odds change
+
+[coverage]                 # starting points for parts a class has been taught (step 05q; Vishnu's change of 18 Nov: a boost, not a fixed prior)
+boost_logit = 0.5          # judgement call, starting value: a covered part starts this far up in log-odds from its normal start (0.30 -> about 0.41)
+class_k = 25               # from research: Simpson et al. (2024) intercept SD 0.57-0.90 logits implies k of about 18-44 in our simulation
+class_estimate_enabled = false   # off by default: on only with the school's written instruction (personalisation.md section 7)
+class_min_students = 5     # from personalisation.md sections 5 and 7: minimum cell size
+class_max_down = 0.075     # from personalisation.md section 7: the class estimate never starts a covered part more than this below its boosted start
+
+[starting]                 # a student's own starting adjustment (step 05q)
+k = 25                     # from research: Simpson et al. (2024) spread plus our simulation: first answers for half weight
+bound_logits = 1.5         # from research: about +-2 SD of the same spread
+cap = 0.65                 # judgement call, starting value: no starting point (coverage, personal adjustment and feed-forward together) is above this; answers can take a part anywhere
 
 [importance]
 w_exam = 0.6
