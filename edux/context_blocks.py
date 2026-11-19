@@ -233,7 +233,7 @@ def intuition_source(turn: Turn, part_id: str) -> dict | None:
         for e in (lookup(part_id, 1) if lookup is graph.prerequisites else lookup(part_id))
         if e["teach_use"] == "intuition" and e["direction"] == "in" and e["note"]
     ]
-    known = [e for e in edges if _node_level(turn, e["other"]) != "new"]
+    known = [e for e in edges if _node_level(turn, e["other"]) not in ("new", "needs_review")]  # faded: not known now (decision 0025)
     if known:
         best = max(known, key=lambda e: e["weight"] or 0)
         return {"note": best["note"], "via": best["other_name"]}

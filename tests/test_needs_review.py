@@ -112,3 +112,22 @@ def test_the_class_note_is_left_out_under_five(course, part):
     for sid in ids[MIN - 1 :]:
         learner.record_evidence(sid, part, "mcq_check", 1.0, apply="now", n_options=4)
     assert "need review" not in views.class_summary(class_id)["overlay"][part]["note"]
+
+
+def _turn(student_id, part):
+    from edux import context_blocks
+
+    student = learner.get_student(student_id)
+    return context_blocks.Turn(student=student, parts=[part], message="", at=learner.now_iso(), limits={}, resolution={})
+
+
+def test_a_faded_prerequisite_is_not_a_known_link_for_the_intuition_question(student):
+    """The planner reads the number: a part that needs review is not known now, as it was new before (decision 0025)."""
+    from edux import context_blocks
+
+    sid = student["id"]
+    _right_long_ago(sid, "ped_definition")  # the prerequisite of ped_formula, linked with teach_use = intuition
+    assert learner.shown_level(sid, "ped_definition") == "needs_review"
+    assert "via" not in (context_blocks.intuition_source(_turn(sid, "ped_formula"), "ped_formula") or {})
+    learner.record_evidence(sid, "ped_definition", "mcq_check", 1.0, apply="now", n_options=4)
+    assert context_blocks.intuition_source(_turn(sid, "ped_formula"), "ped_formula")["via"] == graph.require_node("ped_definition")["name"]
