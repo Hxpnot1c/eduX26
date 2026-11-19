@@ -539,6 +539,48 @@ def new_student(student: str) -> str:
     return learner.add_student(student, course, student_id=student)["key"]
 
 
+async def bridge(url: str) -> None:
+    """The reply's ending (step 05t): when a part is finished, the ending is a bridge question towards the next topic
+    (the pre-question move, with data.link); after its answer the first teach step says they can stop or switch, and
+    stop gives the session summary; neither forces the target part."""
+    student = "check-bridge"
+    keyed = f"{url}?key={new_student(student)}"
+    labels = {"question_depth": "mechanism", "engagement": "constructive"}
+    try:
+        now = learner.parse_ts(learner.now_iso())
+        for part in ("ped_definition", "ped_formula"):
+            for i in range(3):
+                learner.record_evidence(student, part, "explain_back", 1.0, apply="now",
+                                        ts=learner._event_ts(now - timedelta(days=3, minutes=10 * (3 - i))))
+        got = await call(keyed, "tutor_turn", {"message": "Let's go back over the PED formula", "client": "check_mcp",
+                                               "node_ids": ["ped_formula"], "this_message": labels})
+        letters = [p["id"] for p in got.get("score_next", {}).get("ped_formula", [])]
+        done = await call(keyed, "tutor_turn", {"message": "my explanation", "client": "check_mcp", "node_ids": ["ped_formula"],
+                                                "this_message": labels,
+                                                "answer": {"part_id": "ped_formula", "type": "explain_back", "points_met": letters}})
+        step = next((s for s in done.get("plan", []) if s["move"] == "ask_mcq" and s["data"].get("bridge")), None)
+        link = (step or {}).get("data", {}).get("link", {})
+        check(step is not None and link.get("from") == "ped_formula" and link.get("to") == step["part_id"] != "ped_formula",
+              "a finished part ends with a bridge question towards the next topic, carrying data.link",
+              json.dumps(moves(done)) + " " + json.dumps(link))
+        if step is None:
+            return
+        chosen, _ = letter(student, True)
+        after = await call(keyed, "tutor_turn", {"message": chosen, "client": "check_mcp", "this_message": labels,
+                                                 "answer": {"part_id": step["part_id"], "type": step["data"]["answer_type"], "choice": chosen}})
+        teach_step = next((s for s in after.get("plan", []) if s["move"] == "teach_point"), {})
+        check(moves(after)[:1] == ["feedback"] and teach_step.get("part_id") == step["part_id"]
+              and "stop or switch" in teach_step.get("cue", ""),
+              "after the bridge answer: feedback, then the first teach step on the target, which says they can stop or switch",
+              json.dumps(moves(after)) + " " + teach_step.get("cue", "")[:80])
+        stop = await call(keyed, "tutor_turn", {"message": "that's enough for today", "client": "check_mcp",
+                                                "this_message": {**labels, "choice": "stop"}})
+        check(moves(stop) == ["session_summary"], "stop after a bridge gives the session summary and does not force the target part",
+              json.dumps(moves(stop)))
+    finally:
+        drop_student(student)
+
+
 async def coverage(url: str) -> None:
     """What a student says their class covered (step 05q): matched and unmatched topics come back, and the progress view
     shows the covered, untouched topic as "taught in class, not yet checked", never developing or secure."""
@@ -787,9 +829,10 @@ async def priorities(url: str) -> None:
         added = assess(3)
         with_mock, blocks = addon()
         due_parts = [r["part_id"] for r in blocks["reviews_due"]["items"]]
-        check(picked(without) == f"extend:{extend_part}" and picked(with_mock) == f"ask_mcq:{review_part}"
+        bridged = without is not None and without["move"] == "ask_mcq" and without["data"].get("bridge")      # step 05t: a bridge beats an earned extend
+        check((picked(without) == f"extend:{extend_part}" or bridged) and picked(with_mock) == f"ask_mcq:{review_part}"
               and "mock" in with_mock["data"].get("reason", "") and with_mock.get("considered"),
-              "a due review covered by a mock in 3 days beats an earned extend; with no mock it loses to it",
+              "a due review covered by a mock in 3 days beats an earned extend and a bridge; with no mock it loses to them",
               f"without: {picked(without)}, with: {picked(with_mock)} {json.dumps((with_mock or {}).get('data', {}).get('reason'))}")
         check(later_part not in due_parts and picked(with_mock) != f"ask_mcq:{later_part}",
               "a part not yet due is never reviewed, whatever tests are coming", json.dumps(due_parts))
@@ -973,6 +1016,7 @@ async def main(url: str, key: str, student: str) -> None:
     await fatigued_student(url)
     await rushing_student(url)
     await coverage(url)
+    await bridge(url)
     await waiting_task(url)
     await engagement_rules(url)
     await priorities(url)
