@@ -3,7 +3,7 @@
 - **Status:** Proposed
 - **Date:** 2026-11-19
 - **Decision owner:** Vishnu (decided 19 November, after the code freeze)
-- **Pull request:** to be added
+- **Pull request:** #82
 - **Research:** [research.md](../build/reference/research.md) row 53 (patch 0005, held until now); supersedes row 70
 
 ## Context
