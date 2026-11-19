@@ -78,7 +78,7 @@
     function drawPart(parent, n, x, y, size) {
       const g = svgEl("g", { class: "node disc " + level(n.id), tabindex: -1, role: "button", "data-id": n.id, transform: `translate(${x},${y})` }, parent);
       const r = size || radius(n), ov = state.overlay[n.id];
-      g.setAttribute("aria-label", n.name + ", " + LEVEL_WORDS[level(n.id)] + (ov && ov.note ? ", " + ov.note : ""));
+      g.setAttribute("aria-label", n.name + ", " + ((ov && ov.label) || LEVEL_WORDS[level(n.id)]) + (ov && ov.note ? ", " + ov.note : ""));
       if (ov && typeof ov.fade === "number") g.setAttribute("opacity", String(ov.fade));
       svgEl("circle", { class: "ring", r: r, cx: 0, cy: 0 }, g);
       if (level(n.id) === "developing") svgEl("path", { class: "half", d: `M0 ${-r} A${r} ${r} 0 0 0 0 ${r} Z` }, g);
@@ -225,7 +225,7 @@
       htmlEl("p", facts.join(" · "), panel, "muted");
       if (n.description) htmlEl("p", n.description, panel);
       const ov = state.overlay[n.id];
-      if (ov) htmlEl("p", LEVEL_WORDS[ov.level] + (ov.note ? " · " + ov.note : ""), panel, "levelline");
+      if (ov) htmlEl("p", (ov.label || LEVEL_WORDS[ov.level]) + (ov.note ? " · " + ov.note : ""), panel, "levelline");
       if (n.level === "part") htmlEl("p", n.mark_points + " mark points · " + n.misconceptions + " common wrong ideas", panel, "muted");
       if (n.level === "concept") (kids.get(n.id) || []).forEach((p) => link(panel, p.id, "Part", p.name));
       related(id).forEach((r) => link(panel, r.other, RELATION[r.key], (nodes.get(r.other) || {}).name, r.edge.note));

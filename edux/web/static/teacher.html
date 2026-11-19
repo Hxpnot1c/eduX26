@@ -7,6 +7,8 @@
 <title>For teachers · Synapse</title>
 <link rel="stylesheet" href="/static/css/tokens.css">
 <link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/map.css">
+<link rel="stylesheet" href="/static/css/me.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to the page</a>
@@ -24,7 +26,28 @@
 <div class="label"><h2>Sign in</h2></div>
 <div><p class="status" role="status">Checking…</p><button type="button" class="quiet" data-forget hidden>Forget this device</button></div>
 </section>
-<section class="row"><div class="label"><h2>Your classes</h2></div><div><p class="muted">The class view arrives here in a later release. It will show classes, never one student's record.</p></div></section>
+<section class="row"><div class="label"><h2>Your classes</h2></div><div data-fill="pick"><p class="muted">Sign in to see your classes.</p></div></section>
+<div id="class-body" hidden>
+<section class="row" data-fill="seeded" hidden><div class="label"><h2>Seeded data</h2></div><div><p>These are synthetic pupils made up to show what this page looks like. They are not real students.</p></div></section>
+<section class="row span">
+<div class="label"><h2>Class map</h2><p class="muted" data-fill="size"></p></div>
+<div class="wide"><ul id="class-key"></ul><p class="muted spaced">Colour shows how many of the students who have answered on a part are at developing or secure. A part is lighter when it rests on few students. This is practice evidence, not a grade, and it is often based on very few answers.</p><div class="map spaced" data-fill="map"></div></div>
+</section>
+<section class="row"><div class="label"><h2>Where we are in the spec</h2></div><div data-fill="coverage"></div></section>
+<section class="row"><div class="label"><h2>Common wrong ideas</h2><p class="muted">Held by five or more students right now.</p></div><div data-fill="wrong"></div></section>
+<section class="row"><div class="label"><h2>Coming up</h2></div><div data-fill="coming"></div></section>
+<section class="row"><div class="label"><h2>Asking to be shown</h2></div><div data-fill="help"></div></section>
+<section class="row"><div class="label"><h2>What this page does not show</h2></div><div>
+<ul class="plain-list">
+<li>Any one student: not a name, a level, an answer or a chat.</li>
+<li>Any group of fewer than five students.</li>
+<li>Grades, predictions, rankings or comparisons between students or classes.</li>
+<li>How sure students are, how tired they are, or how fast they learn.</li>
+<li>Anything about special needs, language or background.</li>
+</ul>
+<p class="muted">Whether a page like this improves results has not been shown: studies of dashboards find little evidence on achievement. Use it as a prompt for a conversation, not a verdict.</p>
+</div></section>
+</div>
 </main>
 <footer class="foot">
 <p>Practice feedback, not a grade. Synapse shows what has been practised and how recently, and it is often based on very few answers.</p>
@@ -32,6 +55,8 @@
 </div>
 <script src="/static/js/api.js"></script>
 <script src="/static/js/shell.js"></script>
+<script src="/static/js/graph.js"></script>
+<script src="/static/js/teacher.js"></script>
 
 </body>
 </html>
