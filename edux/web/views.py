@@ -136,6 +136,58 @@ def student_overlay(student_id: str, at: str) -> dict[str, dict]:
 
 LEVEL_CLASS = {"taught_in_class": "taught", "needs_review": "review"}  # shown_level -> the pages' level key (shell.js LEVELS)
 
+ASSESSMENT_WORD = {"class_test": "test", "mock": "mock", "homework": "homework", "written_assignment": "assignment"}
+
+
+def student_network(student: dict, at: str, overlay: dict[str, dict] | None = None) -> dict | None:
+    """The concept network on the student's page (decision 0029): every course part as an idea, sized by importance,
+    grouped by topic, with the links between parts and the student's level on each. Levels only, never a probability
+    (decision 0024). Each idea carries its intuition question and description, and a chip when a test or assignment
+    within reminders.days_ahead covers it. None if the course is unknown."""
+    structure = course_map(student.get("course_id"))
+    if structure is None:
+        return None
+    overlay = overlay if overlay is not None else student_overlay(student["id"], at)
+    by_id = {n["id"]: n for n in structure["nodes"]}
+    stamp, ahead = learner.parse_ts(at), learner._settings().reminders.days_ahead
+    due: dict[str, str] = {}
+    for a in learner.assessments(student["id"], at):  # soonest first: a part keeps the soonest one
+        when = learner.parse_ts(a["date"])
+        if (when - stamp).total_seconds() / 86400 > ahead:
+            continue
+        for part in a["part_ids"]:
+            due.setdefault(part, f"In {when.strftime('%A')}'s {ASSESSMENT_WORD.get(a['kind'], a['kind'])}")
+    nodes = []
+    for n in structure["nodes"]:
+        if n["level"] != "part" or n["id"] not in overlay:
+            continue
+        concept = by_id.get(n["parent"] or "") or {}
+        node = graph.require_node(n["id"])
+        nodes.append(
+            {
+                "id": n["id"],
+                "short": n["name"],
+                "name": n["name"],
+                "band": concept.get("parent") or n["parent"],
+                "concept": concept.get("name", ""),
+                "level": overlay[n["id"]]["level"],
+                "note": overlay[n["id"]]["note"],
+                "test": due.get(n["id"], ""),
+                "q": node.get("intuition") or "",
+                "d": n["description"],
+                "imp": n["importance"],
+            }
+        )
+    ids = {n["id"] for n in nodes}
+    edges = [
+        {"a": e["from"], "b": e["to"], "t": e["type"], "n": e["note"] or ""}
+        for e in structure["edges"]
+        if e["from"] in ids and e["to"] in ids
+    ]
+    used = {n["band"] for n in nodes}
+    bands = [{"id": t["id"], "name": t["name"]} for t in structure["nodes"] if t["level"] == "topic" and t["id"] in used]
+    return {"course": structure["course"]["name"], "nodes": nodes, "edges": edges, "bands": bands}
+
 
 def _word(level: str) -> str:
     return LEVEL_CLASS.get(level, level)
@@ -184,9 +236,11 @@ def student_page(student: dict, at: str | None = None) -> dict:
     )
     exchanges = learner._conn().execute("SELECT COUNT(*) FROM exchange_log WHERE student_id = ?", (student_id,)).fetchone()[0]
     ai = progress["ai_literacy"]
+    overlay = student_overlay(student_id, at)
     return {
         "course": course_for(student.get("course_id")),
-        "overlay": student_overlay(student_id, at),
+        "overlay": overlay,
+        "network": student_network(student, at, overlay),
         "next": [{"part_id": f["part_id"], "name": f["name"], "level": _word(f["level"])} for f in progress["levers"]],
         "reviews": reviews,
         "coming_up": {

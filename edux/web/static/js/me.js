@@ -1,4 +1,4 @@
-// The student's page: their own record, from /api/me, drawn with the course map coloured by what they have practised.
+// The student's page: their own record, from /api/me, with the concept network coloured by their levels (decision 0029).
 (function () {
   "use strict";
   function h(name, text, parent, cls) {
@@ -28,11 +28,15 @@
     });
   }
 
-  function paint(data, map) {
+  function paint(data) {
     document.getElementById("me").hidden = false;
-    const graph = SynapseGraph.mount(rows.map, map, { overlay: data.overlay });
-    const q = new URLSearchParams(location.search);
-    if (q.get("select")) graph.select(q.get("select"));
+    if (data.network) {
+      const net = SynapseNetwork.mount(rows.map, data.network);  // the concept network (decision 0029)
+      const q = new URLSearchParams(location.search);
+      if (q.get("select")) net.select(q.get("select"));
+    } else {
+      h("p", "Your course map could not be found.", rows.map, "nothing");
+    }
 
     rows.next.textContent = "";
     h("p", "Where a little practice moves you most, in order.", rows.next, "muted");
@@ -98,8 +102,7 @@
 
   document.addEventListener("synapse:signed-in", async () => {
     try {
-      const [data, map] = await Promise.all([Synapse.get("/api/me"), Synapse.get("/api/map")]);
-      paint(data, map);
+      paint(await Synapse.get("/api/me"));
     } catch (e) {
       const s = document.querySelector("[data-signin] .status");
       if (s) s.textContent = "Your page could not be loaded: " + e.message;

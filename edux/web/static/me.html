@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="/static/css/base.css">
 <link rel="stylesheet" href="/static/css/map.css">
 <link rel="stylesheet" href="/static/css/me.css">
+<link rel="stylesheet" href="/static/css/network.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to the page</a>
@@ -31,8 +32,8 @@
 </section>
 <div id="me" hidden>
 <section class="row span">
-<div class="label"><h2>My map</h2><p class="muted">Every part of the course. Fainter means longer since you last answered on it.</p></div>
-<div class="wide"><ul data-level-key></ul><div class="map spaced" data-fill="map"></div></div>
+<div class="label"><h2>My map</h2><p class="muted">Every idea in the course and how they link. Colour shows your level, from your answers only.</p></div>
+<div class="wide" data-fill="map"></div>
 </section>
 <section class="row"><div class="label"><h2>What next</h2></div><div data-fill="next"></div></section>
 <section class="row"><div class="label"><h2>Ready for a check</h2></div><div data-fill="reviews"></div></section>
@@ -49,7 +50,7 @@
 </div>
 <script src="/static/js/api.js"></script>
 <script src="/static/js/shell.js"></script>
-<script src="/static/js/graph.js"></script>
+<script src="/static/js/network.js"></script>
 <script src="/static/js/me.js"></script>
 
 </body>
