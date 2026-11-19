@@ -42,7 +42,7 @@ See 0012 for the checked evidence and its limits. In short: planted-error detect
 
 ## Verification
 
-`tests/test_find_error.py` (27 tests): off by default; needs an answered part at developing or above; labelled; exactly one sentence swapped, or none; about 40% clean; the full scoring matrix; the letters; rare and rotating; not on literacy parts; the whole turn (recorded on the part and on Verify, misconception never activated, false alarm on a clean item). `scripts/check_mcp.py` (find_error_run) in both modes; rebuild identical.
+`tests/test_find_error.py` (29 tests): off by default; needs an answered part at developing or above; labelled; exactly one sentence swapped, or none; about 40% clean; the full scoring matrix; the letters; rare and rotating; not on literacy parts; the whole turn (recorded on the part and on Verify, misconception never activated, false alarm on a clean item). `scripts/check_mcp.py` (find_error_run) in both modes; rebuild identical.
 
 ## What would change our mind
 

@@ -10,7 +10,7 @@ Branch `build/find-the-error`, from `main` once step 05z (#62) is merged. Scoped
 - Evidence on the part (`find_error`) and on Verify as its own type (`ail_find_error`). No misconception is activated.
 
 ## Files
-`edux/plan.py` (`find_error_step`, the tier, the feedback branch, `score_next`), `edux/learner.py` (`score_find_error`, `find_error_on`, `FIND_ERROR_POINTS`), `edux/service.py` (scoring against the kept item, the Verify row), `settings.toml` `[find_error]` and `ail_find_error`, `text/find_error/`, `text/moves/say_line.md` (shared with the confidence question: no extra instruction words, 898 of 900), `tests/test_find_error.py` (27 tests), `scripts/check_mcp.py` (`find_error_run`).
+`edux/plan.py` (`find_error_step`, the tier, the feedback branch, `score_next`), `edux/learner.py` (`score_find_error`, `find_error_on`, `FIND_ERROR_POINTS`), `edux/service.py` (scoring against the kept item, the Verify row), `settings.toml` `[find_error]` and `ail_find_error`, `text/find_error/`, `text/moves/say_line.md` (shared with the confidence question: no extra instruction words, 898 of 900), `tests/test_find_error.py` (29 tests), `scripts/check_mcp.py` (`find_error_run`).
 
 ## Done when
 Off by default nothing is offered (checked); switched on, an item is offered, labelled, gives nothing away, is scored on the server, recorded on the part and on Verify, and the correct statement is given; the gate passes in both modes.
