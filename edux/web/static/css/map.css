@@ -1,5 +1,6 @@
 /* The map, the path and the list (decision 0024). Colour is only a part's level; edge type is line style. */
 .viewbar { display: flex; gap: var(--space); margin-bottom: calc(var(--space) * 3); }
+.viewbar button { min-height: 2.75rem; min-width: 4rem; }
 .viewbar button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .stage svg { display: block; max-width: 100%; height: auto; overflow: visible; }
 .stage text { font: 400 12px/1 var(--font-ui); fill: var(--ink); }
@@ -46,14 +47,14 @@
 .panel .levelline { font-weight: 600; }
 .related { display: grid; grid-template-columns: 1fr; gap: 2px 0; padding: var(--space) 0; border-top: 1px solid var(--rule); }
 .related .note { color: var(--muted); }
-.panel button.quiet { text-align: left; border: 0; border-bottom: 1px solid var(--rule); padding: 0 0 2px; }
+.panel button.quiet { text-align: left; border: 0; border-bottom: 1px solid var(--rule); padding: 0 0 2px; min-height: 0; }
 
 table.list { width: 100%; border-collapse: collapse; font-size: var(--step--1); }
 table.list caption { text-align: left; color: var(--muted); padding-bottom: var(--space); }
 table.list th, table.list td { text-align: left; vertical-align: top; padding: var(--space) calc(var(--space) * 2) var(--space) 0; border-top: 1px solid var(--rule); }
 table.list thead th { color: var(--muted); font-weight: 400; border-top: 0; }
 table.list tbody th { font-weight: 400; }
-table.list button.quiet { border: 0; padding: 0; text-align: left; border-bottom: 1px solid var(--rule); }
+table.list button.quiet { border: 0; padding: 0; text-align: left; border-bottom: 1px solid var(--rule); min-height: 0; }
 
 @media (max-width: 719px) { table.list { display: block; overflow-x: auto; } }
 @media print { .viewbar, .panel { display: none; } }

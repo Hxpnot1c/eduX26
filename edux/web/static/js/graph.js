@@ -269,6 +269,7 @@
     }
 
     function draw() {
+      const started = performance.now();
       Object.keys(buttons).forEach((id) => buttons[id].setAttribute("aria-pressed", String(id === state.view)));
       stage.textContent = ""; stage.classList.remove("dimmed");
       state.order = []; state.pos = new Map();
@@ -279,6 +280,7 @@
       edgeLayer = state.view === "path" ? layoutPath(svg, width) : layoutMap(svg, width);
       const first = stage.querySelector(".node"); if (first) first.tabIndex = 0;
       highlight(state.selected); if (state.selected) select(state.selected);
+      container.dataset.drawMs = String(Math.round(performance.now() - started));   // read by the browser test that times a large course
     }
 
     let timer = null, lastWidth = stage.clientWidth;
