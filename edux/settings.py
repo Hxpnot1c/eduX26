@@ -199,6 +199,14 @@ class Engagement:
 
 
 @dataclass(frozen=True)
+class Confidence:
+    enabled: bool
+    max_per_session: int
+    stop_after_skips: int
+    min_per_group: int
+
+
+@dataclass(frozen=True)
 class Reminders:
     days_ahead: float
 
@@ -336,6 +344,7 @@ class Settings:
     fatigue: Fatigue
     engagement: Engagement
     show: Show
+    confidence: Confidence
     reminders: Reminders
     plan: Plan
     personalisation: Personalisation

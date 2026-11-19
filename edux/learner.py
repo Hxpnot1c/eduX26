@@ -321,6 +321,54 @@ def research_turns(student_id: str, at: str | datetime | None = None) -> int:
                            (student_id, _event_ts(at))).fetchone()[0]
 
 
+CONFIDENCE_LEVELS = ("guess", "fairly_sure", "certain")      # skipped is also stored: asked, no answer, no penalty
+
+
+def evidence_ids_of_exchange(exchange_id: int) -> list[int]:
+    return [r[0] for r in _conn().execute("SELECT id FROM evidence_log WHERE exchange_id = ? ORDER BY id", (exchange_id,))]
+
+
+def record_confidence(student_id: str, evidence_ids: list[int], level: str, ts: str | None = None) -> None:
+    """Store the student's "how sure are you?" for the answers just given (level guess, fairly_sure, certain, or skipped).
+    It is an event of its own and never changes what the model thinks they know."""
+    if level not in (*CONFIDENCE_LEVELS, "skipped"):
+        raise ValueError(f"confidence must be one of {', '.join(CONFIDENCE_LEVELS)}")
+    conn, stamp = _conn(), _event_ts(ts)
+    with conn:
+        for evidence_id in evidence_ids:
+            conn.execute("INSERT INTO confidence_log (student_id, evidence_id, ts, level) VALUES (?, ?, ?, ?)",
+                         (student_id, evidence_id, stamp, level))
+
+
+def confidence_asks(student_id: str, at: str | datetime | None = None) -> dict:
+    """How the confidence question has gone this session: {asked, skips_in_a_row}. Used to ask sparingly and to stop
+    after confidence.stop_after_skips skips in a row (skipping carries no penalty)."""
+    state = session_state(student_id, at)
+    if state is None:
+        return {"asked": 0, "skips_in_a_row": 0}
+    rows = _conn().execute("SELECT level FROM confidence_log WHERE student_id = ? AND ts >= ? AND ts <= ? ORDER BY ts DESC, id DESC",
+                           (student_id, state["session_id"], _event_ts(at))).fetchall()
+    streak = 0
+    for r in rows:
+        if r["level"] != "skipped":
+            break
+        streak += 1
+    return {"asked": len(rows), "skips_in_a_row": streak}
+
+
+def calibration(student_id: str, at: str | datetime | None = None) -> dict:
+    """How often the student was right at each confidence level: {level: {right, n}} for the levels with at least
+    confidence.min_per_group rated answers. Skipped asks are not counted. A calibration gap is feedback for the
+    student (Fernandes et al., 2025); it is never an input to p_known."""
+    c, correct_share = _settings().confidence, _settings().bkt.correct_share
+    rows = _conn().execute(
+        """SELECT k.level, COUNT(*) AS n, SUM(CASE WHEN l.score >= ? THEN 1 ELSE 0 END) AS right
+           FROM confidence_log k JOIN evidence_log l ON l.id = k.evidence_id
+           WHERE k.student_id = ? AND k.level != 'skipped' AND k.ts <= ? GROUP BY k.level""",
+        (correct_share, student_id, _event_ts(at))).fetchall()
+    return {r["level"]: {"right": r["right"], "n": r["n"]} for r in rows if r["n"] >= c.min_per_group}
+
+
 def verified_this_session(student_id: str, at: str | datetime | None = None) -> bool:
     """Whether the student has checked a claim (Verify evidence) in the current session."""
     state = session_state(student_id, at)
