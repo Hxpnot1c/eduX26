@@ -1,3 +1,5 @@
+<img src="edux/web/static/brand/synapse-logo.png" alt="Synapse" width="96">
+
 # Synapse
 
 Synapse is a learning service for school chatbots. It is an MCP server that:

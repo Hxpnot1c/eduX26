@@ -7,7 +7,8 @@ Pages and a small JSON API, served by the same process as the MCP endpoint. See 
 |---|---|---|
 | `/mcp` | a student key in `?key=` (as before) | the MCP endpoint; unchanged |
 | `/`, `/map`, `/me`, `/teacher` | anyone | static pages with no data; they fetch data from `/api` |
-| `/static/*` | anyone | CSS, JavaScript, fonts |
+| `/static/*` | anyone | CSS, JavaScript, fonts, and the logo and icons in `static/brand/` |
+| `/favicon.ico` | anyone | the same file as `/static/brand/favicon.ico` |
 | `/api/public/map` | anyone | the structure of the synthetic example pack (`views.EXAMPLE_COURSE_ID`), only if `web.public_example_map`; 404 for any other pack |
 | `/api/map` | a student or teacher key (bearer) | the course structure: `{course, nodes, edges}`; a student gets their own course, a teacher may add `?course=` |
 | `/api/me` | a student key (bearer); a teacher key gets 403 | the student's own page: `overlay`, `network` (the concept network, decision 0029: `course`, `nodes` {id, short, name, band, concept, level, note, test, q, d, imp}, `edges` {a, b, t, n}, `bands`; levels only), `next`, `reviews`, `coming_up`, `ai_literacy`, `calibration`, `record`, `parts`, `setup` |
@@ -19,7 +20,7 @@ Pages and a small JSON API, served by the same process as the MCP endpoint. See 
 An `/api` request with `?key=` is refused with 400. A teacher key never opens `/mcp`; a student key never opens the teacher API. A session token from a map link opens what a student key opens on `/api` (all read-only) and never `/mcp` or the teacher API.
 
 ## Headers (every response from this layer)
-`Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, a restrictive `Permissions-Policy`; `Cache-Control: no-store` on `/api`.
+`Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, a restrictive `Permissions-Policy`; `Cache-Control: no-store` on `/api`.
 
 ## Sign-in
 Open `/me#key=<key>` or `/teacher#key=<key>`. The fragment is never sent to a server. `js/api.js` moves the key into `sessionStorage`, removes the fragment from the address bar and sends `Authorization: Bearer` on every call. "Forget this device" clears it.
@@ -31,6 +32,9 @@ With `web.public_base_url` set (or `EDUX_PUBLIC_BASE_URL`, which overrides it wh
 
 ## Teachers
 `python -m edux.cli teacher add --name "…"` prints the key once; `teacher assign --teacher t-… --class c-…` lets them see a class; `teacher list | leave | delete --yes`. Keys are stored as SHA-256 only; `purge` deletes teachers who left after `retention.after_leaving_days`.
+
+## Brand
+`edux/web/static/brand/` holds the Synapse logo (`synapse-logo.png`, transparent), square icons (`synapse-icon-{16,32,180,192,512}.png`), `favicon.ico` and `site.webmanifest`. Every page links the favicon, the 16 and 32 px icons, the 180 px apple-touch-icon and the manifest (192 and 512 px), and shows the logo 30 px tall at the top left of the header, linking to `/`, with `alt="Synapse"`. The PNGs were recompressed losslessly (same pixels); keep the folder under 200 KB. With a public base URL set, the MCP server's `serverInfo` lists the 192 and 512 px icons at `{base}/static/brand/…`; with none, it sends no icons.
 
 ## Design tokens
 `edux/web/static/css/tokens.css`. `python scripts/check_contrast.py` checks every pair against WCAG 2.2 and the level fills' luminance order. Fonts are self-hosted OFL subsets in `static/fonts/` with their licences.
