@@ -1,6 +1,6 @@
 # 0004. Count tool results as they are sent, and keep every default result inside the budget
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-18
 - **Pull request:** #47
 - **Audit items:** C15, C16 in [0002](0002-research-alignment-register.md)

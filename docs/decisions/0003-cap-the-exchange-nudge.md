@@ -1,6 +1,6 @@
 # 0003. Cap what an ordinary exchange can do to a part's estimate
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-18
 - **Decision owner:** Vishnu (levels shown to students can change)
 - **Pull request:** #46

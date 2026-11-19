@@ -84,8 +84,8 @@ The result that would make us revisit this.
 |---|---|---|
 | [0001](0001-record-decisions.md) | Record decisions with their research basis | Accepted |
 | [0002](0002-research-alignment-register.md) | Research alignment register | Proposed |
-| [0003](0003-cap-the-exchange-nudge.md) | Cap what an ordinary exchange can do to a part's estimate | Proposed |
-| [0004](0004-count-results-as-sent.md) | Count tool results as they are sent, and keep every default result inside the budget | Proposed |
+| [0003](0003-cap-the-exchange-nudge.md) | Cap what an ordinary exchange can do to a part's estimate | Accepted |
+| [0004](0004-count-results-as-sent.md) | Count tool results as they are sent, and keep every default result inside the budget | Accepted |
 | [0005](0005-name-the-product-synapse.md) | Name the product Synapse; eduX is the competition | Proposed |
 | [0006](0006-judge-secure-feedback-before-the-answer.md) | Judge feedback's "secure" flag on the level before the answer | Proposed |
 | [0007](0007-personal-learning-rate-off-by-default.md) | Recalibrate the personal learning rate and switch it off by default | Proposed |
