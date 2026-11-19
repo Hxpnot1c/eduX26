@@ -24,7 +24,7 @@ from pathlib import Path
 from edux import db, graph
 from ingest.registry import split_list as split
 from edux.settings import (ContextConfig, Settings, load_context, load_settings, personal_learn_rate, protocol_label,
-                           settings_hash)
+                           read_text, settings_hash)
 
 SUPPORT_GIVEN = ("worked_example", "hint", "explain_back", "none")
 CHOICE_TAKEN = ("try_first", "hint", "just_show_me", "skip_point", "quiz", "extend", "stop", "none")   # skip_point: "I know this" (step 05d); quiz, extend, stop: a pick from offer_choice
@@ -1009,16 +1009,97 @@ def _activate_misconceptions(conn: sqlite3.Connection, student_id: str, misconce
                          "VALUES (?, ?, 1, ?)", (student_id, misconception_id, ts))
 
 
-ASSESSMENT_KINDS = ("homework", "class_test", "mock")   # a student's own upcoming tests (priorities)
+ASSESSMENT_KINDS = ("homework", "class_test", "mock", "written_assignment")   # upcoming tests and assignments (priorities)
 
 
 def assessments(student_id: str, at: datetime | str | None = None) -> list[dict]:
-    """The student's upcoming assessments (dated after at, default now), soonest first: {id, name, kind, date,
-    part_ids}. Profile data, like exam_date_override: a rebuild uses them as they are now."""
+    """The student's upcoming assessments (dated after at, default now), soonest first: their own and their class's
+    (set by a teacher), each {id, name, kind, date, part_ids, scope} with scope "own" or "class". Profile data, like
+    exam_date_override: a rebuild uses them as they are now."""
     day = parse_ts(at or now_iso()).date().isoformat()
-    rows = _conn().execute("SELECT id, name, kind, date, part_ids FROM student_assessment WHERE student_id = ? "
-                           "AND date > ? ORDER BY date, id", (student_id, day)).fetchall()
+    rows = _conn().execute(
+        """SELECT id, name, kind, date, part_ids, CASE WHEN class_id IS NULL THEN 'own' ELSE 'class' END AS scope
+           FROM student_assessment WHERE (student_id = ? OR class_id = (SELECT class_id FROM student WHERE id = ?))
+           AND date > ? ORDER BY date, id""", (student_id, student_id, day)).fetchall()
     return [{**dict(r), "part_ids": json.loads(r["part_ids"])} for r in rows]
+
+
+def add_class_assessment(class_id: str, name: str, kind: str, day: str, part_ids: list[str]) -> int:
+    """A test or assignment for every member of a class (set by a teacher). Raises ValueError for an unknown class,
+    kind or date."""
+    if kind not in ASSESSMENT_KINDS:
+        raise ValueError(f"kind must be one of {', '.join(ASSESSMENT_KINDS)}")
+    date.fromisoformat(day)
+    conn = _conn()
+    if conn.execute("SELECT 1 FROM class WHERE id = ?", (class_id,)).fetchone() is None:
+        raise ValueError(f"unknown class {class_id!r}")
+    with conn:
+        cur = conn.execute("INSERT INTO student_assessment (class_id, name, kind, date, part_ids, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                           (class_id, name, kind, day, json.dumps(part_ids), now_iso()))
+    return cur.lastrowid
+
+
+WRITTEN_STAGES = ("knowledge", "application", "analysis", "evaluation")    # how a written answer is marked (AO1 to AO4)
+
+
+def study_plan(student_id: str, assessment_id: int | None = None, sessions_per_week: int | None = None,
+               at: datetime | str | None = None) -> dict:
+    """A day-by-day plan from today to the due date of one upcoming assessment (the soonest by default), step 05u.
+
+    Sessions per week: plan.sessions_per_week unless the student says otherwise, spread evenly, the first today. The
+    parts the assessment covers go in order of predicted weakness on the due date (p_on), weakest first, cycling so
+    that a part repeats only after the others; the last session before the date is mixed practice on the weakest
+    few. For a written_assignment there are no practice sessions but four dated stages tied to how the work is
+    marked (knowledge, application, analysis, evaluation), each saying what to do. Synapse never writes the content.
+    Returns {ok: True, assessment, ...} or {ok: False, error}."""
+    s, at_dt = _settings(), parse_ts(at or now_iso())
+    items = assessments(student_id, at_dt)
+    pick = (items[0] if items else None) if assessment_id is None else next((a for a in items if a["id"] == assessment_id), None)
+    if pick is None:
+        return {"ok": False, "error": "no upcoming assessment" + ("" if assessment_id is None else f" with id {assessment_id}")
+                + "; ask the student to add one first"}
+    due = date.fromisoformat(pick["date"])
+    days = (due - at_dt.date()).days
+    head = {"name": pick["name"], "kind": pick["kind"], "date": pick["date"], "days_left": days, "scope": pick["scope"]}
+    if pick["kind"] == "written_assignment":
+        offsets = sorted({min(days - 1, int(i * days / len(WRITTEN_STAGES))) for i in range(len(WRITTEN_STAGES))})
+        stages = [{"stage": stage, "date": (at_dt.date() + timedelta(days=off)).isoformat(),
+                   "do": read_text(f"plan/stage_{stage}.md").strip()} for stage, off in zip(WRITTEN_STAGES, offsets)]
+        return {"ok": True, "assessment": head, "stages": stages, "note": read_text("plan/written_note.md").strip()}
+    spw = sessions_per_week or s.plan.sessions_per_week
+    if not 1 <= spw <= 7:
+        return {"ok": False, "error": "sessions_per_week must be between 1 and 7"}
+    n = max(1, min(days, round(days * spw / 7)))
+    parts = sorted((p for p in pick["part_ids"] if not graph.is_literacy(p)), key=lambda p: (p_on(student_id, p, due.isoformat()), p))
+    if not parts:
+        return {"ok": False, "error": "that assessment covers no course parts"}
+    per = max(1, math.ceil(len(parts) / max(1, n - 1)))
+    sessions, cursor = [], 0
+    for i in range(n):
+        offset = int(i * days / n)
+        if i == n - 1:      # the last session before the date is mixed practice on the weakest few
+            chosen, kind = parts[:3], "mixed practice"
+        else:
+            chosen = [parts[(cursor + k) % len(parts)] for k in range(min(per, len(parts)))]
+            cursor += per
+            kind = "practice"
+        sessions.append({"date": (at_dt.date() + timedelta(days=offset)).isoformat(), "kind": kind,
+                         "parts": [{"id": p, "name": graph.get_node(p)["name"]} for p in dict.fromkeys(chosen)]})
+    return {"ok": True, "assessment": head, "sessions_per_week": spw, "sessions": sessions,
+            "note": read_text("plan/note.md").strip()}
+
+
+def upcoming(student_id: str, at: datetime | str | None = None, days: float | None = None) -> list[dict]:
+    """Assessments due within `days` (default reminders.days_ahead) of at, soonest first: {name, kind, date,
+    days_left}. For the once-a-session reminder (step 05u)."""
+    at_dt = parse_ts(at or now_iso())
+    limit = _settings().reminders.days_ahead if days is None else days
+    out = []
+    for a in assessments(student_id, at_dt):
+        left = _days_until(a["date"], at_dt)
+        if 0 < left <= limit:
+            out.append({"name": a["name"], "kind": a["kind"], "date": a["date"], "days_left": round(left)})
+    return out
 
 
 def _days_until(date_text: str, at: datetime) -> float:
@@ -1046,7 +1127,8 @@ def days_to_exam(student_id: str, part_id: str, at: datetime) -> float | None:
     return min(ahead) if ahead else None
 
 
-KIND_LABELS = {"homework": "homework", "class_test": "class test", "mock": "mock", "final": "final exam"}
+KIND_LABELS = {"homework": "homework", "class_test": "class test", "mock": "mock", "final": "final exam",
+               "written_assignment": "written assignment"}
 
 
 def p_on(student_id: str, part_id: str, when: datetime | str) -> float:
@@ -1063,7 +1145,8 @@ def step_value(student_id: str, part_id: str, at: datetime | str | None = None) 
     counts at urgency_floor with today's p. Returns {value, reason}: reason is the assessment (not the final) that
     adds the most, or None."""
     s, at_dt = _settings().priorities, parse_ts(at or now_iso())
-    weights = {"homework": s.weight_homework, "class_test": s.weight_class_test, "mock": s.weight_mock}
+    weights = {"homework": s.weight_homework, "class_test": s.weight_class_test, "mock": s.weight_mock,
+               "written_assignment": s.weight_written_assignment}
 
     def urgency(days: float | None) -> float:
         return s.urgency_floor if days is None else min(1.0, max(s.urgency_floor, s.horizon_days / max(days, 1.0)))

@@ -199,6 +199,16 @@ class Engagement:
 
 
 @dataclass(frozen=True)
+class Reminders:
+    days_ahead: float
+
+
+@dataclass(frozen=True)
+class Plan:
+    sessions_per_week: int
+
+
+@dataclass(frozen=True)
 class Show:
     max_per_part_session: int
 
@@ -219,6 +229,7 @@ class Personalisation:
 @dataclass(frozen=True)
 class Priorities:
     weight_homework: float
+    weight_written_assignment: float
     weight_class_test: float
     weight_mock: float
     weight_final: float
@@ -325,6 +336,8 @@ class Settings:
     fatigue: Fatigue
     engagement: Engagement
     show: Show
+    reminders: Reminders
+    plan: Plan
     personalisation: Personalisation
     priorities: Priorities
     difficulty: Difficulty
