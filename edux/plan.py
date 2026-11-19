@@ -97,6 +97,8 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "offer_choice_stuck": ({"reason", "options"}, {"minutes", "quick_parts"}),
     "explain_back": ({"answer_type"}, set()),
     "explain_back_point": ({"answer_type", "point", "point_id"}, set()),
+    "explain_back_check": ({"answer_type", "point", "point_id", "purpose"}, {"index", "name", "for", "note", "stuck", "then_show"}),
+    "explain_back_review": ({"answer_type", "point", "point_id", "purpose", "name", "mode"}, {"new_context", "reason"}),
     "teach_point": ({"index", "total", "point", "exemplar", "level", "max_words"}, set()),
     "teach_point_bridge": ({"index", "total", "point", "exemplar", "level", "max_words"}, {"can_stop"}),
     "answer_with_sources": ({"trusted_sources"}, set()),
@@ -323,6 +325,56 @@ def ask_again(turn: Turn, pending: dict) -> dict:
     return ask_mcq(turn, q, keep, avoid)
 
 
+# --- question mix (decision 0028) ------------------------------------------------------
+
+OPEN_KEYS = {"check": "explain_back_check", "prereq": "explain_back_check", "review": "explain_back_review"}
+NO_OPEN_FORM = ("intuition", "how_ai_works")  # guesses before teaching and how-AI-works checks only work as multiple choice
+
+
+def open_instead(turn: Turn, steps: list[dict]) -> list[dict]:
+    """While a multiple-choice question is not allowed (turn.mcq_ok false: fewer than questions.min_open_between_mcq
+    open questions since the last one, and the student not fatigued), each check, prerequisite check and review MCQ
+    becomes an open question on the same point (explain_back with data.point, scored on that point only), keeping its
+    purpose and data; an intuition or how-AI-works MCQ, which has no open form, is dropped."""
+    if turn.mcq_ok:
+        return steps
+    out = []
+    for step in steps:
+        purpose = step["data"].get("purpose") if step["move"] == "ask_mcq" else None
+        if purpose in NO_OPEN_FORM:
+            continue
+        out.append(open_question(step) if purpose in OPEN_KEYS else step)
+    return out
+
+
+def open_question(step: dict) -> dict:
+    """The open form of a check, prerequisite or review MCQ step: the same part, point and purpose, as an explain-back
+    of that point (a review's answer is typed review)."""
+    data, part = step["data"], step["part_id"]
+    point_id = (step.get("question") or {}).get("point_id")
+    point = next((p for p in _points(part) if p["id"] == point_id), None) if point_id else None
+    if point is None:  # no single point to ask about: the whole part
+        return _step("explain_back", part)
+    keep = {k: v for k, v in data.items() if k not in ("options", "extra_option", "answer_type", "terms")}
+    out = _step("explain_back", part, {**keep, "point": point["point"], "point_id": point_id}, key=OPEN_KEYS[data["purpose"]])
+    if data["purpose"] == "review":
+        out["data"]["answer_type"] = "review"
+        out = _refill(out)
+    return out
+
+
+def counts_as(step: dict | None) -> str | None:
+    """What a plan's asking step counts as for the question mix: mcq, open, or None (a re-ask of the same question, a
+    choice of ways on, a literacy task, or nothing asked)."""
+    if step is None or step["move"] == "reask":
+        return None
+    if step["move"] == "ask_mcq":  # a how-AI-works check counts too
+        return "mcq"
+    if graph.is_literacy(step["part_id"] or ""):
+        return None
+    return "open" if step["data"].get("answer_type") and step["move"] != "offer_choice" else None
+
+
 def is_stop(step: dict) -> bool:
     return step["move"] in STOP or (step["move"] == "literacy_task" and bool(step["data"].get("task")))
 
@@ -383,6 +435,9 @@ def feedback(answer: dict, evidence: dict) -> tuple[dict, dict | None]:
         "feedback", part, {"type": answer["type"], "points_met": [p["point"] for p in points if p["id"] in met], "misconceptions": shown}
     )
     missing = [p["point"] for p in points if p["id"] not in met]
+    if evidence.get("open_check"):  # an open check, review or prerequisite question goes on as its MCQ would (decision 0028)
+        data = {**first["data"], "purpose": evidence["purpose"], "correct": evidence["correct"]}
+        return _refill({**first, "data": {**data, "missing": missing} if missing else data}), None
     if not missing:
         return first, None
     return first, _step("reteach", part, {"missing": missing, "answer_type": answer["type"]})
@@ -498,7 +553,9 @@ def main_step(
         s["move"] == "ask_mcq" and s["data"].get("purpose") == "intuition" and s["part_id"] == focus for s in last_plan
     )
     if pq and pq["part_id"] != answered_prequestion and not asked_before:
-        return [ask_mcq(turn, question(pq["part_id"], "intuition", pq["correct"], settings), pq.get("source") or {})]
+        if turn.mcq_ok:
+            return [ask_mcq(turn, question(pq["part_id"], "intuition", pq["correct"], settings), pq.get("source") or {})]
+        _progress(progress, focus)["intuition_asked"] = True  # no open form: dropped for this part (decision 0028)
 
     for item in (blocks.get("weak_prerequisites") or {}).get("items", []):
         if item["p_now"] < settings.levels.new and not _checked_this_session(turn, item["part_id"], last_plan):
@@ -675,7 +732,7 @@ def _bridge_in(last_plan: list[dict]) -> bool:
 
 def _then_show(last_plan: list[dict]) -> bool:
     """The last plan asked a two-option question that is followed by the full show once answered."""
-    return any(s["move"] == "ask_mcq" and s["data"].get("then_show") for s in last_plan)
+    return any(s["move"] in ("ask_mcq", "explain_back") and s["data"].get("then_show") for s in last_plan)
 
 
 def after_check(turn: Turn, evidence: dict, settings: Settings, progress: dict, last_mcq: dict | None) -> list[dict]:
@@ -894,7 +951,7 @@ def ending_tiers(turn: Turn, blocks: dict, settings: Settings, reviews_only: boo
         item = find_error_step(turn, blocks, settings)
         if item:  # rare (once a session, off unless switched on): ahead of the bridge in the same tier
             tiers.append({"tier": 2, "kind": "find_error", "part_id": item["part_id"], "value": 0.0, "step": item})
-        target = bridge_target(turn, settings)
+        target = bridge_target(turn, settings) if turn.mcq_ok else None  # a pre-question has no open form (decision 0028)
         if target:
             tiers.append(
                 {
@@ -1166,7 +1223,7 @@ def choose(
     if misses and not _urgent(rest):  # a missed check after the step back: the ladder, not the reteach loop
         rest = stuck_ladder(turn, settings, evidence or {}, None, progress, offered, last_plan, last_mcq, misses) or rest
     # all points met on an explain-back or a harder question (a retry returned above): the part is done for now
-    finished = bool(answer and evidence and answer["type"] in ("explain_back", "extend"))
+    finished = bool(answer and evidence and answer["type"] in ("explain_back", "extend") and not evidence.get("open_check"))
     if not _urgent(rest):
         if rest and rest[0]["move"] == "feedback" and steps:  # a held misconception joins the answer's feedback
             known = {m["id"] for m in steps[0]["data"]["misconceptions"]}
@@ -1303,7 +1360,8 @@ def score_next(plan: list[dict]) -> dict[str, list[dict]]:
             continue
         if step["move"] in ASKS and not by_option and not ends_in_mcq and step["part_id"] and step["part_id"] not in out:
             points = lettered(step["part_id"])
-            if step["data"].get("point_id") and step["move"] == "explain_back":  # one point: its own letter only
+            if step["data"].get("point_id") and (step["move"] == "explain_back" or step["data"].get("asked") == "explain_back"):
+                # one point: its own letter only
                 ids = [p["id"] for p in graph.score_points(step["part_id"])]
                 points = [points[ids.index(step["data"]["point_id"])]] if step["data"]["point_id"] in ids else points
             if points:

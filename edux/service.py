@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import functools
 import json
+import os
 import re
 import statistics
 from collections.abc import Set as AbstractSet
@@ -74,15 +75,26 @@ def offered_in(steps: list[dict]) -> set[str]:
 
 
 def _narrowed(evidence: dict, last_plan: list[dict]) -> dict:
-    """An explain-back the last plan asked about one point (a coasting student, engagement-rules) is scored on
-    that point only: 1 if they produced it, else 0, with its point_id."""
+    """An explain-back the last plan asked about one point (a coasting student, engagement-rules; or the open form of
+    a check, prerequisite check or review, decision 0028, also when asked again) is scored on that point only: 1 if
+    they produced it, else 0, with its point_id. The open form keeps its purpose, so it goes on as its MCQ would."""
     step = next(
-        (s for s in last_plan if s["move"] == "explain_back" and s["part_id"] == evidence["part_id"] and s["data"].get("point_id")), None
+        (
+            s
+            for s in last_plan
+            if (s["move"] == "explain_back" or s["data"].get("asked") == "explain_back")
+            and s["part_id"] == evidence["part_id"]
+            and s["data"].get("point_id")
+        ),
+        None,
     )
     if step is None:
         return evidence
     point = step["data"]["point_id"]
-    return {**evidence, "score": float(point in (evidence.get("points_met") or [])), "point_id": point, "scope": [point]}
+    out = {**evidence, "score": float(point in (evidence.get("points_met") or [])), "point_id": point, "scope": [point]}
+    if step["data"].get("purpose") in plan.OPEN_KEYS:
+        out.update(purpose=step["data"]["purpose"], correct=out["score"] >= _settings().bkt.correct_share, open_check=True)
+    return out
 
 
 def _this_session(student_id: str, last: dict, at: str) -> tuple[set[str], frozenset[str]]:
@@ -112,6 +124,7 @@ def _save_plan(
     confidence_for: dict | None = None,
     rapid_checks: dict | None = None,
     rush_waits: str | None = None,
+    open_since_mcq: int | None = None,
 ) -> None:
     """Save the plan issued this turn, with what the next turn needs: the focus, misconceptions corrected and
     the offer_choice reasons offered this session, the style sent, the question waiting for an answer, the MCQ
@@ -143,10 +156,37 @@ def _save_plan(
                         "confidence_for": confidence_for,
                         "rapid_checks": rapid_checks,
                         "rush_waits": rush_waits,
+                        "open_since_mcq": open_since_mcq,
                     }
                 ),
             ),
         )
+
+
+def _mcq_ok(open_since: int | None, blocks: dict) -> bool:
+    """Whether a multiple-choice question may be asked this turn (decision 0028): at least
+    questions.min_open_between_mcq open questions since the last one (or none asked yet), or the student is fatigued
+    or rushing, when multiple choice is allowed without the gap."""
+    fatigued = (blocks.get("session") or {}).get("state") == "fatigued"
+    return fatigued or open_since is None or open_since >= question_gap()
+
+
+def question_gap() -> int:
+    """questions.min_open_between_mcq, unless the environment sets EDUX_QUESTION_GAP (a whole number; 0 turns the gap off):
+    a switch for whoever runs a demo or scripts/check_mcp.py, without editing settings.toml."""
+    switch = os.environ.get("EDUX_QUESTION_GAP", "").strip()
+    return int(switch) if switch.isdigit() else _settings().questions.min_open_between_mcq
+
+
+def _open_since_after(before: int | None, steps: list[dict]) -> int | None:
+    """Open questions asked since the last multiple-choice one, after this plan (decision 0028): 0 when it asks a
+    multiple-choice question, one more when it asks an open one, else unchanged. None means none asked yet."""
+    kind = plan.counts_as(plan.asking_step(steps))
+    if kind == "mcq":
+        return 0
+    if kind == "open" and before is not None:
+        return before + 1
+    return before
 
 
 def _how_ai_works(
@@ -173,6 +213,8 @@ def _how_ai_works(
             if pending["followups"] < s.literacy.max_followups:
                 return (plan.with_check(steps, plan.reask(pending["step"])[1]), {**pending, "followups": pending["followups"] + 1})
             learner.record_skip(sid, pending["part_id"], ts=turn.at)  # missing, not wrong
+    if not turn.mcq_ok:  # too soon after a multiple-choice question; it has no open form (decision 0028)
+        return steps, None
     session = learner.session_state(sid, turn.at)
     start = session["session_id"] if session else turn.at
     conn = learner._conn()
@@ -590,7 +632,7 @@ def tutor_turn(
     if answer and this_message.get("request_type") == "research" and not this_message.get("question_features"):
         # an answer to something we asked is not a new research question: no Ask evidence, no research plan
         this_message = {**this_message, "request_type": "other" if graph.is_literacy(answer.get("part_id") or "") else "concept"}
-    if evidence and evidence["type"] == "explain_back":
+    if evidence and evidence["type"] in ("explain_back", "review"):
         evidence = _narrowed(evidence, last["plan"])
 
     if not node_ids and (evidence or lost):
@@ -681,6 +723,8 @@ def tutor_turn(
     profile = learner.profile_of(student)
     blocks = context_blocks.assemble(profile, turn, s, _context())
     config = _context().profiles.get(profile, _context().profiles[_context().default_profile])
+    open_since = last.get("open_since_mcq")  # open questions asked since the last multiple-choice one (decision 0028)
+    turn.mcq_ok = _mcq_ok(open_since, blocks)
     corrected, offered = _this_session(student["id"], last, at)
     pending = None if wants_reviews else _open_question(last, parts, answer, choice, at)  # they asked to move on
     points = dict(last["points"] or {})
@@ -710,19 +754,22 @@ def tutor_turn(
     else:
         steps = plan.add_terms(
             turn,
-            plan.choose(
+            plan.open_instead(
                 turn,
-                blocks,
-                s,
-                choice,
-                course_answer,
-                evidence if course_answer else None,
-                last["plan"],
-                corrected,
-                offered,
-                pending,
-                points,
-                last.get("mcq"),
+                plan.choose(
+                    turn,
+                    blocks,
+                    s,
+                    choice,
+                    course_answer,
+                    evidence if course_answer else None,
+                    last["plan"],
+                    corrected,
+                    offered,
+                    pending,
+                    points,
+                    last.get("mcq"),
+                ),
             ),
         )
     if config.plan and this_message.get("source_conflict") and not held:
@@ -754,6 +801,7 @@ def tutor_turn(
         {"exchange_id": exchange_id, "part_id": evidence["part_id"]} if ask_how_sure and evidence else None,
         rapid,
         rapid["session"] if rush_waits and "fatigued" not in offered_in(steps) else None,
+        _open_since_after(open_since, steps),
     )
     shown = [plan.ask_confidence(turn, evidence["part_id"])] if ask_how_sure and evidence else steps  # the reply is held back one turn
     # with no plan (a comparison profile), answers on the focus parts can still be scored

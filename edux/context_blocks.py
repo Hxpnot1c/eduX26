@@ -33,6 +33,7 @@ class Turn:
     resolution: dict  # graph.resolve() output
     blocks: dict[str, dict | None] = field(default_factory=dict)  # blocks produced so far this turn
     cache: dict = field(default_factory=dict)  # values worked out once a turn (priorities)
+    mcq_ok: bool = True  # a multiple-choice question may be asked this turn (questions.min_open_between_mcq, decision 0028)
 
     @property
     def student_id(self) -> str:

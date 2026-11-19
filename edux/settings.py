@@ -212,6 +212,11 @@ class Confidence:
 
 
 @dataclass(frozen=True)
+class Questions:
+    min_open_between_mcq: int
+
+
+@dataclass(frozen=True)
 class FindError:
     enabled: bool
     clean_share: float
@@ -366,6 +371,7 @@ class Settings:
     engagement: Engagement
     show: Show
     confidence: Confidence
+    questions: Questions
     find_error: FindError
     web: Web
     reminders: Reminders
@@ -493,6 +499,8 @@ def load_settings(path: Path = SETTINGS_PATH) -> Settings:
     c = settings.confidence
     if c.after_rapid < 1 or c.max_per_session < 0 or c.stop_after_skips < 1:
         raise SettingsError("confidence: expected after_rapid >= 1, max_per_session >= 0 and stop_after_skips >= 1")
+    if settings.questions.min_open_between_mcq < 0:
+        raise SettingsError("questions.min_open_between_mcq: expected 0 or more")
     check_identifiable(settings)
     return settings
 
