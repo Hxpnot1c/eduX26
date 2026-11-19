@@ -57,6 +57,12 @@
       const b = document.createElement("strong"); b.textContent = strong; state.appendChild(b);
       state.appendChild(document.createTextNode(after));
     };
+    await Synapse.ready();
+    if (Synapse.linkFailed()) {        // a map link from the chatbot that was already used (perhaps by a preview) or expired
+      show("This link has already been used or has expired. Ask Synapse for your progress again to get a new one.");
+      if (forget) forget.hidden = true;
+      return;
+    }
     if (!Synapse.key()) {
       show(line.getAttribute("data-nokey") || "Open the link you were given. It ends in {} and signs you in on this tab only.", "#key=…");
       if (forget) forget.hidden = true;

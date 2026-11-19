@@ -3,7 +3,8 @@
 Routing (see `WebLayer`): /mcp goes to the MCP app behind the student key check, exactly as before. The pages and
 /static carry no data, so they are public. Everything with data is under /api and needs a key sent as a bearer header,
 never in the URL (a URL ends up in logs, history and screenshots). A student key opens the student API; a teacher key
-opens the teacher API; neither opens the other, and a teacher key never opens /mcp.
+opens the teacher API; neither opens the other, and a teacher key never opens /mcp. A map link from get_my_progress is
+swapped once at POST /api/link for a short session that opens the student API like a key (see `links`, decision 0026).
 
 Every response from this layer carries a strict content security policy: pages load nothing from another origin, so a
 pupil's address is never sent to a font or script host."""
@@ -21,7 +22,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from edux import learner, teachers
-from edux.web import actions, views
+from edux.web import actions, links, views
 
 STATIC = Path(__file__).resolve().parent / "static"
 
@@ -46,12 +47,13 @@ def _bearer(request: Request) -> str | None:
 
 
 def principal(request: Request) -> tuple[str, dict] | None:
-    """Who the bearer key belongs to: ("student", student) or ("teacher", teacher), or None. A key in the URL is never
-    accepted (the caller refuses the request first, see `refuse_url_key`)."""
+    """Who the bearer key belongs to: ("student", student) or ("teacher", teacher), or None. A session from a map link
+    counts as its student (the student API is read-only). A key in the URL is never accepted (the caller refuses the
+    request first, see `refuse_url_key`)."""
     key = _bearer(request)
     if not key:
         return None
-    student = learner.student_by_key(key)
+    student = learner.student_by_key(key) or links.student_by_session(key)
     if student:
         return "student", student
     teacher = teachers.teacher_by_key(key)
@@ -204,6 +206,22 @@ async def api_teacher_coverage(request: Request) -> Response:
     return _acted(class_id, *actions.set_coverage(teacher["id"], class_id, body))
 
 
+async def api_link(request: Request) -> Response:
+    """Swap a map link token, once, for a session token: {"session", "expires_in"}. A used, expired or unknown token gets
+    401 and the page tells the student to ask for a new link."""
+    refused = refuse_url_key(request)
+    if refused:
+        return refused
+    body = await _json_body(request)
+    if isinstance(body, Response):
+        return body
+    token = body.get("token")
+    swapped = links.exchange(token) if isinstance(token, str) else None
+    if swapped is None:
+        return JSONResponse({"error": "this link has already been used or has expired"}, status_code=401)
+    return JSONResponse(swapped)
+
+
 async def api_public_map(request: Request) -> Response:
     """The map of the synthetic example pack, with no key, if web.public_example_map is on. Any other pack: 404."""
     if not learner._settings().web.public_example_map:
@@ -253,6 +271,7 @@ def build_web_app() -> ASGIApp:
     routes.append(Route("/api/map", api_map, methods=["GET"]))
     routes.append(Route("/api/public/map", api_public_map, methods=["GET"]))
     routes.append(Route("/api/me", api_me, methods=["GET"]))
+    routes.append(Route("/api/link", api_link, methods=["POST"]))
     routes.append(Route("/api/teacher/class/{class_id}", api_teacher_class, methods=["GET"]))
     routes.append(Route("/api/teacher/class/{class_id}/assessments", api_teacher_assessment, methods=["POST"]))
     routes.append(Route("/api/teacher/class/{class_id}/assessments/remove", api_teacher_assessment_remove, methods=["POST"]))
