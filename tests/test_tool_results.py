@@ -92,3 +92,13 @@ def test_the_every_part_view_is_trimmed_to_its_own_limit():
     fitted = service.fit_progress(_progress(40), limit)
     assert service.result_size(fitted) <= limit
     assert len(fitted["levers"]) > 0 or len(fitted["reviews_due"]) > 0 or len(fitted["weak_links"]) > 0
+
+
+def test_score_next_ignores_a_reteach_when_the_reply_ends_in_a_multiple_choice_question(course):
+    """The next answer is a letter, so the points of an earlier reteach are not sent (300 characters saved)."""
+    from edux import plan
+
+    reteach = {"move": "reteach", "part_id": "ped_formula", "data": {"point": "x"}}
+    mcq = {"move": "ask_mcq", "part_id": "ped_formula", "data": {"options": []}}
+    assert plan.score_next([reteach, mcq]) == {}
+    assert plan.score_next([reteach])  # on its own, the reteach still has points to tick
