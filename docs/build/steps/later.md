@@ -88,7 +88,7 @@ pytest for:
 
 CI (GitHub Actions) is done: see `.github/workflows/ci.yml` and step 08.
 
-### 09 Student page (`build/09-student-page`)
+### 09 Student page (`build/09-student-page`) — now in progress, see [09-web](09-web.md)
 A simple read-only page at `/me?key=` showing:
 - the tree with levels
 - the biggest levers
@@ -96,7 +96,7 @@ A simple read-only page at `/me?key=` showing:
 - AI-literacy trends
 - the "Set up my chatbot" copy box
 
-### 10 Teacher view (`build/10-teacher-view`)
+### 10 Teacher view (`build/10-teacher-view`) — now in progress, see [09-web](09-web.md)
 - Class-level weak parts and misconceptions only, never chats.
 - Content review: list flagged and draft rows with approve, reject and edit, writing to the teacher feedback CSV.
 

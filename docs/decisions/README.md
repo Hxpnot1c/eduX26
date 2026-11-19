@@ -103,5 +103,7 @@ The result that would make us revisit this.
 | [0020](0020-keep-the-review-threshold.md) | Keep review_when_below at 0.50; label it a judgement call | Proposed |
 | [0021](0021-find-the-error-build.md) | Build find-the-error practice, off by default | Proposed |
 | [0022](0022-aided-and-unaided-evidence-scoping.md) | Aided and unaided evidence: scoping (not built) | Held |
+| [0023](0023-web-pages-and-teacher-access.md) | Web pages, bearer-only sign-in and teacher keys | Proposed |
+| [0024](0024-visual-language-and-what-the-pages-will-not-show.md) | Visual language, and what the pages will not show | Proposed |
 
 Each later record is added to this table in the pull request that introduces it.

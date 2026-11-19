@@ -44,6 +44,7 @@ This folder is the build plan for Synapse, the learning service: an MCP server t
 | [05za](steps/05za-find-the-error.md) | `build/find-the-error` | Find-the-error practice: a rare, labelled practice explanation with one planted error or none, scored on the server as hits and false alarms apart (built; off by default pending approval; decision 0021) |
 | [06](steps/06-demo.md) | `build/06-demo` | Demo seeding script, README, tunnel and connector set-up |
 | [08](steps/08-tests.md) | `build/08-tests` | Unit tests with pytest: a fixture that loads the example pack into a throwaway folder, settings checks, learner-model core, rebuild, and the instruction and result size gates |
+| [09](steps/09-web.md) | `build/web-foundations` and later | The web pages: foundations (routing, bearer sign-in, teacher keys, design tokens), then the course map, student page, teacher page (decisions 0023, 0024) |
 | [Later](steps/later.md) | | Checks (past-question, explain-back, link, find-the-error), automated tests, student and teacher pages, extras |
 
 Checks and tests come after the base works end to end; the step files say where they will plug in.

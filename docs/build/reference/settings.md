@@ -164,6 +164,9 @@ enabled = false            # judgement call: EDUX_FIND_ERROR=1 turns it on witho
 clean_share = 0.4          # judgement call, starting value: share of items with no error at all (the review's design rules say 30 to 50%; no study gives a ratio)
 max_per_session = 1        # judgement call: rare, at most this many a session, never while rushing, only on a part at developing or above
 
+[web]                      # the map, student and teacher pages (decision 0023)
+public_example_map = true  # judgement call: serve the synthetic example pack's course map with no key; any other pack always needs a key
+
 [reminders]               # in-chat deadline reminders (step 05u). Synapse cannot push notifications
 days_ahead = 7             # judgement call, starting value: tests due within this many days are mentioned, once, at the start of a session
 
