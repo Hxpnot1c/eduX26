@@ -94,7 +94,9 @@ class Answer(BaseModel):
         description="the letters from score_next (a, b, ...) of the points the student actually produced",
     )
     misconception_ids: list[Annotated[str, Field(max_length=MAX_ID)]] = Field(
-        default_factory=list, max_length=MAX_LIST, description="other misconceptions the answer showed"
+        default_factory=list,
+        max_length=MAX_LIST,
+        description="ids from reference.misconceptions (held or watch_for) that the answer showed, for any answer type, written answers included",
     )
 
 
