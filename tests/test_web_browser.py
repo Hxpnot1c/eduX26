@@ -91,3 +91,15 @@ def test_a_teacher_key_on_the_student_page_gets_a_plain_refusal(live, tmp_path):
     dom = _dom(tmp_path, f"{live}/me#key={key}")
     assert "This key is for a teacher, and this page is for a student." in dom
     assert '<div id="me" hidden' in dom  # the student's sections stay hidden
+
+
+def test_the_teacher_page_shows_a_class_and_never_a_student(live, tmp_path):
+    from edux import demo, teachers
+
+    demo.seed(pupils=8)
+    teacher = teachers.add_teacher("Ms T")
+    teachers.assign_class(teacher["id"], demo.CLASS_ID)
+    dom = _dom(tmp_path, f"{live}/teacher#key={teacher['key']}")
+    assert "Seeded data" in dom and "Class map" in dom and "Common wrong ideas" in dom and "Asking to be shown" in dom
+    assert "demo-pupil" not in dom and "Synthetic pupil" not in dom and teacher["key"] not in dom
+    assert 'id="class-body" hidden' not in dom  # the class sections were revealed once the class loaded
