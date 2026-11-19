@@ -1,0 +1,61 @@
+Plan A levels after the 4d progress shot (Verify/Ask level and p_now), sN = export + 0001..000N (renumbered series). MOVES-DIFF = plan moves differ from s5.
+final
+   s5: Verify developing (0.748)  Ask developing (0.528)
+   s6: Verify developing (0.748)  Ask developing (0.528)
+   s7: Verify developing (0.748)  Ask developing (0.528)
+   s8: Verify developing (0.748)  Ask developing (0.528)
+   s9: Verify developing (0.636)  Ask developing (0.528)
+   s10: Verify developing (0.636)  Ask developing (0.528)
+final_ticks_ad
+   s5: Verify developing (0.748)  Ask developing (0.528)
+   s6: Verify developing (0.748)  Ask developing (0.528)
+   s7: Verify developing (0.748)  Ask developing (0.528)
+   s8: Verify developing (0.748)  Ask developing (0.528)
+   s9: Verify new (0.3)  Ask developing (0.528)
+   s10: Verify new (0.3)  Ask developing (0.528)
+clean
+   s5: Verify developing (0.748)  Ask developing (0.528)
+   s6: Verify developing (0.748)  Ask developing (0.528)
+   s7: Verify developing (0.748)  Ask developing (0.528)
+   s8: Verify developing (0.748)  Ask developing (0.528)
+   s9: Verify new (0.3)  Ask developing (0.528)
+   s10: Verify new (0.3)  Ask developing (0.528)
+plan_now
+   s5: Verify developing (0.748)  Ask developing (0.528)
+   s6: Verify developing (0.748)  Ask developing (0.528)
+   s7: Verify developing (0.748)  Ask developing (0.528)
+   s8: Verify developing (0.748)  Ask developing (0.528)
+   s9: Verify new (0.3)  Ask developing (0.528)
+   s10: Verify new (0.3)  Ask developing (0.528)
+then_ped
+   s5: Verify developing (0.748)  Ask developing (0.528)
+   s6: Verify developing (0.748)  Ask developing (0.528)
+   s7: Verify developing (0.748)  Ask developing (0.528)
+   s8: Verify developing (0.748)  Ask developing (0.528)
+   s9: Verify new (0.3)  Ask developing (0.528)
+   s10: Verify new (0.3)  Ask developing (0.528)
+recommended
+   s5: Verify developing (0.748)  Ask developing (0.528)
+   s6: Verify developing (0.748)  Ask developing (0.528)
+   s7: Verify developing (0.748)  Ask developing (0.528)
+   s8: Verify developing (0.748)  Ask developing (0.528)
+   s9: Verify developing (0.636)  Ask developing (0.528)
+   s10: Verify developing (0.636)  Ask developing (0.528)
+final_research
+   s5: Verify developing (0.748)  Ask new (0.256)
+   s6: Verify developing (0.748)  Ask new (0.256)
+   s7: Verify developing (0.748)  Ask new (0.256)
+   s8: Verify developing (0.748)  Ask developing (0.528)  MOVES-DIFF
+   s9: Verify developing (0.636)  Ask developing (0.528)  MOVES-DIFF
+   s10: Verify developing (0.636)  Ask developing (0.528)  MOVES-DIFF
+clean_ticks_ad
+   s5: Verify developing (0.748)  Ask developing (0.528)
+   s6: Verify developing (0.748)  Ask developing (0.528)
+   s7: Verify developing (0.748)  Ask developing (0.528)
+   s8: Verify developing (0.748)  Ask developing (0.528)
+   s9: Verify new (0.3)  Ask developing (0.528)
+   s10: Verify new (0.3)  Ask developing (0.528)
+
+Stuck probe, 40-turn open-answer-only failer (probes_w5 with misses_open_only turns 20->40):
+  s8: first stop/switch offer turn 15, 12 worked examples, 22/40 plans with an MCQ, longest no-MCQ run 2, bare-reteach run 1
+  s10: first stop/switch offer never, 11 worked examples, 27/40 plans with an MCQ, longest no-MCQ run 2, bare-reteach run 1

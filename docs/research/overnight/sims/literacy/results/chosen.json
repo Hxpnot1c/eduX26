@@ -1,0 +1,2 @@
+{"prior": 0.30, "learn_rate": 0.05, "half_life": 14.0, "ignored": "missing", "correct_share": 0.67, "ask_min_features": 3,
+ "q_slip": 0.15, "q_guess": 0.30, "verify_share": 0.67, "t_slip": 0.10, "t_guess": 0.35, "u_slip": 0.05, "u_guess": 0.20}

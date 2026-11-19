@@ -1,0 +1,24 @@
+1. saturation: max p_known 1.0 over 200 answers (first exactly 1.0 at answer 44); next exchange: ZeroDivisionError; legacy row at 1.0: ZeroDivisionError
+2. quiz_me: due ['pes_definition', 'pes_formula']; "Quiz me on what's due." 5 days later -> [('ask_mcq', 'pes_definition', 'review')]
+2. quiz_me: due ['pes_definition', 'pes_formula']; "quiz me on what's due" 5 days later -> [('ask_mcq', 'pes_definition', 'review')]
+2. quiz_me: due ['pes_definition', 'pes_formula']; 'Can you test me on my reviews?' 5 days later -> [('teach_point', 'yed_definition', None), ('ask_mcq', 'yed_definition', 'check')]
+2. quiz_me: due ['pes_definition', 'pes_formula']; 'Can you explain that again?' 5 days later -> [('teach_point', 'yed_definition', None), ('ask_mcq', 'yed_definition', 'check')]
+3. stepback: 12 of 14 plans were a step-back prerequisite check
+   turn 1: feedback:ped_formula/teach_point:ped_formula/ask_mcq:ped_formula
+   turn 2: feedback:ped_formula/reteach:ped_formula/ask_mcq:ped_formula
+   turn 3: feedback:ped_formula/ask_mcq:ped_definition:stuck
+   turn 4: feedback:ped_definition/ask_mcq:ped_definition:stuck
+   turn 5: feedback:ped_definition/ask_mcq:ped_definition:stuck
+   turn 6: feedback:ped_definition/ask_mcq:ped_definition:stuck
+   turn 7: feedback:ped_definition/ask_mcq:ped_definition:stuck
+   turn 8: feedback:ped_definition/ask_mcq:ped_definition:stuck
+   turn 9: feedback:ped_definition/ask_mcq:ped_definition:stuck
+   turn 10: feedback:ped_definition/ask_mcq:ped_definition:stuck
+   turn 11: feedback:ped_definition/ask_mcq:ped_definition:stuck
+   turn 12: feedback:ped_definition/ask_mcq:ped_definition:stuck
+   turn 13: feedback:ped_definition/ask_mcq:ped_definition:stuck
+   turn 14: feedback:ped_definition/ask_mcq:ped_definition:stuck
+4. talk_only: 14 transfer/constructive exchanges, day 0: p_now 0.763 (secure); stored p_known 0.763
+4. talk_only: 14 transfer/constructive exchanges, day 90: p_now 0.763 (secure); stored p_known 0.763
+   untested review queued: untested
+5. propagation: never-answered ped_formula reads 0.440 (developing), stored 0.440; next-day plan on ped_values -> [('explain_back', 'ped_values', None)]

@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: eduX wave-6 w6-fix-counters <noreply@example.invalid>
+Date: Wed, 18 Nov 2026 06:00:00 +0000
+Subject: [PATCH] 0010b without 0009b
+
+Wave 6 (w6-fix-counters). 0010b for a series that skips 0009b: applies on 0008. Add 0009b's tutor_turn.md sentence by hand
+(never tick what only repeats your reply): without it a show-then-paste explain-back still reaches secure.
+---
+diff -ruN '--exclude=__pycache__' a/edux/learner.py b/edux/learner.py
+--- a/edux/learner.py	2026-11-18 04:44:27.761742226 +0000
++++ b/edux/learner.py	2026-11-18 04:44:27.762861411 +0000
+@@ -27,6 +27,7 @@
+ # What a student's answer can be to, as sent by the chatbot; each is also a key of [bkt.evidence].
+ # "mcq" is any server-built multiple-choice question (step 05d), scored from the letter picked.
+ ANSWER_TYPES = ("prequestion", "mcq", "explain_back", "review", "extend", "past_question", "ail_task", "ail_unprompted")
++OPEN_ANSWERS = ("explain_back", "extend", "past_question", "link")   # answers the student writes, not picks
+ LITERACY_ANSWERS = ("ail_task", "ail_unprompted")   # a verify task's answer, or checking a claim unprompted (step 05e)
+ AIL_ASK, AIL_VERIFY = "ail_ask", "ail_verify"       # the AI-literacy skills Ask and Verify (ingest/ai_literacy/)
+ AIL_HOW = "ail_how_ai_works"                        # the concept holding the how-AI-works parts
+@@ -684,6 +685,11 @@
+         weight = 1.0
+         if event["origin"] == "chat" and _recently_taught(conn, student_id, part_id, ts):
+             evidence_type = "immediate"
++    cap = None
++    if evidence_type == "immediate" and event["evidence_type"] not in OPEN_ANSWERS:
++        # a pick straight after being shown or hinted (the option repeats the point just shown) can't make a part
++        # secure; an answer they write themselves (explain-back, extend) still can
++        cap = s.levels.secure - 0.01
+     p_before = _p_at(_load_state(conn, student_id, part_id, ts), ts)
+     surprise = weight * (event["score"] - p_before)
+     session_id = session_start(conn, student_id, ts)
+@@ -698,13 +704,14 @@
+         slip_add = _settings().session.fatigue_slip_add if fatigued else 0.0
+         if part_id == AIL_VERIFY and correct:   # Verify is graded: 3 of 4 ticks moves it 3/4 as far as 4 of 4
+             weight *= event["score"]
+-        _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts, weight=weight, slip_add=slip_add)
++        _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts, weight=weight, slip_add=slip_add, cap=cap)
+ 
+ 
+ def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, evidence_type: str, correct: bool, ts: str,
+-                    weight: float = 1.0, slip_add: float = 0.0) -> None:
++                    weight: float = 1.0, slip_add: float = 0.0, cap: float | None = None) -> None:
+     """The BKT update on one part; weight (0–1) scales how far p_known moves towards the BKT result.
+-    slip_add raises slip (capped at session.slip_cap) while the session is fatigued."""
++    slip_add raises slip (capped at session.slip_cap) while the session is fatigued. cap: p_known rises no higher
++    than this (or than where it was)."""
+     s = _settings()
+     if evidence_type not in s.bkt.evidence:
+         raise ValueError(f"evidence_type must be one of {', '.join(s.bkt.evidence)}")
+@@ -725,6 +732,8 @@
+         p = before * slip / (before * slip + (1 - before) * (1 - guess))
+     p += (1 - p) * s.bkt.learn_rate
+     p = before + weight * (p - before)
++    if cap is not None and p > cap:
++        p = max(before, cap)
+ 
+     factor = s.decay.on_success if correct else s.decay.on_failure
+     state["half_life_days"] = max(s.decay.min_half_life_days, state["half_life_days"] * factor)
+@@ -743,7 +752,9 @@
+         for edge in graph.prerequisites(part_id, 1):
+             for prereq in graph.parts_of(edge["other"]):
+                 other = _load_state(conn, student_id, prereq, ts)
+-                other["p_known"] = min(0.99, _p_at(other, ts) + s.propagation.prereq_boost * gain)
++                was = _p_at(other, ts)
++                # a boost from a dependent part is indirect evidence: it never makes a prerequisite secure on its own
++                other["p_known"] = min(0.99, was + s.propagation.prereq_boost * gain, max(was, s.levels.secure - 0.01))
+                 if other["clock_start"]:
+                     other["clock_start"] = ts
+                 _save_state(conn, other)
+diff -ruN '--exclude=__pycache__' a/edux/plan.py b/edux/plan.py
+--- a/edux/plan.py	2026-11-18 04:44:27.761760405 +0000
++++ b/edux/plan.py	2026-11-18 04:44:27.762839711 +0000
+@@ -540,7 +540,8 @@
+ # back): 1 a worked example and its check, 2 an easier prerequisite check, 3 an offer to stop or switch, 4+ a worked
+ # example of the next point (round the part's points), so it is never the same item again and again. Without a step
+ # back, a second miss in a row on an open answer gets the worked example instead of a second bare reteach. A right
+-# check straight after a worked example doesn't reset the count (they had just been shown it). Our choice; a rung that
++# check straight after a worked example doesn't reset the count (they had just been shown it), and a miss on an
++# open answer is cleared only by a complete open answer (right checks in between don't show they can explain it). Our choice; a rung that
+ # can't be built (no prerequisite, stopping already offered) falls through to the next.
+ LADDER = ("worked_example", "easier_prereq", "offer_stop")
+ OPEN_RETEACHES_IN_A_ROW = 1
+@@ -564,7 +565,10 @@
+         state = progress["_misses"] = {"part": focus, "session": session_id, "n": 0}
+     missed = retry is not None if open_answer else not evidence["correct"]
+     just_shown = any(s.get("key") == "show_stuck" for s in last_plan)
+-    state["n"] = state["n"] + 1 if missed else (state["n"] if just_shown and not open_answer else 0)
++    keep = not open_answer and (just_shown or state.get("open"))
++    state["n"] = state["n"] + 1 if missed else (state["n"] if keep else 0)
++    if open_answer:
++        state["open"] = missed
+     return state["n"] if missed else 0
+ 
+ 

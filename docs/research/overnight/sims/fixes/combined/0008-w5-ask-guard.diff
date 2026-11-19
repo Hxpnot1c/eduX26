@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: eduX wave-5 verifier S <noreply@example.invalid>
+Date: Wed, 18 Nov 2026 04:00:00 +0000
+Subject: [PATCH] an answer labelled research with no question features is not a research question
+
+Wave 5 (w5-fix-labels 0006c). edux/service.py, 3 lines. Applies on 0007.
+---
+diff -ruN '--exclude=__pycache__' a/edux/service.py b/edux/service.py
+--- a/edux/service.py	2026-11-18 03:28:50.401097284 +0000
++++ b/edux/service.py	2026-11-18 03:28:50.403050916 +0000
+@@ -408,6 +408,9 @@
+         evidence, lost = None, True
+     except ValueError as e:
+         return {"ok": False, "error": str(e)}
++    if answer and this_message.get("request_type") == "research" and not this_message.get("question_features"):
++        # an answer to something we asked is not a new research question: no Ask evidence, no research plan
++        this_message = {**this_message, "request_type": "other" if graph.is_literacy(answer.get("part_id") or "") else "concept"}
+ 
+     if not node_ids and (evidence or lost):   # an answer continues the last turn's topic (after a prereq check or review too)
+         # an AI-literacy part never becomes the course focus

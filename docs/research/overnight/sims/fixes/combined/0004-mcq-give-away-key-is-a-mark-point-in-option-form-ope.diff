@@ -1,0 +1,327 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: eduX wave-4 integration <noreply@example.invalid>
+Date: Wed, 18 Nov 2026 02:35:43 +0000
+Subject: [PATCH 4/5] mcq give-away: key is a mark point in option form; open
+ checks for parts with no mark points; pack mark points and misconception
+ rewording
+
+---
+ coursepacks/example-mini/mark_points.csv    | 22 +++++++-
+ coursepacks/example-mini/misconceptions.csv | 24 +++++---
+ edux/context_blocks.py                      |  5 +-
+ edux/plan.py                                | 62 +++++++++++++++++----
+ edux/service.py                             |  2 +
+ ingest/ai_literacy/mark_points.csv          | 26 ++++-----
+ ingest/ai_literacy/misconceptions.csv       | 26 ++++-----
+ ingest/validate.py                          |  3 +
+ text/moves/ask_mcq.md                       |  2 +-
+ 9 files changed, 121 insertions(+), 51 deletions(-)
+
+diff --git a/coursepacks/example-mini/mark_points.csv b/coursepacks/example-mini/mark_points.csv
+index 2ff9e1f..8dae9f7 100644
+--- a/coursepacks/example-mini/mark_points.csv
++++ b/coursepacks/example-mini/mark_points.csv
+@@ -1,3 +1,21 @@
+ id,node_id,point,exemplar,source_ids,order,status,flag,updated_by,updated_at
+-pes_definition_p1,pes_definition,States that PES is the responsiveness of quantity supplied to a change in price.,PES shows how much quantity supplied responds to a price change.,spec,1,draft,,extraction,
+-externality_tax_eval_p1,externality_tax_eval,Notes that the external cost is difficult to measure in money.,It is hard to put a money value on pollution damage.,spec;tb_main,1,draft,,extraction,
++ped_definition_p1,ped_definition,PED compares percentage changes in quantity demanded and in price,"Price up 10%, quantity demanded down 5%: PED is -0.5.",spec;tb_main,1,draft,,w4-fix-mcq proposal,
++ped_definition_p2,ped_definition,"PED has no units, so it compares goods with very different prices","A 1% response is a 1% response, whether the good costs 50p or £500.",tb_main,2,draft,,w4-fix-mcq proposal,
++ped_definition_p3,ped_definition,"A price rise cuts quantity demanded, so PED has a minus sign","Cinema tickets up 20%, visits down 10%: PED = -0.5, a negative number.",tb_main,3,draft,,w4-fix-mcq proposal,
++ped_formula_p1,ped_formula,"Each percentage change is the change divided by the original value, times 100","Price from £2 to £2.50: (0.50 / 2) x 100 = 25%.",spec;tb_main,1,draft,,w4-fix-mcq proposal,
++ped_formula_p2,ped_formula,"Keep the minus sign, because price and quantity demanded move in opposite ways","Quantity -15%, price +25%: PED = -15 / 25 = -0.6.",tb_main,2,draft,,w4-fix-mcq proposal,
++ped_values_p1,ped_values,"Ignoring the sign, elastic means above 1 and inelastic means below 1","PED of -2.5 is elastic; PED of -0.4 is inelastic.",spec;tb_main,1,draft,,w4-fix-mcq proposal,
++ped_values_p2,ped_values,"When demand is price inelastic, raising the price raises total revenue","PED -0.4: price up 10%, quantity down 4%, so spending rises.",tb_main,2,draft,,w4-fix-mcq proposal,
++pes_definition_p1,pes_definition,PES shows how quantity supplied responds to a change in price,"Strawberry prices rise 20% and farms supply 5% more: PES = 0.25.",spec,1,draft,,w4-fix-mcq proposal,
++pes_definition_p2,pes_definition,"Spare capacity lets firms raise output quickly, so supply is elastic","A half-empty factory can add a shift next week; a full one cannot.",tb_main,2,draft,,w4-fix-mcq proposal,
++pes_formula_p1,pes_formula,PES is the % change in quantity supplied divided by the % change in price,"Price +10%, quantity supplied +5%: PES = 5 / 10 = 0.5.",spec;tb_main,1,draft,,w4-fix-mcq proposal,
++pes_formula_p2,pes_formula,"PES is positive, because firms supply more when the price rises","Both changes go the same way, so the answer has no minus sign.",tb_main,2,draft,,w4-fix-mcq proposal,
++yed_definition_p1,yed_definition,YED divides % change in quantity demanded by % change in income,"Incomes rise 5% and holidays abroad rise 10%: YED = 2.",spec;tb_main,1,draft,,w4-fix-mcq proposal,
++yed_definition_p2,yed_definition,Positive YED means a normal good; negative YED means an inferior good,"Incomes rise and bus journeys fall: YED is negative, so buses are inferior here.",tb_main,2,draft,,w4-fix-mcq proposal,
++tax_supply_shift_p1,tax_supply_shift,"The tax raises firms' costs, so supply shifts up by the tax per unit",A 50p tax per coffee moves the supply curve up by 50p at every quantity.,spec;tb_main,1,draft,,w4-fix-mcq proposal,
++tax_supply_shift_p2,tax_supply_shift,A specific tax gives a parallel shift and an ad valorem tax a pivot,"A 20% tax adds 20p to a £1 item but £1 to a £5 item, so the gap widens.",tb_main,2,draft,,w4-fix-mcq proposal,
++tax_incidence_split_p1,tax_incidence_split,"The more price inelastic demand is, the more of the tax consumers bear","Smokers keep buying after a cigarette tax, so most of it shows up in the price.",spec;tb_main,1,draft,,w4-fix-mcq proposal,
++tax_incidence_split_p2,tax_incidence_split,"When demand is price elastic, producers bear the larger share of the tax","Tax one brand of crisps and buyers switch, so the firm absorbs most of it.",tb_main,2,draft,,w4-fix-mcq proposal,
++externality_tax_eval_p2,externality_tax_eval,A tax equal to marginal external cost moves output to the social optimum,"If each tonne of smoke does £30 of harm to others, a £30 tax per tonne makes the firm count that harm.",spec;tb_main,1,draft,,w4-fix-mcq proposal,
++externality_tax_eval_p1,externality_tax_eval,"Valuing the external cost in money is hard, so the tax rate is a guess","How much is a day of a child's asthma worth in pounds? The tax depends on the answer.",spec;tb_main,2,draft,,w4-fix-mcq proposal,
++externality_tax_eval_p3,externality_tax_eval,"With price inelastic demand, the tax cuts output by a small amount","Drivers keep buying petrol after a fuel tax rise, so emissions fall a little.",tb_main,3,draft,,w4-fix-mcq proposal,
+diff --git a/coursepacks/example-mini/misconceptions.csv b/coursepacks/example-mini/misconceptions.csv
+index 6efddf1..b4413a8 100644
+--- a/coursepacks/example-mini/misconceptions.csv
++++ b/coursepacks/example-mini/misconceptions.csv
+@@ -1,14 +1,20 @@
+ id,node_id,wrong_idea,correction,source_ids,status,flag,updated_by,updated_at
+-ped_definition_m1,ped_definition,PED is the slope of the demand curve.,"Slope uses absolute changes; PED uses percentage changes, so it varies along a straight-line demand curve.",tb_main,draft,,extraction,
++ped_definition_m1,ped_definition,"PED is the slope of the demand curve, so it is the same all along it","Slope uses absolute changes; PED uses percentage changes, so it varies along a straight-line demand curve.",tb_main,draft,,w4-fix-mcq proposal,
+ ped_formula_m1,ped_formula,Divide the change in price by the change in quantity.,Quantity goes on top: % change in quantity demanded divided by % change in price.,tb_main,draft,,extraction,
+-ped_values_m1,ped_values,An elastic good has a PED below 1.,"Ignoring the sign, elastic means greater than 1: quantity changes proportionally more than price.",tb_main,draft,,extraction,
+-pes_definition_m1,pes_definition,Supply is equally elastic in the short and long run.,Supply is usually more elastic in the long run because firms can change all their inputs.,tb_main,draft,,extraction,
+-pes_formula_m1,pes_formula,PES is usually negative like PED.,PES is usually positive because a higher price leads firms to supply more.,tb_main,draft,,extraction,
+-yed_definition_m1,yed_definition,YED uses the change in price.,YED uses the change in income; the good's own price is held constant.,tb_main,draft,,extraction,
+-tax_supply_shift_m1,tax_supply_shift,An indirect tax shifts the demand curve.,"The tax is paid by firms, so it raises their costs and shifts supply, not demand.",tb_main,draft,,extraction,
+-tax_incidence_split_m1,tax_incidence_split,Producers always pay the whole tax because they hand it to the government.,"Who hands the money over does not decide who bears it; the split depends on elasticities.",tb_main,draft,,extraction,
+-externality_tax_eval_m1,externality_tax_eval,A tax always removes the externality completely.,"It reduces output towards the optimum, but only fully if the tax equals the marginal external cost.",tb_main,draft,,extraction,
++ped_values_m1,ped_values,"An elastic good has a PED below 1, because demand hardly changes","Ignoring the sign, elastic means greater than 1: quantity changes proportionally more than price.",tb_main,draft,,w4-fix-mcq proposal,
++pes_definition_m1,pes_definition,Supply is just as elastic in the short run as in the long run,Supply is usually more elastic in the long run because firms can change all their inputs.,tb_main,draft,,w4-fix-mcq proposal,
++pes_formula_m1,pes_formula,"PES is usually negative, just like PED for most goods",PES is usually positive because a higher price leads firms to supply more.,tb_main,draft,,w4-fix-mcq proposal,
++yed_definition_m1,yed_definition,YED measures how demand responds to a change in the good's price,YED uses the change in income; the good's own price is held constant.,tb_main,draft,,w4-fix-mcq proposal,
++tax_supply_shift_m1,tax_supply_shift,"An indirect tax shifts the demand curve, because buyers now pay more","The tax is paid by firms, so it raises their costs and shifts supply, not demand.",tb_main,draft,,w4-fix-mcq proposal,
++tax_incidence_split_m1,tax_incidence_split,"Producers bear the tax, as they are the ones who hand it to the government","Who hands the money over does not decide who bears it; the split depends on elasticities.",tb_main,draft,,w4-fix-mcq proposal,
++externality_tax_eval_m1,externality_tax_eval,A pollution tax set at the right level brings pollution down to zero,"A tax equal to the marginal external cost internalises the externality: output falls to the social optimum and the welfare loss goes, but the efficient amount of pollution, usually above zero, remains.",tb_main,draft,,w4-fix-mcq proposal,
+ ped_formula_m2,ped_formula,Work out the percentage changes from the new values.,"Percentage changes are worked out from the original values: change divided by original, times 100.",tb_main,draft,,extraction,
+ ped_formula_m3,ped_formula,"PED is the change in quantity divided by the change in price, with no percentages.","Absolute changes depend on the units used; PED divides percentage changes, so it has no units.",tb_main,draft,,extraction,
+ ped_definition_m2,ped_definition,PED measures how much the price changes when demand changes.,"It is the other way round: PED measures how quantity demanded responds to a change in price.",tb_main,draft,,extraction,
+-pes_formula_m2,pes_formula,PES is the percentage change in price divided by the percentage change in quantity supplied.,Quantity goes on top: % change in quantity supplied divided by % change in price.,tb_main,draft,,extraction,
++pes_formula_m2,pes_formula,PES is the % change in price divided by the % change in quantity supplied,Quantity goes on top: % change in quantity supplied divided by % change in price.,tb_main,draft,,w4-fix-mcq proposal,
++pes_definition_m2,pes_definition,Supply is price elastic when buyers have lots of substitutes to switch to,"Substitutes affect PED; PES depends on how easily firms can raise output (spare capacity, stocks and time).",tb_main,draft,,w4-fix-mcq proposal,
++yed_definition_m2,yed_definition,A necessity like bread has a negative income elasticity of demand,Necessities are normal goods with YED between 0 and 1; only inferior goods have a negative YED.,tb_main,draft,,w4-fix-mcq proposal,
++tax_supply_shift_m2,tax_supply_shift,An ad valorem tax shifts supply by the same amount at every price,"An ad valorem tax is a percentage of the price, so the gap between the curves widens as price rises.",tb_main,draft,,w4-fix-mcq proposal,
++tax_incidence_split_m2,tax_incidence_split,"The more price inelastic demand is, the more of the tax producers bear","It is the other way round: buyers who can't cut back end up paying more of the tax through a higher price.",tb_main,draft,,w4-fix-mcq proposal,
++externality_tax_eval_m2,externality_tax_eval,"Firms just pay a pollution tax and carry on, so output does not change","The tax makes polluting costlier, so firms cut pollution or output wherever that is cheaper than paying.",tb_main,draft,,w4-fix-mcq proposal,
++externality_tax_eval_m3,externality_tax_eval,"A tax on pollution shifts demand, while a tax on the product shifts supply","Both are paid by producers and raise their costs, so both shift supply; neither shifts demand.",tb_main,draft,,w4-fix-mcq proposal,
+diff --git a/edux/context_blocks.py b/edux/context_blocks.py
+index efd54e1..fc347e6 100644
+--- a/edux/context_blocks.py
++++ b/edux/context_blocks.py
+@@ -220,7 +220,10 @@ def prequestion(turn: Turn, settings: Settings) -> dict | None:
+     if len(found) < settings.mcq.min_distractors or _session_offloaded(turn):
+         return None
+     found.sort(key=lambda m: "examiner_report" not in graph.source_types(m["source_ids"]))
+-    return {"part_id": part, "correct": core_idea(part), "source": intuition_source(turn, part),
++    keys = [mp for mp in graph.mark_points_for([part]) if mp["node_id"] == part]
++    if not keys:   # the key is a mark point, never key wording or the description (plan.mcq_points)
++        return None
++    return {"part_id": part, "correct": keys[0]["point"], "source": intuition_source(turn, part),
+             "distractors": [{"id": m["id"], "wrong_idea": m["wrong_idea"], "correction": m["correction"]}
+                             for m in found[:settings.mcq.max_options - 1]]}
+ 
+diff --git a/edux/plan.py b/edux/plan.py
+index 9857adb..1e78528 100644
+--- a/edux/plan.py
++++ b/edux/plan.py
+@@ -207,12 +207,26 @@ def distractors(part_id: str, settings: Settings) -> list[dict]:
+     return [{"id": m["id"], "text": m["wrong_idea"]} for m in found[:settings.mcq.max_options - 1]]
+ 
+ 
++def option_form(text: str) -> str:
++    """An option as shown: trimmed, with no closing full stop, so the key can't be told apart by punctuation."""
++    return text.strip().rstrip(".;!").rstrip()
++
++
++def mcq_points(part_id: str) -> list[dict]:
++    """The points a part's MCQs may use as the correct option: its own mark points only. Note key points, key
++    wording and the description are never options (they are fragments or topic labels, so the key would stand
++    out); a part without mark points gets open checks instead (open_check), and ingest warns about it."""
++    return [{"id": mp["id"], "point": mp["point"], "exemplar": mp["exemplar"] or ""}
++            for mp in graph.mark_points_for([part_id]) if mp["node_id"] == part_id]
++
++
+ def question(part_id: str, purpose: str, correct: str, settings: Settings, point_id: str | None = None) -> dict:
+     """What a multiple-choice question asks, before it is lettered: the correct option's text, the part's
+     misconceptions as wrong options, and whether the chatbot may write one more (the part has fewer than
+-    mcq.min_distractors). Kept with a pending question so it can be asked again with new letters."""
+-    wrong = distractors(part_id, settings)
+-    return {"part_id": part_id, "purpose": purpose, "point_id": point_id, "correct": correct, "wrong": wrong,
++    mcq.min_distractors). Kept with a pending question so it can be asked again with new letters. Every option
++    is in option_form."""
++    wrong = [{**w, "text": option_form(w["text"])} for w in distractors(part_id, settings)]
++    return {"part_id": part_id, "purpose": purpose, "point_id": point_id, "correct": option_form(correct), "wrong": wrong,
+             "extra": len(wrong) < settings.mcq.min_distractors}
+ 
+ 
+@@ -350,8 +364,9 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
+         if stuck and handled.get(focus) != session_id:
+             handled[focus] = session_id
+             back = stuck["step_back_to"]
+-            if back:
+-                return [prereq_check(turn, back["id"], focus, settings, stuck=True)]
++            stepped = prereq_check(turn, back["id"], focus, settings, stuck=True) if back else None
++            if stepped:
++                return [stepped]
+             anchor = blocks.get("anchor")
+             return [_step("reteach", focus, {
+                 "anchor": {"id": anchor["part_id"], "name": anchor["name"], "note": anchor["note"]} if anchor else None,
+@@ -375,7 +390,9 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
+ 
+     for item in (blocks.get("weak_prerequisites") or {}).get("items", []):
+         if item["level"] == "new" and not _checked_this_session(turn, item["part_id"], last_plan):
+-            return [prereq_check(turn, item["part_id"], item["for"], settings, note=item["note"])]
++            asked = prereq_check(turn, item["part_id"], item["for"], settings, note=item["note"])
++            if asked:
++                return [asked]
+ 
+     teaching = teach(turn, focus, settings, progress)
+     held = [m for m in held_misconceptions(turn.student_id, turn.parts) if m["id"] not in handled]
+@@ -397,8 +414,16 @@ def _progress(progress: dict, part_id: str) -> dict:
+     return progress.setdefault(part_id, {"index": 1, "reteaches": 0, "intuition_asked": False})
+ 
+ 
++def open_check(turn: Turn, part_id: str) -> list[dict]:
++    """A part with no mark points has no MCQs: show its points, then the explain-back of the whole part, scored
++    on its points (the open check). Ends the part's progress, as an explain-back does."""
++    return [_step("show", part_id, {"point": "; ".join(p["point"] for p in _points(part_id))}),
++            _step("explain_back", part_id)]
++
++
+ def check(turn: Turn, part_id: str, index: int, settings: Settings, avoid: list[str] | None = None) -> dict:
+-    """ask_mcq (check) on one point of a part: the point's wording is the correct option."""
++    """ask_mcq (check) on one point of a part: the point's wording is the correct option. Only for a part with
++    mark points (mcq_points), whose points are then its mark points."""
+     point = _points(part_id)[index - 1]
+     return ask_mcq(turn, question(part_id, "check", point["point"], settings, point_id=point["id"]),
+                    {"index": index}, avoid)
+@@ -413,6 +438,9 @@ def teach(turn: Turn, part_id: str, settings: Settings, progress: dict) -> list[
+     level = learner.support_level(turn.p(part_id))
+     points = _points(part_id)
+     state = _progress(progress, part_id)
++    if not mcq_points(part_id):
++        progress.pop(part_id, None)
++        return open_check(turn, part_id)
+     if state.pop("check_due", False) and state["index"] <= len(points):   # taught, but its check was replaced
+         return [check(turn, part_id, state["index"], settings)]
+     if level == "explain_back" or state["index"] > len(points):
+@@ -428,6 +456,9 @@ def teach(turn: Turn, part_id: str, settings: Settings, progress: dict) -> list[
+ def shown_or_skipped(turn: Turn, part_id: str, settings: Settings, progress: dict, choice: str) -> list[dict]:
+     """"I know this" (skip_point): the current point's check only, with no teaching. "Just show me": show, a
+     one-line intuition (from the same source as the intuition question) and the point, then its check."""
++    if not mcq_points(part_id):
++        progress.pop(part_id, None)
++        return open_check(turn, part_id)
+     state = _progress(progress, part_id)
+     points = _points(part_id)
+     index = min(state["index"], len(points))
+@@ -459,9 +490,12 @@ def after_check(turn: Turn, evidence: dict, settings: Settings, progress: dict,
+     return teach(turn, part, settings, progress)
+ 
+ 
+-def prereq_check(turn: Turn, part_id: str, for_part: str, settings: Settings, note: str = "", stuck: bool = False) -> dict:
++def prereq_check(turn: Turn, part_id: str, for_part: str, settings: Settings, note: str = "", stuck: bool = False) -> dict | None:
+     """ask_mcq (prereq) on a weak prerequisite: its first point is the correct option. stuck marks a step back
+-    from a part they're stuck on, so the chatbot says it is trying a different way in."""
++    from a part they're stuck on, so the chatbot says it is trying a different way in. None for a part with no
++    mark points."""
++    if not mcq_points(part_id):
++        return None
+     data = {"name": graph.get_node(part_id)["name"], "for": for_part}
+     if note:
+         data["note"] = note
+@@ -489,7 +523,8 @@ def _second_step(turn: Turn, blocks: dict, settings: Settings, reviews_only: boo
+     support = blocks.get("support")
+     if support and support.get("extend") and not reviews_only:
+         return _step("extend", support["part_id"])
+-    reviews = [r for r in (blocks.get("reviews_due") or {}).get("items") or [] if r["part_id"] not in turn.parts]
++    reviews = [r for r in (blocks.get("reviews_due") or {}).get("items") or []
++               if r["part_id"] not in turn.parts and mcq_points(r["part_id"])]
+     return review_check(turn, reviews[0], settings) if reviews else None
+ 
+ 
+@@ -653,8 +688,11 @@ HOW_TRIGGERS = (
+ )
+ 
+ 
+-def how_check(turn: Turn, part_id: str, settings: Settings) -> dict:
+-    """ask_mcq (how_ai_works) on a how-AI-works part: its point and its misconceptions, shuffled and lettered."""
++def how_check(turn: Turn, part_id: str, settings: Settings) -> dict | None:
++    """ask_mcq (how_ai_works) on a how-AI-works part: its point and its misconceptions, shuffled and lettered.
++    None for a part with no mark points."""
++    if not mcq_points(part_id):
++        return None
+     point = _points(part_id)[0]
+     return ask_mcq(turn, question(part_id, "how_ai_works", point["point"], settings, point_id=point["id"]))
+ 
+diff --git a/edux/service.py b/edux/service.py
+index e419634..92e889a 100644
+--- a/edux/service.py
++++ b/edux/service.py
+@@ -116,6 +116,8 @@ def _how_ai_works(turn: context_blocks.Turn, blocks: dict, last: dict, steps: li
+             if count % s.literacy.how_secure_every:
+                 continue
+         check = plan.how_check(turn, part, s)
++        if check is None:
++            continue
+         saved = {k: check[k] for k in ("move", "key", "part_id", "data", "question")}
+         return plan.with_check(steps, check), {"part_id": part, "followups": 0, "step": saved}
+     return steps, None
+diff --git a/ingest/ai_literacy/mark_points.csv b/ingest/ai_literacy/mark_points.csv
+index b8ae1b0..6a01269 100644
+--- a/ingest/ai_literacy/mark_points.csv
++++ b/ingest/ai_literacy/mark_points.csv
+@@ -1,13 +1,13 @@
+-id,node_id,point,exemplar,source_ids,order,status,flag,updated_by,updated_at
+-ail_ask_concept,ail_ask,Names the economic idea the question is about.,"How does a rise in petrol prices affect demand, using PED?",edux_ai_literacy,1,approved,,eduX,
+-ail_ask_context,ail_ask,Gives the setting: a place and a time period.,"... in the UK in 2025?",edux_ai_literacy,2,approved,,eduX,
+-ail_ask_asks_sources,ail_ask,Asks for sources that can be checked.,Give me the sources for any figures.,edux_ai_literacy,3,approved,,eduX,
+-ail_ask_asks_reasoning,ail_ask,Asks for the reasoning as well as the answer.,Explain why step by step.,edux_ai_literacy,4,approved,,eduX,
+-ail_verify_p1,ail_verify,Opens the source the claim came from.,I opened the ONS link.,edux_ai_literacy,1,approved,,eduX,
+-ail_verify_p2,ail_verify,Names who published the source and when.,"It's the ONS, published March 2025.",edux_ai_literacy,2,approved,,eduX,
+-ail_verify_p3,ail_verify,Compares the claim with what the source says.,The page gives 3.4% for February.,edux_ai_literacy,3,approved,,eduX,
+-ail_verify_p4,ail_verify,Says whether the claim matched the source.,"So the chatbot's 3.4% matched.",edux_ai_literacy,4,approved,,eduX,
+-ail_how_fabrication_p1,ail_how_fabrication,"It predicts likely text, so it can make up real-looking links",,edux_ai_literacy,1,approved,,eduX,
+-ail_how_confidence_p1,ail_how_confidence,Sounding confident doesn't show whether an answer is correct,,edux_ai_literacy,1,approved,,eduX,
+-ail_how_cutoff_p1,ail_how_cutoff,"Without searching, a chatbot's knowledge stops at its training date",,edux_ai_literacy,1,approved,,eduX,
+-ail_how_agreement_p1,ail_how_agreement,"Chatbots can shift answers to agree with you, so check against the notes",,edux_ai_literacy,1,approved,,eduX,
++id,node_id,point,exemplar,source_ids,order,status,flag,updated_by,updated_at
++ail_ask_concept,ail_ask,Names the economic idea the question is about.,"How does a rise in petrol prices affect demand, using PED?",edux_ai_literacy,1,approved,,eduX,
++ail_ask_context,ail_ask,Gives the setting: a place and a time period.,... in the UK in 2025?,edux_ai_literacy,2,approved,,eduX,
++ail_ask_asks_sources,ail_ask,Asks for sources that can be checked.,Give me the sources for any figures.,edux_ai_literacy,3,approved,,eduX,
++ail_ask_asks_reasoning,ail_ask,Asks for the reasoning as well as the answer.,Explain why step by step.,edux_ai_literacy,4,approved,,eduX,
++ail_verify_p1,ail_verify,Opens the source the claim came from.,I opened the ONS link.,edux_ai_literacy,1,approved,,eduX,
++ail_verify_p2,ail_verify,Names who published the source and when.,"It's the ONS, published March 2025.",edux_ai_literacy,2,approved,,eduX,
++ail_verify_p3,ail_verify,Compares the claim with what the source says.,The page gives 3.4% for February.,edux_ai_literacy,3,approved,,eduX,
++ail_verify_p4,ail_verify,Says whether the claim matched the source.,So the chatbot's 3.4% matched.,edux_ai_literacy,4,approved,,eduX,
++ail_how_fabrication_p1,ail_how_fabrication,"It predicts plausible text, so it makes up links that look real",,edux_ai_literacy,1,approved,,w4-fix-mcq proposal,
++ail_how_confidence_p1,ail_how_confidence,Sounding confident doesn't show whether an answer is correct,,edux_ai_literacy,1,approved,,eduX,
++ail_how_cutoff_p1,ail_how_cutoff,"Without searching, a chatbot's knowledge stops at its training date",,edux_ai_literacy,1,approved,,eduX,
++ail_how_agreement_p1,ail_how_agreement,"Chatbots are trained to please, so pushback sways them even when right",,edux_ai_literacy,1,approved,,w4-fix-mcq proposal,
+diff --git a/ingest/ai_literacy/misconceptions.csv b/ingest/ai_literacy/misconceptions.csv
+index d4d26ba..21bb55e 100644
+--- a/ingest/ai_literacy/misconceptions.csv
++++ b/ingest/ai_literacy/misconceptions.csv
+@@ -1,13 +1,13 @@
+-id,node_id,wrong_idea,correction,source_ids,status,flag,updated_by,updated_at
+-ail_how_fabrication_m1,ail_how_fabrication,It copied a page that was later deleted from the internet,The link never existed: the chatbot wrote text that looked like a citation.,edux_ai_literacy,approved,,eduX,
+-ail_how_fabrication_m2,ail_how_fabrication,It searched a source database and picked the wrong entry,Without a search it looks nothing up; it writes likely-looking text.,edux_ai_literacy,approved,,eduX,
+-ail_how_fabrication_m3,ail_how_fabrication,It invents links on purpose when it can't find an answer,There is no intent: an invented link is just likely-looking text.,edux_ai_literacy,approved,,eduX,
+-ail_how_confidence_m1,ail_how_confidence,A chatbot only sounds sure when it has checked the facts,It sounds sure either way; its tone isn't a check.,edux_ai_literacy,approved,,eduX,
+-ail_how_confidence_m2,ail_how_confidence,Confident wording means the answer came from a trusted source,"The wording comes from how it writes, not from where the facts came from.",edux_ai_literacy,approved,,eduX,
+-ail_how_confidence_m3,ail_how_confidence,"If it were unsure, the chatbot would always say so first",Chatbots often don't flag uncertainty; check the claim yourself.,edux_ai_literacy,approved,,eduX,
+-ail_how_cutoff_m1,ail_how_cutoff,Chatbots read the live internet every time you ask them a question,Only with a web search tool switched on; otherwise it uses its training text.,edux_ai_literacy,approved,,eduX,
+-ail_how_cutoff_m2,ail_how_cutoff,Chatbots are retrained on the latest news every single day of the year,Its training stops at a date; later events aren't in it.,edux_ai_literacy,approved,,eduX,
+-ail_how_cutoff_m3,ail_how_cutoff,"If its data were out of date, the chatbot would refuse to answer",It usually answers anyway; it may not know its data is old.,edux_ai_literacy,approved,,eduX,
+-ail_how_agreement_m1,ail_how_agreement,It changed the answer because it has now checked the facts properly,"Pushback alone can change it, with no new checking.",edux_ai_literacy,approved,,eduX,
+-ail_how_agreement_m2,ail_how_agreement,A chatbot only changes its answer when the new answer is the right one,It can switch a right answer to a wrong one to agree with you.,edux_ai_literacy,approved,,eduX,
+-ail_how_agreement_m3,ail_how_agreement,"Disagreeing makes the chatbot go and look up a better, more reliable source",Disagreeing doesn't make it search; check against the notes.,edux_ai_literacy,approved,,eduX,
++id,node_id,wrong_idea,correction,source_ids,status,flag,updated_by,updated_at
++ail_how_fabrication_m1,ail_how_fabrication,It copied a page that was later deleted from the internet,The link never existed: the chatbot wrote text that looked like a citation.,edux_ai_literacy,approved,,eduX,
++ail_how_fabrication_m2,ail_how_fabrication,"Its links are tested before you see them, so the site is down for now","Nothing is tested: without a search it writes link-shaped text; with a search, open the page and check it says what was claimed.",edux_ai_literacy,approved,,w4-fix-mcq proposal,
++ail_how_fabrication_m3,ail_how_fabrication,"It made up the link deliberately, to hide that it didn't know",There is no intent: an invented link is just plausible-looking text.,edux_ai_literacy,approved,,w4-fix-mcq proposal,
++ail_how_confidence_m1,ail_how_confidence,A chatbot sounds sure once it has checked the facts behind it,It sounds sure either way; its tone isn't a check.,edux_ai_literacy,approved,,w4-fix-mcq proposal,
++ail_how_confidence_m2,ail_how_confidence,Confident wording means the answer came from a trusted source,"The wording comes from how it writes, not from where the facts came from.",edux_ai_literacy,approved,,eduX,
++ail_how_confidence_m3,ail_how_confidence,"When a chatbot is unsure of a fact, it tells you before it answers",Chatbots often don't flag uncertainty; check the claim yourself.,edux_ai_literacy,approved,,w4-fix-mcq proposal,
++ail_how_cutoff_m1,ail_how_cutoff,A chatbot checks the live internet for news before it answers you,Only with a web search tool switched on; otherwise it uses its training text.,edux_ai_literacy,approved,,w4-fix-mcq proposal,
++ail_how_cutoff_m2,ail_how_cutoff,"Chatbots are retrained on the news overnight, so they stay up to date",Its training stops at a date; later events aren't in it.,edux_ai_literacy,approved,,w4-fix-mcq proposal,
++ail_how_cutoff_m3,ail_how_cutoff,"If its data were out of date, the chatbot would refuse to answer",It usually answers anyway; it may not know its data is old.,edux_ai_literacy,approved,,eduX,
++ail_how_agreement_m1,ail_how_agreement,It changed the answer because it has now checked the facts properly,"Pushback alone can change it, with no new checking.",edux_ai_literacy,approved,,eduX,
++ail_how_agreement_m2,ail_how_agreement,A chatbot switches answers once it works out the new one is right,It can switch a right answer to a wrong one to agree with you; check against the notes.,edux_ai_literacy,approved,,w4-fix-mcq proposal,
++ail_how_agreement_m3,ail_how_agreement,Disagreeing makes it go and look up a more reliable source,Disagreeing doesn't make it search; check against the notes.,edux_ai_literacy,approved,,w4-fix-mcq proposal,
+diff --git a/ingest/validate.py b/ingest/validate.py
+index 0cfe3af..210a099 100644
+--- a/ingest/validate.py
++++ b/ingest/validate.py
+@@ -348,6 +348,9 @@ class _Checker:
+                 continue
+             level = r.get("level")
+             if level == "part":
++                if not points[i]:
++                    self.warn("nodes.csv", r, f"part {i!r} has no mark points: its checks are open (explain-back), "
++                              "not multiple choice")
+                 if not covered.intersection(lineage(i)):
+                     self.warn("nodes.csv", r, f"part {i!r} has no question, mark point or note")
+                 if misconception_count[i] < settings.mcq.min_distractors:
+diff --git a/text/moves/ask_mcq.md b/text/moves/ask_mcq.md
+index 3b926f3..5b80f26 100644
+--- a/text/moves/ask_mcq.md
++++ b/text/moves/ask_mcq.md
+@@ -1 +1 @@
+-Ask one multiple-choice question for data.purpose: show data.options exactly as given, in letter order, writing one plausible wrong option yourself at data.extra_option if there is one, then wait for a letter with no hints. Intuition: lead in from data.note (through data.via if given), guessing is fine; prereq: on data.name, saying you're trying a different way in if data.stuck; review: frame it in data.new_context if given; how_ai_works: after handling what just happened, ask it, then return to their task.
++Ask one multiple-choice question for data.purpose: show data.options exactly as given, in letter order, writing one plausible wrong option yourself at data.extra_option if there is one (like the others in length and form: no full stop, no always or never), then wait for a letter with no hints. Intuition: lead in from data.note (through data.via if given), guessing is fine; prereq: on data.name, saying you're trying a different way in if data.stuck; review: frame it in data.new_context if given; how_ai_works: after handling what just happened, ask it, then return to their task.

@@ -1,0 +1,6 @@
+1. FOUND saturation: p_known reached exactly 1.0 after 44 correct mcq_check answers (2 min apart, one part); the next exchange raised ZeroDivisionError in learner.apply_exchange
+2. FOUND quiz_me: due ['pes_definition', 'pes_formula']; 'Quiz me on what's due' 5 days later -> [('teach_point', 'yed_definition', None), ('ask_mcq', 'yed_definition', 'check')]
+3. FOUND stepback_loop: 12 of the last 14 plans were a step-back prerequisite check after ped_formula was stuck, while the prerequisite was answered right every time
+   turn 1: feedback:ped_formula/teach_point:ped_formula/ask_mcq:ped_formula
+   turn 2: feedback:ped_formula/reteach:ped_formula/ask_mcq:ped_formula
+   turn 3: feedback:ped_formula/ask_mcq:ped_definition:stuck

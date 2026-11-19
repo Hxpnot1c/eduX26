@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: eduX wave-5 verifier S <noreply@example.invalid>
+Date: Wed, 18 Nov 2026 04:00:00 +0000
+Subject: [PATCH] an answer straight after being shown can't make a part secure
+
+Wave 5 (w5-06g counter c1). edux/learner.py: immediate evidence capped below levels.secure. Applies on 0009.
+---
+diff -ruN '--exclude=__pycache__' a/edux/learner.py b/edux/learner.py
+--- a/edux/learner.py	2026-11-18 03:28:50.419288331 +0000
++++ b/edux/learner.py	2026-11-18 03:28:50.421502572 +0000
+@@ -707,13 +707,17 @@
+         slip_add = _settings().session.fatigue_slip_add if fatigued else 0.0
+         if part_id == AIL_VERIFY and correct:   # Verify is graded: 3 of 4 ticks moves it 3/4 as far as 4 of 4
+             weight *= event["score"]
+-        _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts, weight=weight, slip_add=slip_add)
++        # recall straight after being shown or hinted (immediate) can't make a part secure on its own: secure needs a
++        # check outside the immediate window (a review, or a later session)
++        cap = s.levels.secure - 0.01 if evidence_type == "immediate" else None
++        _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts, weight=weight, slip_add=slip_add, cap=cap)
+ 
+ 
+ def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, evidence_type: str, correct: bool, ts: str,
+-                    weight: float = 1.0, slip_add: float = 0.0) -> None:
++                    weight: float = 1.0, slip_add: float = 0.0, cap: float | None = None) -> None:
+     """The BKT update on one part; weight (0–1) scales how far p_known moves towards the BKT result.
+-    slip_add raises slip (capped at session.slip_cap) while the session is fatigued."""
++    slip_add raises slip (capped at session.slip_cap) while the session is fatigued. cap: p_known rises no higher
++    than this (or than where it was), for immediate recall."""
+     s = _settings()
+     if evidence_type not in s.bkt.evidence:
+         raise ValueError(f"evidence_type must be one of {', '.join(s.bkt.evidence)}")
+@@ -734,6 +738,8 @@
+         p = before * slip / (before * slip + (1 - before) * (1 - guess))
+     p += (1 - p) * s.bkt.learn_rate
+     p = before + weight * (p - before)
++    if cap is not None and p > cap:
++        p = max(before, cap)
+ 
+     factor = s.decay.on_success if correct else s.decay.on_failure
+     state["half_life_days"] = max(s.decay.min_half_life_days, state["half_life_days"] * factor)

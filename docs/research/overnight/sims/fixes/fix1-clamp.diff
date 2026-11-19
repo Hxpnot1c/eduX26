@@ -1,0 +1,26 @@
+--- a/edux/learner.py
++++ b/edux/learner.py
+@@ -446,7 +446,14 @@
+             "clock_start": None, "last_correct": None, "exchanges_since_evidence": 0}
+ 
+ 
++def _clamp(p: float) -> float:
++    """p_known kept inside [0.001, 0.999]: BKT can round to exactly 1.0 after a long run of right answers, and the
++    exchange nudge works in odds, p / (1 - p)."""
++    return min(0.999, max(0.001, p))
++
++
+ def _save_state(conn: sqlite3.Connection, state: dict) -> None:
++    state["p_known"] = _clamp(state["p_known"])
+     state["was_secure"] = int(state["was_secure"] or _p_at(state, state["last_seen"]) >= _settings().levels.secure)
+     columns = list(state)
+     conn.execute(f"INSERT OR REPLACE INTO part_state ({', '.join(columns)}) VALUES ({', '.join('?' * len(columns))})",
+@@ -503,7 +510,7 @@
+     for part, strength in _tagged_parts(split(event["node_ids"])).items():
+         state = _load_state(conn, student_id, part, ts)
+         if not offloaded:
+-            odds = state["p_known"] / (1 - state["p_known"])
++            odds = _clamp(state["p_known"]) / (1 - _clamp(state["p_known"]))   # also a 1.0 saved before the clamp
+             odds *= 1 + (multiplier - 1) * strength
+             state["p_known"] = odds / (1 + odds)
+         if state["clock_start"]:

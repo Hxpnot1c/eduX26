@@ -1,0 +1,1624 @@
+{
+ "stuck": {
+  "always_misses": {
+   "plans": [
+    "feedback:ped_formula:intuition/teach_point:ped_formula/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/reteach:ped_formula/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/ask_mcq:ped_definition:stuck:prereq",
+    "feedback:ped_definition:prereq/teach_point:ped_formula/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/ask_mcq:ped_definition:stuck:prereq",
+    "feedback:ped_definition:prereq/teach_point:ped_formula/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/offer_stop:None:stuck",
+    "feedback:ped_formula/teach_point:ped_formula/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#2"
+   ],
+   "longest_no_mcq_run": 1,
+   "longest_bare_reteach_run": 0,
+   "first_offer_stop_turn": 8,
+   "mcq_plans": 29,
+   "worked_examples": 22
+  },
+  "recovers_after_step_back": {
+   "plans": [
+    "feedback:ped_formula:intuition/teach_point:ped_formula/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/reteach:ped_formula/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/ask_mcq:ped_definition:stuck:prereq",
+    "feedback:ped_definition:prereq/teach_point:ped_formula/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/show:ped_formula:stuck/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/explain_back:ped_formula",
+    "feedback:ped_formula/extend:ped_formula",
+    "feedback:ped_formula/extend:ped_formula",
+    "feedback:ped_formula/extend:ped_formula",
+    "feedback:ped_formula/extend:ped_formula",
+    "feedback:ped_formula/extend:ped_formula",
+    "feedback:ped_formula/extend:ped_formula",
+    "feedback:ped_formula/extend:ped_formula",
+    "feedback:ped_formula/extend:ped_formula",
+    "feedback:ped_formula/extend:ped_formula",
+    "feedback:ped_formula/extend:ped_formula",
+    "feedback:ped_formula/extend:ped_formula",
+    "feedback:ped_formula/extend:ped_formula",
+    "feedback:ped_formula/extend:ped_formula"
+   ],
+   "longest_no_mcq_run": 14,
+   "longest_bare_reteach_run": 0,
+   "first_offer_stop_turn": null,
+   "mcq_plans": 6,
+   "worked_examples": 1
+  },
+  "misses_open_only": {
+   "plans": [
+    "feedback:ped_formula:intuition/teach_point:ped_formula/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/explain_back:ped_formula",
+    "feedback:ped_formula/reteach:ped_formula",
+    "feedback:ped_formula/show:ped_formula:stuck/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/explain_back:ped_formula",
+    "feedback:ped_formula/ask_mcq:ped_definition:stuck:prereq",
+    "feedback:ped_definition:prereq/teach_point:ped_formula/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/explain_back:ped_formula",
+    "feedback:ped_formula/show:ped_formula:stuck/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/explain_back:ped_formula",
+    "feedback:ped_formula/ask_mcq:ped_definition:stuck:prereq",
+    "feedback:ped_definition:prereq/offer_stop:None",
+    "teach_point:ped_formula/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/explain_back:ped_formula",
+    "feedback:ped_formula/show:ped_formula:stuck/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/explain_back:ped_formula"
+   ],
+   "longest_no_mcq_run": 2,
+   "longest_bare_reteach_run": 1,
+   "first_offer_stop_turn": 15,
+   "mcq_plans": 12,
+   "worked_examples": 3
+  },
+  "strong_misses_extend": {
+   "plans": [
+    "feedback:ped_formula:intuition/teach_point:ped_formula/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/explain_back:ped_formula",
+    "feedback:ped_formula/extend:ped_formula",
+    "feedback:ped_formula/reteach:ped_formula",
+    "feedback:ped_formula/ask_mcq:ped_definition:stuck:prereq",
+    "feedback:ped_definition:prereq/teach_point:ped_formula/ask_mcq:ped_formula:check#1",
+    "feedback:ped_formula:check/teach_point:ped_formula/ask_mcq:ped_formula:check#2",
+    "feedback:ped_formula:check/explain_back:ped_formula",
+    "feedback:ped_formula/extend:ped_formula"
+   ],
+   "longest_no_mcq_run": 3,
+   "longest_bare_reteach_run": 1,
+   "first_offer_stop_turn": null,
+   "mcq_plans": 5,
+   "worked_examples": 0
+  }
+ },
+ "reviews": {
+  "due_concept": [
+   {
+    "message": "Quiz me on what's due.",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "quiz me",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can you test me on my reviews?",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "What should I revise?",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "do my reviews",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Let's do some revision",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Test me!",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "What's due today?",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "anything due?",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can we go through my reviews please",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "what needs revising",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "help me revise",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "quiz me on stuff I've done before",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "I want to revise, what should I work on?",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "drill me on older topics",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Time for a revision session",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "start my reviews",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Give me some practice questions on what\u2019s due",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can you explain that again?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Quiz me on this",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "test me on what we just did",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "How should I revise for the exam?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "I did my revision yesterday but I still don't get it",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "What is due to the fall in supply?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:-",
+    "as_expected": true
+   },
+   {
+    "message": "Is my review of this article right?",
+    "wants_reviews": false,
+    "request_type": "research",
+    "got": "focus:-,ail_ask",
+    "as_expected": true
+   },
+   {
+    "message": "Can you check my working?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:ped_formula",
+    "as_expected": true
+   },
+   {
+    "message": "Quiz me on price elasticity of demand",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:-",
+    "as_expected": true
+   },
+   {
+    "message": "How do my reviews work?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Why is that the answer?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Give me another example",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:ped_values",
+    "as_expected": true
+   }
+  ],
+  "due_other": [
+   {
+    "message": "Quiz me on what's due.",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "quiz me",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can you test me on my reviews?",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "What should I revise?",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "do my reviews",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Let's do some revision",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Test me!",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "What's due today?",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "anything due?",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can we go through my reviews please",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "what needs revising",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "help me revise",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "quiz me on stuff I've done before",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "I want to revise, what should I work on?",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "drill me on older topics",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Time for a revision session",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "start my reviews",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Give me some practice questions on what\u2019s due",
+    "wants_reviews": true,
+    "request_type": "other",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can you explain that again?",
+    "wants_reviews": false,
+    "request_type": "other",
+    "got": "empty",
+    "as_expected": true
+   },
+   {
+    "message": "Quiz me on this",
+    "wants_reviews": false,
+    "request_type": "other",
+    "got": "empty",
+    "as_expected": true
+   },
+   {
+    "message": "test me on what we just did",
+    "wants_reviews": false,
+    "request_type": "other",
+    "got": "empty",
+    "as_expected": true
+   },
+   {
+    "message": "How should I revise for the exam?",
+    "wants_reviews": false,
+    "request_type": "other",
+    "got": "empty",
+    "as_expected": true
+   },
+   {
+    "message": "I did my revision yesterday but I still don't get it",
+    "wants_reviews": false,
+    "request_type": "other",
+    "got": "empty",
+    "as_expected": true
+   },
+   {
+    "message": "What is due to the fall in supply?",
+    "wants_reviews": false,
+    "request_type": "other",
+    "got": "empty",
+    "as_expected": true
+   },
+   {
+    "message": "Is my review of this article right?",
+    "wants_reviews": false,
+    "request_type": "research",
+    "got": "focus:-,ail_ask",
+    "as_expected": true
+   },
+   {
+    "message": "Can you check my working?",
+    "wants_reviews": false,
+    "request_type": "other",
+    "got": "empty",
+    "as_expected": true
+   },
+   {
+    "message": "Quiz me on price elasticity of demand",
+    "wants_reviews": false,
+    "request_type": "other",
+    "got": "empty",
+    "as_expected": true
+   },
+   {
+    "message": "How do my reviews work?",
+    "wants_reviews": false,
+    "request_type": "other",
+    "got": "empty",
+    "as_expected": true
+   },
+   {
+    "message": "Why is that the answer?",
+    "wants_reviews": false,
+    "request_type": "other",
+    "got": "empty",
+    "as_expected": true
+   },
+   {
+    "message": "Give me another example",
+    "wants_reviews": false,
+    "request_type": "other",
+    "got": "empty",
+    "as_expected": true
+   }
+  ],
+  "pending": [
+   {
+    "message": "Quiz me on what's due.",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "quiz me",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can you test me on my reviews?",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "What should I revise?",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "do my reviews",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Let's do some revision",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Test me!",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "What's due today?",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "anything due?",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can we go through my reviews please",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "what needs revising",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "help me revise",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "quiz me on stuff I've done before",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "I want to revise, what should I work on?",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "drill me on older topics",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Time for a revision session",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "start my reviews",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Give me some practice questions on what\u2019s due",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can you explain that again?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "reask",
+    "as_expected": true
+   },
+   {
+    "message": "Quiz me on this",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "reask",
+    "as_expected": true
+   },
+   {
+    "message": "test me on what we just did",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "reask",
+    "as_expected": true
+   },
+   {
+    "message": "How should I revise for the exam?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "reask",
+    "as_expected": true
+   },
+   {
+    "message": "I did my revision yesterday but I still don't get it",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "reask",
+    "as_expected": true
+   },
+   {
+    "message": "What is due to the fall in supply?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "reask",
+    "as_expected": true
+   },
+   {
+    "message": "Is my review of this article right?",
+    "wants_reviews": false,
+    "request_type": "research",
+    "got": "focus:-,ail_ask",
+    "as_expected": true
+   },
+   {
+    "message": "Can you check my working?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:ped_formula",
+    "as_expected": true
+   },
+   {
+    "message": "Quiz me on price elasticity of demand",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "reask",
+    "as_expected": true
+   },
+   {
+    "message": "How do my reviews work?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "reask",
+    "as_expected": true
+   },
+   {
+    "message": "Why is that the answer?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "reask",
+    "as_expected": true
+   },
+   {
+    "message": "Give me another example",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:ped_values",
+    "as_expected": true
+   }
+  ],
+  "none_due": [
+   {
+    "message": "Quiz me on what's due.",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "quiz me",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Can you test me on my reviews?",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "What should I revise?",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "do my reviews",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Let's do some revision",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Test me!",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "What's due today?",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "anything due?",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Can we go through my reviews please",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:tax_incidence_split",
+    "as_expected": true
+   },
+   {
+    "message": "what needs revising",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "help me revise",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "quiz me on stuff I've done before",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "I want to revise, what should I work on?",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "drill me on older topics",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Time for a revision session",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:pes_definition",
+    "as_expected": true
+   },
+   {
+    "message": "start my reviews",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Give me some practice questions on what\u2019s due",
+    "wants_reviews": true,
+    "request_type": "concept",
+    "got": "focus:tax_supply_shift",
+    "as_expected": true
+   },
+   {
+    "message": "Can you explain that again?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Quiz me on this",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "test me on what we just did",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "How should I revise for the exam?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "I did my revision yesterday but I still don't get it",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "What is due to the fall in supply?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:-",
+    "as_expected": true
+   },
+   {
+    "message": "Is my review of this article right?",
+    "wants_reviews": false,
+    "request_type": "research",
+    "got": "focus:-,ail_ask",
+    "as_expected": true
+   },
+   {
+    "message": "Can you check my working?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:ped_formula",
+    "as_expected": true
+   },
+   {
+    "message": "Quiz me on price elasticity of demand",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:-",
+    "as_expected": true
+   },
+   {
+    "message": "How do my reviews work?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Why is that the answer?",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Give me another example",
+    "wants_reviews": false,
+    "request_type": "concept",
+    "got": "focus:ped_values",
+    "as_expected": true
+   }
+  ],
+  "holdout_due_concept": [
+   {
+    "message": "Ask me some questions on the old stuff",
+    "wants_reviews": true,
+    "got": "focus:yed_definition",
+    "as_expected": false
+   },
+   {
+    "message": "can you give me my spaced repetition questions",
+    "wants_reviews": true,
+    "got": "focus:tax_supply_shift",
+    "as_expected": false
+   },
+   {
+    "message": "What have I forgotten?",
+    "wants_reviews": true,
+    "got": "focus:yed_definition",
+    "as_expected": false
+   },
+   {
+    "message": "I've got 10 minutes, test me on something",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Let's practise what I learned last week",
+    "wants_reviews": true,
+    "got": "focus:yed_definition",
+    "as_expected": false
+   },
+   {
+    "message": "Which topics should I go over today?",
+    "wants_reviews": true,
+    "got": "focus:yed_definition",
+    "as_expected": false
+   },
+   {
+    "message": "hit me with a review question",
+    "wants_reviews": true,
+    "got": "focus:yed_definition",
+    "as_expected": false
+   },
+   {
+    "message": "Quiz me pls",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can you check what I've remembered?",
+    "wants_reviews": true,
+    "got": "focus:yed_definition",
+    "as_expected": false
+   },
+   {
+    "message": "Is there anything I should review?",
+    "wants_reviews": true,
+    "got": "focus:yed_definition",
+    "as_expected": false
+   },
+   {
+    "message": "Can you test my understanding of this graph?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "what do you mean by that",
+    "wants_reviews": false,
+    "got": "focus:ped_formula",
+    "as_expected": true
+   },
+   {
+    "message": "Could you quiz me on that last bit again?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Is revision better in the morning or evening?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Can you mark my answer?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "That's due on Friday, can you help me plan the essay?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   }
+  ],
+  "label_perfect": [
+   {
+    "message": "Quiz me on what's due.",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "quiz me",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can you test me on my reviews?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "What should I revise?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "do my reviews",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Let's do some revision",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Test me!",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "What's due today?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "anything due?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can we go through my reviews please",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "what needs revising",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "help me revise",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "quiz me on stuff I've done before",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "I want to revise, what should I work on?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "drill me on older topics",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Time for a revision session",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "start my reviews",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Give me some practice questions on what\u2019s due",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can you explain that again?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Quiz me on this",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "test me on what we just did",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "How should I revise for the exam?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "I did my revision yesterday but I still don't get it",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "What is due to the fall in supply?",
+    "wants_reviews": false,
+    "got": "focus:-",
+    "as_expected": true
+   },
+   {
+    "message": "Is my review of this article right?",
+    "wants_reviews": false,
+    "got": "focus:-,ail_ask",
+    "as_expected": true
+   },
+   {
+    "message": "Can you check my working?",
+    "wants_reviews": false,
+    "got": "focus:ped_formula",
+    "as_expected": true
+   },
+   {
+    "message": "Quiz me on price elasticity of demand",
+    "wants_reviews": false,
+    "got": "focus:-",
+    "as_expected": true
+   },
+   {
+    "message": "How do my reviews work?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Why is that the answer?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Give me another example",
+    "wants_reviews": false,
+    "got": "focus:ped_values",
+    "as_expected": true
+   },
+   {
+    "message": "Ask me some questions on the old stuff",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "can you give me my spaced repetition questions",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "What have I forgotten?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "I've got 10 minutes, test me on something",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Let's practise what I learned last week",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Which topics should I go over today?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "hit me with a review question",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Quiz me pls",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can you check what I've remembered?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Is there anything I should review?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can you test my understanding of this graph?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "what do you mean by that",
+    "wants_reviews": false,
+    "got": "focus:ped_formula",
+    "as_expected": true
+   },
+   {
+    "message": "Could you quiz me on that last bit again?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Is revision better in the morning or evening?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Can you mark my answer?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "That's due on Friday, can you help me plan the essay?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   }
+  ],
+  "label_always_true": [
+   {
+    "message": "Quiz me on what's due.",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "quiz me",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can you test me on my reviews?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "What should I revise?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "do my reviews",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Let's do some revision",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Test me!",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "What's due today?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "anything due?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can we go through my reviews please",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "what needs revising",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "help me revise",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "quiz me on stuff I've done before",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "I want to revise, what should I work on?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "drill me on older topics",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Time for a revision session",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "start my reviews",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Give me some practice questions on what\u2019s due",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can you explain that again?",
+    "wants_reviews": false,
+    "got": "review",
+    "as_expected": false
+   },
+   {
+    "message": "Quiz me on this",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "test me on what we just did",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "How should I revise for the exam?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "I did my revision yesterday but I still don't get it",
+    "wants_reviews": false,
+    "got": "review",
+    "as_expected": false
+   },
+   {
+    "message": "What is due to the fall in supply?",
+    "wants_reviews": false,
+    "got": "focus:-",
+    "as_expected": true
+   },
+   {
+    "message": "Is my review of this article right?",
+    "wants_reviews": false,
+    "got": "focus:-,ail_ask",
+    "as_expected": true
+   },
+   {
+    "message": "Can you check my working?",
+    "wants_reviews": false,
+    "got": "review",
+    "as_expected": false
+   },
+   {
+    "message": "Quiz me on price elasticity of demand",
+    "wants_reviews": false,
+    "got": "focus:-",
+    "as_expected": true
+   },
+   {
+    "message": "How do my reviews work?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Why is that the answer?",
+    "wants_reviews": false,
+    "got": "review",
+    "as_expected": false
+   },
+   {
+    "message": "Give me another example",
+    "wants_reviews": false,
+    "got": "focus:ped_values",
+    "as_expected": true
+   },
+   {
+    "message": "Ask me some questions on the old stuff",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "can you give me my spaced repetition questions",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "What have I forgotten?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "I've got 10 minutes, test me on something",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Let's practise what I learned last week",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Which topics should I go over today?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "hit me with a review question",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Quiz me pls",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can you check what I've remembered?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Is there anything I should review?",
+    "wants_reviews": true,
+    "got": "review",
+    "as_expected": true
+   },
+   {
+    "message": "Can you test my understanding of this graph?",
+    "wants_reviews": false,
+    "got": "review",
+    "as_expected": false
+   },
+   {
+    "message": "what do you mean by that",
+    "wants_reviews": false,
+    "got": "focus:ped_formula",
+    "as_expected": true
+   },
+   {
+    "message": "Could you quiz me on that last bit again?",
+    "wants_reviews": false,
+    "got": "focus:yed_definition",
+    "as_expected": true
+   },
+   {
+    "message": "Is revision better in the morning or evening?",
+    "wants_reviews": false,
+    "got": "review",
+    "as_expected": false
+   },
+   {
+    "message": "Can you mark my answer?",
+    "wants_reviews": false,
+    "got": "review",
+    "as_expected": false
+   },
+   {
+    "message": "That's due on Friday, can you help me plan the essay?",
+    "wants_reviews": false,
+    "got": "review",
+    "as_expected": false
+   }
+  ]
+ }
+}

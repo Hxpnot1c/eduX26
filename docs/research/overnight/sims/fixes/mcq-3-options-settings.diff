@@ -1,0 +1,20 @@
+--- rows/settings.toml	2026-11-18 02:09:21.747976997 +0000
++++ rows3/settings.toml	2026-11-18 02:09:43.371238471 +0000
+@@ -16,7 +16,7 @@
+ review = { slip = 0.10, guess = 0.15 }
+ find_error = { slip = 0.15, guess = 0.25 }
+ prequestion = { slip = 0.20, guess = 0.20 }
+-mcq_check = { slip = 0.10, guess = 0.25 }   # a multiple-choice check, prerequisite check or review (step 05d); guess about 1 in 4
++mcq_check = { slip = 0.10, guess = 0.33 }   # a multiple-choice check, prerequisite check or review (step 05d); guess about 1 in 4
+ extend = { slip = 0.10, guess = 0.10 }      # an answer to a harder, extending question
+ immediate = { slip = 0.10, guess = 0.30 }   # chat evidence straight after a worked example or hint
+ ail_question = { slip = 0.15, guess = 0.20 }     # a research question, scored by its features (step 05e)
+@@ -88,7 +88,7 @@
+ warn_max = 4               # and above this many
+ 
+ [mcq]                      # server-built multiple-choice questions (step 05d)
+-max_options = 4            # the correct option plus up to this many minus one misconceptions
++max_options = 3            # the correct option plus up to this many minus one misconceptions
+ min_distractors = 2        # fewer misconceptions than this: the chatbot may write one more option
+ 
+ [literacy]                 # AI-literacy coaching (step 05e)

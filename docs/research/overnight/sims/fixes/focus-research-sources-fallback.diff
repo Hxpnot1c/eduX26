@@ -1,0 +1,12 @@
+--- a/edux/plan.py	2026-11-18 02:03:41.189370177 +0000
++++ b/edux/plan.py	2026-11-18 02:17:16.507264142 +0000
+@@ -615,7 +615,8 @@
+ def research(turn: Turn, blocks: dict, settings: Settings, features: list[str]) -> list[dict]:
+     """A research question (a factual or current question about the world): answer_with_sources, never withheld,
+     with the pack's trusted sources for the focus and its topic, then literacy_task."""
+-    near = turn.parts or [c["id"] for c in turn.resolution.get("candidates") or []]
++    # a question that names no part of the course still gets the pack's sources for its topics, in pack order
++    near = turn.parts or [c["id"] for c in turn.resolution.get("candidates") or []] or [t["id"] for t in graph.topics()]
+     sources = graph.trusted_sources(near, turn.limits.get("trusted_sources", 3))
+     task = literacy_task(turn, blocks, settings, features)
+     return [_step("answer_with_sources", None, {"trusted_sources": sources})] + ([task] if task else [])

@@ -1,0 +1,113 @@
+diff -ru '--exclude=__pycache__' code/edux/learner.py c12/edux/learner.py
+--- code/edux/learner.py	2026-11-18 02:47:05.058372027 +0000
++++ c12/edux/learner.py	2026-11-18 02:59:15.323582394 +0000
+@@ -241,11 +241,20 @@
+     return {"part_id": AIL_ASK, "type": "ail_question", "score": len(shown) / len(QUESTION_FEATURES), "misconception_ids": []}
+ 
+ 
+-def found_problem(kind: str = "ail_task", points_met: list[str] | None = None) -> dict:
+-    """Verify evidence for a reported dead or mismatched source (step 05e): finding the problem is a successful
+-    check, so it scores 1 whatever was ticked (a dead page has no publisher, date or figure to tick)."""
+-    return {"part_id": AIL_VERIFY, "type": kind, "score": 1.0, "misconception_ids": [],
+-            "points_met": list(points_met or [])}
++def found_problem(kind: str = "ail_task", points_met: list[str] | None = None) -> dict | None:
++    """Verify evidence for a reported dead or mismatched source (step 05e). The report itself counts as opening the
++    source and saying whether it matched (the first and last verify points); what else they say they found (who
++    published it and when, what the page shows) is ticked as usual. A bare report, with nothing ticked beyond
++    those two, is no evidence (None): it can't be told apart from a made-up one, so it must not pay more than a
++    real check."""
++    points = [p["id"] for p in graph.score_points(AIL_VERIFY)]
++    given = {graph.canonical(p) for p in points_met or []}
++    auto = {points[0], points[-1]}
++    if not given - auto:
++        return None
++    met = [p for p in points if p in given | auto]
++    return {"part_id": AIL_VERIFY, "type": kind, "score": len(met) / len(points), "misconception_ids": [],
++            "points_met": met}
+ 
+ 
+ def record_skip(student_id: str, part_id: str, ts: str | None = None) -> None:
+@@ -698,13 +707,17 @@
+         slip_add = _settings().session.fatigue_slip_add if fatigued else 0.0
+         if part_id == AIL_VERIFY and correct:   # Verify is graded: 3 of 4 ticks moves it 3/4 as far as 4 of 4
+             weight *= event["score"]
+-        _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts, weight=weight, slip_add=slip_add)
++        # recall straight after being shown or hinted (immediate) can't make a part secure on its own: secure needs a
++        # check outside the immediate window (a review, or a later session)
++        cap = s.levels.secure - 0.01 if evidence_type == "immediate" else None
++        _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts, weight=weight, slip_add=slip_add, cap=cap)
+ 
+ 
+ def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, evidence_type: str, correct: bool, ts: str,
+-                    weight: float = 1.0, slip_add: float = 0.0) -> None:
++                    weight: float = 1.0, slip_add: float = 0.0, cap: float | None = None) -> None:
+     """The BKT update on one part; weight (0–1) scales how far p_known moves towards the BKT result.
+-    slip_add raises slip (capped at session.slip_cap) while the session is fatigued."""
++    slip_add raises slip (capped at session.slip_cap) while the session is fatigued. cap: p_known rises no higher
++    than this (or than where it was), for immediate recall."""
+     s = _settings()
+     if evidence_type not in s.bkt.evidence:
+         raise ValueError(f"evidence_type must be one of {', '.join(s.bkt.evidence)}")
+@@ -725,6 +738,8 @@
+         p = before * slip / (before * slip + (1 - before) * (1 - guess))
+     p += (1 - p) * s.bkt.learn_rate
+     p = before + weight * (p - before)
++    if cap is not None and p > cap:
++        p = max(before, cap)
+ 
+     factor = s.decay.on_success if correct else s.decay.on_failure
+     state["half_life_days"] = max(s.decay.min_half_life_days, state["half_life_days"] * factor)
+Only in c12/edux: learner.py.orig
+diff -ru '--exclude=__pycache__' code/edux/service.py c12/edux/service.py
+--- code/edux/service.py	2026-11-18 02:47:05.057619360 +0000
++++ c12/edux/service.py	2026-11-18 03:11:32.338136219 +0000
+@@ -125,7 +125,7 @@
+ 
+ def _found_problem(last: dict, evidence: dict | None, at: str) -> dict | None:
+     """The student reported a dead or mismatched source (source_conflict) as a Verify answer, or while a verify task
+-    is pending this session: finding the problem is a successful check (learner.found_problem), always as ail_task
++    is pending this session: scored by learner.found_problem (None for a bare report), always as ail_task
+     so that one report can't make Verify secure (ail_unprompted's low slip would). Any other answer is kept as it
+     is, and a report with no verify task or answer is left to the how-AI-works check."""
+     if evidence is not None:
+@@ -140,7 +140,7 @@
+ 
+ 
+ def _literacy_followup(student_id: str, last: dict, steps: list[dict], evidence: dict | None, request: str,
+-                       at: str) -> tuple[list[dict], dict | None]:
++                       at: str, reported: bool = False) -> tuple[list[dict], dict | None]:
+     """Follow up the literacy task set last turn (step 05e); returns (steps, the task still pending).
+ 
+     The task is done when a verify task is answered (ail_task) or, for an ask task, when this message is a research
+@@ -156,7 +156,7 @@
+     if task and last["ts"] is not None:
+         task = {"waited": 0, **task}
+         gap = (learner.parse_ts(at) - learner.parse_ts(last["ts"])).total_seconds() / 60
+-        done = ((task["skill"] == "verify" and evidence is not None and evidence["type"] == "ail_task")
++        done = ((task["skill"] == "verify" and (reported or (evidence is not None and evidence["type"] == "ail_task")))
+                 or (task["skill"] == "ask" and request == "research"))
+         how_parts = set(graph.parts_of(learner.AIL_HOW))
+         has_room = not any(plan.is_stop(step) for step in steps) and len(steps) < plan.MAX_STEPS
+@@ -383,8 +383,11 @@
+     recorded = ([evidence] if evidence else []) + (
+         [learner.question_evidence(this_message.get("question_features"))]
+         if this_message.get("request_type") == "research" else [])
+-    literacy_answer = bool(evidence and evidence["type"] in learner.LITERACY_ANSWERS)
++    literacy_answer = bool((evidence and evidence["type"] in learner.LITERACY_ANSWERS)
++                           or (answer and answer.get("type") in learner.LITERACY_ANSWERS))
+     tagged = list(dict.fromkeys([e["part_id"] for e in recorded] + ([] if side_turn else resolution["parts"])))
++    if this_message.get("source_conflict") and not tagged:   # a bare report: no evidence, but the exchange is logged
++        tagged = [learner.AIL_VERIFY]
+     if tagged and not lost:
+         try:
+             learner.record_exchange(student["id"], tagged, depth, engagement, choice == "just_show_me",
+@@ -426,7 +429,8 @@
+     how, literacy, course_steps = None, None, steps
+     if config.plan:
+         steps, how = _how_ai_works(turn, blocks, last, steps, evidence, this_message)
+-        steps, literacy = _literacy_followup(student["id"], last, steps, evidence, request, at)
++        steps, literacy = _literacy_followup(student["id"], last, steps, evidence, request, at,
++                                             reported=bool(this_message.get("source_conflict")))
+         _unchecked(course_steps, steps, points)
+     current_style = style(student, client)
+     send_style = _style_due(last, current_style, at)

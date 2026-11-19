@@ -1,0 +1,12 @@
+diff -ru '--exclude=__pycache__' code/settings.toml c1s/settings.toml
+--- code/settings.toml	2026-11-18 02:47:05.056839406 +0000
++++ c1s/settings.toml	2026-11-18 02:58:55.226840418 +0000
+@@ -18,7 +18,7 @@
+ prequestion = { slip = 0.20, guess = 0.20 }
+ mcq_check = { slip = 0.10, guess = 0.25 }   # a multiple-choice check, prerequisite check or review (step 05d); guess about 1 in 4
+ extend = { slip = 0.10, guess = 0.10 }      # an answer to a harder, extending question
+-immediate = { slip = 0.10, guess = 0.30 }   # chat evidence straight after a worked example or hint
++immediate = { slip = 0.10, guess = 0.60 }   # chat evidence straight after a worked example or hint
+ ail_question = { slip = 0.15, guess = 0.20 }     # a research question, scored by its features (step 05e)
+ ail_task = { slip = 0.10, guess = 0.15 }         # the answer to a verify task (a reported dead or mismatched source scores 1)
+ ail_unprompted = { slip = 0.05, guess = 0.10 }   # checking a claim without being asked: counts more

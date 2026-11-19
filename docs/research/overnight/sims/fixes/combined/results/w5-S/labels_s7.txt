@@ -1,0 +1,10 @@
+verify                 concept   ev=[('ail_verify', 'ail_task', 0.75)] steps=[['ask_mcq', 'tax_incidence_split']] focus=['tax_incidence_split'] task=None logged=concept
+verify                 other     ev=[('ail_verify', 'ail_task', 0.75)] steps=[] focus=[] task=None logged=other
+verify                 research  ev=[('ail_verify', 'ail_task', 0.75), ('ail_ask', 'ail_question', 0.0)] steps=[['answer_with_sources', None], ['literacy_task', 'ail_ask']] focus=[] task=ask logged=research
+verify_courseword      concept   ev=[('ail_verify', 'ail_task', 0.75)] steps=[['ask_mcq', 'ped_formula']] focus=['ped_formula', 'ped_values', 'ped_definition'] task=None logged=concept
+verify_courseword      other     ev=[('ail_verify', 'ail_task', 0.75)] steps=[] focus=[] task=None logged=other
+verify_courseword      research  ev=[('ail_verify', 'ail_task', 0.75), ('ail_ask', 'ail_question', 0.0)] steps=[['answer_with_sources', None], ['literacy_task', 'ail_ask']] focus=[] task=ask logged=research
+verify_no_answer_obj   research  ev=[('ail_ask', 'ail_question', 0.0)] steps=[['answer_with_sources', None], ['literacy_task', 'ail_ask']] focus=[] task=ask logged=research
+verify_plus_question   research  ev=[('ail_verify', 'ail_task', 0.75), ('ail_ask', 'ail_question', 1.0)] steps=[['answer_with_sources', None], ['literacy_task', 'ail_verify']] focus=[] task=verify logged=research
+course_answer          research  ev=[('ped_definition', 'prequestion', 1.0), ('ail_ask', 'ail_question', 0.0)] steps=[['feedback', 'ped_definition'], ['teach_point', 'ped_definition'], ['ask_mcq', 'ped_definition']] focus=['ped_definition'] task=None logged=research
+course_answer          concept   ev=[('ped_definition', 'prequestion', 1.0)] steps=[['feedback', 'ped_definition'], ['teach_point', 'ped_definition'], ['ask_mcq', 'ped_definition']] focus=['ped_definition'] task=None logged=concept

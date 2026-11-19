@@ -1,0 +1,684 @@
+{
+ "grid": [
+  {
+   "msgs_week": 5,
+   "weeks": 20,
+   "credits_per_msg": 5,
+   "credits": 500.0,
+   "microsoft": 3.75,
+   "edux": 5.0,
+   "total": 8.75,
+   "ms_share": 0.42857142857142855,
+   "ms_over_edux": 0.75
+  },
+  {
+   "msgs_week": 5,
+   "weeks": 20,
+   "credits_per_msg": 7,
+   "credits": 700.0,
+   "microsoft": 5.25,
+   "edux": 5.0,
+   "total": 10.25,
+   "ms_share": 0.5121951219512195,
+   "ms_over_edux": 1.05
+  },
+  {
+   "msgs_week": 5,
+   "weeks": 20,
+   "credits_per_msg": 12,
+   "credits": 1200.0,
+   "microsoft": 9.0,
+   "edux": 5.0,
+   "total": 14.0,
+   "ms_share": 0.6428571428571429,
+   "ms_over_edux": 1.8
+  },
+  {
+   "msgs_week": 5,
+   "weeks": 30,
+   "credits_per_msg": 5,
+   "credits": 750.0,
+   "microsoft": 5.625,
+   "edux": 5.0,
+   "total": 10.625,
+   "ms_share": 0.5294117647058824,
+   "ms_over_edux": 1.125
+  },
+  {
+   "msgs_week": 5,
+   "weeks": 30,
+   "credits_per_msg": 7,
+   "credits": 1050.0,
+   "microsoft": 7.875,
+   "edux": 5.0,
+   "total": 12.875,
+   "ms_share": 0.6116504854368932,
+   "ms_over_edux": 1.575
+  },
+  {
+   "msgs_week": 5,
+   "weeks": 30,
+   "credits_per_msg": 12,
+   "credits": 1800.0,
+   "microsoft": 13.5,
+   "edux": 5.0,
+   "total": 18.5,
+   "ms_share": 0.7297297297297297,
+   "ms_over_edux": 2.7
+  },
+  {
+   "msgs_week": 5,
+   "weeks": 38,
+   "credits_per_msg": 5,
+   "credits": 950.0,
+   "microsoft": 7.125,
+   "edux": 5.0,
+   "total": 12.125,
+   "ms_share": 0.5876288659793815,
+   "ms_over_edux": 1.425
+  },
+  {
+   "msgs_week": 5,
+   "weeks": 38,
+   "credits_per_msg": 7,
+   "credits": 1330.0,
+   "microsoft": 9.975,
+   "edux": 5.0,
+   "total": 14.975,
+   "ms_share": 0.666110183639399,
+   "ms_over_edux": 1.9949999999999999
+  },
+  {
+   "msgs_week": 5,
+   "weeks": 38,
+   "credits_per_msg": 12,
+   "credits": 2280.0,
+   "microsoft": 17.099999999999998,
+   "edux": 5.0,
+   "total": 22.099999999999998,
+   "ms_share": 0.7737556561085973,
+   "ms_over_edux": 3.4199999999999995
+  },
+  {
+   "msgs_week": 10,
+   "weeks": 20,
+   "credits_per_msg": 5,
+   "credits": 1000.0,
+   "microsoft": 7.5,
+   "edux": 5.0,
+   "total": 12.5,
+   "ms_share": 0.6,
+   "ms_over_edux": 1.5
+  },
+  {
+   "msgs_week": 10,
+   "weeks": 20,
+   "credits_per_msg": 7,
+   "credits": 1400.0,
+   "microsoft": 10.5,
+   "edux": 5.0,
+   "total": 15.5,
+   "ms_share": 0.6774193548387096,
+   "ms_over_edux": 2.1
+  },
+  {
+   "msgs_week": 10,
+   "weeks": 20,
+   "credits_per_msg": 12,
+   "credits": 2400.0,
+   "microsoft": 18.0,
+   "edux": 5.0,
+   "total": 23.0,
+   "ms_share": 0.782608695652174,
+   "ms_over_edux": 3.6
+  },
+  {
+   "msgs_week": 10,
+   "weeks": 30,
+   "credits_per_msg": 5,
+   "credits": 1500.0,
+   "microsoft": 11.25,
+   "edux": 5.0,
+   "total": 16.25,
+   "ms_share": 0.6923076923076923,
+   "ms_over_edux": 2.25
+  },
+  {
+   "msgs_week": 10,
+   "weeks": 30,
+   "credits_per_msg": 7,
+   "credits": 2100.0,
+   "microsoft": 15.75,
+   "edux": 5.0,
+   "total": 20.75,
+   "ms_share": 0.7590361445783133,
+   "ms_over_edux": 3.15
+  },
+  {
+   "msgs_week": 10,
+   "weeks": 30,
+   "credits_per_msg": 12,
+   "credits": 3600.0,
+   "microsoft": 27.0,
+   "edux": 5.0,
+   "total": 32.0,
+   "ms_share": 0.84375,
+   "ms_over_edux": 5.4
+  },
+  {
+   "msgs_week": 10,
+   "weeks": 38,
+   "credits_per_msg": 5,
+   "credits": 1900.0,
+   "microsoft": 14.25,
+   "edux": 5.0,
+   "total": 19.25,
+   "ms_share": 0.7402597402597403,
+   "ms_over_edux": 2.85
+  },
+  {
+   "msgs_week": 10,
+   "weeks": 38,
+   "credits_per_msg": 7,
+   "credits": 2660.0,
+   "microsoft": 19.95,
+   "edux": 5.0,
+   "total": 24.95,
+   "ms_share": 0.7995991983967936,
+   "ms_over_edux": 3.9899999999999998
+  },
+  {
+   "msgs_week": 10,
+   "weeks": 38,
+   "credits_per_msg": 12,
+   "credits": 4560.0,
+   "microsoft": 34.199999999999996,
+   "edux": 5.0,
+   "total": 39.199999999999996,
+   "ms_share": 0.8724489795918368,
+   "ms_over_edux": 6.839999999999999
+  },
+  {
+   "msgs_week": 20,
+   "weeks": 20,
+   "credits_per_msg": 5,
+   "credits": 2000.0,
+   "microsoft": 15.0,
+   "edux": 5.0,
+   "total": 20.0,
+   "ms_share": 0.75,
+   "ms_over_edux": 3.0
+  },
+  {
+   "msgs_week": 20,
+   "weeks": 20,
+   "credits_per_msg": 7,
+   "credits": 2800.0,
+   "microsoft": 21.0,
+   "edux": 5.0,
+   "total": 26.0,
+   "ms_share": 0.8076923076923077,
+   "ms_over_edux": 4.2
+  },
+  {
+   "msgs_week": 20,
+   "weeks": 20,
+   "credits_per_msg": 12,
+   "credits": 4800.0,
+   "microsoft": 36.0,
+   "edux": 5.0,
+   "total": 41.0,
+   "ms_share": 0.8780487804878049,
+   "ms_over_edux": 7.2
+  },
+  {
+   "msgs_week": 20,
+   "weeks": 30,
+   "credits_per_msg": 5,
+   "credits": 3000.0,
+   "microsoft": 22.5,
+   "edux": 5.0,
+   "total": 27.5,
+   "ms_share": 0.8181818181818182,
+   "ms_over_edux": 4.5
+  },
+  {
+   "msgs_week": 20,
+   "weeks": 30,
+   "credits_per_msg": 7,
+   "credits": 4200.0,
+   "microsoft": 31.5,
+   "edux": 5.0,
+   "total": 36.5,
+   "ms_share": 0.863013698630137,
+   "ms_over_edux": 6.3
+  },
+  {
+   "msgs_week": 20,
+   "weeks": 30,
+   "credits_per_msg": 12,
+   "credits": 7200.0,
+   "microsoft": 54.0,
+   "edux": 5.0,
+   "total": 59.0,
+   "ms_share": 0.9152542372881356,
+   "ms_over_edux": 10.8
+  },
+  {
+   "msgs_week": 20,
+   "weeks": 38,
+   "credits_per_msg": 5,
+   "credits": 3800.0,
+   "microsoft": 28.5,
+   "edux": 5.0,
+   "total": 33.5,
+   "ms_share": 0.8507462686567164,
+   "ms_over_edux": 5.7
+  },
+  {
+   "msgs_week": 20,
+   "weeks": 38,
+   "credits_per_msg": 7,
+   "credits": 5320.0,
+   "microsoft": 39.9,
+   "edux": 5.0,
+   "total": 44.9,
+   "ms_share": 0.888641425389755,
+   "ms_over_edux": 7.9799999999999995
+  },
+  {
+   "msgs_week": 20,
+   "weeks": 38,
+   "credits_per_msg": 12,
+   "credits": 9120.0,
+   "microsoft": 68.39999999999999,
+   "edux": 5.0,
+   "total": 73.39999999999999,
+   "ms_share": 0.9318801089918256,
+   "ms_over_edux": 13.679999999999998
+  },
+  {
+   "msgs_week": 40,
+   "weeks": 20,
+   "credits_per_msg": 5,
+   "credits": 4000.0,
+   "microsoft": 30.0,
+   "edux": 5.0,
+   "total": 35.0,
+   "ms_share": 0.8571428571428571,
+   "ms_over_edux": 6.0
+  },
+  {
+   "msgs_week": 40,
+   "weeks": 20,
+   "credits_per_msg": 7,
+   "credits": 5600.0,
+   "microsoft": 42.0,
+   "edux": 5.0,
+   "total": 47.0,
+   "ms_share": 0.8936170212765957,
+   "ms_over_edux": 8.4
+  },
+  {
+   "msgs_week": 40,
+   "weeks": 20,
+   "credits_per_msg": 12,
+   "credits": 9600.0,
+   "microsoft": 72.0,
+   "edux": 5.0,
+   "total": 77.0,
+   "ms_share": 0.935064935064935,
+   "ms_over_edux": 14.4
+  },
+  {
+   "msgs_week": 40,
+   "weeks": 30,
+   "credits_per_msg": 5,
+   "credits": 6000.0,
+   "microsoft": 45.0,
+   "edux": 5.0,
+   "total": 50.0,
+   "ms_share": 0.9,
+   "ms_over_edux": 9.0
+  },
+  {
+   "msgs_week": 40,
+   "weeks": 30,
+   "credits_per_msg": 7,
+   "credits": 8400.0,
+   "microsoft": 63.0,
+   "edux": 5.0,
+   "total": 68.0,
+   "ms_share": 0.9264705882352942,
+   "ms_over_edux": 12.6
+  },
+  {
+   "msgs_week": 40,
+   "weeks": 30,
+   "credits_per_msg": 12,
+   "credits": 14400.0,
+   "microsoft": 108.0,
+   "edux": 5.0,
+   "total": 113.0,
+   "ms_share": 0.9557522123893806,
+   "ms_over_edux": 21.6
+  },
+  {
+   "msgs_week": 40,
+   "weeks": 38,
+   "credits_per_msg": 5,
+   "credits": 7600.0,
+   "microsoft": 57.0,
+   "edux": 5.0,
+   "total": 62.0,
+   "ms_share": 0.9193548387096774,
+   "ms_over_edux": 11.4
+  },
+  {
+   "msgs_week": 40,
+   "weeks": 38,
+   "credits_per_msg": 7,
+   "credits": 10640.0,
+   "microsoft": 79.8,
+   "edux": 5.0,
+   "total": 84.8,
+   "ms_share": 0.9410377358490566,
+   "ms_over_edux": 15.959999999999999
+  },
+  {
+   "msgs_week": 40,
+   "weeks": 38,
+   "credits_per_msg": 12,
+   "credits": 18240.0,
+   "microsoft": 136.79999999999998,
+   "edux": 5.0,
+   "total": 141.79999999999998,
+   "ms_share": 0.9647390691114245,
+   "ms_over_edux": 27.359999999999996
+  }
+ ],
+ "central": {
+  "credits": 3000.0,
+  "microsoft": 22.5,
+  "edux": 5.0,
+  "total": 27.5,
+  "ms_share": 0.8181818181818182,
+  "ms_over_edux": 4.5
+ },
+ "break_even": {
+  "gbp_per_call": 0.0375,
+  "calls_where_ms_equals_licence_5": 133.33333333333334,
+  "calls_where_ms_equals_licence_3": 80.0,
+  "calls_for_total_le_sparx_high_with_free_licence": 74.66666666666667,
+  "calls_for_total_le_sparx_high_with_3_licence": 0.0,
+  "max_calls_per_year_for_total_budget": {
+   "10": {
+    "0": 266.6666666666667,
+    "3": 186.66666666666669,
+    "5": 133.33333333333334
+   },
+   "15": {
+    "0": 400.0,
+    "3": 320.0,
+    "5": 266.6666666666667
+   },
+   "20": {
+    "0": 533.3333333333334,
+    "3": 453.33333333333337,
+    "5": 400.0
+   },
+   "30": {
+    "0": 800.0,
+    "3": 720.0,
+    "5": 666.6666666666667
+   }
+  }
+ },
+ "credit_price": {
+  "payg": 0.0075,
+  "prepurchase_best": 0.006,
+  "pack_full": 0.006152,
+  "pack_breakeven_fill_vs_payg": 0.8202666666666667,
+  "active_months_central": 6.923076923076923,
+  "credits_per_student_month_central": 433.3333333333333,
+  "students_to_fill_one_pack_central": 57.69230769230769,
+  "students_to_reach_pack_breakeven": 47.323076923076925,
+  "central_ms_cost_by_price": {
+   "PAYG": {
+    "gbp_per_credit": 0.0075,
+    "ms_per_student": 22.5
+   },
+   "pre-purchase \u221220% (best case)": {
+    "gbp_per_credit": 0.006,
+    "ms_per_student": 18.0
+   },
+   "pack 100% used": {
+    "gbp_per_credit": 0.006152,
+    "ms_per_student": 18.456
+   },
+   "pack 82% used": {
+    "gbp_per_credit": 0.007502439024390245,
+    "ms_per_student": 22.507317073170736
+   },
+   "pack 60% used": {
+    "gbp_per_credit": 0.010253333333333335,
+    "ms_per_student": 30.760000000000005
+   },
+   "pack 40% used": {
+    "gbp_per_credit": 0.015380000000000001,
+    "ms_per_student": 46.14
+   }
+  }
+ },
+ "licensed_share_total": {
+  "0.0": 27.5,
+  "0.1": 25.25,
+  "0.25": 21.875,
+  "0.5": 16.25,
+  "1.0": 5.0
+ },
+ "comparators": {
+  "sparx_per_pupil": [
+   1.8,
+   2.8
+  ],
+  "century_essex_per_year_inc_vat": 22950.0,
+  "century_essex_per_year_ex_vat_at_20pc": 19125.0,
+  "seneca_school_sync_per_school": 646,
+  "seneca_per_pupil_at_600_or_more": 1.0766666666666667,
+  "khanmigo_gbp_at_azure_rate": 33.0,
+  "edux_central_total_share_of_ict_per_pupil": 0.21484375,
+  "edux_central_vs_sparx_high": 9.821428571428571
+ },
+ "message_mix": {
+  "mix": {
+   "opening": 10.126582278481012,
+   "intuition_answer": 10.126582278481012,
+   "check_answer": 30.379746835443036,
+   "recheck_answer": 9.11392405063291,
+   "explain_back_answer": 10.126582278481012,
+   "midloop_question": 10.126582278481012,
+   "research": 10.0,
+   "off_course": 10.0
+  },
+  "per_part": {
+   "opening": 1,
+   "intuition_answer": 1,
+   "check_answer": 3,
+   "recheck_answer": 0.8999999999999999,
+   "explain_back_answer": 1,
+   "midloop_question": 1.0
+  },
+  "msgs_per_part": 7.9,
+  "extra_calls": 3.0,
+  "retry_calls": 3.0
+ },
+ "options": [
+  {
+   "option": "A. no call on off-course turns (chit-chat, thanks)",
+   "skip_msgs": 10.0,
+   "evidence_lost": "session timing events only; no scored evidence",
+   "fidelity_risk": "low",
+   "credits_0": 480.0,
+   "credits_2": 500.0,
+   "saving_0": 0.09433962264150941,
+   "saving_2": 0.05660377358490565
+  },
+  {
+   "option": "A+. also no call on research turns (main-branch 'about the course' wording)",
+   "skip_msgs": 20.0,
+   "evidence_lost": "every Ask item and the Verify tasks: all AI-literacy evidence (05e)",
+   "fidelity_risk": "fatal to the AI-literacy claim",
+   "credits_0": 430.0,
+   "credits_2": 470.0,
+   "saving_0": 0.18867924528301883,
+   "saving_2": 0.1132075471698113
+  },
+  {
+   "option": "B. no call on mid-loop questions (chatbot answers briefly, re-asks the pending question)",
+   "skip_msgs": 10.126582278481012,
+   "evidence_lost": "question_depth/engagement labels on those messages (trends); fatigue and stuck checks run one turn later",
+   "fidelity_risk": "low-medium",
+   "credits_0": 479.36708860759495,
+   "credits_2": 499.62025316455697,
+   "saving_0": 0.09553379508000948,
+   "saving_2": 0.057320277048005686
+  },
+  {
+   "option": "C. pre-branched plan: next step for each MCQ letter returned in advance (lookahead 1)",
+   "skip_msgs": 25.84345130457246,
+   "evidence_lost": "none lost; scored one turn later. The answer key and both branches reach the chatbot before the student answers",
+   "fidelity_risk": "medium (integrity; fatigue/stuck one turn late; result ~2x larger)",
+   "credits_0": 400.7827434771377,
+   "credits_2": 452.46964608628264,
+   "saving_0": 0.24380614438275905,
+   "saving_2": 0.1462836866296554
+  },
+  {
+   "option": "C3. session plan every 3 MCQ answers (lookahead 2; 4 leaves)",
+   "skip_msgs": 26.805708591884176,
+   "evidence_lost": "as C, up to two turns late; reteach choice made from a stale model",
+   "fidelity_risk": "medium-high",
+   "credits_0": 395.9714570405791,
+   "credits_2": 449.58287422434745,
+   "saving_0": 0.2528840433196621,
+   "saving_2": 0.1517304259917973
+  },
+  {
+   "option": "D. fewer calls during explanation steps",
+   "skip_msgs": 0.0,
+   "evidence_lost": "-",
+   "fidelity_risk": "-",
+   "credits_0": 530.0,
+   "credits_2": 530.0,
+   "saving_0": 0.0,
+   "saving_2": 0.0
+  },
+  {
+   "option": "E. cut schema retries from 3% to 1% (simpler labels, examples in tool text)",
+   "skip_msgs": 0.0,
+   "skip_calls": 2.0,
+   "evidence_lost": "none",
+   "fidelity_risk": "none",
+   "credits_0": 520.0,
+   "credits_2": 520.0,
+   "saving_0": 0.018867924528301883,
+   "saving_2": 0.018867924528301883
+  },
+  {
+   "option": "A+B+E (no integrity cost)",
+   "skip_msgs": 20.12658227848101,
+   "credits_0": 419.36708860759495,
+   "credits_2": 459.62025316455697,
+   "saving_0": 0.20874134224982088,
+   "saving_2": 0.13279197516121322
+  },
+  {
+   "option": "A+B+C+E",
+   "skip_msgs": 45.97003358305347,
+   "credits_0": 290.1498320847326,
+   "credits_2": 382.08989925083955,
+   "saving_0": 0.45254748663257993,
+   "saving_2": 0.27907566179086873
+  }
+ ],
+ "packages_central": {
+  "baseline (05e)": {
+   "ms_0": 23.849999999999998,
+   "ms_2": 23.849999999999998
+  },
+  "A+B+E (no integrity cost)": {
+   "ms_0": 18.871518987341773,
+   "ms_2": 20.682911392405064
+  },
+  "A+B+C+E": {
+   "ms_0": 13.056742443812967,
+   "ms_2": 17.19404546628778
+  }
+ },
+ "sensitivity": [
+  {
+   "k": 2,
+   "p": 0.3,
+   "q": 1,
+   "research": 0.1,
+   "off": 0.1,
+   "AB_E": 0.1440823327615781,
+   "ABC_E": 0.27711072994091857
+  },
+  {
+   "k": 4,
+   "p": 0.3,
+   "q": 1,
+   "research": 0.1,
+   "off": 0.1,
+   "AB_E": 0.12469237079573425,
+   "ABC_E": 0.2812458651988674
+  },
+  {
+   "k": 3,
+   "p": 0.1,
+   "q": 0.5,
+   "research": 0.1,
+   "off": 0.05,
+   "AB_E": 0.08254716981132071,
+   "ABC_E": 0.25468594836146974
+  },
+  {
+   "k": 3,
+   "p": 0.5,
+   "q": 2,
+   "research": 0.1,
+   "off": 0.1,
+   "AB_E": 0.17080436941410126,
+   "ABC_E": 0.29272018944312883
+  },
+  {
+   "k": 3,
+   "p": 0.3,
+   "q": 1,
+   "research": 0.25,
+   "off": 0.1,
+   "AB_E": 0.1220444232147122,
+   "ABC_E": 0.2408999186013071
+  },
+  {
+   "k": 3,
+   "p": 0.3,
+   "q": 1,
+   "research": 0.05,
+   "off": 0.25,
+   "AB_E": 0.2105326009075711,
+   "ABC_E": 0.3385308267085195
+  },
+  {
+   "k": 3,
+   "p": 0.3,
+   "q": 3,
+   "research": 0.1,
+   "off": 0.1,
+   "AB_E": 0.21269296740994859,
+   "ABC_E": 0.3088472916200561
+  }
+ ]
+}

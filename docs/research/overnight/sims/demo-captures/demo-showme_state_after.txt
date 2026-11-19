@@ -1,0 +1,13 @@
+session: started 2026-11-17 23:50, 0 min | 2 evidence | rolling surprise +0.32 | just-show-me 0%, surface 0%
+part                     level      p_now p_known half-life checks chats  last correct review due
+Elasticities (topic): 0.50
+  ped_definition         secure      0.99    0.99     76.8d     11     0  2026-11-14   2026-12-22 18:27 (scheduled)
+  ped_formula            developing  0.56    0.56      2.0d      2     0  2026-11-17   2026-12-25 05:53 (scheduled)
+  ped_values             new         0.30    0.30      2.0d      0     6  -            2026-11-10 04:02 (just_show_me)
+  pes_definition         new         0.32    0.42      8.0d      8     0  2026-11-14   2026-12-22 18:24 (scheduled)
+  pes_formula            new         0.30       -         -      -     -  -            -
+  yed_definition         new         0.30       -         -      -     -  -            -
+Indirect taxes and market failure (topic): 0.18
+  tax_supply_shift       new         0.01    0.14      1.0d     11     0  2026-11-14   2026-12-22 18:30 (scheduled)
+  tax_incidence_split    new         0.24    0.24      1.6d      0     3  -            2026-11-10 04:24 (just_show_me)
+  externality_tax_eval   new         0.30       -         -      -     -  -            -

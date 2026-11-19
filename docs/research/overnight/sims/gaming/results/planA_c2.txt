@@ -1,0 +1,6 @@
+Plan A takes (sims/demo-05e/run_episode.py, path changed to /tmp/claude-1000/w5-06g/ep/) on the fixed tree (s5 = export + 0001-0005)
+and on c2 (s5 + counter 2). Verify level and p_now after the 4d progress shot:
+  s5 final        developing 0.748   | c2 final        developing 0.636   (4c line states what the page says; answer a,c,d)
+  s5 recommended  developing 0.748   | c2 recommended  developing 0.636
+  s5 clean        developing 0.748   | c2 clean        new        0.300   (bare "the page doesn't exist": no Verify evidence under c2)
+Plan steps identical in all six (answer_with_sources+literacy_task x2, source_conflict+ask_mcq how_ai_works, feedback, progress).

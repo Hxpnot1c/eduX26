@@ -1,0 +1,7 @@
+[s0] resolver: false focus 15/43, false candidates 11/43; genuine resolved right 20/21 (wrong part 1)
+[s0] end to end: saved false focus 15/43; course step in follow-up 15/43; exchange tagged on a course part 15/43; genuine saved right focus 16/21
+   research  n=22  resolver FF 6/17 FC 6/17  saved-bad 7/22 follow-course(none-rows) 6/17  genuine hit 4/5 genuine saved 2/5
+   verify    n= 8  resolver FF 2/8 FC 1/8  saved-bad 2/8 follow-course(none-rows) 2/8  genuine hit 0/0 genuine saved 0/0
+   homework  n=20  resolver FF 2/4 FC 0/4  saved-bad 2/20 follow-course(none-rows) 2/4  genuine hit 16/16 genuine saved 14/16
+   nameword  n= 4  resolver FF 1/4 FC 3/4  saved-bad 1/4 follow-course(none-rows) 1/4  genuine hit 0/0 genuine saved 0/0
+   chat      n=10  resolver FF 4/10 FC 1/10  saved-bad 4/10 follow-course(none-rows) 4/10  genuine hit 0/0 genuine saved 0/0

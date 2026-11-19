@@ -1,0 +1,96 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: eduX wave-6 w6-fix-counters <noreply@example.invalid>
+Date: Wed, 18 Nov 2026 06:00:00 +0000
+Subject: [PATCH] a dead-link report alone reaches Verify developing, not secure
+
+Wave 6 (w6-fix-counters, variant d3). Alternative to 0009: use 0009 or 0009b, never both. Applies on 0008.
+edux/learner.py: a Verify answer on an exchange labelled source_conflict still scores 1 (found_problem unchanged), but
+until the student has one successful check of their own on Verify it can't lift Verify past levels.secure - 0.01.
+text/tools/tutor_turn.md: never tick a point for words that only repeat the chatbot's reply, shown point or citation.
+---
+diff -ruN '--exclude=__pycache__' a/edux/learner.py b/edux/learner.py
+--- a/edux/learner.py	2026-11-18 04:44:27.738771972 +0000
++++ b/edux/learner.py	2026-11-18 04:44:27.740077428 +0000
+@@ -243,7 +243,9 @@
+ 
+ def found_problem(kind: str = "ail_task", points_met: list[str] | None = None) -> dict:
+     """Verify evidence for a reported dead or mismatched source (step 05e): finding the problem is a successful
+-    check, so it scores 1 whatever was ticked (a dead page has no publisher, date or figure to tick)."""
++    check, so it scores 1 whatever was ticked (a dead page has no publisher, date or figure to tick). A report
++    can't be told apart from a made-up one, so apply_evidence_event limits it: until the student has done one
++    successful check of their own on Verify, reports reach developing at most."""
+     return {"part_id": AIL_VERIFY, "type": kind, "score": 1.0, "misconception_ids": [],
+             "points_met": list(points_met or [])}
+ 
+@@ -666,6 +668,21 @@
+     return mean <= s.fatigue_threshold and len({p for p, _ in window}) >= s.fatigue_min_parts
+ 
+ 
++def _reported(conn: sqlite3.Connection, event: dict) -> bool:
++    """The evidence came with an exchange labelled source_conflict (a dead or mismatched source reported)."""
++    row = conn.execute("SELECT source_conflict FROM exchange_log WHERE id = ?", (event.get("exchange_id"),)).fetchone()
++    return bool(row and row["source_conflict"])
++
++
++def _checked_before(conn: sqlite3.Connection, event: dict) -> bool:
++    """The student has done one successful check of their own on Verify: a correct Verify answer that was not a
++    report."""
++    return conn.execute(
++        """SELECT 1 FROM evidence_log e LEFT JOIN exchange_log x ON x.id = e.exchange_id WHERE e.student_id = ?
++           AND e.part_id = ? AND e.id < ? AND e.score >= ? AND COALESCE(x.source_conflict, 0) = 0 LIMIT 1""",
++        (event["student_id"], AIL_VERIFY, event["id"], _settings().bkt.correct_share)).fetchone() is not None
++
++
+ def apply_evidence_event(event: dict) -> None:
+     """Apply one evidence event: score -> correct, the immediate-recall discount for chat evidence,
+     surprise against the model's expectation (stored in evidence_derived), misconception activation
+@@ -684,6 +701,13 @@
+         weight = 1.0
+         if event["origin"] == "chat" and _recently_taught(conn, student_id, part_id, ts):
+             evidence_type = "immediate"
++    cap = None
++    if part_id == AIL_VERIFY and _reported(conn, event):
++        # a reported dead or mismatched source counts as a check (a dead page has nothing else to tick), but it
++        # can't be told apart from a made-up one: until the student has done one successful check of their own on
++        # Verify, reports can't make Verify secure
++        if not _checked_before(conn, event):
++            cap = s.levels.secure - 0.01
+     p_before = _p_at(_load_state(conn, student_id, part_id, ts), ts)
+     surprise = weight * (event["score"] - p_before)
+     session_id = session_start(conn, student_id, ts)
+@@ -698,13 +722,14 @@
+         slip_add = _settings().session.fatigue_slip_add if fatigued else 0.0
+         if part_id == AIL_VERIFY and correct:   # Verify is graded: 3 of 4 ticks moves it 3/4 as far as 4 of 4
+             weight *= event["score"]
+-        _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts, weight=weight, slip_add=slip_add)
++        _apply_evidence(conn, student_id, part_id, evidence_type, correct, ts, weight=weight, slip_add=slip_add, cap=cap)
+ 
+ 
+ def _apply_evidence(conn: sqlite3.Connection, student_id: str, part_id: str, evidence_type: str, correct: bool, ts: str,
+-                    weight: float = 1.0, slip_add: float = 0.0) -> None:
++                    weight: float = 1.0, slip_add: float = 0.0, cap: float | None = None) -> None:
+     """The BKT update on one part; weight (0–1) scales how far p_known moves towards the BKT result.
+-    slip_add raises slip (capped at session.slip_cap) while the session is fatigued."""
++    slip_add raises slip (capped at session.slip_cap) while the session is fatigued. cap: p_known rises no higher
++    than this (or than where it was)."""
+     s = _settings()
+     if evidence_type not in s.bkt.evidence:
+         raise ValueError(f"evidence_type must be one of {', '.join(s.bkt.evidence)}")
+@@ -725,6 +750,8 @@
+         p = before * slip / (before * slip + (1 - before) * (1 - guess))
+     p += (1 - p) * s.bkt.learn_rate
+     p = before + weight * (p - before)
++    if cap is not None and p > cap:
++        p = max(before, cap)
+ 
+     factor = s.decay.on_success if correct else s.decay.on_failure
+     state["half_life_days"] = max(s.decay.min_half_life_days, state["half_life_days"] * factor)
+diff -ruN '--exclude=__pycache__' a/text/tools/tutor_turn.md b/text/tools/tutor_turn.md
+--- a/text/tools/tutor_turn.md	2026-11-18 04:44:27.741434392 +0000
++++ b/text/tools/tutor_turn.md	2026-11-18 04:44:27.742373705 +0000
+@@ -10,4 +10,4 @@
+ - question_features: concept when the question uses an economics term or names an official statistic (inflation, CPI, unemployment rate, Bank Rate, real wages); the price of an everyday thing (petrol, rent, house prices) doesn't count on its own.
+ - source_conflict: true when they report that a source you gave would not open, or doesn't say what you said: the claim is missing, or its figure, date or period is different. Rounding of the same figure (9.1% vs about 9%) is not a conflict, and "it matches" is false. When their check shows you were wrong, also set conflict_flagged, not pushback_changed.
+ - engagement: passive with no question and no answer ("ok", "thanks"); active when they ask for something, or answer by recalling or restating; constructive when they add a step of their own: a reason ("because"), an inference ("so"), a comparison that reaches a conclusion, or applying the idea to a case. Being wrong doesn't change the level.
+-- points_met: tick a point only when the message contains all of it, in any words; half a point is not the point. On a source check (ail_verify), a is ticked when they say or show they looked (opened it, report what it says, or say it wouldn't load), and d when they give a verdict (matches, doesn't match, can't confirm); giving both figures without a verdict is c, not d.
++- points_met: tick a point only when the message contains all of it, in any words; half a point is not the point. On a source check (ail_verify), a is ticked when they say or show they looked (opened it, report what it says, or say it wouldn't load), and d when they give a verdict (matches, doesn't match, can't confirm); giving both figures without a verdict is c, not d. Never tick a point for words that only repeat your own reply, a point you just showed or your citation: on a source check that is not looking, in an explain-back it is copying.

@@ -1,0 +1,351 @@
+{
+ "code": "/tmp/claude-1000/w4-fix-core/fix4c",
+ "n_per_group": 60,
+ "noise": "sym10",
+ "cells": {
+  "branch|sym10|mcar": {
+   "ask": {
+    "none_vs_strong": {
+     "auc": 0.9975,
+     "tied": 0.0
+    },
+    "partial_vs_strong": {
+     "auc": 0.9838888888888889,
+     "tied": 0.0
+    },
+    "gamer_vs_strong": {
+     "auc": 0.9905555555555555,
+     "tied": 0.0
+    },
+    "mean_w8": {
+     "none": 0.091,
+     "partial": 0.237,
+     "strong": 0.969,
+     "improver": 0.786,
+     "gamer": 0.206
+    },
+    "secure_share_w8": {
+     "none": 0.0,
+     "partial": 0.11666666666666667,
+     "strong": 0.9666666666666667,
+     "improver": 0.7166666666666667,
+     "gamer": 0.03333333333333333
+    }
+   },
+   "verify": {
+    "none_vs_strong": {
+     "auc": 0.9444444444444444,
+     "tied": 0.0
+    },
+    "partial_vs_strong": {
+     "auc": 0.9116666666666666,
+     "tied": 0.0
+    },
+    "gamer_vs_strong": {
+     "auc": 0.8838888888888888,
+     "tied": 0.0
+    },
+    "mean_w8": {
+     "none": 0.056,
+     "partial": 0.155,
+     "strong": 0.769,
+     "improver": 0.517,
+     "gamer": 0.205
+    },
+    "secure_share_w8": {
+     "none": 0.0,
+     "partial": 0.06666666666666667,
+     "strong": 0.7166666666666667,
+     "improver": 0.36666666666666664,
+     "gamer": 0.08333333333333333
+    }
+   },
+   "how": {
+    "none_vs_strong": {
+     "auc": 0.7745833333333333,
+     "tied": 0.0002777777777777778
+    },
+    "partial_vs_strong": {
+     "auc": 0.7052777777777778,
+     "tied": 0.0
+    },
+    "gamer_vs_strong": {
+     "auc": 0.8202777777777778,
+     "tied": 0.0005555555555555556
+    },
+    "mean_w8": {
+     "none": 0.269,
+     "partial": 0.288,
+     "strong": 0.331,
+     "improver": 0.309,
+     "gamer": 0.26
+    },
+    "secure_share_w8": {
+     "none": 0.0,
+     "partial": 0.0,
+     "strong": 0.0,
+     "improver": 0.0,
+     "gamer": 0.0
+    }
+   }
+  },
+  "branch|sym10|mnar": {
+   "ask": {
+    "none_vs_strong": {
+     "auc": 0.9980555555555556,
+     "tied": 0.0
+    },
+    "partial_vs_strong": {
+     "auc": 0.9838888888888889,
+     "tied": 0.0
+    },
+    "gamer_vs_strong": {
+     "auc": 0.9905555555555555,
+     "tied": 0.0
+    },
+    "mean_w8": {
+     "none": 0.08,
+     "partial": 0.237,
+     "strong": 0.97,
+     "improver": 0.792,
+     "gamer": 0.206
+    },
+    "secure_share_w8": {
+     "none": 0.0,
+     "partial": 0.11666666666666667,
+     "strong": 0.9666666666666667,
+     "improver": 0.7333333333333333,
+     "gamer": 0.03333333333333333
+    }
+   },
+   "verify": {
+    "none_vs_strong": {
+     "auc": 0.99,
+     "tied": 0.0
+    },
+    "partial_vs_strong": {
+     "auc": 0.9597222222222223,
+     "tied": 0.0
+    },
+    "gamer_vs_strong": {
+     "auc": 0.9402777777777778,
+     "tied": 0.0
+    },
+    "mean_w8": {
+     "none": 0.056,
+     "partial": 0.155,
+     "strong": 0.852,
+     "improver": 0.622,
+     "gamer": 0.205
+    },
+    "secure_share_w8": {
+     "none": 0.0,
+     "partial": 0.06666666666666667,
+     "strong": 0.8166666666666667,
+     "improver": 0.48333333333333334,
+     "gamer": 0.08333333333333333
+    }
+   },
+   "how": {
+    "none_vs_strong": {
+     "auc": 0.8997222222222222,
+     "tied": 0.0
+    },
+    "partial_vs_strong": {
+     "auc": 0.7905555555555556,
+     "tied": 0.0
+    },
+    "gamer_vs_strong": {
+     "auc": 0.8769444444444444,
+     "tied": 0.0
+    },
+    "mean_w8": {
+     "none": 0.251,
+     "partial": 0.288,
+     "strong": 0.354,
+     "improver": 0.326,
+     "gamer": 0.26
+    },
+    "secure_share_w8": {
+     "none": 0.0,
+     "partial": 0.0,
+     "strong": 0.0,
+     "improver": 0.0,
+     "gamer": 0.0
+    }
+   }
+  },
+  "branch_missing|sym10|mcar": {
+   "ask": {
+    "none_vs_strong": {
+     "auc": 0.9975,
+     "tied": 0.0
+    },
+    "partial_vs_strong": {
+     "auc": 0.9838888888888889,
+     "tied": 0.0
+    },
+    "gamer_vs_strong": {
+     "auc": 0.9897222222222222,
+     "tied": 0.0
+    },
+    "mean_w8": {
+     "none": 0.091,
+     "partial": 0.237,
+     "strong": 0.97,
+     "improver": 0.795,
+     "gamer": 0.21
+    },
+    "secure_share_w8": {
+     "none": 0.0,
+     "partial": 0.11666666666666667,
+     "strong": 0.9666666666666667,
+     "improver": 0.75,
+     "gamer": 0.05
+    }
+   },
+   "verify": {
+    "none_vs_strong": {
+     "auc": 0.9919444444444444,
+     "tied": 0.0
+    },
+    "partial_vs_strong": {
+     "auc": 0.9602777777777778,
+     "tied": 0.0
+    },
+    "gamer_vs_strong": {
+     "auc": 0.9319444444444445,
+     "tied": 0.0
+    },
+    "mean_w8": {
+     "none": 0.057,
+     "partial": 0.175,
+     "strong": 0.871,
+     "improver": 0.614,
+     "gamer": 0.247
+    },
+    "secure_share_w8": {
+     "none": 0.0,
+     "partial": 0.11666666666666667,
+     "strong": 0.8,
+     "improver": 0.48333333333333334,
+     "gamer": 0.1
+    }
+   },
+   "how": {
+    "none_vs_strong": {
+     "auc": 0.8533333333333334,
+     "tied": 0.0005555555555555556
+    },
+    "partial_vs_strong": {
+     "auc": 0.7279166666666667,
+     "tied": 0.0002777777777777778
+    },
+    "gamer_vs_strong": {
+     "auc": 0.8836111111111111,
+     "tied": 0.0
+    },
+    "mean_w8": {
+     "none": 0.288,
+     "partial": 0.318,
+     "strong": 0.365,
+     "improver": 0.34,
+     "gamer": 0.283
+    },
+    "secure_share_w8": {
+     "none": 0.0,
+     "partial": 0.0,
+     "strong": 0.0,
+     "improver": 0.0,
+     "gamer": 0.0
+    }
+   }
+  },
+  "branch_missing|sym10|mnar": {
+   "ask": {
+    "none_vs_strong": {
+     "auc": 0.9977777777777778,
+     "tied": 0.0
+    },
+    "partial_vs_strong": {
+     "auc": 0.9838888888888889,
+     "tied": 0.0
+    },
+    "gamer_vs_strong": {
+     "auc": 0.9897222222222222,
+     "tied": 0.0
+    },
+    "mean_w8": {
+     "none": 0.08,
+     "partial": 0.237,
+     "strong": 0.97,
+     "improver": 0.796,
+     "gamer": 0.21
+    },
+    "secure_share_w8": {
+     "none": 0.0,
+     "partial": 0.11666666666666667,
+     "strong": 0.9666666666666667,
+     "improver": 0.75,
+     "gamer": 0.05
+    }
+   },
+   "verify": {
+    "none_vs_strong": {
+     "auc": 1.0,
+     "tied": 0.0
+    },
+    "partial_vs_strong": {
+     "auc": 0.9733333333333334,
+     "tied": 0.0
+    },
+    "gamer_vs_strong": {
+     "auc": 0.9447222222222222,
+     "tied": 0.0
+    },
+    "mean_w8": {
+     "none": 0.054,
+     "partial": 0.175,
+     "strong": 0.897,
+     "improver": 0.653,
+     "gamer": 0.247
+    },
+    "secure_share_w8": {
+     "none": 0.0,
+     "partial": 0.11666666666666667,
+     "strong": 0.8833333333333333,
+     "improver": 0.5,
+     "gamer": 0.1
+    }
+   },
+   "how": {
+    "none_vs_strong": {
+     "auc": 0.8763888888888889,
+     "tied": 0.0
+    },
+    "partial_vs_strong": {
+     "auc": 0.7547222222222222,
+     "tied": 0.0
+    },
+    "gamer_vs_strong": {
+     "auc": 0.8944444444444445,
+     "tied": 0.0
+    },
+    "mean_w8": {
+     "none": 0.296,
+     "partial": 0.318,
+     "strong": 0.371,
+     "improver": 0.352,
+     "gamer": 0.283
+    },
+    "secure_share_w8": {
+     "none": 0.0,
+     "partial": 0.0,
+     "strong": 0.0,
+     "improver": 0.0,
+     "gamer": 0.0
+    }
+   }
+  }
+ }
+}

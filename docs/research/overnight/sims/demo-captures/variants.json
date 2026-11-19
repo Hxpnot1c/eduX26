@@ -1,0 +1,455 @@
+{
+  "Quiz me on what's due.": {
+    "demo-secure": {
+      "ok": true,
+      "plan": [
+        {
+          "move": "ask_mcq",
+          "part_id": "tax_incidence_split",
+          "cue": "Review Indirect tax: splitting the burden with these lettered options; wait for a letter.",
+          "data": {
+            "purpose": "review",
+            "name": "Indirect tax: splitting the burden",
+            "mode": "recall",
+            "options": [
+              {
+                "letter": "A",
+                "text": "Producers always pay the whole tax because they hand it to the government."
+              },
+              {
+                "letter": "C",
+                "text": "Elastic demand = producers pay more"
+              }
+            ],
+            "extra_option": "B",
+            "answer_type": "mcq",
+            "terms": [
+              "Indirect tax: splitting the burden",
+              "PED: interpreting values",
+              "elastic",
+              "inelastic",
+              "Indirect tax: shifting supply",
+              "PED: definition",
+              "PES: definition and determinants",
+              "PES: formula and calculation",
+              "YED: definition and sign",
+              "normal goods",
+              "inferior goods",
+              "Evaluating taxes on negative externalities"
+            ]
+          }
+        }
+      ],
+      "score_next": {},
+      "reference": {
+        "misconceptions": {
+          "watch_for": [
+            {
+              "id": "tax_incidence_split_m1",
+              "wrong_idea": "Producers always pay the whole tax because they hand it to the government."
+            }
+          ]
+        }
+      },
+      "focus": [],
+      "style": {
+        "max_words": 120,
+        "interests": "",
+        "format": "Write formulas in LaTeX between $$…$$, e.g. $$PED = \\frac{\\%\\Delta Q_d}{\\%\\Delta P}$$. Write money as £5, or escape a dollar sign as \\$, because $ starts maths. For a diagram part, or when the student asks for one, draw the diagram inline as an SVG visual with labelled axes, the curves, the shift and P1→P2 / Q1→Q2 marked; never use ASCII art. Don't draw otherwise: drawing is slow."
+      }
+    },
+    "demo-weak": {
+      "ok": true,
+      "plan": [],
+      "score_next": {},
+      "reference": {},
+      "focus": [],
+      "style": {
+        "max_words": 120,
+        "interests": "",
+        "format": "Write formulas in LaTeX between $$…$$, e.g. $$PED = \\frac{\\%\\Delta Q_d}{\\%\\Delta P}$$. Write money as £5, or escape a dollar sign as \\$, because $ starts maths. For a diagram part, or when the student asks for one, draw the diagram inline as an SVG visual with labelled axes, the curves, the shift and P1→P2 / Q1→Q2 marked; never use ASCII art. Don't draw otherwise: drawing is slow."
+      }
+    },
+    "demo-showme": {
+      "ok": true,
+      "plan": [
+        {
+          "move": "ask_mcq",
+          "part_id": "ped_values",
+          "cue": "Review PED: interpreting values with these lettered options; wait for a letter.",
+          "data": {
+            "purpose": "review",
+            "name": "PED: interpreting values",
+            "mode": "recall",
+            "options": [
+              {
+                "letter": "A",
+                "text": "Greater than 1 = elastic"
+              },
+              {
+                "letter": "C",
+                "text": "An elastic good has a PED below 1."
+              }
+            ],
+            "extra_option": "B",
+            "answer_type": "mcq",
+            "terms": [
+              "PED: interpreting values",
+              "elastic",
+              "inelastic",
+              "PED: definition"
+            ]
+          }
+        }
+      ],
+      "score_next": {},
+      "reference": {
+        "misconceptions": {
+          "watch_for": [
+            {
+              "id": "ped_values_m1",
+              "wrong_idea": "An elastic good has a PED below 1."
+            }
+          ]
+        }
+      },
+      "focus": [],
+      "style": {
+        "max_words": 120,
+        "interests": "",
+        "format": "Write formulas in LaTeX between $$…$$, e.g. $$PED = \\frac{\\%\\Delta Q_d}{\\%\\Delta P}$$. Write money as £5, or escape a dollar sign as \\$, because $ starts maths. For a diagram part, or when the student asks for one, draw the diagram inline as an SVG visual with labelled axes, the curves, the shift and P1→P2 / Q1→Q2 marked; never use ASCII art. Don't draw otherwise: drawing is slow."
+      }
+    }
+  },
+  "How do I interpret PED values?": {
+    "demo-secure": {
+      "ok": true,
+      "plan": [
+        {
+          "move": "ask_mcq",
+          "part_id": "ped_formula",
+          "cue": "Quick check on PED: formula and calculation, the idea this builds on; these lettered options; wait.",
+          "data": {
+            "purpose": "prereq",
+            "name": "PED: formula and calculation",
+            "for": "ped_values",
+            "note": "You read a value as elastic or inelastic only once you can calculate it.",
+            "options": [
+              {
+                "letter": "A",
+                "text": "PED is the change in quantity divided by the change in price, with no percentages."
+              },
+              {
+                "letter": "B",
+                "text": "Divide the change in price by the change in quantity."
+              },
+              {
+                "letter": "C",
+                "text": "Work out the percentage changes from the new values."
+              },
+              {
+                "letter": "D",
+                "text": "Percentage change = change / original x 100"
+              }
+            ],
+            "answer_type": "mcq",
+            "terms": [
+              "PED: formula and calculation",
+              "PED: interpreting values",
+              "elastic",
+              "inelastic",
+              "PED: definition",
+              "PES: definition and determinants",
+              "PES: formula and calculation",
+              "YED: definition and sign",
+              "normal goods",
+              "inferior goods",
+              "Indirect tax: shifting supply",
+              "Evaluating taxes on negative externalities"
+            ]
+          }
+        }
+      ],
+      "score_next": {},
+      "reference": {
+        "misconceptions": {
+          "watch_for": [
+            {
+              "id": "ped_formula_m2",
+              "wrong_idea": "Work out the percentage changes from the new values."
+            },
+            {
+              "id": "ped_formula_m3",
+              "wrong_idea": "PED is the change in quantity divided by the change in price, with no percentages."
+            }
+          ]
+        }
+      },
+      "focus": [
+        {
+          "id": "ped_values",
+          "name": "PED: interpreting values",
+          "level": "developing"
+        }
+      ],
+      "style": {
+        "max_words": 120,
+        "interests": "",
+        "format": "Write formulas in LaTeX between $$…$$, e.g. $$PED = \\frac{\\%\\Delta Q_d}{\\%\\Delta P}$$. Write money as £5, or escape a dollar sign as \\$, because $ starts maths. For a diagram part, or when the student asks for one, draw the diagram inline as an SVG visual with labelled axes, the curves, the shift and P1→P2 / Q1→Q2 marked; never use ASCII art. Don't draw otherwise: drawing is slow."
+      }
+    },
+    "demo-weak": {
+      "ok": true,
+      "plan": [
+        {
+          "move": "ask_mcq",
+          "part_id": "ped_formula",
+          "cue": "Quick check on PED: formula and calculation, the idea this builds on; these lettered options; wait.",
+          "data": {
+            "purpose": "prereq",
+            "name": "PED: formula and calculation",
+            "for": "ped_values",
+            "note": "You read a value as elastic or inelastic only once you can calculate it.",
+            "options": [
+              {
+                "letter": "A",
+                "text": "Work out the percentage changes from the new values."
+              },
+              {
+                "letter": "B",
+                "text": "Percentage change = change / original x 100"
+              },
+              {
+                "letter": "C",
+                "text": "Divide the change in price by the change in quantity."
+              },
+              {
+                "letter": "D",
+                "text": "PED is the change in quantity divided by the change in price, with no percentages."
+              }
+            ],
+            "answer_type": "mcq",
+            "terms": [
+              "PED: formula and calculation"
+            ]
+          }
+        }
+      ],
+      "score_next": {},
+      "reference": {
+        "misconceptions": {
+          "watch_for": [
+            {
+              "id": "ped_formula_m2",
+              "wrong_idea": "Work out the percentage changes from the new values."
+            },
+            {
+              "id": "ped_formula_m3",
+              "wrong_idea": "PED is the change in quantity divided by the change in price, with no percentages."
+            }
+          ]
+        }
+      },
+      "focus": [
+        {
+          "id": "ped_values",
+          "name": "PED: interpreting values",
+          "level": "new"
+        }
+      ],
+      "style": {
+        "max_words": 120,
+        "interests": "",
+        "format": "Write formulas in LaTeX between $$…$$, e.g. $$PED = \\frac{\\%\\Delta Q_d}{\\%\\Delta P}$$. Write money as £5, or escape a dollar sign as \\$, because $ starts maths. For a diagram part, or when the student asks for one, draw the diagram inline as an SVG visual with labelled axes, the curves, the shift and P1→P2 / Q1→Q2 marked; never use ASCII art. Don't draw otherwise: drawing is slow."
+      }
+    },
+    "demo-showme": {
+      "ok": true,
+      "plan": [
+        {
+          "move": "ask_mcq",
+          "part_id": "ped_formula",
+          "cue": "Quick check on PED: formula and calculation, the idea this builds on; these lettered options; wait.",
+          "data": {
+            "purpose": "prereq",
+            "name": "PED: formula and calculation",
+            "for": "ped_values",
+            "note": "You read a value as elastic or inelastic only once you can calculate it.",
+            "options": [
+              {
+                "letter": "A",
+                "text": "PED is the change in quantity divided by the change in price, with no percentages."
+              },
+              {
+                "letter": "B",
+                "text": "Percentage change = change / original x 100"
+              },
+              {
+                "letter": "C",
+                "text": "Work out the percentage changes from the new values."
+              },
+              {
+                "letter": "D",
+                "text": "Divide the change in price by the change in quantity."
+              }
+            ],
+            "answer_type": "mcq",
+            "terms": [
+              "PED: formula and calculation",
+              "PED: definition"
+            ]
+          }
+        }
+      ],
+      "score_next": {},
+      "reference": {
+        "misconceptions": {
+          "watch_for": [
+            {
+              "id": "ped_formula_m2",
+              "wrong_idea": "Work out the percentage changes from the new values."
+            },
+            {
+              "id": "ped_formula_m3",
+              "wrong_idea": "PED is the change in quantity divided by the change in price, with no percentages."
+            }
+          ]
+        }
+      },
+      "focus": [
+        {
+          "id": "ped_values",
+          "name": "PED: interpreting values",
+          "level": "new"
+        }
+      ],
+      "style": {
+        "max_words": 120,
+        "interests": "",
+        "format": "Write formulas in LaTeX between $$…$$, e.g. $$PED = \\frac{\\%\\Delta Q_d}{\\%\\Delta P}$$. Write money as £5, or escape a dollar sign as \\$, because $ starts maths. For a diagram part, or when the student asks for one, draw the diagram inline as an SVG visual with labelled axes, the curves, the shift and P1→P2 / Q1→Q2 marked; never use ASCII art. Don't draw otherwise: drawing is slow."
+      }
+    }
+  },
+  "What should I work on next?": {
+    "demo-secure": {
+      "ok": true,
+      "plan": [
+        {
+          "move": "ask_mcq",
+          "part_id": "tax_incidence_split",
+          "cue": "Review Indirect tax: splitting the burden with these lettered options; wait for a letter.",
+          "data": {
+            "purpose": "review",
+            "name": "Indirect tax: splitting the burden",
+            "mode": "recall",
+            "options": [
+              {
+                "letter": "A",
+                "text": "Elastic demand = producers pay more"
+              },
+              {
+                "letter": "B",
+                "text": "Producers always pay the whole tax because they hand it to the government."
+              }
+            ],
+            "extra_option": "C",
+            "answer_type": "mcq",
+            "terms": [
+              "Indirect tax: splitting the burden",
+              "PED: interpreting values",
+              "elastic",
+              "inelastic",
+              "Indirect tax: shifting supply",
+              "PED: definition",
+              "PES: definition and determinants",
+              "PES: formula and calculation",
+              "YED: definition and sign",
+              "normal goods",
+              "inferior goods",
+              "Evaluating taxes on negative externalities"
+            ]
+          }
+        }
+      ],
+      "score_next": {},
+      "reference": {
+        "misconceptions": {
+          "watch_for": [
+            {
+              "id": "tax_incidence_split_m1",
+              "wrong_idea": "Producers always pay the whole tax because they hand it to the government."
+            }
+          ]
+        }
+      },
+      "focus": [],
+      "style": {
+        "max_words": 120,
+        "interests": "",
+        "format": "Write formulas in LaTeX between $$…$$, e.g. $$PED = \\frac{\\%\\Delta Q_d}{\\%\\Delta P}$$. Write money as £5, or escape a dollar sign as \\$, because $ starts maths. For a diagram part, or when the student asks for one, draw the diagram inline as an SVG visual with labelled axes, the curves, the shift and P1→P2 / Q1→Q2 marked; never use ASCII art. Don't draw otherwise: drawing is slow."
+      }
+    },
+    "demo-weak": {
+      "ok": true,
+      "plan": [],
+      "score_next": {},
+      "reference": {},
+      "focus": [],
+      "style": {
+        "max_words": 120,
+        "interests": "",
+        "format": "Write formulas in LaTeX between $$…$$, e.g. $$PED = \\frac{\\%\\Delta Q_d}{\\%\\Delta P}$$. Write money as £5, or escape a dollar sign as \\$, because $ starts maths. For a diagram part, or when the student asks for one, draw the diagram inline as an SVG visual with labelled axes, the curves, the shift and P1→P2 / Q1→Q2 marked; never use ASCII art. Don't draw otherwise: drawing is slow."
+      }
+    },
+    "demo-showme": {
+      "ok": true,
+      "plan": [
+        {
+          "move": "ask_mcq",
+          "part_id": "ped_values",
+          "cue": "Review PED: interpreting values with these lettered options; wait for a letter.",
+          "data": {
+            "purpose": "review",
+            "name": "PED: interpreting values",
+            "mode": "recall",
+            "options": [
+              {
+                "letter": "A",
+                "text": "An elastic good has a PED below 1."
+              },
+              {
+                "letter": "C",
+                "text": "Greater than 1 = elastic"
+              }
+            ],
+            "extra_option": "B",
+            "answer_type": "mcq",
+            "terms": [
+              "PED: interpreting values",
+              "elastic",
+              "inelastic",
+              "PED: definition"
+            ]
+          }
+        }
+      ],
+      "score_next": {},
+      "reference": {
+        "misconceptions": {
+          "watch_for": [
+            {
+              "id": "ped_values_m1",
+              "wrong_idea": "An elastic good has a PED below 1."
+            }
+          ]
+        }
+      },
+      "focus": [],
+      "style": {
+        "max_words": 120,
+        "interests": "",
+        "format": "Write formulas in LaTeX between $$…$$, e.g. $$PED = \\frac{\\%\\Delta Q_d}{\\%\\Delta P}$$. Write money as £5, or escape a dollar sign as \\$, because $ starts maths. For a diagram part, or when the student asks for one, draw the diagram inline as an SVG visual with labelled axes, the curves, the shift and P1→P2 / Q1→Q2 marked; never use ASCII art. Don't draw otherwise: drawing is slow."
+      }
+    }
+  }
+}

@@ -1,0 +1,64 @@
+--- a/edux/learner.py
++++ b/edux/learner.py
+@@ -425,15 +425,17 @@
+     return prior, half_life
+ 
+ 
+-def p_now(p_known: float, half_life_days: float, since: datetime | str | None, now: datetime | str | None = None) -> float:
+-    """p_known decayed by the time from since (the forgetting clock's start) to now.
++def p_now(p_known: float, half_life_days: float, since: datetime | str | None, now: datetime | str | None = None,
++          floor: float = 0.0) -> float:
++    """p_known decayed by the time from since (the forgetting clock's start) to now, towards floor (the part's
++    starting estimate: stale evidence counts for less, it doesn't make the part read below an untouched one).
+ 
+     since is None until the student first gets the part right: with nothing learnt yet there is nothing to forget.
+     """
+     if since is None:
+         return p_known
+     days = max(0.0, (parse_ts(now or now_iso()) - parse_ts(since)).total_seconds() / 86400)
+-    return p_known * 0.5 ** (days / half_life_days)
++    return floor + (p_known - floor) * 0.5 ** (days / half_life_days)
+ 
+ 
+ def _load_state(conn: sqlite3.Connection, student_id: str, part_id: str, ts: str) -> dict:
+@@ -454,7 +456,7 @@
+ 
+ 
+ def _p_at(state: dict, ts: str) -> float:
+-    return p_now(state["p_known"], state["half_life_days"], state["clock_start"], ts)
++    return p_now(state["p_known"], state["half_life_days"], state["clock_start"], ts, initial_state(state["part_id"])[0])
+ 
+ 
+ def _queue_review(conn: sqlite3.Connection, student_id: str, part_id: str, due: datetime, reason: str,
+@@ -725,12 +727,16 @@
+ 
+ 
+ def part_p(student_id: str, part_id: str, at: datetime | str | None = None) -> float:
+-    """The student's current p_now on a part; a part they haven't met is at its starting estimate."""
++    """The student's current p_now on a part; a part they haven't met is at its starting estimate. A part never
++    answered right reads at most its starting estimate ("not yet shown"): talk and credit passed down from a
++    later part don't make it known."""
+     part_id = graph.canonical(part_id)
++    prior = initial_state(part_id)[0]
+     row = _conn().execute("SELECT * FROM part_state WHERE student_id = ? AND part_id = ?", (student_id, part_id)).fetchone()
+     if row is None:
+-        return initial_state(part_id)[0]
+-    return p_now(row["p_known"], row["half_life_days"], row["clock_start"], at)
++        return prior
++    p = p_now(row["p_known"], row["half_life_days"], row["clock_start"], at, prior)
++    return min(p, prior) if row["last_correct"] is None else p
+ 
+ 
+ def level(p: float) -> str:
+--- a/scripts/check_mcp.py
++++ b/scripts/check_mcp.py
+@@ -566,6 +566,9 @@
+     course check it displaced comes alone in the reply after, and the ignored re-ask scores 0 (step 05e)."""
+     student = "check-waiting"
+     keyed = f"{url}?key={new_student(student)}"
++    # the prerequisite answered right before (a part never answered right reads at its prior, so an untouched
++    # prerequisite would get its own check first and take the slot this test is about)
++    learner.record_evidence(student, "ped_definition", "mcq_check", 1.0, apply="now")
+     labels = {"question_depth": "surface", "engagement": "active", "request_type": "concept"}
+ 
+     async def turn(message: str, extra: dict | None = None, **more) -> dict:

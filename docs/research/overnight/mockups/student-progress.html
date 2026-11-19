@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eduX student progress (mock-up)</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#16191d;--muted:#4a525c;--line:#d5d9df;--accent:#1f5fa8;--tag:#5b2a86;--tagbg:#f3ecfa;--sec:#1d6b3a;--secbg:#e8f5ec;--dev:#7a5200;--devbg:#fdf3dc;--new:#3d4a5c;--newbg:#e9edf3;--nys:#5b2a86;--nysbg:#f3ecfa}
+@media (prefers-color-scheme:dark){:root{--bg:#121417;--card:#1c1f24;--ink:#eceff3;--muted:#b3bac4;--line:#363c45;--accent:#8fbcf2;--tag:#d8b8f5;--tagbg:#2a2035;--sec:#86d9a3;--secbg:#17291e;--dev:#f2c46b;--devbg:#2d2512;--new:#c9d2de;--newbg:#262b33;--nys:#d8b8f5;--nysbg:#2a2035}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:14px 16px 20px}
+.mock{display:inline-block;background:var(--tagbg);color:var(--tag);border:1px solid var(--tag);border-radius:4px;padding:2px 10px;font-weight:700;font-size:13px;letter-spacing:.02em}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline;margin:8px 0 12px}
+h1{font-size:21px;margin:0}
+.exam{font-weight:600}
+.grid{display:grid;grid-template-columns:1.1fr 1fr;gap:14px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+section{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+h2{font-size:15px;margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}
+h3{font-size:14px;margin:10px 0 4px;color:var(--muted)}
+.rule{color:var(--muted);font-size:13px;margin:0 0 8px}
+ul.parts{list-style:none;margin:0;padding:0}
+ul.parts li{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid var(--line);font-size:14px}
+.lv{font-size:12px;font-weight:700;border-radius:10px;padding:1px 9px;white-space:nowrap;border:1px solid currentColor}
+.secure{color:var(--sec);background:var(--secbg)}.developing{color:var(--dev);background:var(--devbg)}.new{color:var(--new);background:var(--newbg)}.nys{color:var(--nys);background:var(--nysbg)}
+.legend{font-size:13px;color:var(--muted);margin:8px 0 0}
+ul.plain{margin:0;padding-left:20px;font-size:14px}
+ul.plain li{margin:3px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}
+th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.held{border-left:4px solid var(--dev);background:var(--devbg);padding:6px 10px;border-radius:4px;margin:8px 0 0;font-size:14px}
+.next{border-left:4px solid var(--accent);padding:6px 10px;margin:0;font-size:15px}
+.note{font-size:13px;color:var(--muted);margin:8px 0 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="mock" role="note">Mock-up · illustrative data · not a live feature</p>
+<header>
+  <h1>How you’re doing in Economics</h1>
+  <span class="exam">About 26 weeks to your first paper <span style="font-weight:400;color:var(--muted)">(date from your course; you can change it)</span></span>
+</header>
+
+<div class="grid">
+<section aria-labelledby="h-parts">
+  <h2 id="h-parts">Course parts</h2>
+  <h3>Markets and how they fail</h3>
+  <ul class="parts">
+    <li>Demand and supply diagrams <span class="lv secure">secure</span></li>
+    <li>Price elasticity of demand (PED) <span class="lv developing">developing</span></li>
+    <li>PED and total revenue <span class="lv developing">developing</span></li>
+    <li>Negative externalities <span class="lv developing">developing</span></li>
+    <li>Indirect taxes and who pays them <span class="lv nys">not yet shown</span></li>
+    <li>Price elasticity of supply <span class="lv new">new</span></li>
+  </ul>
+  <h3>The UK economy</h3>
+  <ul class="parts">
+    <li>Parts of aggregate demand <span class="lv secure">secure</span></li>
+    <li>The multiplier <span class="lv nys">not yet shown</span></li>
+    <li>How interest rates reach spending <span class="lv nys">not yet shown</span></li>
+  </ul>
+  <p class="legend"><b>Not yet shown</b>: you haven’t answered a check on this right yet, so it doesn’t count as known, however much you’ve talked about it. <b>New</b>: you got it right before, but it’s fading. Worth a review.</p>
+</section>
+
+<div style="display:grid;gap:14px;align-content:start">
+<section aria-labelledby="h-next">
+  <h2 id="h-next">Your next step</h2>
+  <p class="next">Do your 3 reviews, then try one check on indirect taxes. It’s the part that would help most.</p>
+</section>
+
+<section aria-labelledby="h-rev">
+  <h2 id="h-rev">Reviews due</h2>
+  <ul class="plain">
+    <li>Demand and supply diagrams: due today</li>
+    <li>Parts of aggregate demand: due today</li>
+    <li>Price elasticity of supply: due this week</li>
+  </ul>
+  <p class="note">Spaced out so they’re done well before your exam.</p>
+</section>
+
+<section aria-labelledby="h-ail">
+  <h2 id="h-ail">Using AI well</h2>
+  <table>
+    <tbody>
+      <tr><th scope="row">Ask: asking precise questions</th><td><span class="lv developing">developing</span></td></tr>
+      <tr><th scope="row">Verify: checking what a chatbot says</th><td><span class="lv developing">developing</span></td></tr>
+    </tbody>
+  </table>
+  <h3>How AI works: your checks so far (no level, just counts)</h3>
+  <table>
+    <thead><tr><th scope="col">Idea</th><th scope="col">Checked</th><th scope="col">Right</th></tr></thead>
+    <tbody>
+      <tr><td>Chatbots can make up sources</td><td>2</td><td>1</td></tr>
+      <tr><td>Chatbots don’t know recent events</td><td>1</td><td>1</td></tr>
+      <tr><td>Sounding sure isn’t the same as being right</td><td>1</td><td>0</td></tr>
+      <tr><td>Chatbots tend to agree with you</td><td>0</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p class="held"><b>A wrong idea you still hold:</b> “If a chatbot sounds confident, it’s probably right.”</p>
+  <p class="note">Skipped: 2 tasks. Skipping never lowers a level.</p>
+</section>
+
+<section aria-labelledby="h-teach">
+  <h2 id="h-teach">What your teacher sees</h2>
+  <p style="margin:0;font-size:14px">Your teacher sees class patterns from groups of 6 or more. Never your chats, your levels, your AI-literacy scores, or how often you asked AI to write for you. If your school turns it on, they also see whether you did checks this week.</p>
+</section>
+</div>
+</div>
+</div>
+</body>
+</html>

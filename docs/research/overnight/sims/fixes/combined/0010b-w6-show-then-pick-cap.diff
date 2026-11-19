@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: eduX wave-6 w6-fix-counters <noreply@example.invalid>
+Date: Wed, 18 Nov 2026 06:00:00 +0000
+Subject: [PATCH] a pick straight after being shown can't make a part secure; a written answer can
+
+Wave 6 (w6-fix-counters, variant c1m+P + ladder fix). Alternative to 0010: use 0010 or 0010b, never both.
+Applies on 0009b (it reuses 0009b's cap argument); without 0009b use 0010b-alone-w6-show-then-pick-cap.diff.
+edux/learner.py: immediate evidence that is picked (MCQ check, review, prequestion) is capped below secure; written
+answers (explain_back, extend, past_question) are not; a prerequisite boost never makes a part secure on its own.
+edux/plan.py: a miss on an open answer is cleared only by a complete open answer (keeps the stop/switch offer).
+---
+diff -ruN '--exclude=__pycache__' a/edux/learner.py b/edux/learner.py
+--- a/edux/learner.py	2026-11-18 04:44:27.750559863 +0000
++++ b/edux/learner.py	2026-11-18 04:44:27.751555571 +0000
+@@ -27,6 +27,7 @@
+ # What a student's answer can be to, as sent by the chatbot; each is also a key of [bkt.evidence].
+ # "mcq" is any server-built multiple-choice question (step 05d), scored from the letter picked.
+ ANSWER_TYPES = ("prequestion", "mcq", "explain_back", "review", "extend", "past_question", "ail_task", "ail_unprompted")
++OPEN_ANSWERS = ("explain_back", "extend", "past_question", "link")   # answers the student writes, not picks
+ LITERACY_ANSWERS = ("ail_task", "ail_unprompted")   # a verify task's answer, or checking a claim unprompted (step 05e)
+ AIL_ASK, AIL_VERIFY = "ail_ask", "ail_verify"       # the AI-literacy skills Ask and Verify (ingest/ai_literacy/)
+ AIL_HOW = "ail_how_ai_works"                        # the concept holding the how-AI-works parts
+@@ -702,6 +703,10 @@
+         if event["origin"] == "chat" and _recently_taught(conn, student_id, part_id, ts):
+             evidence_type = "immediate"
+     cap = None
++    if evidence_type == "immediate" and event["evidence_type"] not in OPEN_ANSWERS:
++        # a pick straight after being shown or hinted (the option repeats the point just shown) can't make a part
++        # secure; an answer they write themselves (explain-back, extend) still can
++        cap = s.levels.secure - 0.01
+     if part_id == AIL_VERIFY and _reported(conn, event):
+         # a reported dead or mismatched source counts as a check (a dead page has nothing else to tick), but it
+         # can't be told apart from a made-up one: until the student has done one successful check of their own on
+@@ -770,7 +775,9 @@
+         for edge in graph.prerequisites(part_id, 1):
+             for prereq in graph.parts_of(edge["other"]):
+                 other = _load_state(conn, student_id, prereq, ts)
+-                other["p_known"] = min(0.99, _p_at(other, ts) + s.propagation.prereq_boost * gain)
++                was = _p_at(other, ts)
++                # a boost from a dependent part is indirect evidence: it never makes a prerequisite secure on its own
++                other["p_known"] = min(0.99, was + s.propagation.prereq_boost * gain, max(was, s.levels.secure - 0.01))
+                 if other["clock_start"]:
+                     other["clock_start"] = ts
+                 _save_state(conn, other)
+diff -ruN '--exclude=__pycache__' a/edux/plan.py b/edux/plan.py
+--- a/edux/plan.py	2026-11-18 04:44:27.750541831 +0000
++++ b/edux/plan.py	2026-11-18 04:44:27.751576502 +0000
+@@ -540,7 +540,8 @@
+ # back): 1 a worked example and its check, 2 an easier prerequisite check, 3 an offer to stop or switch, 4+ a worked
+ # example of the next point (round the part's points), so it is never the same item again and again. Without a step
+ # back, a second miss in a row on an open answer gets the worked example instead of a second bare reteach. A right
+-# check straight after a worked example doesn't reset the count (they had just been shown it). Our choice; a rung that
++# check straight after a worked example doesn't reset the count (they had just been shown it), and a miss on an
++# open answer is cleared only by a complete open answer (right checks in between don't show they can explain it). Our choice; a rung that
+ # can't be built (no prerequisite, stopping already offered) falls through to the next.
+ LADDER = ("worked_example", "easier_prereq", "offer_stop")
+ OPEN_RETEACHES_IN_A_ROW = 1
+@@ -564,7 +565,10 @@
+         state = progress["_misses"] = {"part": focus, "session": session_id, "n": 0}
+     missed = retry is not None if open_answer else not evidence["correct"]
+     just_shown = any(s.get("key") == "show_stuck" for s in last_plan)
+-    state["n"] = state["n"] + 1 if missed else (state["n"] if just_shown and not open_answer else 0)
++    keep = not open_answer and (just_shown or state.get("open"))
++    state["n"] = state["n"] + 1 if missed else (state["n"] if keep else 0)
++    if open_answer:
++        state["open"] = missed
+     return state["n"] if missed else 0
+ 
+ 

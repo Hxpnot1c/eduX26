@@ -1,0 +1,407 @@
+
+[check] ped_definition  stem: PED: definition
+   * ( 65) PED compares percentage changes in quantity demanded and in price
+     ( 68) PED is the slope of the demand curve, so it is the same all along it
+     ( 59) PED measures how much the price changes when demand changes
+   hits: absolutes=0.50, punct=0.33, hedge=0.33, longest=0.00, shortest=0.00, similar=0.00, similar_desc=0.00, testwise=1.00, extremes=0.00, extremes_jnd=0.33, extremes_words=0.25, longest_jnd=0.50, longest_words=0.00, middle=1.00, middle_jnd=0.33, middle_words=0.50, second_longest=1.00, second_longest_jnd=0.33, second_longest_words=0.50, second_shortest=1.00, second_shortest_jnd=0.33, second_shortest_words=0.50, shortest_jnd=0.00, shortest_words=0.50, convergence=0.00, pair=0.33, odd_start=0.33, testwise_length=0.50, pos_A=0.34, pos_last=0.31, pos_middle=0.35  chance=0.33
+   items: {'key_len': 65, 'lens': [65, 68, 59], 'key_rank': 'middle', 'max_min_ratio': 1.153, 'key_vs_mean_wrong': 1.024, 'outside_20pct_of_key': 0, 'word_spread': 6}
+
+[check] ped_definition  stem: PED: definition
+   * ( 65) PED has no units, so it compares goods with very different prices
+     ( 68) PED is the slope of the demand curve, so it is the same all along it
+     ( 59) PED measures how much the price changes when demand changes
+   hits: absolutes=0.50, punct=0.33, hedge=0.33, longest=0.00, shortest=0.00, similar=0.00, similar_desc=0.00, testwise=1.00, extremes=0.00, extremes_jnd=0.33, extremes_words=0.00, longest_jnd=0.50, longest_words=0.00, middle=1.00, middle_jnd=0.33, middle_words=1.00, second_longest=1.00, second_longest_jnd=0.33, second_longest_words=1.00, second_shortest=1.00, second_shortest_jnd=0.33, second_shortest_words=1.00, shortest_jnd=0.00, shortest_words=0.00, convergence=0.00, pair=0.33, odd_start=0.33, testwise_length=0.50, pos_A=0.34, pos_last=0.31, pos_middle=0.35  chance=0.33
+   items: {'key_len': 65, 'lens': [65, 68, 59], 'key_rank': 'middle', 'max_min_ratio': 1.153, 'key_vs_mean_wrong': 1.024, 'outside_20pct_of_key': 0, 'word_spread': 6}
+
+[check] ped_definition  stem: PED: definition
+   * ( 60) A price rise cuts quantity demanded, so PED has a minus sign
+     ( 68) PED is the slope of the demand curve, so it is the same all along it
+     ( 59) PED measures how much the price changes when demand changes
+   hits: absolutes=0.50, punct=0.33, hedge=0.33, longest=0.00, shortest=0.00, similar=0.00, similar_desc=0.00, testwise=1.00, extremes=0.00, extremes_jnd=0.33, extremes_words=0.00, longest_jnd=0.00, longest_words=0.00, middle=1.00, middle_jnd=0.33, middle_words=1.00, second_longest=1.00, second_longest_jnd=0.33, second_longest_words=1.00, second_shortest=1.00, second_shortest_jnd=0.33, second_shortest_words=1.00, shortest_jnd=0.50, shortest_words=0.00, convergence=0.00, pair=0.33, odd_start=1.00, testwise_length=0.50, pos_A=0.34, pos_last=0.31, pos_middle=0.35  chance=0.33
+   items: {'key_len': 60, 'lens': [60, 68, 59], 'key_rank': 'middle', 'max_min_ratio': 1.153, 'key_vs_mean_wrong': 0.945, 'outside_20pct_of_key': 0, 'word_spread': 6}
+
+[intuition] ped_definition  stem: If the price of your usual snack went up, would you still buy as many?
+   * ( 65) PED compares percentage changes in quantity demanded and in price
+     ( 68) PED is the slope of the demand curve, so it is the same all along it
+     ( 59) PED measures how much the price changes when demand changes
+   hits: absolutes=0.50, punct=0.33, hedge=0.33, longest=0.00, shortest=0.00, similar=0.00, similar_desc=0.00, testwise=1.00, extremes=0.00, extremes_jnd=0.33, extremes_words=0.25, longest_jnd=0.50, longest_words=0.00, middle=1.00, middle_jnd=0.33, middle_words=0.50, second_longest=1.00, second_longest_jnd=0.33, second_longest_words=0.50, second_shortest=1.00, second_shortest_jnd=0.33, second_shortest_words=0.50, shortest_jnd=0.00, shortest_words=0.50, convergence=0.00, pair=0.33, odd_start=0.33, testwise_length=0.50, pos_A=0.33, pos_last=0.34, pos_middle=0.34  chance=0.33
+   items: {'key_len': 65, 'lens': [65, 68, 59], 'key_rank': 'middle', 'max_min_ratio': 1.153, 'key_vs_mean_wrong': 1.024, 'outside_20pct_of_key': 0, 'word_spread': 6}
+
+[check] ped_formula  stem: PED: formula and calculation
+   * ( 77) Each percentage change is the change divided by the original value, times 100
+     ( 52) Divide the change in price by the change in quantity
+     ( 51) Work out the percentage changes from the new values
+     ( 81) PED is the change in quantity divided by the change in price, with no percentages
+   hits: absolutes=0.25, punct=0.25, hedge=0.25, longest=0.00, shortest=0.00, similar=0.00, similar_desc=0.00, testwise=0.00, extremes=0.00, extremes_jnd=0.25, extremes_words=0.00, longest_jnd=0.50, longest_words=0.00, middle=0.50, middle_jnd=0.25, middle_words=0.50, second_longest=1.00, second_longest_jnd=0.25, second_longest_words=1.00, second_shortest=0.00, second_shortest_jnd=0.25, second_shortest_words=0.00, shortest_jnd=0.00, shortest_words=0.00, convergence=0.00, pair=0.25, odd_start=0.25, testwise_length=0.50, pos_A=0.26, pos_last=0.21, pos_middle=0.26  chance=0.25
+   items: {'key_len': 77, 'lens': [77, 52, 51, 81], 'key_rank': 'middle', 'max_min_ratio': 1.588, 'key_vs_mean_wrong': 1.255, 'outside_20pct_of_key': 2, 'word_spread': 6}
+
+[check] ped_formula  stem: PED: formula and calculation
+   * ( 78) Keep the minus sign, because price and quantity demanded move in opposite ways
+     ( 52) Divide the change in price by the change in quantity
+     ( 51) Work out the percentage changes from the new values
+     ( 81) PED is the change in quantity divided by the change in price, with no percentages
+   hits: absolutes=0.25, punct=0.25, hedge=0.25, longest=0.00, shortest=0.00, similar=0.00, similar_desc=0.00, testwise=0.00, extremes=0.00, extremes_jnd=0.25, extremes_words=0.00, longest_jnd=0.50, longest_words=0.00, middle=0.50, middle_jnd=0.25, middle_words=0.50, second_longest=1.00, second_longest_jnd=0.25, second_longest_words=1.00, second_shortest=0.00, second_shortest_jnd=0.25, second_shortest_words=0.00, shortest_jnd=0.00, shortest_words=0.00, convergence=0.00, pair=0.25, odd_start=0.25, testwise_length=0.50, pos_A=0.26, pos_last=0.21, pos_middle=0.26  chance=0.25
+   items: {'key_len': 78, 'lens': [78, 52, 51, 81], 'key_rank': 'middle', 'max_min_ratio': 1.588, 'key_vs_mean_wrong': 1.272, 'outside_20pct_of_key': 2, 'word_spread': 6}
+
+[intuition] ped_formula  stem: If a 10% price rise cut your snack buying by 20%, how strongly did you
+   * ( 77) Each percentage change is the change divided by the original value, times 100
+     ( 52) Divide the change in price by the change in quantity
+     ( 51) Work out the percentage changes from the new values
+     ( 81) PED is the change in quantity divided by the change in price, with no percentages
+   hits: absolutes=0.25, punct=0.25, hedge=0.25, longest=0.00, shortest=0.00, similar=0.00, similar_desc=0.00, testwise=0.00, extremes=0.00, extremes_jnd=0.25, extremes_words=0.00, longest_jnd=0.50, longest_words=0.00, middle=0.50, middle_jnd=0.25, middle_words=0.50, second_longest=1.00, second_longest_jnd=0.25, second_longest_words=1.00, second_shortest=0.00, second_shortest_jnd=0.25, second_shortest_words=0.00, shortest_jnd=0.00, shortest_words=0.00, convergence=0.00, pair=0.25, odd_start=0.25, testwise_length=0.50, pos_A=0.26, pos_last=0.27, pos_middle=0.24  chance=0.25
+   items: {'key_len': 77, 'lens': [77, 52, 51, 81], 'key_rank': 'middle', 'max_min_ratio': 1.588, 'key_vs_mean_wrong': 1.255, 'outside_20pct_of_key': 2, 'word_spread': 6}
+
+[check] ped_values  stem: PED: interpreting values
+   * ( 68) Ignoring the sign, elastic means above 1 and inelastic means below 1
+     ( 64) An elastic good has a PED below 1, because demand hardly changes
+     ( 64) [chatbot writes]
+   hits: absolutes=0.33, punct=0.33, hedge=0.33, longest=1.00, shortest=0.00, similar=0.00, similar_desc=1.00, testwise=1.00, extremes=0.50, extremes_jnd=0.33, extremes_words=0.25, longest_jnd=0.33, longest_words=0.50, middle=0.00, middle_jnd=0.33, middle_words=0.50, second_longest=0.00, second_longest_jnd=0.33, second_longest_words=0.50, second_shortest=0.00, second_shortest_jnd=0.33, second_shortest_words=0.50, shortest_jnd=0.33, shortest_words=0.00, convergence=0.50, pair=0.33, odd_start=0.33, testwise_length=0.00, pos_A=0.34, pos_last=0.34, pos_middle=0.33  chance=0.33
+   items: {'key_len': 68, 'lens': [68, 64], 'key_rank': 'longest', 'max_min_ratio': 1.062, 'key_vs_mean_wrong': 1.062, 'outside_20pct_of_key': 0, 'word_spread': 0}
+
+[check] ped_values  stem: PED: interpreting values
+   * ( 70) When demand is price inelastic, raising the price raises total revenue
+     ( 64) An elastic good has a PED below 1, because demand hardly changes
+     ( 64) [chatbot writes]
+   hits: absolutes=0.33, punct=0.33, hedge=0.33, longest=1.00, shortest=0.00, similar=0.00, similar_desc=1.00, testwise=1.00, extremes=0.50, extremes_jnd=0.33, extremes_words=0.00, longest_jnd=0.33, longest_words=0.00, middle=0.00, middle_jnd=0.33, middle_words=1.00, second_longest=0.00, second_longest_jnd=0.33, second_longest_words=1.00, second_shortest=0.00, second_shortest_jnd=0.33, second_shortest_words=1.00, shortest_jnd=0.33, shortest_words=0.00, convergence=0.50, pair=0.33, odd_start=0.33, testwise_length=0.00, pos_A=0.34, pos_last=0.34, pos_middle=0.33  chance=0.33
+   items: {'key_len': 70, 'lens': [70, 64], 'key_rank': 'longest', 'max_min_ratio': 1.094, 'key_vs_mean_wrong': 1.094, 'outside_20pct_of_key': 0, 'word_spread': 1}
+
+[check] pes_definition  stem: PES: definition and determinants
+   * ( 61) PES shows how quantity supplied responds to a change in price
+     ( 61) Supply is just as elastic in the short run as in the long run
+     ( 73) Supply is price elastic when buyers have lots of substitutes to switch to
+   hits: absolutes=0.33, punct=0.33, hedge=0.33, longest=0.00, shortest=0.50, similar=1.00, similar_desc=0.00, testwise=0.00, extremes=0.25, extremes_jnd=0.33, extremes_words=0.50, longest_jnd=0.00, longest_words=0.00, middle=0.50, middle_jnd=0.33, middle_words=0.00, second_longest=0.50, second_longest_jnd=0.33, second_longest_words=0.00, second_shortest=0.50, second_shortest_jnd=0.33, second_shortest_words=0.00, shortest_jnd=0.50, shortest_words=1.00, convergence=0.00, pair=0.33, odd_start=1.00, testwise_length=0.50, pos_A=0.33, pos_last=0.36, pos_middle=0.31  chance=0.33
+   items: {'key_len': 61, 'lens': [61, 61, 73], 'key_rank': 'tie', 'max_min_ratio': 1.197, 'key_vs_mean_wrong': 0.91, 'outside_20pct_of_key': 0, 'word_spread': 3}
+
+[check] pes_definition  stem: PES: definition and determinants
+   * ( 68) Spare capacity lets firms raise output quickly, so supply is elastic
+     ( 61) Supply is just as elastic in the short run as in the long run
+     ( 73) Supply is price elastic when buyers have lots of substitutes to switch to
+   hits: absolutes=0.33, punct=0.33, hedge=0.33, longest=0.00, shortest=0.00, similar=0.33, similar_desc=0.00, testwise=0.00, extremes=0.00, extremes_jnd=0.33, extremes_words=0.50, longest_jnd=0.50, longest_words=0.00, middle=1.00, middle_jnd=0.33, middle_words=0.00, second_longest=1.00, second_longest_jnd=0.33, second_longest_words=0.00, second_shortest=1.00, second_shortest_jnd=0.33, second_shortest_words=0.00, shortest_jnd=0.00, shortest_words=1.00, convergence=0.33, pair=0.33, odd_start=1.00, testwise_length=1.00, pos_A=0.33, pos_last=0.36, pos_middle=0.31  chance=0.33
+   items: {'key_len': 68, 'lens': [68, 61, 73], 'key_rank': 'middle', 'max_min_ratio': 1.197, 'key_vs_mean_wrong': 1.015, 'outside_20pct_of_key': 0, 'word_spread': 3}
+
+[intuition] pes_definition  stem: If strawberries suddenly sold for more, how fast could farmers grow ex
+   * ( 61) PES shows how quantity supplied responds to a change in price
+     ( 61) Supply is just as elastic in the short run as in the long run
+     ( 73) Supply is price elastic when buyers have lots of substitutes to switch to
+   hits: absolutes=0.33, punct=0.33, hedge=0.33, longest=0.00, shortest=0.50, similar=0.33, similar_desc=0.00, testwise=0.00, extremes=0.25, extremes_jnd=0.33, extremes_words=0.50, longest_jnd=0.00, longest_words=0.00, middle=0.50, middle_jnd=0.33, middle_words=0.00, second_longest=0.50, second_longest_jnd=0.33, second_longest_words=0.00, second_shortest=0.50, second_shortest_jnd=0.33, second_shortest_words=0.00, shortest_jnd=0.50, shortest_words=1.00, convergence=0.00, pair=0.33, odd_start=1.00, testwise_length=0.50, pos_A=0.37, pos_last=0.29, pos_middle=0.34  chance=0.33
+   items: {'key_len': 61, 'lens': [61, 61, 73], 'key_rank': 'tie', 'max_min_ratio': 1.197, 'key_vs_mean_wrong': 0.91, 'outside_20pct_of_key': 0, 'word_spread': 3}
+
+[check] pes_formula  stem: PES: formula and calculation
+   * ( 73) PES is the % change in quantity supplied divided by the % change in price
+     ( 53) PES is usually negative, just like PED for most goods
+     ( 73) PES is the % change in price divided by the % change in quantity supplied
+   hits: absolutes=0.33, punct=0.33, hedge=0.00, longest=0.50, shortest=0.00, similar=0.50, similar_desc=0.50, testwise=0.00, extremes=0.25, extremes_jnd=0.33, extremes_words=0.25, longest_jnd=0.50, longest_words=0.50, middle=0.50, middle_jnd=0.33, middle_words=0.50, second_longest=0.50, second_longest_jnd=0.33, second_longest_words=0.50, second_shortest=0.50, second_shortest_jnd=0.33, second_shortest_words=0.50, shortest_jnd=0.00, shortest_words=0.00, convergence=0.50, pair=0.50, odd_start=0.33, testwise_length=0.50, pos_A=0.32, pos_last=0.32, pos_middle=0.37  chance=0.33
+   items: {'key_len': 73, 'lens': [73, 53, 73], 'key_rank': 'tie', 'max_min_ratio': 1.377, 'key_vs_mean_wrong': 1.159, 'outside_20pct_of_key': 1, 'word_spread': 5}
+
+[check] pes_formula  stem: PES: formula and calculation
+   * ( 63) PES is positive, because firms supply more when the price rises
+     ( 53) PES is usually negative, just like PED for most goods
+     ( 73) PES is the % change in price divided by the % change in quantity supplied
+   hits: absolutes=0.33, punct=0.33, hedge=0.00, longest=0.00, shortest=0.00, similar=0.00, similar_desc=0.00, testwise=0.00, extremes=0.00, extremes_jnd=0.00, extremes_words=0.00, longest_jnd=0.00, longest_words=0.00, middle=1.00, middle_jnd=1.00, middle_words=1.00, second_longest=1.00, second_longest_jnd=0.33, second_longest_words=1.00, second_shortest=1.00, second_shortest_jnd=0.33, second_shortest_words=1.00, shortest_jnd=0.00, shortest_words=0.00, convergence=0.50, pair=0.33, odd_start=0.33, testwise_length=1.00, pos_A=0.32, pos_last=0.32, pos_middle=0.37  chance=0.33
+   items: {'key_len': 63, 'lens': [63, 53, 73], 'key_rank': 'middle', 'max_min_ratio': 1.377, 'key_vs_mean_wrong': 1.0, 'outside_20pct_of_key': 0, 'word_spread': 5}
+
+[intuition] pes_formula  stem: If a 10% higher price made a bakery bake 5% more bread, how strongly d
+   * ( 73) PES is the % change in quantity supplied divided by the % change in price
+     ( 53) PES is usually negative, just like PED for most goods
+     ( 73) PES is the % change in price divided by the % change in quantity supplied
+   hits: absolutes=0.33, punct=0.33, hedge=0.00, longest=0.50, shortest=0.00, similar=0.50, similar_desc=0.50, testwise=0.00, extremes=0.25, extremes_jnd=0.33, extremes_words=0.25, longest_jnd=0.50, longest_words=0.50, middle=0.50, middle_jnd=0.33, middle_words=0.50, second_longest=0.50, second_longest_jnd=0.33, second_longest_words=0.50, second_shortest=0.50, second_shortest_jnd=0.33, second_shortest_words=0.50, shortest_jnd=0.00, shortest_words=0.00, convergence=0.50, pair=0.50, odd_start=0.33, testwise_length=0.50, pos_A=0.28, pos_last=0.34, pos_middle=0.38  chance=0.33
+   items: {'key_len': 73, 'lens': [73, 53, 73], 'key_rank': 'tie', 'max_min_ratio': 1.377, 'key_vs_mean_wrong': 1.159, 'outside_20pct_of_key': 1, 'word_spread': 5}
+
+[check] yed_definition  stem: YED: definition and sign
+   * ( 63) YED divides % change in quantity demanded by % change in income
+     ( 64) YED measures how demand responds to a change in the good's price
+     ( 65) A necessity like bread has a negative income elasticity of demand
+   hits: absolutes=0.33, punct=0.33, hedge=0.33, longest=0.00, shortest=1.00, similar=1.00, similar_desc=0.00, testwise=0.00, extremes=0.50, extremes_jnd=0.33, extremes_words=0.25, longest_jnd=0.33, longest_words=0.50, middle=0.00, middle_jnd=0.33, middle_words=0.50, second_longest=0.00, second_longest_jnd=0.33, second_longest_words=0.50, second_shortest=0.00, second_shortest_jnd=0.33, second_shortest_words=0.50, shortest_jnd=0.33, shortest_words=0.00, convergence=0.50, pair=0.33, odd_start=0.00, testwise_length=0.00, pos_A=0.30, pos_last=0.36, pos_middle=0.34  chance=0.33
+   items: {'key_len': 63, 'lens': [63, 64, 65], 'key_rank': 'shortest', 'max_min_ratio': 1.032, 'key_vs_mean_wrong': 0.977, 'outside_20pct_of_key': 0, 'word_spread': 1}
+
+[check] yed_definition  stem: YED: definition and sign
+   * ( 69) Positive YED means a normal good; negative YED means an inferior good
+     ( 64) YED measures how demand responds to a change in the good's price
+     ( 65) A necessity like bread has a negative income elasticity of demand
+   hits: absolutes=0.33, punct=0.33, hedge=0.33, longest=1.00, shortest=0.00, similar=0.50, similar_desc=1.00, testwise=1.00, extremes=0.50, extremes_jnd=0.33, extremes_words=0.25, longest_jnd=0.33, longest_words=0.50, middle=0.00, middle_jnd=0.33, middle_words=0.50, second_longest=0.00, second_longest_jnd=0.33, second_longest_words=0.50, second_shortest=0.00, second_shortest_jnd=0.33, second_shortest_words=0.50, shortest_jnd=0.33, shortest_words=0.00, convergence=0.50, pair=0.33, odd_start=0.33, testwise_length=0.00, pos_A=0.30, pos_last=0.36, pos_middle=0.34  chance=0.33
+   items: {'key_len': 69, 'lens': [69, 64, 65], 'key_rank': 'longest', 'max_min_ratio': 1.078, 'key_vs_mean_wrong': 1.07, 'outside_20pct_of_key': 0, 'word_spread': 1}
+
+[intuition] yed_definition  stem: If you got a pay rise, what would you buy more of, and what less?
+   * ( 63) YED divides % change in quantity demanded by % change in income
+     ( 64) YED measures how demand responds to a change in the good's price
+     ( 65) A necessity like bread has a negative income elasticity of demand
+   hits: absolutes=0.33, punct=0.33, hedge=0.33, longest=0.00, shortest=1.00, similar=0.33, similar_desc=0.00, testwise=0.00, extremes=0.50, extremes_jnd=0.33, extremes_words=0.25, longest_jnd=0.33, longest_words=0.50, middle=0.00, middle_jnd=0.33, middle_words=0.50, second_longest=0.00, second_longest_jnd=0.33, second_longest_words=0.50, second_shortest=0.00, second_shortest_jnd=0.33, second_shortest_words=0.50, shortest_jnd=0.33, shortest_words=0.00, convergence=0.50, pair=0.33, odd_start=0.00, testwise_length=0.00, pos_A=0.34, pos_last=0.33, pos_middle=0.33  chance=0.33
+   items: {'key_len': 63, 'lens': [63, 64, 65], 'key_rank': 'shortest', 'max_min_ratio': 1.032, 'key_vs_mean_wrong': 0.977, 'outside_20pct_of_key': 0, 'word_spread': 1}
+
+[check] tax_supply_shift  stem: Indirect tax: shifting supply
+   * ( 68) The tax raises firms' costs, so supply shifts up by the tax per unit
+     ( 68) An indirect tax shifts the demand curve, because buyers now pay more
+     ( 65) An ad valorem tax shifts supply by the same amount at every price
+   hits: absolutes=0.50, punct=0.33, hedge=0.33, longest=0.50, shortest=0.00, similar=0.50, similar_desc=0.00, testwise=1.00, extremes=0.25, extremes_jnd=0.33, extremes_words=0.50, longest_jnd=0.33, longest_words=1.00, middle=0.50, middle_jnd=0.33, middle_words=0.00, second_longest=0.50, second_longest_jnd=0.33, second_longest_words=0.00, second_shortest=0.50, second_shortest_jnd=0.33, second_shortest_words=0.00, shortest_jnd=0.33, shortest_words=0.00, convergence=0.50, pair=0.33, odd_start=1.00, testwise_length=0.50, pos_A=0.36, pos_last=0.32, pos_middle=0.32  chance=0.33
+   items: {'key_len': 68, 'lens': [68, 68, 65], 'key_rank': 'tie', 'max_min_ratio': 1.046, 'key_vs_mean_wrong': 1.023, 'outside_20pct_of_key': 0, 'word_spread': 2}
+
+[check] tax_supply_shift  stem: Indirect tax: shifting supply
+   * ( 67) A specific tax gives a parallel shift and an ad valorem tax a pivot
+     ( 68) An indirect tax shifts the demand curve, because buyers now pay more
+     ( 65) An ad valorem tax shifts supply by the same amount at every price
+   hits: absolutes=0.50, punct=0.33, hedge=0.33, longest=0.00, shortest=0.00, similar=0.00, similar_desc=1.00, testwise=0.00, extremes=0.00, extremes_jnd=0.33, extremes_words=0.50, longest_jnd=0.33, longest_words=1.00, middle=1.00, middle_jnd=0.33, middle_words=0.00, second_longest=1.00, second_longest_jnd=0.33, second_longest_words=0.00, second_shortest=1.00, second_shortest_jnd=0.33, second_shortest_words=0.00, shortest_jnd=0.33, shortest_words=0.00, convergence=0.00, pair=0.33, odd_start=1.00, testwise_length=0.50, pos_A=0.36, pos_last=0.32, pos_middle=0.32  chance=0.33
+   items: {'key_len': 67, 'lens': [67, 68, 65], 'key_rank': 'middle', 'max_min_ratio': 1.046, 'key_vs_mean_wrong': 1.008, 'outside_20pct_of_key': 0, 'word_spread': 2}
+
+[intuition] tax_supply_shift  stem: If a café had to pay 50p to the government on every coffee, what would
+   * ( 68) The tax raises firms' costs, so supply shifts up by the tax per unit
+     ( 68) An indirect tax shifts the demand curve, because buyers now pay more
+     ( 65) An ad valorem tax shifts supply by the same amount at every price
+   hits: absolutes=0.50, punct=0.33, hedge=0.33, longest=0.50, shortest=0.00, similar=0.00, similar_desc=0.00, testwise=0.00, extremes=0.25, extremes_jnd=0.33, extremes_words=0.50, longest_jnd=0.33, longest_words=1.00, middle=0.50, middle_jnd=0.33, middle_words=0.00, second_longest=0.50, second_longest_jnd=0.33, second_longest_words=0.00, second_shortest=0.50, second_shortest_jnd=0.33, second_shortest_words=0.00, shortest_jnd=0.33, shortest_words=0.00, convergence=0.50, pair=0.33, odd_start=1.00, testwise_length=0.50, pos_A=0.36, pos_last=0.33, pos_middle=0.32  chance=0.33
+   items: {'key_len': 68, 'lens': [68, 68, 65], 'key_rank': 'tie', 'max_min_ratio': 1.046, 'key_vs_mean_wrong': 1.023, 'outside_20pct_of_key': 0, 'word_spread': 2}
+
+[check] tax_incidence_split  stem: Indirect tax: splitting the burden
+   * ( 70) The more price inelastic demand is, the more of the tax consumers bear
+     ( 74) Producers bear the tax, as they are the ones who hand it to the government
+     ( 70) The more price inelastic demand is, the more of the tax producers bear
+   hits: absolutes=0.33, punct=0.33, hedge=0.33, longest=0.00, shortest=0.50, similar=0.50, similar_desc=1.00, testwise=0.00, extremes=0.25, extremes_jnd=0.33, extremes_words=0.25, longest_jnd=0.33, longest_words=0.00, middle=0.50, middle_jnd=0.33, middle_words=0.50, second_longest=0.50, second_longest_jnd=0.33, second_longest_words=0.50, second_shortest=0.50, second_shortest_jnd=0.33, second_shortest_words=0.50, shortest_jnd=0.33, shortest_words=0.50, convergence=0.00, pair=0.50, odd_start=0.00, testwise_length=0.50, pos_A=0.33, pos_last=0.34, pos_middle=0.33  chance=0.33
+   items: {'key_len': 70, 'lens': [70, 74, 70], 'key_rank': 'tie', 'max_min_ratio': 1.057, 'key_vs_mean_wrong': 0.972, 'outside_20pct_of_key': 0, 'word_spread': 2}
+
+[check] tax_incidence_split  stem: Indirect tax: splitting the burden
+   * ( 72) When demand is price elastic, producers bear the larger share of the tax
+     ( 74) Producers bear the tax, as they are the ones who hand it to the government
+     ( 70) The more price inelastic demand is, the more of the tax producers bear
+   hits: absolutes=0.33, punct=0.33, hedge=0.33, longest=0.00, shortest=0.00, similar=0.00, similar_desc=0.50, testwise=0.00, extremes=0.00, extremes_jnd=0.33, extremes_words=0.25, longest_jnd=0.33, longest_words=0.00, middle=1.00, middle_jnd=0.33, middle_words=0.50, second_longest=1.00, second_longest_jnd=0.33, second_longest_words=0.50, second_shortest=1.00, second_shortest_jnd=0.33, second_shortest_words=0.50, shortest_jnd=0.33, shortest_words=0.50, convergence=0.50, pair=0.50, odd_start=0.33, testwise_length=1.00, pos_A=0.33, pos_last=0.34, pos_middle=0.33  chance=0.33
+   items: {'key_len': 72, 'lens': [72, 74, 70], 'key_rank': 'middle', 'max_min_ratio': 1.057, 'key_vs_mean_wrong': 1.0, 'outside_20pct_of_key': 0, 'word_spread': 2}
+
+[intuition] tax_incidence_split  stem: If a tax goes on something people can't do without, who ends up paying
+   * ( 70) The more price inelastic demand is, the more of the tax consumers bear
+     ( 74) Producers bear the tax, as they are the ones who hand it to the government
+     ( 70) The more price inelastic demand is, the more of the tax producers bear
+   hits: absolutes=0.33, punct=0.33, hedge=0.33, longest=0.00, shortest=0.50, similar=0.00, similar_desc=1.00, testwise=0.00, extremes=0.25, extremes_jnd=0.33, extremes_words=0.25, longest_jnd=0.33, longest_words=0.00, middle=0.50, middle_jnd=0.33, middle_words=0.50, second_longest=0.50, second_longest_jnd=0.33, second_longest_words=0.50, second_shortest=0.50, second_shortest_jnd=0.33, second_shortest_words=0.50, shortest_jnd=0.33, shortest_words=0.50, convergence=0.00, pair=0.50, odd_start=0.00, testwise_length=0.50, pos_A=0.35, pos_last=0.35, pos_middle=0.30  chance=0.33
+   items: {'key_len': 70, 'lens': [70, 74, 70], 'key_rank': 'tie', 'max_min_ratio': 1.057, 'key_vs_mean_wrong': 0.972, 'outside_20pct_of_key': 0, 'word_spread': 2}
+
+[check] externality_tax_eval  stem: Evaluating taxes on negative externalities
+   * ( 72) A tax equal to marginal external cost moves output to the social optimum
+     ( 68) A pollution tax set at the right level brings pollution down to zero
+     ( 70) Firms just pay a pollution tax and carry on, so output does not change
+     ( 74) A tax on pollution shifts demand, while a tax on the product shifts supply
+   hits: absolutes=0.25, punct=0.25, hedge=0.25, longest=0.00, shortest=0.00, similar=0.25, similar_desc=1.00, testwise=0.00, extremes=0.00, extremes_jnd=0.25, extremes_words=0.25, longest_jnd=0.25, longest_words=0.00, middle=0.50, middle_jnd=0.25, middle_words=0.25, second_longest=1.00, second_longest_jnd=0.25, second_longest_words=0.00, second_shortest=0.00, second_shortest_jnd=0.25, second_shortest_words=0.50, shortest_jnd=0.25, shortest_words=0.50, convergence=0.00, pair=0.25, odd_start=0.00, testwise_length=0.50, pos_A=0.23, pos_last=0.24, pos_middle=0.27  chance=0.25
+   items: {'key_len': 72, 'lens': [72, 68, 70, 74], 'key_rank': 'middle', 'max_min_ratio': 1.088, 'key_vs_mean_wrong': 1.019, 'outside_20pct_of_key': 0, 'word_spread': 1}
+
+[check] externality_tax_eval  stem: Evaluating taxes on negative externalities
+   * ( 70) Valuing the external cost in money is hard, so the tax rate is a guess
+     ( 68) A pollution tax set at the right level brings pollution down to zero
+     ( 70) Firms just pay a pollution tax and carry on, so output does not change
+     ( 74) A tax on pollution shifts demand, while a tax on the product shifts supply
+   hits: absolutes=0.25, punct=0.25, hedge=0.25, longest=0.00, shortest=0.00, similar=0.25, similar_desc=1.00, testwise=0.00, extremes=0.00, extremes_jnd=0.25, extremes_words=0.50, longest_jnd=0.25, longest_words=1.00, middle=0.50, middle_jnd=0.25, middle_words=0.00, second_longest=0.50, second_longest_jnd=0.25, second_longest_words=0.00, second_shortest=0.50, second_shortest_jnd=0.25, second_shortest_words=0.00, shortest_jnd=0.25, shortest_words=0.00, convergence=0.00, pair=0.25, odd_start=0.25, testwise_length=0.50, pos_A=0.23, pos_last=0.24, pos_middle=0.27  chance=0.25
+   items: {'key_len': 70, 'lens': [70, 68, 70, 74], 'key_rank': 'tie', 'max_min_ratio': 1.088, 'key_vs_mean_wrong': 0.991, 'outside_20pct_of_key': 0, 'word_spread': 2}
+
+[check] externality_tax_eval  stem: Evaluating taxes on negative externalities
+   * ( 66) With price inelastic demand, the tax cuts output by a small amount
+     ( 68) A pollution tax set at the right level brings pollution down to zero
+     ( 70) Firms just pay a pollution tax and carry on, so output does not change
+     ( 74) A tax on pollution shifts demand, while a tax on the product shifts supply
+   hits: absolutes=0.25, punct=0.25, hedge=0.25, longest=0.00, shortest=1.00, similar=0.25, similar_desc=0.00, testwise=0.00, extremes=0.50, extremes_jnd=0.25, extremes_words=0.50, longest_jnd=0.00, longest_words=0.00, middle=0.00, middle_jnd=0.25, middle_words=0.00, second_longest=0.00, second_longest_jnd=0.25, second_longest_words=0.00, second_shortest=0.00, second_shortest_jnd=0.25, second_shortest_words=0.00, shortest_jnd=0.33, shortest_words=1.00, convergence=0.00, pair=0.25, odd_start=0.25, testwise_length=0.00, pos_A=0.23, pos_last=0.24, pos_middle=0.27  chance=0.25
+   items: {'key_len': 66, 'lens': [66, 68, 70, 74], 'key_rank': 'shortest', 'max_min_ratio': 1.121, 'key_vs_mean_wrong': 0.934, 'outside_20pct_of_key': 0, 'word_spread': 2}
+
+[intuition] externality_tax_eval  stem: If a factory had to pay for the smoke it makes, would it make less?
+   * ( 72) A tax equal to marginal external cost moves output to the social optimum
+     ( 68) A pollution tax set at the right level brings pollution down to zero
+     ( 70) Firms just pay a pollution tax and carry on, so output does not change
+     ( 74) A tax on pollution shifts demand, while a tax on the product shifts supply
+   hits: absolutes=0.25, punct=0.25, hedge=0.25, longest=0.00, shortest=0.00, similar=0.00, similar_desc=1.00, testwise=0.00, extremes=0.00, extremes_jnd=0.25, extremes_words=0.25, longest_jnd=0.25, longest_words=0.00, middle=0.50, middle_jnd=0.25, middle_words=0.25, second_longest=1.00, second_longest_jnd=0.25, second_longest_words=0.00, second_shortest=0.00, second_shortest_jnd=0.25, second_shortest_words=0.50, shortest_jnd=0.25, shortest_words=0.50, convergence=0.00, pair=0.25, odd_start=0.00, testwise_length=0.50, pos_A=0.26, pos_last=0.20, pos_middle=0.27  chance=0.25
+   items: {'key_len': 72, 'lens': [72, 68, 70, 74], 'key_rank': 'middle', 'max_min_ratio': 1.088, 'key_vs_mean_wrong': 1.019, 'outside_20pct_of_key': 0, 'word_spread': 1}
+
+[how_ai_works] ail_how_fabrication  stem: Why chatbots invent sources
+   * ( 63) It predicts plausible text, so it makes up links that look real
+     ( 57) It copied a page that was later deleted from the internet
+     ( 69) Its links are tested before you see them, so the site is down for now
+     ( 61) It made up the link deliberately, to hide that it didn't know
+   hits: absolutes=0.25, punct=0.25, hedge=0.25, longest=0.00, shortest=0.00, similar=0.25, similar_desc=1.00, testwise=0.00, extremes=0.00, extremes_jnd=0.25, extremes_words=0.00, longest_jnd=0.50, longest_words=0.00, middle=0.50, middle_jnd=0.25, middle_words=0.50, second_longest=1.00, second_longest_jnd=0.25, second_longest_words=0.50, second_shortest=0.00, second_shortest_jnd=0.25, second_shortest_words=0.50, shortest_jnd=0.00, shortest_words=0.00, convergence=0.50, pair=0.25, odd_start=0.00, testwise_length=0.50, pos_A=0.24, pos_last=0.24, pos_middle=0.26  chance=0.25
+   items: {'key_len': 63, 'lens': [63, 57, 69, 61], 'key_rank': 'middle', 'max_min_ratio': 1.211, 'key_vs_mean_wrong': 1.011, 'outside_20pct_of_key': 0, 'word_spread': 4}
+
+[how_ai_works] ail_how_confidence  stem: Why confidence isn't evidence
+   * ( 60) Sounding confident doesn't show whether an answer is correct
+     ( 61) A chatbot sounds sure once it has checked the facts behind it
+     ( 61) Confident wording means the answer came from a trusted source
+     ( 66) When a chatbot is unsure of a fact, it tells you before it answers
+   hits: absolutes=0.25, punct=0.25, hedge=0.25, longest=0.00, shortest=1.00, similar=0.25, similar_desc=1.00, testwise=0.00, extremes=0.50, extremes_jnd=0.25, extremes_words=0.50, longest_jnd=0.25, longest_words=0.00, middle=0.00, middle_jnd=0.25, middle_words=0.00, second_longest=0.00, second_longest_jnd=0.25, second_longest_words=0.00, second_shortest=0.00, second_shortest_jnd=0.25, second_shortest_words=0.00, shortest_jnd=0.25, shortest_words=1.00, convergence=0.50, pair=0.25, odd_start=0.25, testwise_length=0.00, pos_A=0.22, pos_last=0.27, pos_middle=0.26  chance=0.25
+   items: {'key_len': 60, 'lens': [60, 61, 61, 66], 'key_rank': 'shortest', 'max_min_ratio': 1.1, 'key_vs_mean_wrong': 0.957, 'outside_20pct_of_key': 0, 'word_spread': 5}
+
+[how_ai_works] ail_how_cutoff  stem: Why chatbots miss recent events
+   * ( 67) Without searching, a chatbot's knowledge stops at its training date
+     ( 65) A chatbot checks the live internet for news before it answers you
+     ( 69) Chatbots are retrained on the news overnight, so they stay up to date
+     ( 64) If its data were out of date, the chatbot would refuse to answer
+   hits: absolutes=0.25, punct=0.25, hedge=0.25, longest=0.00, shortest=0.00, similar=0.00, similar_desc=1.00, testwise=0.00, extremes=0.00, extremes_jnd=0.25, extremes_words=0.50, longest_jnd=0.25, longest_words=0.00, middle=0.50, middle_jnd=0.25, middle_words=0.00, second_longest=1.00, second_longest_jnd=0.25, second_longest_words=0.00, second_shortest=0.00, second_shortest_jnd=0.25, second_shortest_words=0.00, shortest_jnd=0.25, shortest_words=1.00, convergence=0.50, pair=0.25, odd_start=0.25, testwise_length=0.50, pos_A=0.26, pos_last=0.23, pos_middle=0.25  chance=0.25
+   items: {'key_len': 67, 'lens': [67, 65, 69, 64], 'key_rank': 'middle', 'max_min_ratio': 1.078, 'key_vs_mean_wrong': 1.015, 'outside_20pct_of_key': 0, 'word_spread': 3}
+
+[how_ai_works] ail_how_agreement  stem: Why chatbots agree with you
+   * ( 70) Chatbots are trained to please, so pushback sways them even when right
+     ( 67) It changed the answer because it has now checked the facts properly
+     ( 65) A chatbot switches answers once it works out the new one is right
+     ( 58) Disagreeing makes it go and look up a more reliable source
+   hits: absolutes=0.25, punct=0.25, hedge=0.25, longest=1.00, shortest=0.00, similar=1.00, similar_desc=1.00, testwise=1.00, extremes=0.50, extremes_jnd=0.25, extremes_words=0.00, longest_jnd=0.33, longest_words=0.00, middle=0.00, middle_jnd=0.25, middle_words=0.50, second_longest=0.00, second_longest_jnd=0.25, second_longest_words=0.50, second_shortest=0.00, second_shortest_jnd=0.25, second_shortest_words=0.50, shortest_jnd=0.00, shortest_words=0.00, convergence=0.50, pair=0.25, odd_start=0.25, testwise_length=0.00, pos_A=0.24, pos_last=0.23, pos_middle=0.26  chance=0.25
+   items: {'key_len': 70, 'lens': [70, 67, 65, 58], 'key_rank': 'longest', 'max_min_ratio': 1.207, 'key_vs_mean_wrong': 1.105, 'outside_20pct_of_key': 0, 'word_spread': 2}
+{
+ "economics": {
+  "questions": 28,
+  "mcqs": 28,
+  "open_fallback": 0,
+  "chance": 0.312,
+  "absolutes": 0.354,
+  "punct": 0.312,
+  "hedge": 0.277,
+  "longest": 0.179,
+  "shortest": 0.179,
+  "similar": 0.223,
+  "similar_desc": 0.375,
+  "testwise": 0.286,
+  "extremes": 0.179,
+  "extremes_jnd": 0.301,
+  "extremes_words": 0.259,
+  "longest_jnd": 0.318,
+  "longest_words": 0.25,
+  "middle": 0.536,
+  "middle_jnd": 0.336,
+  "middle_words": 0.411,
+  "second_longest": 0.625,
+  "second_longest_jnd": 0.312,
+  "second_longest_words": 0.446,
+  "second_shortest": 0.446,
+  "second_shortest_jnd": 0.312,
+  "second_shortest_words": 0.375,
+  "shortest_jnd": 0.223,
+  "shortest_words": 0.268,
+  "convergence": 0.208,
+  "pair": 0.342,
+  "odd_start": 0.414,
+  "testwise_length": 0.446,
+  "pos_A": 0.311,
+  "pos_last": 0.307,
+  "pos_middle": 0.317,
+  "point1_sets": 17,
+  "point1_middle": 0.471,
+  "point1_longest": 0.176,
+  "point1_shortest": 0.235,
+  "point1_chance": 0.314,
+  "key_rank_counts": {
+   "shortest": 3,
+   "middle": 13,
+   "longest": 3,
+   "tie": 9
+  },
+  "max_min_ratio_mean": 1.182,
+  "max_min_ratio_max": 1.588,
+  "sets_with_option_outside_20pct_of_key": 5,
+  "novel_sets": 11,
+  "novel": 1.0,
+  "correct_no_full_stop_rate": 1,
+  "correct_longest_rate": 0.107,
+  "sets_with_absolute_distractor": 7,
+  "sets_with_absolute_correct": 0
+ },
+ "how_ai_works": {
+  "questions": 4,
+  "mcqs": 4,
+  "open_fallback": 0,
+  "chance": 0.25,
+  "absolutes": 0.25,
+  "punct": 0.25,
+  "hedge": 0.25,
+  "longest": 0.25,
+  "shortest": 0.25,
+  "similar": 0.375,
+  "similar_desc": 1.0,
+  "testwise": 0.25,
+  "extremes": 0.25,
+  "extremes_jnd": 0.25,
+  "extremes_words": 0.25,
+  "longest_jnd": 0.333,
+  "longest_words": 0.0,
+  "middle": 0.25,
+  "middle_jnd": 0.25,
+  "middle_words": 0.25,
+  "second_longest": 0.5,
+  "second_longest_jnd": 0.25,
+  "second_longest_words": 0.25,
+  "second_shortest": 0.0,
+  "second_shortest_jnd": 0.25,
+  "second_shortest_words": 0.25,
+  "shortest_jnd": 0.125,
+  "shortest_words": 0.5,
+  "convergence": 0.5,
+  "pair": 0.25,
+  "odd_start": 0.188,
+  "testwise_length": 0.25,
+  "pos_A": 0.241,
+  "pos_last": 0.244,
+  "pos_middle": 0.257,
+  "point1_sets": 4,
+  "point1_middle": 0.25,
+  "point1_longest": 0.25,
+  "point1_shortest": 0.25,
+  "point1_chance": 0.25,
+  "key_rank_counts": {
+   "shortest": 1,
+   "middle": 2,
+   "longest": 1,
+   "tie": 0
+  },
+  "max_min_ratio_mean": 1.149,
+  "max_min_ratio_max": 1.211,
+  "sets_with_option_outside_20pct_of_key": 0,
+  "novel_sets": 0,
+  "correct_no_full_stop_rate": 1,
+  "correct_longest_rate": 0.25,
+  "sets_with_absolute_distractor": 0,
+  "sets_with_absolute_correct": 0
+ },
+ "all": {
+  "questions": 32,
+  "mcqs": 32,
+  "open_fallback": 0,
+  "chance": 0.305,
+  "absolutes": 0.341,
+  "punct": 0.305,
+  "hedge": 0.273,
+  "longest": 0.188,
+  "shortest": 0.188,
+  "similar": 0.242,
+  "similar_desc": 0.453,
+  "testwise": 0.281,
+  "extremes": 0.188,
+  "extremes_jnd": 0.294,
+  "extremes_words": 0.258,
+  "longest_jnd": 0.32,
+  "longest_words": 0.219,
+  "middle": 0.5,
+  "middle_jnd": 0.326,
+  "middle_words": 0.391,
+  "second_longest": 0.609,
+  "second_longest_jnd": 0.305,
+  "second_longest_words": 0.422,
+  "second_shortest": 0.391,
+  "second_shortest_jnd": 0.305,
+  "second_shortest_words": 0.359,
+  "shortest_jnd": 0.211,
+  "shortest_words": 0.297,
+  "convergence": 0.245,
+  "pair": 0.331,
+  "odd_start": 0.385,
+  "testwise_length": 0.422,
+  "pos_A": 0.302,
+  "pos_last": 0.299,
+  "pos_middle": 0.31,
+  "point1_sets": 21,
+  "point1_middle": 0.429,
+  "point1_longest": 0.19,
+  "point1_shortest": 0.238,
+  "point1_chance": 0.302,
+  "key_rank_counts": {
+   "shortest": 4,
+   "middle": 15,
+   "longest": 4,
+   "tie": 9
+  },
+  "max_min_ratio_mean": 1.178,
+  "max_min_ratio_max": 1.588,
+  "sets_with_option_outside_20pct_of_key": 5,
+  "novel_sets": 11,
+  "novel": 1.0,
+  "correct_no_full_stop_rate": 1,
+  "correct_longest_rate": 0.125,
+  "sets_with_absolute_distractor": 7,
+  "sets_with_absolute_correct": 0
+ }
+}

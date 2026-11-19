@@ -1,0 +1,9 @@
+id,node_id,wrong_idea,correction,source_ids,status,flag,updated_by,updated_at
+ail_how_fabrication_m2,ail_how_fabrication,"Its links are tested before you see them, so the site is down for now","Nothing is tested: without a search it writes link-shaped text; with a search, open the page and check it says what was claimed.",edux_ai_literacy,approved,,w4-fix-mcq proposal,
+ail_how_fabrication_m3,ail_how_fabrication,"It made up the link deliberately, to hide that it didn't know",There is no intent: an invented link is just plausible-looking text.,edux_ai_literacy,approved,,w4-fix-mcq proposal,
+ail_how_confidence_m1,ail_how_confidence,A chatbot sounds sure once it has checked the facts behind it,It sounds sure either way; its tone isn't a check.,edux_ai_literacy,approved,,w4-fix-mcq proposal,
+ail_how_confidence_m3,ail_how_confidence,"When a chatbot is unsure of a fact, it tells you before it answers",Chatbots often don't flag uncertainty; check the claim yourself.,edux_ai_literacy,approved,,w4-fix-mcq proposal,
+ail_how_cutoff_m1,ail_how_cutoff,A chatbot checks the live internet for news before it answers you,Only with a web search tool switched on; otherwise it uses its training text.,edux_ai_literacy,approved,,w4-fix-mcq proposal,
+ail_how_cutoff_m2,ail_how_cutoff,"Chatbots are retrained on the news overnight, so they stay up to date",Its training stops at a date; later events aren't in it.,edux_ai_literacy,approved,,w4-fix-mcq proposal,
+ail_how_agreement_m2,ail_how_agreement,A chatbot switches answers once it works out the new one is right,It can switch a right answer to a wrong one to agree with you; check against the notes.,edux_ai_literacy,approved,,w4-fix-mcq proposal,
+ail_how_agreement_m3,ail_how_agreement,Disagreeing makes it go and look up a more reliable source,Disagreeing doesn't make it search; check against the notes.,edux_ai_literacy,approved,,w4-fix-mcq proposal,

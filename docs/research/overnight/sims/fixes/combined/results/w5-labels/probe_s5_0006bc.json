@@ -1,0 +1,365 @@
+[
+ {
+  "case": "verify",
+  "request_type": "concept",
+  "turn1_last_step": [
+   "literacy_task",
+   "ail_verify"
+  ],
+  "task_after_t1": "verify",
+  "answer_sent": {
+   "part_id": "ail_verify",
+   "type": "ail_task",
+   "points_met": [
+    "a",
+    "c",
+    "d"
+   ]
+  },
+  "ok": true,
+  "error": null,
+  "turn2_evidence": [
+   {
+    "part_id": "ail_verify",
+    "evidence_type": "ail_task",
+    "score": 0.75
+   }
+  ],
+  "turn2_steps": [
+   [
+    "ask_mcq",
+    "tax_incidence_split"
+   ]
+  ],
+  "focus_after_t2": [
+   "tax_incidence_split"
+  ],
+  "task_after_t2": null,
+  "logged_request_type": "concept"
+ },
+ {
+  "case": "verify",
+  "request_type": "other",
+  "turn1_last_step": [
+   "literacy_task",
+   "ail_verify"
+  ],
+  "task_after_t1": "verify",
+  "answer_sent": {
+   "part_id": "ail_verify",
+   "type": "ail_task",
+   "points_met": [
+    "a",
+    "c",
+    "d"
+   ]
+  },
+  "ok": true,
+  "error": null,
+  "turn2_evidence": [
+   {
+    "part_id": "ail_verify",
+    "evidence_type": "ail_task",
+    "score": 0.75
+   }
+  ],
+  "turn2_steps": [],
+  "focus_after_t2": [],
+  "task_after_t2": null,
+  "logged_request_type": "other"
+ },
+ {
+  "case": "verify",
+  "request_type": "research",
+  "turn1_last_step": [
+   "literacy_task",
+   "ail_verify"
+  ],
+  "task_after_t1": "verify",
+  "answer_sent": {
+   "part_id": "ail_verify",
+   "type": "ail_task",
+   "points_met": [
+    "a",
+    "c",
+    "d"
+   ]
+  },
+  "ok": true,
+  "error": null,
+  "turn2_evidence": [
+   {
+    "part_id": "ail_verify",
+    "evidence_type": "ail_task",
+    "score": 0.75
+   }
+  ],
+  "turn2_steps": [],
+  "focus_after_t2": [],
+  "task_after_t2": null,
+  "logged_request_type": "other"
+ },
+ {
+  "case": "verify_courseword",
+  "request_type": "concept",
+  "turn1_last_step": [
+   "literacy_task",
+   "ail_verify"
+  ],
+  "task_after_t1": "verify",
+  "answer_sent": {
+   "part_id": "ail_verify",
+   "type": "ail_task",
+   "points_met": [
+    "a",
+    "c",
+    "d"
+   ]
+  },
+  "ok": true,
+  "error": null,
+  "turn2_evidence": [
+   {
+    "part_id": "ail_verify",
+    "evidence_type": "ail_task",
+    "score": 0.75
+   }
+  ],
+  "turn2_steps": [
+   [
+    "ask_mcq",
+    "ped_formula"
+   ]
+  ],
+  "focus_after_t2": [
+   "ped_formula",
+   "ped_values",
+   "ped_definition"
+  ],
+  "task_after_t2": null,
+  "logged_request_type": "concept"
+ },
+ {
+  "case": "verify_courseword",
+  "request_type": "other",
+  "turn1_last_step": [
+   "literacy_task",
+   "ail_verify"
+  ],
+  "task_after_t1": "verify",
+  "answer_sent": {
+   "part_id": "ail_verify",
+   "type": "ail_task",
+   "points_met": [
+    "a",
+    "c",
+    "d"
+   ]
+  },
+  "ok": true,
+  "error": null,
+  "turn2_evidence": [
+   {
+    "part_id": "ail_verify",
+    "evidence_type": "ail_task",
+    "score": 0.75
+   }
+  ],
+  "turn2_steps": [],
+  "focus_after_t2": [],
+  "task_after_t2": null,
+  "logged_request_type": "other"
+ },
+ {
+  "case": "verify_courseword",
+  "request_type": "research",
+  "turn1_last_step": [
+   "literacy_task",
+   "ail_verify"
+  ],
+  "task_after_t1": "verify",
+  "answer_sent": {
+   "part_id": "ail_verify",
+   "type": "ail_task",
+   "points_met": [
+    "a",
+    "c",
+    "d"
+   ]
+  },
+  "ok": true,
+  "error": null,
+  "turn2_evidence": [
+   {
+    "part_id": "ail_verify",
+    "evidence_type": "ail_task",
+    "score": 0.75
+   }
+  ],
+  "turn2_steps": [],
+  "focus_after_t2": [],
+  "task_after_t2": null,
+  "logged_request_type": "other"
+ },
+ {
+  "case": "verify_no_answer_obj",
+  "request_type": "research",
+  "turn1_last_step": [
+   "literacy_task",
+   "ail_verify"
+  ],
+  "task_after_t1": "verify",
+  "answer_sent": null,
+  "ok": true,
+  "error": null,
+  "turn2_evidence": [
+   {
+    "part_id": "ail_ask",
+    "evidence_type": "ail_question",
+    "score": 0.0
+   }
+  ],
+  "turn2_steps": [
+   [
+    "answer_with_sources",
+    null
+   ],
+   [
+    "literacy_task",
+    "ail_ask"
+   ]
+  ],
+  "focus_after_t2": [],
+  "task_after_t2": "ask",
+  "logged_request_type": "research"
+ },
+ {
+  "case": "verify_plus_question",
+  "request_type": "research",
+  "turn1_last_step": [
+   "literacy_task",
+   "ail_verify"
+  ],
+  "task_after_t1": "verify",
+  "answer_sent": {
+   "part_id": "ail_verify",
+   "type": "ail_task",
+   "points_met": [
+    "a",
+    "c",
+    "d"
+   ]
+  },
+  "ok": true,
+  "error": null,
+  "turn2_evidence": [
+   {
+    "part_id": "ail_verify",
+    "evidence_type": "ail_task",
+    "score": 0.75
+   },
+   {
+    "part_id": "ail_ask",
+    "evidence_type": "ail_question",
+    "score": 1.0
+   }
+  ],
+  "turn2_steps": [
+   [
+    "answer_with_sources",
+    null
+   ],
+   [
+    "literacy_task",
+    "ail_verify"
+   ]
+  ],
+  "focus_after_t2": [],
+  "task_after_t2": "verify",
+  "logged_request_type": "research"
+ },
+ {
+  "case": "course_answer",
+  "request_type": "research",
+  "turn1_last_step": [
+   "ask_mcq",
+   "ped_definition"
+  ],
+  "task_after_t1": null,
+  "answer_sent": {
+   "part_id": "ped_definition",
+   "type": "mcq",
+   "choice": "A"
+  },
+  "ok": true,
+  "error": null,
+  "turn2_evidence": [
+   {
+    "part_id": "ped_definition",
+    "evidence_type": "prequestion",
+    "score": 1.0
+   }
+  ],
+  "turn2_steps": [
+   [
+    "feedback",
+    "ped_definition"
+   ],
+   [
+    "teach_point",
+    "ped_definition"
+   ],
+   [
+    "ask_mcq",
+    "ped_definition"
+   ]
+  ],
+  "focus_after_t2": [
+   "ped_definition"
+  ],
+  "task_after_t2": null,
+  "logged_request_type": "concept"
+ },
+ {
+  "case": "course_answer",
+  "request_type": "concept",
+  "turn1_last_step": [
+   "ask_mcq",
+   "ped_definition"
+  ],
+  "task_after_t1": null,
+  "answer_sent": {
+   "part_id": "ped_definition",
+   "type": "mcq",
+   "choice": "A"
+  },
+  "ok": true,
+  "error": null,
+  "turn2_evidence": [
+   {
+    "part_id": "ped_definition",
+    "evidence_type": "prequestion",
+    "score": 1.0
+   }
+  ],
+  "turn2_steps": [
+   [
+    "feedback",
+    "ped_definition"
+   ],
+   [
+    "teach_point",
+    "ped_definition"
+   ],
+   [
+    "ask_mcq",
+    "ped_definition"
+   ]
+  ],
+  "focus_after_t2": [
+   "ped_definition"
+  ],
+  "task_after_t2": null,
+  "logged_request_type": "concept"
+ }
+]

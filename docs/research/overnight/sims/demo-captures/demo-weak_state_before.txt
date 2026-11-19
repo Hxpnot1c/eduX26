@@ -1,0 +1,13 @@
+session: none in progress
+part                     level      p_now p_known half-life checks chats  last correct review due
+Elasticities (topic): 0.23
+  ped_definition         new         0.15    0.15      1.2d      1     0  -            2026-12-23 16:53 (scheduled)
+  ped_formula            new         0.14    0.14      1.0d      1     0  -            2026-12-23 17:38 (scheduled)
+  ped_values             new         0.30       -         -      -     -  -            -
+  pes_definition         new         0.30       -         -      -     -  -            -
+  pes_formula            new         0.30       -         -      -     -  -            -
+  yed_definition         new         0.30       -         -      -     -  -            -
+Indirect taxes and market failure (topic): 0.25
+  tax_supply_shift       new         0.24       -         -      -     -  -            -
+  tax_incidence_split    new         0.24       -         -      -     -  -            -
+  externality_tax_eval   new         0.30       -         -      -     -  -            -

@@ -1,0 +1,60 @@
+ok   the server instructions have 11 move sections and are at most 900 words: 757 words, 11 move sections
+ok   no placeholder in the server instructions
+ok   lists the tools: get_my_progress, tutor_turn, update_my_profile
+ok   lists the prompts: check_me, review_due
+ok   prompt check_me
+ok   prompt review_due
+ok   1. an untaught part gets one intuition MCQ, answered by letter: ask_mcq:intuition
+ok   1. the intuition leads in from a known link or the part's intuition line: {"note": "You need to know PED compares percentage changes before you can calculate it.", "via": "PED: definition"}
+ok   2. a wrong intuition answer gets feedback, then point 1 and its check: feedback, teach_point, ask_mcq:check
+ok   3. a right letter moves to point 2: feedback, teach_point, ask_mcq:check
+ok   4. a wrong letter gets feedback naming it, one re-teach of the point and the check again (no step back): feedback, reteach, ask_mcq:check
+ok   4. ped_formula_m1 is active
+ok   5. after the last point comes the explain-back of the whole part: feedback, explain_back
+ok   the server scored every letter from its stored map: [["prequestion", 0.0], ["mcq_check", 1.0], ["mcq_check", 0.0], ["mcq_check", 1.0]]
+ok   every reply in the loop ends in exactly one question
+ok   every teach_point asks for at most 80 words of explanation: [80, 80]
+ok   6. an explanation missing a point gets feedback, then reteach with only that point: feedback, reteach; missing ['Keep the minus sign']
+ok   7. conflict_flagged is stored on the exchange
+ok   7. a question instead of an answer gets answer_brief, then the same question again, and scores nothing: answer_brief, reask
+ok   each plan lists the known terms once, its first part first
+ok   each step carries only move, part_id, cue and data: [["cue", "data", "move", "part_id"]]
+ok   no placeholder in any step
+ok   every plan that asks something carries watch-for misconceptions as id and wrong_idea only: [["id", "wrong_idea"]]
+ok   style comes with the first call of a session only: True, False, False, False, False, False, False
+     turn 1: 2188 chars
+     turn 2: 2313 chars
+     turn 3: 2291 chars
+     turn 4: 2265 chars
+     turn 5: 1254 chars
+     turn 6: 2058 chars
+     turn 7: 1752 chars
+ok   the median result is at most 2400 characters, none over budget: median 2188, largest 2313, 0 over budget
+ok   no p_now in tutor_turn output
+ok   "I know this" goes straight to the check: ["ask_mcq"]
+ok   with the map deleted, an answer records nothing and the same question comes back with new letters: ["Supply is equally elastic in the short and long run.", "States that PES is the responsiveness of quantity supplied to a change in price."]
+ok   "just show me" shows the point and ends with its check: ["show", "ask_mcq"]
+ok   after "just show me", the next answer is not discounted (offload_left stays 0): 0
+ok   a wrong intuition answer gets feedback naming it, then teaching, not another intuition question: feedback, teach_point, ask_mcq:check
+ok   demo-weak: a prereq question comes as ask_mcq: ["ask_mcq"]
+ok   demo-weak: the prereq letter is scored: [["ped_definition", "mcq_check", 1.0]]
+ok   demo-showme: a review question comes as ask_mcq: ["ask_mcq"]
+ok   demo-showme: the review letter is scored: [["ped_values", "mcq_check", 1.0]]
+ok   the same point missed again after its reteach is stuck: the plan steps back: feedback, ask_mcq:stuck
+ok   MCQ options are shuffled differently for different students: 3 orders for 3 students
+ok   an unknown point id is refused and records nothing: answer.points_met: no_such_point is not a point on ped_formula; use the letters from score_next
+ok   points_met as letters scores 0.5: [0.5]
+ok   points_met as full ids scores 0.5: [0.5]
+ok   points_met as a mix scores 1.0: [1.0]
+ok   points_met as no saved plan scores 0.5: [0.5]
+ok   a point id from another part is refused: answer.points_met: ped_definition_n1:k1 is not a point on ped_formula; use the letters from score_next
+ok   get_my_progress (levels only): 5 levers
+ok   update_my_profile: {"interests": "football", "exam_date_override": "2027-04-16", "answer_length": null}
+ok   wrong key is refused: HTTP 401
+ok   missing key is refused: HTTP 401
+ok   style is sent again after the interests change: "football"
+ok   the minimal profile returns notes only and no plan: notes
+ok   rebuild gives identical state
+ok   tutor_turn server time under 100 ms: median 14 ms over 6 calls
+
+all checks passed

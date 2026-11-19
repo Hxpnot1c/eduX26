@@ -1,0 +1,3 @@
+Plan A takes final, then_ped, recommended, plan_now, final_ticks_ad, clean on s5 (fixed tree) and on c1 (s5 + immediate cap),
+via sims/demo-05e/run_episode.py (path changed to /tmp/claude-1000/w5-06g/ep/). Plan steps are identical in all six; the only
+differences in the captures are the MCQ letter shuffles (seeded by timestamp) and server timings. No level or p_now differs.

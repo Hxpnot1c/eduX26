@@ -1,0 +1,3 @@
+id,node_id,point,exemplar,source_ids,order,status,flag,updated_by,updated_at
+ail_how_fabrication_p1,ail_how_fabrication,"It predicts plausible text, so it makes up links that look real",,edux_ai_literacy,1,approved,,w4-fix-mcq proposal,
+ail_how_agreement_p1,ail_how_agreement,"Chatbots are trained to please, so pushback sways them even when right",,edux_ai_literacy,1,approved,,w4-fix-mcq proposal,
