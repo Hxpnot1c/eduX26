@@ -622,6 +622,9 @@ def tutor_turn(
         notice = _class_notice(student["id"])
         if notice:    # once, with the first call of a session
             out["notice"] = notice
+    reminder = _reminder(student["id"], last, at, bool(send_style))
+    if reminder:
+        out["upcoming"] = reminder
     if focus.get("candidates"):
         out["candidates"] = [{"id": c["id"], "name": c["name"]} for c in focus["candidates"]]
     if resolution["unknown"]:
@@ -779,6 +782,34 @@ def my_progress(student: dict, include_parts: bool = False, at: str | None = Non
     return fit_progress(out, result_limit(include_parts))
 
 
+def _reminder(student_id: str, last: dict, at: str, new_session: bool) -> dict | None:
+    """The in-chat deadline reminder (step 05u): the first call of a session only, and only when something is due within
+    reminders.days_ahead, the student has not switched reminders off, and they are not tired or rushing. Synapse cannot
+    push notifications, so it says it once, when the student next writes. Neutral wording, no streaks, no guilt."""
+    first = last["ts"] is None or (learner.parse_ts(at) - learner.parse_ts(last["ts"])).total_seconds() / 60 > _settings().session.gap_minutes
+    if not (new_session and first):
+        return None
+    row = learner._conn().execute("SELECT reminders FROM student_profile WHERE student_id = ?", (student_id,)).fetchone()
+    if row is not None and not row["reminders"]:
+        return None
+    state = learner.session_state(student_id, at)
+    if state and state["fatigued"]:
+        return None
+    items = learner.upcoming(student_id, at)
+    return {"items": items, "cue": read_text("cues/upcoming.md").strip()} if items else None
+
+
+def plan_study(student: dict, assessment_id: int | None = None, sessions_per_week: int | None = None, at: str | None = None) -> dict:
+    """The plan_my_study tool: learner.study_plan, kept within results.max_chars by dropping middle sessions (the last,
+    mixed-practice session is always kept)."""
+    out = learner.study_plan(student["id"], assessment_id, sessions_per_week, at)
+    limit = result_limit()
+    while out.get("ok") and len(out.get("sessions", [])) > 2 and result_size(out) > limit:
+        del out["sessions"][-2]
+        out["more_sessions"] = out.get("more_sessions", 0) + 1
+    return out
+
+
 def _class_notice(student_id: str) -> str | None:
     """While the school's class estimate is on (coverage.class_estimate_enabled) and the student is in a class: the
     one-line notice that their class's results shape where new topics start for them (step 05q). Otherwise None."""
@@ -812,6 +843,7 @@ def update_profile(
     add_assessment: dict | None = None,
     remove_assessment: int | None = None,
     covered_in_class: dict | None = None,
+    reminders: bool | None = None,
 ) -> dict:
     """Update student_profile and return it, with the student's upcoming assessments. covered_in_class {topics, when?}
     records what their class has been taught, for this student only (step 05q): topics are matched to nodes by id, spec
@@ -831,8 +863,12 @@ def update_profile(
             return covered
     if remove_assessment is not None and not learner._conn().execute(
             "SELECT 1 FROM student_assessment WHERE id = ? AND student_id = ?", (remove_assessment, student["id"])).fetchone():
+        if learner._conn().execute("SELECT 1 FROM student_assessment WHERE id = ? AND class_id IS NOT NULL", (remove_assessment,)).fetchone():
+            return {"ok": False, "error": "that one was set by your teacher; ask them to change it"}
         return {"ok": False, "error": f"no assessment {remove_assessment} for this student"}
     changes: dict[str, object] = {}
+    if reminders is not None:
+        changes["reminders"] = int(reminders)
     if interests is not None:
         changes["interests"] = interests.strip()
     if exam_date_override is not None:
@@ -864,10 +900,10 @@ def update_profile(
                 conn.execute("INSERT OR REPLACE INTO student_coverage (student_id, node_id, taught_on, set_by) VALUES (?, ?, ?, 'student')",
                              (student["id"], node_id, covered["taught_on"]))
             conn.execute("DELETE FROM learner_offset_cache WHERE student_id = ?", (student["id"],))     # its starting offsets are stale
-    row = conn.execute("SELECT interests, exam_date_override, answer_length FROM student_profile WHERE student_id = ?",
+    row = conn.execute("SELECT interests, exam_date_override, answer_length, reminders FROM student_profile WHERE student_id = ?",
                        (student["id"],)).fetchone()
-    out = {"ok": True, "profile": {**dict(row), "assessments": [
-        {k: a[k] for k in ("id", "name", "kind", "date")} for a in learner.assessments(student["id"])]}}
+    out = {"ok": True, "profile": {**dict(row), "reminders": bool(row["reminders"]), "assessments": [
+        {k: a[k] for k in ("id", "name", "kind", "date", "scope")} for a in learner.assessments(student["id"])]}}
     if covered:
         out["covered"] = {"topics": covered["topics"], "taught_on": covered["taught_on"], "unmatched": covered["unmatched"]}
     if added:
@@ -919,19 +955,14 @@ def _check_assessment(item: dict) -> dict:
         return {"ok": False, "error": "add_assessment.date must be a date like 2027-03-14"}
     if day <= learner.parse_ts(learner.now_iso()).date():
         return {"ok": False, "error": f"add_assessment.date {day.isoformat()} is not in the future"}
-    index = {}
-    for topic in graph.topics():
-        for key in (topic["name"], topic.get("spec_ref")):
-            if key:
-                index.setdefault(_topic_key(key), topic)
     asked = [str(t) for t in item.get("topics") or [] if str(t).strip()]
-    matched = list({index[_topic_key(t)]["id"]: index[_topic_key(t)] for t in asked if _topic_key(t) in index}.values())
+    matched, unmatched = graph.match_sections(asked)     # any topic, concept or part, by id, spec code or name
     if not matched:
         return {"ok": False, "error": "no topic matched; ask the student which of these it covers",
                 "topics": _pack_topics()}
     parts = list(dict.fromkeys(p for t in matched for p in graph.parts_of(t["id"])))
     return {"ok": True, "name": name, "kind": kind, "date": day.isoformat(), "part_ids": parts,
-            "topics": [t["name"] for t in matched], "unmatched": [t for t in asked if _topic_key(t) not in index]}
+            "topics": [t["name"] for t in matched], "unmatched": unmatched}
 
 
 # --- call timing ---------------------------------------------------------------

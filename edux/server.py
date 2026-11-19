@@ -127,7 +127,7 @@ class AddAssessment(BaseModel):
     """An upcoming test of the student's own."""
 
     name: str = Field(description="what they call it, e.g. Year 12 mock")
-    kind: Literal[learner.ASSESSMENT_KINDS] = Field(description="homework, class_test or mock")  # type: ignore[valid-type]
+    kind: Literal[learner.ASSESSMENT_KINDS] = Field(description="homework, class_test, mock or written_assignment")  # type: ignore[valid-type]
     date: str = Field(description="YYYY-MM-DD, in the future")
     topics: list[str] = Field(description="the topics it covers, as the student names them (topic names or spec codes)")
 
@@ -153,12 +153,18 @@ def update_my_profile(
     add_assessment: AddAssessment | None = None,
     remove_assessment: RemoveAssessment | None = None,
     covered_in_class: CoveredInClass | None = None,
+    reminders: bool | None = None,
 ) -> dict:
     """Tool adapter for service.update_profile."""
     return service.update_profile(student_from_request(ctx), interests, exam_date_override, answer_length,
                                   add_assessment.model_dump() if add_assessment else None,
                                   remove_assessment.id if remove_assessment else None,
-                                  covered_in_class.model_dump() if covered_in_class else None)
+                                  covered_in_class.model_dump() if covered_in_class else None, reminders)
+
+
+def plan_my_study(ctx: Context, assessment_id: int | None = None, sessions_per_week: int | None = None) -> dict:
+    """Tool adapter for service.plan_study."""
+    return service.plan_study(student_from_request(ctx), assessment_id, sessions_per_week)
 
 
 def review_due() -> str:
@@ -222,6 +228,7 @@ TOOLS = {
     "tutor_turn": tutor_turn,
     "get_my_progress": get_my_progress,
     "update_my_profile": update_my_profile,
+    "plan_my_study": plan_my_study,
 }
 
 

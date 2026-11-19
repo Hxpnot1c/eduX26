@@ -173,6 +173,22 @@ def _sections(class_id: str, keys: list[str]) -> list[str] | None:
     return [n["id"] for n in matched]
 
 
+def cmd_assessment_add(class_id: str, name: str, kind: str, day: str, topics: list[str]) -> int:
+    """Add a test or assignment for every member of a class (the teacher mock-up's form has the same fields)."""
+    matched, unmatched = graph.match_sections(topics)
+    if unmatched or not matched:
+        print("no match for: " + ", ".join(unmatched or topics), file=sys.stderr)
+        return 1
+    parts = list(dict.fromkeys(p for n in matched for p in graph.parts_of(n["id"])))
+    try:
+        found = learner.add_class_assessment(class_id, name, kind, day, parts)
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(f"{class_id}: assessment {found} added ({kind}, {day}, {len(parts)} parts)")
+    return 0
+
+
 def cmd_coverage_set(class_id: str, sections: list[str], taught_on: str | None) -> int:
     ids = _sections(class_id, sections)
     if ids is None:
@@ -430,6 +446,14 @@ def main(argv: list[str] | None = None) -> None:
     q = vsub.add_parser("export", help="show a class's coverage")
     q.add_argument("--class", dest="class_id", required=True)
     q.add_argument("--json", action="store_true", help="JSON, for the teacher mock-up's tick-list")
+    p = sub.add_parser("assessment", help="class assessments: assessment add")
+    asub = p.add_subparsers(dest="assessment_command", required=True)
+    q = asub.add_parser("add", help="add a test or assignment for every member of a class")
+    q.add_argument("--class", dest="class_id", required=True)
+    q.add_argument("--name", required=True)
+    q.add_argument("--kind", required=True, help="homework, class_test, mock or written_assignment")
+    q.add_argument("--date", required=True, help="YYYY-MM-DD")
+    q.add_argument("--topics", required=True, type=_list, help="comma-separated node ids, spec codes or names")
     p = sub.add_parser("set-profile", help="switch a student's context profile")
     p.add_argument("--student", required=True)
     p.add_argument("--profile", required=True, help="a profile in context.toml, or 'default'")
@@ -492,6 +516,8 @@ def main(argv: list[str] | None = None) -> None:
     elif args.command == "class":
         code = (cmd_class_add(args.name, args.pack) if args.class_command == "add"
                 else cmd_class_add_students(args.class_id, args.students))
+    elif args.command == "assessment":
+        code = cmd_assessment_add(args.class_id, args.name, args.kind, args.date, args.topics)
     elif args.command == "coverage":
         code = (cmd_coverage_set(args.class_id, args.sections, args.taught_on) if args.coverage_command == "set"
                 else cmd_coverage_import(args.class_id, args.file) if args.coverage_command == "import"
