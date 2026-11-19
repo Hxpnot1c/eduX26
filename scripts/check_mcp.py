@@ -1057,6 +1057,12 @@ async def main(url: str, key: str, student: str) -> None:
     finally:
         drop_student(lone)
 
+    for who in ("demo-secure", "demo-weak", "demo-showme"):      # step 05r: cached offsets equal the ones computed from scratch
+        cached = (learner.learning_offset(who), learner.starting_offsets(who))
+        learner._clear_offset_cache(who)
+        fresh = (learner.learning_offset(who), learner.starting_offsets(who))
+        check(cached == fresh, f"cached and uncached learner offsets match ({who})", json.dumps(fresh)[:120])
+
     for who in sorted({student, "demo-secure", "demo-weak", "demo-showme"}):   # every student the run wrote events for
         before_rebuild = state(who)
         cli("rebuild", "--student", who)
