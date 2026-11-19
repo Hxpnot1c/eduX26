@@ -37,11 +37,11 @@ The register cites sources in short form. Each implementing record gives the ful
 
 | ID | Finding | Research basis | Confidence | Owner | Status |
 |---|---|---|---|---|---|
-| C7 | No confidence or calibration capture, and no commit-before-reveal on checks. | Calibration as the signature metric (Fernandes et al., 2025); cognitive forcing reduces over-reliance (Buçinca et al., 2021). No validated reliance instrument exists. | Medium | Vishnu | Planned |
+| C7 | No confidence or calibration capture, and no commit-before-reveal on checks. | Calibration as the signature metric (Fernandes et al., 2025); cognitive forcing reduces over-reliance (Buçinca et al., 2021). No validated reliance instrument exists. | Medium | Vishnu | Built 19 Nov (step 05z): [0019](0019-confidence-and-calibration.md), #62 |
 | C8 | Aided and unaided evidence are not separated. `homework` is accepted but changes nothing. | Bastani et al. (2025); OECD Digital Education Outlook 2026. | Medium | Vishnu | Planned |
-| C9 | No seeded-error or clean-control items, so error detection and appropriate reliance are unmeasured. | Seeded-error item rules: one human-injected atomic error, 30 to 50% clean controls, rotated forms. | Medium | Vishnu | **Held** (Part 3 literacy expansion) |
+| C9 | No seeded-error or clean-control items, so error detection and appropriate reliance are unmeasured. | Seeded-error item rules: one human-injected atomic error, 30 to 50% clean controls, rotated forms. | Medium | Vishnu | Built 19 Nov, **off by default** pending approval: [0021](0021-find-the-error-build.md), #64 |
 | C10 | The student key travels in the URL query string, is stored in plain text, and never expires or rotates. | RFC 9110 §17.9; RFC 9700 §4.3.2; MCP authorization spec (2025-06-18): access tokens must not be in the query string; UK GDPR Art. 32. | High for the rule | Vishnu | Documentation and hashing proposed; OAuth **held** (Part 3 key security) |
-| C11 | Students are not told what is recorded or how to delete it. | ICO Children's Code Standard 11 (transparency). | Medium | Vishnu | Planned |
+| C11 | Students are not told what is recorded or how to delete it. | ICO Children's Code Standard 11 (transparency). | Medium | Vishnu | Built 19 Nov: a plain notice in `text/chatbot_setup.md` (what is kept, how to delete, vendor training off), #66. Teacher sign-off of wording still needed |
 | C12 | `try_first` and `hint` choices are accepted but do nothing. The first "just show me" gives the answer at once. | Attempt-first and hint ladders (Bastani et al., 2025; DfE generative AI product safety standards: no full answers by default). | Medium | Vishnu | **Held** (Part 3 better reteach) |
 | C13 | Feedback has no feed-forward line. "Mark the figures that need checking" is a blanket flag. | Hattie & Timperley (2007); blanket hedging cut correct reliance as well (94.8% to 83.1%). | Medium | Engineering | Planned |
 | C14 | `review_when_below` is 0.50 against evidence favouring 0.70 to 0.80. Decay numbers are uncited. | Cepeda et al. (2008); Carpenter, Pan & Butler (2022): feedback on retrieval and 1 to 7 day gaps in classrooms. | Medium | Engineering | Simulated 19 Nov (synthetic students): no case for 0.75; keep 0.50. [Write-up](../research/review-threshold-simulation.md). Vishnu decides |
@@ -52,10 +52,10 @@ The register cites sources in short form. Each implementing record gives the ful
 |---|---|---|
 | C15 | The `finally` block in `timed()` can replace a tool result if the `call_log` insert fails. Stored error text can echo input. | Proposed: [0004](0004-count-results-as-sent.md), #47 |
 | C16 | The result budget did not count what is sent: the SDK pretty-prints (3,571 characters on the wire against 2,355 counted for `get_my_progress`), `get_my_progress` was not checked, and the gate used a median. | Proposed: [0004](0004-count-results-as-sent.md), #47 |
-| C17 | Only three words of instruction headroom (897 of 900). Tool descriptions (895 words) are outside the cap. | Planned (before Part 2 A) |
-| C18 | Unbounded input sizes; no rate limit; migrations not run under a lock. | Planned |
-| C19 | No unit tests. `scripts/check_mcp.py` is the only check and needs a running server. | Planned (this series) |
-| C20 | Documentation drift: `dpia-notes.md` is referenced but missing; `settings.md` lists removed keys and has no "from research" or "judgement call" labels; step 05e disagrees with the code on ignored literacy tasks. | Planned |
+| C17 | Only three words of instruction headroom (897 of 900). Tool descriptions (895 words) are outside the cap. | Handled: instructions held at 898 of 900 by sharing the two-line `say_line` move; tool descriptions still outside the cap (open) |
+| C18 | Unbounded input sizes; no rate limit; migrations not run under a lock. | Input limits built 19 Nov (message 8,000 characters, ids 120, lists 40: judgement calls), #66. Rate limiting and a migration lock still open |
+| C19 | No unit tests. `scripts/check_mcp.py` is the only check and needs a running server. | Built: 211 pytest tests in the gate with `check_mcp.py` |
+| C20 | Documentation drift: `dpia-notes.md` is referenced but missing; `settings.md` lists removed keys and has no "from research" or "judgement call" labels; step 05e disagrees with the code on ignored literacy tasks. | Partly built: `dpia-notes.md` exists (#56); settings now carry the labelling rule (#65). `settings.md` removed-key drift not re-audited |
 | C21 | No accessibility, plain-language mode or English-as-an-additional-language audit. | Later |
 | C22 | No safeguarding pathway for distress or disclosure. | Required before any pupil pilot; not needed for filming |
 

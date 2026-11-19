@@ -14,7 +14,7 @@ import sys
 import time
 from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import Literal
+from typing import Annotated, Literal
 from urllib.parse import parse_qs
 
 from mcp.server.fastmcp import Context, FastMCP
@@ -27,6 +27,12 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 from edux import learner, plan, service
 from edux.settings import load_settings, read_text
+
+# Input limits (judgement call, starting values): far above anything a student writes, far below what could fill the database.
+MAX_MESSAGE = 8000    # characters in a student's message
+MAX_INTERESTS = 300   # characters in the interests line
+MAX_ID = 120          # characters in an id, name, letter or client label
+MAX_LIST = 40         # items in any list the chatbot sends
 
 QuestionDepth = Literal["surface", "mechanism", "transfer"]
 Engagement = Literal["passive", "active", "constructive"]
@@ -62,8 +68,8 @@ class Answer(BaseModel):
     choice: str | None = Field(None, description="mcq only: the letter they picked, e.g. B")
     correct: bool | None = Field(None, description="prequestion only: did they pick the correct option")
     picked_misconception_id: str | None = Field(None, description="prequestion only: the option id they picked, if it was a misconception")
-    points_met: list[str] = Field(default_factory=list, description="the letters from score_next (a, b, ...) of the points the student actually produced")
-    misconception_ids: list[str] = Field(default_factory=list, description="other misconceptions the answer showed")
+    points_met: list[Annotated[str, Field(max_length=MAX_ID)]] = Field(default_factory=list, max_length=MAX_LIST, description="the letters from score_next (a, b, ...) of the points the student actually produced")
+    misconception_ids: list[Annotated[str, Field(max_length=MAX_ID)]] = Field(default_factory=list, max_length=MAX_LIST, description="other misconceptions the answer showed")
 
 
 def _key_from_scope(scope: Scope) -> str | None:
@@ -108,11 +114,11 @@ def student_from_request(ctx: Context) -> dict:
 
 def tutor_turn(
     ctx: Context,
-    message: str,
+    message: Annotated[str, Field(max_length=MAX_MESSAGE)],
     this_message: ThisMessage,
-    node_ids: list[str] | None = None,
+    node_ids: Annotated[list[Annotated[str, Field(max_length=MAX_ID)]], Field(max_length=MAX_LIST)] | None = None,
     answer: Answer | None = None,
-    client: str | None = None,
+    client: Annotated[str, Field(max_length=MAX_ID)] | None = None,
 ) -> dict:
     """Tool adapter for service.tutor_turn."""
     return service.tutor_turn(student_from_request(ctx), message, this_message.model_dump(), node_ids,
@@ -127,16 +133,16 @@ def get_my_progress(ctx: Context, include_parts: bool = False) -> dict:
 class AddAssessment(BaseModel):
     """An upcoming test of the student's own."""
 
-    name: str = Field(description="what they call it, e.g. Year 12 mock")
+    name: str = Field(max_length=MAX_ID, description="what they call it, e.g. Year 12 mock")
     kind: Literal[learner.ASSESSMENT_KINDS] = Field(description="homework, class_test, mock or written_assignment")  # type: ignore[valid-type]
     date: str = Field(description="YYYY-MM-DD, in the future")
-    topics: list[str] = Field(description="the topics it covers, as the student names them (topic names or spec codes)")
+    topics: list[Annotated[str, Field(max_length=MAX_ID)]] = Field(max_length=MAX_LIST, description="the topics it covers, as the student names them (topic names or spec codes)")
 
 
 class CoveredInClass(BaseModel):
     """Topics the student says their class has been taught."""
 
-    topics: list[str] = Field(description="the topics or sections covered (topic names or spec codes)")
+    topics: list[Annotated[str, Field(max_length=MAX_ID)]] = Field(max_length=MAX_LIST, description="the topics or sections covered (topic names or spec codes)")
     when: str | None = Field(None, description="YYYY-MM-DD, about when they were taught (default today)")
 
 
@@ -148,7 +154,7 @@ class RemoveAssessment(BaseModel):
 
 def update_my_profile(
     ctx: Context,
-    interests: str | None = None,
+    interests: Annotated[str, Field(max_length=MAX_INTERESTS)] | None = None,
     exam_date_override: str | None = None,
     answer_length: int | None = None,
     add_assessment: AddAssessment | None = None,

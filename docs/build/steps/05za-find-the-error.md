@@ -17,3 +17,7 @@ Off by default nothing is offered (checked); switched on, an item is offered, la
 
 ## Open
 Items are made from the pack's own mark points and misconceptions and are marked "not yet signed off by a teacher"; a teacher should check them before a real pilot. Evidence: see decision 0012 (Fan & Chang's paper does not support an effect size; erroneous-example effects are small, g about .14).
+
+## Also on this branch stack (audit, 19 Nov)
+- #65: demo script update, `EDUX_CONFIDENCE` switch, labelling rule in `settings.toml`.
+- #66: input length limits on every tool (register C18) and the pupil-facing notice (C11) in `text/chatbot_setup.md`.
