@@ -58,3 +58,6 @@ mark { background: var(--highlight); color: var(--highlight-ink); padding: 0 0.1
 .back { display: inline-block; margin-bottom: var(--space); }
 .rv-foot { margin-top: calc(var(--space) * 3); border-top: 1px solid var(--rule); padding-top: var(--space); font-size: var(--step--1); }
 [data-demo] { margin-top: var(--space); }
+.panel ul { list-style: none; padding: 0; margin: 0; }
+.rv-logo { width: 3rem; height: 3rem; align-self: flex-start; }
+.rv-head > div:first-of-type { flex: 1 1 auto; }
