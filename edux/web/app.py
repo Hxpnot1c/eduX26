@@ -20,6 +20,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from edux import learner, teachers
+from edux.web import views
 
 STATIC = Path(__file__).resolve().parent / "static"
 
@@ -81,6 +82,33 @@ async def whoami(request: Request) -> Response:
     return JSONResponse({"role": "student"})
 
 
+async def api_map(request: Request) -> Response:
+    """The course map (structure only) for any signed-in student or teacher. A student gets their own course; a teacher
+    names one with ?course= when more than one is loaded."""
+    refused = refuse_url_key(request)
+    if refused:
+        return refused
+    found = principal(request)
+    if found is None:
+        return unauthorised()
+    role, who = found
+    wanted = who.get("course_id") if role == "student" else request.query_params.get("course")
+    data = views.course_map(wanted)
+    if data is None:
+        return JSONResponse({"error": "no such course; name one with ?course="}, status_code=404)
+    return JSONResponse(data)
+
+
+async def api_public_map(request: Request) -> Response:
+    """The map of the synthetic example pack, with no key, if web.public_example_map is on. Any other pack: 404."""
+    if not learner._settings().web.public_example_map:
+        return JSONResponse({"error": "not available"}, status_code=404)
+    data = views.course_map(views.EXAMPLE_COURSE_ID)
+    if data is None:
+        return JSONResponse({"error": "not available"}, status_code=404)
+    return JSONResponse(data)
+
+
 def _page(name: str):
     async def handler(request: Request) -> Response:
         return FileResponse(STATIC / name, media_type="text/html; charset=utf-8", headers={"Cache-Control": "no-cache"})
@@ -117,6 +145,8 @@ class _Headers:
 def build_web_app() -> ASGIApp:
     routes: list[BaseRoute] = [Route(path, _page(name), methods=["GET"]) for path, name in PAGES.items()]
     routes.append(Route("/api/whoami", whoami, methods=["GET"]))
+    routes.append(Route("/api/map", api_map, methods=["GET"]))
+    routes.append(Route("/api/public/map", api_public_map, methods=["GET"]))
     routes.append(Mount("/static", StaticFiles(directory=STATIC), name="static"))
     return _Headers(Starlette(routes=routes))
 
