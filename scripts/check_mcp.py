@@ -803,8 +803,10 @@ async def find_error_run(url: str) -> None:
 
 
 async def calibration(url: str) -> None:
-    """ "How sure are you?" (step 05z): after an answer to a check the reply asks and keeps the feedback back one turn; the
-    reply stores the rating, a skip costs nothing, and the rating never changes what the model thinks they know."""
+    """ "How sure are you?" (step 05z, decision 0027): asked only on the second rapid-guess check answer in a row (here two
+    one-word answers sent at once, faster than the question can be read), keeping the feedback back one turn; the reply
+    stores the rating, and the rating never changes what the model thinks they know. The answers on the way send no
+    word count, so they are never rapid guesses."""
     global ASK_HOW_SURE
     student = "check-sure"
     keyed = f"{url}?key={new_student(student)}"
@@ -834,18 +836,32 @@ async def calibration(url: str) -> None:
         check(step is not None, "the loop reaches a check question", json.dumps(moves(out)))
         if step is None:
             return
-        chosen, _ = letter(student, True)
-        asked = await call(
-            keyed,
-            "tutor_turn",
-            {
-                "message": chosen,
-                "client": "check_mcp",
-                "node_ids": [PART],
-                "this_message": labels,
-                "answer": {"part_id": step["part_id"], "type": "mcq", "choice": chosen},
-            },
+
+        async def rapid_answer(step: dict) -> dict:
+            chosen, _ = letter(student, True)
+            return await call(
+                keyed,
+                "tutor_turn",
+                {
+                    "message": chosen,
+                    "client": "check_mcp",
+                    "node_ids": [PART],
+                    "this_message": {**labels, "words": 1},
+                    "answer": {"part_id": step["part_id"], "type": "mcq", "choice": chosen},
+                },
+            )
+
+        first = await rapid_answer(step)
+        check(
+            "say_line" not in moves(first),
+            "one rapid-guess check answer is not enough: the feedback comes at once",
+            json.dumps(moves(first)),
         )
+        step = next((s for s in first["plan"] if s["move"] == "ask_mcq" and s["data"].get("purpose") == "check"), None)
+        check(step is not None, "a second check follows the first", json.dumps(moves(first)))
+        if step is None:
+            return
+        asked = await rapid_answer(step)
         if not learner.confidence_on():  # switched off (EDUX_CONFIDENCE=0, as for filming): nothing is asked and nothing is held back
             check(
                 moves(asked)[:1] == ["feedback"] and "how sure" not in json.dumps(asked).lower(),
@@ -855,7 +871,7 @@ async def calibration(url: str) -> None:
             return
         check(
             moves(asked) == ["say_line"] and asked["score_next"] == {} and "how sure" in asked["plan"][0]["data"]["line"].lower(),
-            "after a check answer the reply asks how sure they are and keeps the feedback back",
+            "after a second rapid-guess check in a row the reply asks how sure they are and keeps the feedback back",
             json.dumps(moves(asked)),
         )
         before = {
