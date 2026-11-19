@@ -43,3 +43,10 @@ def part(course):
 def graph_part() -> str:
     order = {p: i for i, p in enumerate(learner.all_parts())}
     return sorted(learner.all_parts(), key=lambda p: (-graph.weight(p)["importance"], order[p]))[0]
+
+
+@pytest.fixture(autouse=True)
+def _default_switches(monkeypatch):
+    """Tests run with the shipped defaults whatever the shell has set; a test that wants a switch sets it itself."""
+    for name in ("EDUX_FIND_ERROR", "EDUX_PERSONALISATION"):
+        monkeypatch.delenv(name, raising=False)

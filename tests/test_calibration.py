@@ -48,7 +48,7 @@ def _answer_check(student, right=True):
 def test_after_a_check_answer_the_reply_asks_how_sure_and_keeps_the_feedback_back(student):
     _to_a_check(student)
     out = _answer_check(student)
-    assert [s["move"] for s in out["plan"]] == ["ask_confidence"] and out["score_next"] == {}
+    assert [s["move"] for s in out["plan"]] == ["say_line"] and out["score_next"] == {}
     assert "how sure" in out["plan"][0]["data"]["line"].lower() and "skip" in out["plan"][0]["data"]["line"].lower()
     held = service._last_plan(student["id"])
     assert held["confidence_for"]["part_id"] and any(s["move"] in ("feedback", "teach_point", "explain_back", "ask_mcq") for s in held["plan"])
@@ -60,7 +60,7 @@ def test_the_reply_to_how_sure_delivers_the_held_plan_and_stores_the_rating(stud
     _answer_check(student)
     out = _turn(student, "fairly sure", confidence="fairly_sure")
     moves = [s["move"] for s in out["plan"]]
-    assert "ask_confidence" not in moves and moves[0] == "feedback"
+    assert "say_line" not in moves and moves[0] == "feedback"
     row = learner._conn().execute("SELECT level FROM confidence_log WHERE student_id = ?", (student["id"],)).fetchone()
     assert row["level"] == "fairly_sure"
     assert service._last_plan(student["id"])["confidence_for"] is None
@@ -70,7 +70,7 @@ def test_skipping_stores_a_skip_and_costs_nothing(student):
     _to_a_check(student)
     _answer_check(student)
     out = _turn(student, "just tell me", confidence="none")
-    assert "ask_confidence" not in [s["move"] for s in out["plan"]]
+    assert "say_line" not in [s["move"] for s in out["plan"]]
     assert learner._conn().execute("SELECT level FROM confidence_log").fetchone()["level"] == "skipped"
     assert learner.calibration(student["id"]) == {}
 
@@ -92,7 +92,7 @@ def test_a_confidence_sent_with_the_answer_is_stored_without_asking(student):
     asking = next(s for s in service._last_plan(student["id"])["plan"] if s["move"] == "ask_mcq")
     letter = _right_letter(student)
     out = _turn(student, letter, answer={"part_id": asking["part_id"], "type": "mcq", "choice": letter}, confidence="certain")
-    assert "ask_confidence" not in [s["move"] for s in out["plan"]]
+    assert "say_line" not in [s["move"] for s in out["plan"]]
     assert learner._conn().execute("SELECT level FROM confidence_log").fetchone()["level"] == "certain"
 
 
@@ -103,8 +103,8 @@ def test_it_is_not_asked_after_a_pre_question_or_on_ordinary_chat(student):
         pytest.skip("no pre-question in this run")
     letter = _right_letter(student)
     after = _turn(student, letter, answer={"part_id": asking["part_id"], "type": asking["data"]["answer_type"], "choice": letter})
-    assert "ask_confidence" not in [s["move"] for s in after["plan"]]
-    assert "ask_confidence" not in [s["move"] for s in _turn(student, "what is elasticity?")["plan"]]
+    assert "say_line" not in [s["move"] for s in after["plan"]]
+    assert "say_line" not in [s["move"] for s in _turn(student, "what is elasticity?")["plan"]]
 
 
 def test_two_skips_in_a_row_stop_the_asking_for_the_session(student):
@@ -174,7 +174,7 @@ def test_an_unanswered_ask_is_dropped_after_the_session_gap(student):
     out = service.tutor_turn(learner.get_student(student["id"]), "hello again", LABELS, node_ids=[PART],
                              at=(learner.parse_ts(learner.now_iso()).replace(microsecond=0) + __import__("datetime").timedelta(hours=5)).isoformat())
     assert learner._conn().execute("SELECT COUNT(*) FROM confidence_log").fetchone()[0] == 0
-    assert "ask_confidence" not in [s["move"] for s in out["plan"]]
+    assert "say_line" not in [s["move"] for s in out["plan"]]
 
 
 def test_deleting_a_student_removes_their_ratings(student):

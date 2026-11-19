@@ -544,6 +544,53 @@ def new_student(student: str) -> str:
     return learner.add_student(student, course, student_id=student)["key"]
 
 
+async def find_error_run(url: str) -> None:
+    """Find-the-error practice (decision 0012). Off by default: a finished part ends as before, with no practice item.
+    Switched on (EDUX_FIND_ERROR=1 for the server and this check): the item is labelled as practice and shows no answer,
+    its answer is scored on the server against the item it kept, recorded on the part and on Verify as its own type, and
+    the correct statement is always given afterwards."""
+    student = "check-error"
+    keyed = f"{url}?key={new_student(student)}"
+    labels = {"question_depth": "mechanism", "engagement": "constructive"}
+    try:
+        now = learner.parse_ts(learner.now_iso())
+        for part in ("ped_definition", "ped_formula"):
+            for i in range(3):
+                learner.record_evidence(student, part, "explain_back", 1.0, apply="now",
+                                        ts=learner._event_ts(now - timedelta(days=3, minutes=10 * (3 - i))))
+        got = await call(keyed, "tutor_turn", {"message": "Let's go back over the PED formula", "client": "check_mcp",
+                                               "node_ids": ["ped_formula"], "this_message": labels})
+        letters = [p["id"] for p in got.get("score_next", {}).get("ped_formula", [])]
+        done = await call(keyed, "tutor_turn", {"message": "my explanation", "client": "check_mcp", "node_ids": ["ped_formula"],
+                                                "this_message": labels,
+                                                "answer": {"part_id": "ped_formula", "type": "explain_back", "points_met": letters}})
+        step = next((s for s in done.get("plan", []) if s["move"] == "say_line" and "Practice, not a real answer" in s["data"].get("line", "")), None)
+        if not learner.find_error_on():
+            check(step is None, "find-the-error practice is off by default: a finished part never offers an item", json.dumps(moves(done)))
+            return
+        check(step is not None and step["data"]["answer_type"] == "find_error" and "one mistake, or none" in step["data"]["line"]
+              and "item" not in json.dumps(step).lower() and "misconception" not in json.dumps(step).lower(),
+              "a finished part offers a find-the-error item, labelled as practice, with nothing that gives the answer away",
+              json.dumps(moves(done)))
+        if step is None:
+            return
+        item = next(s for s in plan_json(student)["plan"] if s.get("key") == "say_line_find_error")["item"]
+        ticked = ["a", "b", "c"] if item["kind"] == "error" else ["d"]
+        scored = [p["id"] for p in done["score_next"].get("ped_formula", [])]
+        check(scored == ["a", "b", "c", "d"], "the four answer letters are the same for every item", json.dumps(scored))
+        after = await call(keyed, "tutor_turn", {"message": "my answer", "client": "check_mcp", "node_ids": ["ped_formula"], "this_message": labels,
+                                                 "answer": {"part_id": "ped_formula", "type": "find_error", "points_met": ticked}})
+        fb = next((s for s in after.get("plan", []) if s["move"] == "feedback"), {})
+        rows = learner._conn().execute("SELECT part_id, evidence_type, score FROM evidence_log WHERE student_id = ? AND evidence_type "
+                                       "IN ('find_error', 'ail_find_error') ORDER BY id", (student,)).fetchall()
+        check(fb.get("data", {}).get("correct") is True and bool(fb["data"].get("correct_option"))
+              and [(r["part_id"], r["evidence_type"], r["score"]) for r in rows] == [("ped_formula", "find_error", 1.0), ("ail_verify", "ail_find_error", 1.0)],
+              "the answer is scored on the server, recorded on the part and on Verify as its own type, and the correct statement is given",
+              f"{json.dumps(moves(after))} {[(r['part_id'], r['evidence_type']) for r in rows]}")
+    finally:
+        drop_student(student)
+
+
 async def calibration(url: str) -> None:
     """"How sure are you?" (step 05z): after an answer to a check the reply asks and keeps the feedback back one turn; the
     reply stores the rating, a skip costs nothing, and the rating never changes what the model thinks they know."""
@@ -568,7 +615,7 @@ async def calibration(url: str) -> None:
         chosen, _ = letter(student, True)
         asked = await call(keyed, "tutor_turn", {"message": chosen, "client": "check_mcp", "node_ids": [PART], "this_message": labels,
                                                  "answer": {"part_id": step["part_id"], "type": "mcq", "choice": chosen}})
-        check(moves(asked) == ["ask_confidence"] and asked["score_next"] == {} and "how sure" in asked["plan"][0]["data"]["line"].lower(),
+        check(moves(asked) == ["say_line"] and asked["score_next"] == {} and "how sure" in asked["plan"][0]["data"]["line"].lower(),
               "after a check answer the reply asks how sure they are and keeps the feedback back", json.dumps(moves(asked)))
         before = {r["part_id"]: round(r["p_known"], 9) for r in learner._conn().execute("SELECT part_id, p_known FROM part_state WHERE student_id = ?", (student,))}
         time.sleep(1.1)
@@ -644,6 +691,8 @@ async def bridge(url: str) -> None:
         done = await call(keyed, "tutor_turn", {"message": "my explanation", "client": "check_mcp", "node_ids": ["ped_formula"],
                                                 "this_message": labels,
                                                 "answer": {"part_id": "ped_formula", "type": "explain_back", "points_met": letters}})
+        if learner.find_error_on():      # find-the-error practice takes the ending when switched on; checked in find_error_run
+            return
         step = next((s for s in done.get("plan", []) if s["move"] == "ask_mcq" and s["data"].get("bridge")), None)
         link = (step or {}).get("data", {}).get("link", {})
         check(step is not None and link.get("from") == "ped_formula" and link.get("to") == step["part_id"] != "ped_formula",
@@ -1105,6 +1154,7 @@ async def main(url: str, key: str, student: str) -> None:
     await bridge(url)
     await class_assessments(url)
     await calibration(url)
+    await find_error_run(url)
     await waiting_task(url)
     await engagement_rules(url)
     await priorities(url)
