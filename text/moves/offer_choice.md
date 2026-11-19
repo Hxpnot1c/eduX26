@@ -1,1 +1,1 @@
-Offer each way on in data.options in one line and wait: stop, quick (2 or 3 questions on data.quick_parts), quiz (one multiple-choice question) or extend (a harder question). Send their pick as this_message.choice; never push, and don't imply they've done badly.
+Say data.line if given, then offer each way on in data.options in one line and wait: stop, quick (2 or 3 questions on data.quick_parts), quiz (one multiple-choice question) or extend (a harder question). Send their pick as this_message.choice; never push, and don't imply they've done badly.

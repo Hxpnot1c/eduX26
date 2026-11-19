@@ -266,7 +266,7 @@ def session(turn: Turn, settings: Settings) -> dict | None:
     if state is None:
         return None
     if state["fatigued"]:
-        out = {"state": "fatigued", "minutes": round(state["minutes"]), "quick_parts": _quick_parts(turn, settings, {p["part_id"] for p in state["stuck_parts"]})}
+        out = {"state": "fatigued", "reason": state["fatigue_reason"], "minutes": round(state["minutes"]), "quick_parts": _quick_parts(turn, settings, {p["part_id"] for p in state["stuck_parts"]})}
         if state["stuck_parts"]:
             out["also_stuck_on"] = [p["part_id"] for p in state["stuck_parts"]]
         return out

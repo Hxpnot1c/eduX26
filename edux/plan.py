@@ -70,7 +70,7 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "extend": ({"answer_type"}, set()),
     "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "correct_option", "purpose", "points_met", "missing",
                                              "intuition", "secure"}),
-    "offer_choice": ({"reason", "options"}, {"minutes", "quick_parts"}),
+    "offer_choice": ({"reason", "options"}, {"minutes", "quick_parts", "line"}),
     "session_summary": ({"covered"}, {"next_review"}),
     "reask": ({"asked"}, {"answer_type", "skill"}),
     "reteach": (set(), {"missing", "anchor", "point", "level", "answer_type"}),
@@ -370,8 +370,9 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
 
     if session and session["state"] == "fatigued" and "fatigued" not in offered:
         quick = [{"id": p["id"], "name": p["name"], "level": p["level"]} for p in session["quick_parts"]]
+        line = read_text(f"fatigue/{session['reason']}.md").strip().format(minutes=session["minutes"])
         return [offer_choice("fatigued", ["stop"] + (["quick"] if quick else []),
-                             {"minutes": session["minutes"], "quick_parts": quick})]
+                             {"minutes": session["minutes"], "quick_parts": quick, "line": line})]
 
     if session and session["state"] == "stuck" and focus:
         stuck = next((p for p in session["parts"] if p["part_id"] == focus), None)

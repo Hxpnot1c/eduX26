@@ -185,10 +185,10 @@ def _session_line(session: dict | None) -> str:
         return "session: none in progress"
     parts = [f"session: started {session['session_id'][:16].replace('T', ' ')}, {session['minutes']:.0f} min",
              f"{session['n_evidence']} evidence"]
-    if session["rolling_surprise"] is not None:
-        parts.append(f"rolling surprise {session['rolling_surprise']:+.2f}")
     if session["fatigued"]:
-        parts.append(f"FATIGUED since minute {session['fatigued_since_minute']:.0f}")
+        parts.append(f"{session['fatigue_reason'].replace('_', '-')} mode since minute {session['fatigued_since_minute']:.0f}")
+    if session["rapid_guesses"]:
+        parts.append(f"{session['rapid_guesses']} rapid guess(es)")
     if session["stuck_parts"]:
         parts.append("stuck on " + ", ".join(p["part_id"] for p in session["stuck_parts"]))
     parts.append(f"just-show-me {_share(session['just_show_me_share'])}, surface {_share(session['surface_share'])}")

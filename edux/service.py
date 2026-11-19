@@ -436,6 +436,30 @@ def reply_style(steps: list[dict], student: dict, turn: context_blocks.Turn, blo
     return out
 
 
+def _words_in(value: object) -> int:
+    """Words in every string inside a step's data."""
+    if isinstance(value, str):
+        return len(value.split())
+    if isinstance(value, dict):
+        return sum(_words_in(v) for v in value.values())
+    if isinstance(value, (list, tuple)):
+        return sum(_words_in(v) for v in value)
+    return 0
+
+
+def _timing(last: dict, this_message: dict, at: str) -> dict:
+    """What step 05s needs to flag a rapid guess later: seconds since the previous turn (within a session), words in the
+    question last asked (the options and the point of the step that waits for an answer), and the word count of
+    the student's message, which the chatbot sends as this_message.words. Counts only; no text."""
+    gap = None
+    if last.get("ts") is not None:
+        seconds = (learner.parse_ts(at) - learner.parse_ts(last["ts"])).total_seconds()
+        gap = seconds if 0 <= seconds <= _settings().session.gap_minutes * 60 else None
+    asking = next((s for s in reversed(last.get("plan") or []) if plan.is_stop(s)), None)
+    return {"latency_s": gap, "question_words": _words_in(asking["data"]) if asking else None,
+            "answer_words": this_message.get("words")}
+
+
 REQUEST_LABELS = ("request_type", "question_features", "source_conflict", "web_access", "asks_recent", "pushback_changed")
 
 
@@ -518,7 +542,8 @@ def tutor_turn(
                                     evidence["misconception_ids"] if evidence else None,
                                     conflict_flagged=bool(this_message.get("conflict_flagged")), client=client, ts=at,
                                     evidence=recorded or None, apply="now",
-                                    request={k: this_message.get(k) for k in REQUEST_LABELS})
+                                    request={k: this_message.get(k) for k in REQUEST_LABELS},
+                                    timing=_timing(last, this_message, at))
         except ValueError as e:
             return {"ok": False, "error": str(e)}
         if evidence:   # feedback judges "secure" on the level before this answer was applied
@@ -707,20 +732,9 @@ def _ai_literacy(student_id: str, at: str) -> dict:
     }
 
 
-def _study_pattern(student_id: str) -> dict | None:
-    """When at least session.pattern_min_sessions sessions had a fatigue onset: the median onset minute and the
-    line from text/progress/study_pattern.md. Otherwise None."""
-    onsets = [s["fatigue_onset_minute"] for s in learner.sessions(student_id) if s["fatigue_onset_minute"] is not None]
-    if len(onsets) < _settings().session.pattern_min_sessions:
-        return None
-    minutes = round(statistics.median(onsets))
-    return {"minutes": minutes, "sessions": len(onsets),
-            "text": read_text("progress/study_pattern.md").strip().format(minutes=minutes)}
-
-
 def my_progress(student: dict, include_parts: bool = False, at: str | None = None) -> dict:
-    """Tree with levels, the biggest levers, weak links, reviews due, AI-literacy trends, AI-literacy skills (step
-    05e) and study pattern. AI-literacy parts are left out of the tree, levers and reviews."""
+    """Tree with levels, the biggest levers, weak links, reviews due, AI-literacy trends and AI-literacy skills (step
+    05e). AI-literacy parts are left out of the tree, levers and reviews."""
     at = at or learner.now_iso()
     s, student_id = _settings(), student["id"]
     reviews = learner.due_reviews(student_id, _context().limits.get("reviews_due", 3), at)
@@ -732,7 +746,6 @@ def my_progress(student: dict, include_parts: bool = False, at: str | None = Non
                          "due": r["due"], "reason": r["reason"]} for r in reviews],
         "trends": _trends(student_id, at),
         "ai_literacy": _ai_literacy(student_id, at),
-        "study_pattern": _study_pattern(student_id),
     }
     return fit_progress(out, result_limit(include_parts))
 
@@ -743,7 +756,7 @@ PROGRESS_TRIM_ORDER = ("weak_links", "reviews_due", "levers")   # lowest-ranked 
 def fit_progress(out: dict, limit: int | None = None) -> dict:
     """Keep get_my_progress within its limit (results.max_chars, or max_chars_full_progress for the every-part
     view) by dropping the last, lowest-ranked item of weak_links, then reviews_due, then levers, until it fits.
-    The tree, trends, ai_literacy and study_pattern are never cut."""
+    The tree, trends and ai_literacy are never cut."""
     limit = limit or result_limit()
     for name in PROGRESS_TRIM_ORDER:
         while out.get(name) and result_size(out) > limit:

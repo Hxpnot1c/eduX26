@@ -7,6 +7,5 @@ Returns:
 - reviews_due: what is due for review.
 - trends: how their use of the chatbot is changing: deeper questions, their own reasoning, and how often they ask to be shown answers.
 - ai_literacy: how well they ask a chatbot precise questions (ask), check its claims (verify) and understand how chatbots work (how_ai_works, with the wrong ideas they still hold), how many tasks they skipped (skipped never lowers a level), and which question features they use more or less than before.
-- study_pattern: when they tend to tire, once there is enough data.
 
 Explain it in plain words and suggest one next step. Don't read out the numbers.
