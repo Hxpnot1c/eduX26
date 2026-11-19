@@ -1,8 +1,11 @@
 name: CI
 
-# Runs on every push and on every pull request: lint, format check, type check, then the tests with a coverage floor.
+# Runs on every pull request (every commit pushed to its branch) and on every push to main after a merge: lint, format
+# check, type check, then the tests with a coverage floor. Pushes to other branches are checked through their pull request,
+# so each commit runs once, not twice.
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
