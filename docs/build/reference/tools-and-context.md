@@ -80,7 +80,7 @@ At most two steps (three from step 05d, for feedback, `teach_point` and `ask_mcq
 - points missing → `feedback` (naming any misconceptions the answer showed), then `reteach` **(stop)** with only the missing points' wording (step 05c; before, one `reteach_gap` step did both). It re-teaches those and asks them to try again, and nothing else follows it. If they are fatigued or stuck, the `feedback` step also names what's missing and is followed by `offer_choice`, `step_back` or `reteach` with the anchor.
 
 **The main step** is the first rule that matches:
-1. Fatigued, and not yet offered this session → `offer_choice` (`reason = fatigued`, `options` stop and quick, with `quick_parts`) **(stop)**. If they carry on, teaching goes on.
+1. In long-session or rushing mode (step 05s), and not yet offered this session → `offer_choice` (`reason = fatigued`, `options` stop and quick, with `quick_parts` and `data.line`, the plain wording about pacing) **(stop)**. If they carry on, teaching goes on.
 2. Stuck on the focus part:
    - `step_back` to its weakest prerequisite **(stop)**;
    - or, when it has no prerequisite, `reteach` of the whole part (through the anchor, or a different example; `switch_approach` before 05c).
@@ -257,7 +257,7 @@ For students. Levels only, never numbers.
 - Reviews due.
 - AI-literacy trends, as directions over the last 14 days vs before: share of mechanism/transfer questions, share of constructive engagement, "just show me" rate.
 - `ai_literacy` (step 05e): each skill also has `skipped`, the tasks or checks left unanswered after their re-ask, which never lower a level (research fixes, 0003). `ask` and `verify`, each with the `level` of `ail_ask` and `ail_verify`; `how_ai_works`, the rollup `level` of its parts and `held`, the wrong ideas about AI the student still holds; and `question_features`: for each feature, the share of research questions showing it over the last `progress.trend_days` against before (`recent`, `before`, `direction` up, down or steady, as for `trends`). These parts are left out of the tree, levers and reviews above.
-- `study_pattern`: "your answers tend to drop after about N minutes" (median fatigue onset), when at least `session.pattern_min_sessions` sessions had one; otherwise `null`.
+- *(`study_pattern` was removed in step 05s: it came from the old performance-based detection and was a stored per-student trait.)*
 
 ### update_my_profile(interests?, exam_date_override?, answer_length?, add_assessment?, remove_assessment?)
 Updates `student_profile`. `interests` and `answer_length` come back in every turn's `style`. The result's `profile` lists the student's upcoming `assessments` (`id`, `name`, `kind`, `date`).

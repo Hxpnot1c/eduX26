@@ -93,5 +93,6 @@ The result that would make us revisit this.
 | [0009](0009-cap-teach-point-under-a-longer-answer-length.md) | Cap teach_point at 120 words under a longer answer length | Proposed |
 | [0010](0010-engagement-rule-fixes.md) | Engagement rules: question first, a session summary on stop, and less noisy signals | Proposed |
 | [0011](0011-data-handling.md) | Opaque ids, hashed keys, and delete, export and retention | Proposed |
+| [0013](0013-fatigue-as-pacing.md) | Fatigue becomes pacing: time on task and rapid guesses | Proposed |
 
 Each later record is added to this table in the pull request that introduces it.

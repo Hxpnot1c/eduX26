@@ -84,13 +84,13 @@ The update starts from `p_now`, the decayed value. Then:
 
 If `offload_left > 0`, guess is replaced by `offloading.guess_after` and `offload_left -= 1`. (Removed in step 05d: see Offloading.)
 
-While the session is fatigued (see Sessions), slip is raised by `session.fatigue_slip_add`, capped at `session.slip_cap`.
+Time on task raises slip for everyone (step 05s): `extra_slip(minutes into the session)` is 0 before `fatigue.slip_start_minutes` (28), then `fatigue.slip_per_minute` (0.002) per minute, up to `fatigue.extra_slip_cap` (0.12), and the slip stays within `session.slip_cap`. It is used in the expected-success calculation and the BKT update alike.
 
 **Startup check (identifiability).** Settings fail to load unless, for every evidence type, with slip at its largest (`session.slip_cap`) and guess at its largest (1/2 for a multiple-choice type when `mcq_guess_from_options` is on, and the immediate rule's larger guess):
 - `guess + slip < 1`, so a correct answer is evidence of knowing;
 - `learn_rate < 1 - slip / (1 - guess)`, so a wrong answer still lowers the estimate (Baker, Corbett & Aleven, 2008).
 
-With the current values the tightest case is a 2-option question while fatigued: `learn_rate` must stay below 0.20.
+With the current values the tightest case is a 2-option question at the slip cap: `learn_rate` must stay below 0.20.
 
 **Personal learning rate (personal-learning-rate).** Each student has one learning-rate offset, pooled across their course parts (`learner.learning_offset`; `docs/research/personalisation.md`, section 7). It is applied as an odds weight on `bkt.learn_rate`: `odds(learn_rate) × exp(offset)`.
 - **What it's built from:** the `surprise` of the student's evidence in earlier sessions. Fatigued evidence, immediate recall (`evidence_derived.immediate`), untaught pre-questions (weight 0) and AI-literacy parts are left out.
@@ -223,12 +223,9 @@ Each due review has a mode:
 Derived from both event logs at read and rebuild time. There are no session events.
 - **Session:** a student's exchanges and evidence in time order, until a gap longer than `session.gap_minutes`. `session_id` is the start timestamp.
 - **Surprise:** `score − expected` for each piece of evidence, where `expected = p_before × (1 − slip) + (1 − p_before) × guess` is the chance of a correct answer under that evidence's slip and guess (after the multiple-choice and immediate rules, before any fatigue slip), and `p_before` is the part's `p_now` just before applying it. Scaled by `w` for pre-questions. Measuring against `p_before` alone made a lucky guess on a 4-option question look like a surprise and a slip on a known part look larger than it is (tune-from-research). It is stored with `fatigued` and `immediate` (migration 011) in the derived table `evidence_derived`. Comparing with the model's expectation, not with "correct or not", stops hard material from looking like fatigue.
-- **Fatigue:** from the first piece of evidence where:
-  - the session is at least `session.fatigue_min_minutes` old
-  - the mean surprise of the last `session.fatigue_window` pieces is ≤ `session.fatigue_threshold`
-  - those pieces span at least `session.fatigue_min_parts` parts
-
-  It lasts until the session ends. Evidence while fatigued uses the raised slip above, so errors count for less and correct answers still count fully. The "just show me" share and the `surface` share over the last `session.signal_window` exchanges are reported but never trigger fatigue.
+- **Long-session and rushing mode (step 05s; the code still calls it "fatigued").** A session is in the mode from `fatigue.mode_minutes` (50) into the session, or from its `fatigue.rapid_guesses`-th (2nd) rapid guess, whichever comes first, until a new session starts. It follows time on task and answer speed, never how well the student answers: the old rule (four answers worse than expected) flagged 77% of not-tired students by 60 minutes in our simulation and is gone. Its effects are shorter replies, no literacy checks or tasks, a short reteach, and one `offer_choice` with a plain line (`data.line`, from `text/fatigue/`): at 50 minutes "You've been at this for N minutes; concentration usually dips around now. Take a short break, or one quick last question?"; after rapid guesses "Looks like you're rushing a bit. Want to switch to something different?" Teachers see "long-session mode" and "rushing (answers faster than reading time)", never "tired" or "fatigued".
+- **Rapid guess.** An answer is a rapid guess when the time since the student's previous turn is less than the question's words at `fatigue.reading_wpm` (300) plus their message's words at `fatigue.typing_wpm` (52). The latency includes the chatbot's writing time, which makes a flag less likely: the safe direction. The three numbers are stored on the exchange (`latency_s`, `question_words`, `answer_words`; counts only, no text), so the flag is replayed identically on rebuild. A chatbot that does not send `this_message.words` is never flagged. A rapid-guess answer gets weight 0 for knowledge (effort-moderated scoring) and is counted in the session.
+- The "just show me" share and the `surface` share over the last `session.signal_window` exchanges are reported but never trigger the mode.
 - **Engagement (engagement-rules):**
   - `learner.passive_streak` counts the latest messages in the session labelled `passive`, in a row. It drives a one-off `offer_choice`.
   - `learner.coasting_share` is the share of the last `session.signal_window` messages that were `passive` or "just show me", and needs at least `engagement.coasting_min_messages` (2) messages, so one passive first message is not coasting. At `engagement.low_share` or above, the explain-back asks for the weakest point only (`learner.weakest_point`: the lowest mean of each point's last `engagement.weakest_last_n` (5) answers; a point never asked counts as 0.5).
