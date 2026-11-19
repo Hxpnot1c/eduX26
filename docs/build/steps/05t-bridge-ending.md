@@ -2,6 +2,9 @@
 
 Branch `build/bridge-ending`, from `main` after step 05s.
 
+## Built
+Four tiers in `plan.ending_tiers` (replacing `_second_step`'s single choice); `bridge_target`, `bridge_question`; `learner.not_yet_taught`, `uncovered_sections`; `graph.linked`; the cues `ask_mcq_prequestion_bridge`, `ask_mcq_prequestion_bridge_reason` and `teach_point_bridge` and `text/bridge/reason.md`; `service.ending_view` for the CLI's `context` output; 12 tests and a `bridge` run in `check_mcp`. **Fixed on the way:** `extend` ends in a question but was not in the stop set, so anything added after it (a bridge) would have made two questions in one reply; it now counts as a stop. **Changed check:** the priorities check used to say an earned extend wins unless an urgent review exists; with the tier order specified here a bridge wins when there is one. Decision [0017](../../decisions/0017-bridge-ending.md).
+
 ## What
 **When:** a reply has no question of its own, because a part has just finished or the reply only explains. Today `_second_step` adds an earned extend or the best due review. It now picks an ending.
 

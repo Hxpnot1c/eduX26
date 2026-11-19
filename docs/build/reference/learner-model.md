@@ -188,6 +188,9 @@ Shares are adapted from Cepeda et al. (2008): the optimal gap shrinks as the tes
 
 `reviews_due` returns up to `max_reviews_per_reply` due parts, ordered by importance.
 
+## The reply's ending: the bridge question (step 05t)
+The ending is chosen in four tiers (an urgent review, a bridge, an earned extend, another review); see `tools-and-context.md`. A bridge answer is a pre-question, so it follows the pre-question rules and feeds the starting offset of its target's sector (step 05q): the not-covered offset for a coverage-next target and for any part the class has not covered, the covered offset for a strongest-link target that was covered in class but never practised here. The candidates not picked are logged in `considered` and never sent; the CLI's `context` command prints the tiers (`ending_tiers`).
+
 ## Priorities: the add-on step by expected marks
 The student's message still sets the main step. The value score orders only the choices Synapse makes itself:
 - the add-on step (`plan._second_step`): an earned `extend`, the best due review, or nothing;
