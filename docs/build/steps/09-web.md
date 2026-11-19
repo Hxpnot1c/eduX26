@@ -9,7 +9,7 @@ Decisions [0023](../../decisions/0023-web-pages-and-teacher-access.md) (access) 
 | 2 | Course map (`build/web-course-map`) | `/api/map` and `/api/public/map`, the map, path and list views, detail panel, keyboard movement, public example map | **built** |
 | 3 | Student page (`build/web-student-page`) | `/me`: map coloured by level, what next, ready for a check, coming up, AI practice, my record, my chatbot | **built** |
 | 4 | Teacher page, read-only (`build/web-teacher-page`) | `/teacher`: class map in bands (≥5 per cell), coverage, wrong ideas held by ≥5, assessments, help-seeking pattern, what the page does not show | **built** |
-| 5 | Teacher actions | assessment and coverage forms, content review writing the teacher feedback CSV | planned |
+| 5 | Teacher actions (`build/web-teacher-actions`) | set or remove a test, mark sections as taught, audit trail | **built**; content review (approve, reject, edit rows) is **not built yet** and will be its own pull request |
 | 6 | Polish | accessibility pass, print, responsive, demo script | planned |
 
 ## What pull request 1 added
@@ -38,6 +38,15 @@ Decisions [0023](../../decisions/0023-web-pages-and-teacher-access.md) (access) 
 - **`/teacher`:** a class picker (only the teacher's own classes), the class map with the shared graph code, coverage ("where we are in the spec" and what is not yet covered), common wrong ideas with the right idea, coming up, asking to be shown, and a plain "what this page does not show" list that also says dashboards have not been shown to improve results.
 - **Synthetic class for demos:** `seed-demo --pupils 8` adds "Synthetic pupil N" to the demo class from a seeded generator (the same count always gives the same class); the page says "Seeded data". `seed-demo --reset` removes them.
 - Teacher write actions (assessment and coverage forms, content review) are the next pull request.
+
+## What pull request 5 added
+- **Three POST routes** under `/api/teacher/class/<id>/`: `assessments` (set a test or assignment), `assessments/remove`, `coverage` (mark sections as taught). Each needs a teacher key for that class (a student key gets 403, another teacher's class and an unknown class both get 404, a URL key 400); the body is JSON, at most 16 KB. They reuse the command line's operations and the student form's validation (`service._check_assessment`, `graph.match_sections`), so the same bad input is refused with the same plain reason, and a refusal changes nothing. The reply is the refreshed class view.
+- **Audit trail:** migration 021 `teacher_action` (time, teacher id, class, what, detail). "Recent changes" on the page shows the latest six, with the teacher's name. If a teacher is deleted their rows keep their place but the id becomes "former teacher", so the trail outlives the person without keeping who they were.
+- **Forms** with real labels and fieldsets, concept checkboxes taken from the course map, a polite status line, and a Remove button on each test. Marking a section as taught sets `class_coverage.set_by = 'web'` and, as with the command line, students are then shown it as "taught in class, not yet checked" (a test checks this end to end).
+- No cookies are used, so there is no ambient credential for a cross-site request to borrow: the bearer header must be sent by the page itself.
+
+## Not built: content review
+Listing draft and flagged pack rows and letting a teacher approve, reject or edit them (writing the teacher feedback CSV that `ingest.load.apply_feedback` reads) is a separate pull request. It writes to the content database that live chats read, so it needs its own care: apply only the new row (re-applying the whole CSV would repeat log lines), authorise per course, and show what each change will do before it is made.
 
 ## Try it
 ```bash

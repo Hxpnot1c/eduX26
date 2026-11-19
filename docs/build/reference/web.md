@@ -12,6 +12,7 @@ Pages and a small JSON API, served by the same process as the MCP endpoint. See 
 | `/api/map` | a student or teacher key (bearer) | the course structure: `{course, nodes, edges}`; a student gets their own course, a teacher may add `?course=` |
 | `/api/me` | a student key (bearer); a teacher key gets 403 | the student's own page: `overlay`, `next`, `reviews`, `coming_up`, `ai_literacy`, `calibration`, `record`, `parts`, `setup` |
 | `/api/teacher/class/<id>` | a teacher key for a class assigned to them (else 404; a student key gets 403) | class level only: `class`, `min_cell`, `coverage`, `assessments`, `seeded`, `enough`, `overlay` (a band per part, or withheld), `wrong_ideas` (held by at least the minimum), `help_seeking` (or null) |
+| `POST /api/teacher/class/<id>/assessments`, `…/assessments/remove`, `…/coverage` | a teacher key for that class | set or remove a test, mark sections as taught; JSON body (16 KB at most); 400 with a plain reason if refused; reply is the refreshed class view |
 | `/api/whoami` | a student or teacher key, as `Authorization: Bearer` | `{"role": "student"}`, or for a teacher `{"role": "teacher", "name", "classes": [{id, name}]}` |
 
 An `/api` request with `?key=` is refused with 400. A teacher key never opens `/mcp`; a student key never opens the teacher API. 
@@ -33,3 +34,6 @@ Open `/me#key=<key>` or `/teacher#key=<key>`. The fragment is never sent to a se
 
 ## The class view's privacy rules (`views.class_summary`)
 Minimum cell `coverage.class_min_students` (5). A class under the minimum: coverage and assessments only. A part: withheld if fewer than the minimum students have answered; otherwise a band (`few`, `mixed`, `most` by the share at developing or secure, edges at one third and two thirds), never a count at each level. Wrong ideas: only those held now by at least the minimum. Help-seeking: only if at least the minimum students wrote in each window. No student identifier, name or key; no confidence, fatigue, learning-speed or rapid-guess data.
+
+## Changes a teacher makes, and the audit trail
+`edux/web/actions.py` holds the three operations. Every change writes one `teacher_action` row (migration 021): time, teacher id, class, what, detail. A deleted teacher's id becomes "former teacher". `teachers.recent_actions(class_id)` feeds the "Recent changes" list.
