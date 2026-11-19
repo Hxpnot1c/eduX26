@@ -103,3 +103,25 @@ def test_the_teacher_page_shows_a_class_and_never_a_student(live, tmp_path):
     assert "Seeded data" in dom and "Class map" in dom and "Common wrong ideas" in dom and "Asking to be shown" in dom
     assert "demo-pupil" not in dom and "Synthetic pupil" not in dom and teacher["key"] not in dom
     assert 'id="class-body" hidden' not in dom  # the class sections were revealed once the class loaded
+
+
+def _map_link(student, live, monkeypatch):
+    from edux import service
+
+    monkeypatch.setenv("EDUX_PUBLIC_BASE_URL", live)
+    return service.my_progress(student)["map_url"]
+
+
+def test_a_map_link_from_the_chatbot_signs_in(live, student, tmp_path, monkeypatch):
+    dom = _dom(tmp_path, _map_link(student, live, monkeypatch))
+    assert "Signed in as a" in dom and "already been used" not in dom
+
+
+def test_a_map_link_used_by_a_preview_says_to_ask_again(live, student, tmp_path, monkeypatch):
+    from edux.web import links
+
+    url = _map_link(student, live, monkeypatch)
+    assert links.exchange(url.split("#link=", 1)[1]) is not None  # a chat app's preview got there first
+    dom = _dom(tmp_path, url)
+    assert "This link has already been used or has expired. Ask Synapse for your progress again to get a new one." in dom
+    assert "Signed in as a" not in dom and "not recognised" not in dom

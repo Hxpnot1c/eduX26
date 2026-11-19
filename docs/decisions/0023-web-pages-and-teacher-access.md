@@ -28,7 +28,7 @@ Synapse has no web interface: a student reads their record only through a chatbo
 - **A build step (React, Svelte):** adds Node, a build and a bundle for three small pages. Rejected for plain HTML, CSS and JavaScript.
 
 ## Consequences
-- The MCP endpoint, tools and server instructions are unchanged (898 of 900 words; no result over 2,400 characters).
+- The MCP endpoint, tools and server instructions are unchanged (898 of 900 words; no result over 2,400 characters). That figure was measured on `example-mini`; the real Edexcel Theme 1 pack overflowed it, and `get_my_progress` now has its own limits (decision 0026).
 - A key in a fragment can still be left in browser history or a screenshot on a shared computer. Mitigations: session-only storage, the fragment removed at once, "forget this device". OAuth remains the held proper fix (C10).
 - Teachers are new personal data (a name and a hash). DPIA notes updated; a teacher who left is purged after the same retention as a student.
 - **Open:** what each page may show (0024); teacher write actions (a later pull request).

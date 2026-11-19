@@ -220,6 +220,9 @@ class FindError:
 @dataclass(frozen=True)
 class Web:
     public_example_map: bool
+    public_base_url: str  # where the pages are served, for links in tool results; "" means no links (EDUX_PUBLIC_BASE_URL overrides)
+    link_minutes: int
+    session_minutes: int
 
 
 @dataclass(frozen=True)
@@ -324,6 +327,7 @@ class Retention:
 @dataclass(frozen=True)
 class Results:
     max_chars: int
+    max_chars_progress: int
     max_chars_full_progress: int
 
 

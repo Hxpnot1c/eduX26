@@ -1,6 +1,6 @@
 # The web layer
 
-Pages and a small JSON API, served by the same process as the MCP endpoint. See decisions 0023 and 0024 and step [09](../steps/09-web.md).
+Pages and a small JSON API, served by the same process as the MCP endpoint. See decisions 0023, 0024 and 0026 and step [09](../steps/09-web.md).
 
 ## Routes
 | Path | Who | What |
@@ -13,15 +13,21 @@ Pages and a small JSON API, served by the same process as the MCP endpoint. See 
 | `/api/me` | a student key (bearer); a teacher key gets 403 | the student's own page: `overlay`, `next`, `reviews`, `coming_up`, `ai_literacy`, `calibration`, `record`, `parts`, `setup` |
 | `/api/teacher/class/<id>` | a teacher key for a class assigned to them (else 404; a student key gets 403) | class level only: `class`, `min_cell`, `coverage`, `assessments`, `seeded`, `enough`, `overlay` (a band per part, or withheld), `wrong_ideas` (held by at least the minimum), `help_seeking` (or null) |
 | `POST /api/teacher/class/<id>/assessments`, `…/assessments/remove`, `…/coverage` | a teacher key for that class | set or remove a test, mark sections as taught; JSON body (16 KB at most); 400 with a plain reason if refused; reply is the refreshed class view |
+| `POST /api/link` | anyone with a map link token, as JSON `{"token"}` | swaps a link from `get_my_progress`, once, for `{"session", "expires_in"}` (seconds); 401 if the token is unknown, used or expired |
 | `/api/whoami` | a student or teacher key, as `Authorization: Bearer` | `{"role": "student"}`, or for a teacher `{"role": "teacher", "name", "classes": [{id, name}]}` |
 
-An `/api` request with `?key=` is refused with 400. A teacher key never opens `/mcp`; a student key never opens the teacher API. 
+An `/api` request with `?key=` is refused with 400. A teacher key never opens `/mcp`; a student key never opens the teacher API. A session token from a map link opens what a student key opens on `/api` (all read-only) and never `/mcp` or the teacher API.
 
 ## Headers (every response from this layer)
 `Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, a restrictive `Permissions-Policy`; `Cache-Control: no-store` on `/api`.
 
 ## Sign-in
 Open `/me#key=<key>` or `/teacher#key=<key>`. The fragment is never sent to a server. `js/api.js` moves the key into `sessionStorage`, removes the fragment from the address bar and sends `Authorization: Bearer` on every call. "Forget this device" clears it.
+
+## Map links from the chatbot (decision 0026)
+With `web.public_base_url` set (or `EDUX_PUBLIC_BASE_URL`, which overrides it when not empty; neither set means no links), `get_my_progress` returns `map_url` = `{base}/me#link=<token>` and `map_url_expires_minutes`. The token is 32 random bytes; the `web_link` table (migration 022) stores only its SHA-256, the student id and an expiry of `web.link_minutes` (15). Every call issues a new one; expired rows are deleted when the next is issued, and `delete_student` removes a student's rows.
+
+`js/api.js` removes `#link=` from the address bar before anything else, then POSTs the token to `/api/link`. The swap marks it used in the same statement that checks it, so it works once, and returns a session token (also stored as a hash only) valid for `web.session_minutes` (120). The page keeps the session in `sessionStorage` and sends it as its bearer, like a key; closing the tab or "Forget this device" ends it sooner. If the swap is refused (the link was used, perhaps by a chat app's preview, or has expired), the sign-in line says: "This link has already been used or has expired. Ask Synapse for your progress again to get a new one." The student's key never appears in a tool result or the chat.
 
 ## Teachers
 `python -m edux.cli teacher add --name "…"` prints the key once; `teacher assign --teacher t-… --class c-…` lets them see a class; `teacher list | leave | delete --yes`. Keys are stored as SHA-256 only; `purge` deletes teachers who left after `retention.after_leaving_days`.

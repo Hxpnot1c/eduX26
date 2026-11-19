@@ -168,6 +168,9 @@ max_per_session = 1        # judgement call: rare, at most this many a session, 
 
 [web]                      # the map, student and teacher pages (decision 0023)
 public_example_map = true  # judgement call: serve the course map of the synthetic example pack to anyone, with no key, so the demo and pitch can show it. Any other pack is never served without a key, whatever this says
+public_base_url = ""       # where the pages are served, e.g. https://synapse.example.org; get_my_progress links the student's map only when this is set. EDUX_PUBLIC_BASE_URL overrides it without editing this file (decision 0026)
+link_minutes = 15          # judgement call: a map link from get_my_progress works once, within this many minutes
+session_minutes = 120      # judgement call: the browser session a map link opens (the student's own pages, read-only) ends after this many minutes, or when the tab closes
 
 [reminders]               # in-chat deadline reminders (step 05u). Synapse cannot push notifications
 days_ahead = 7             # judgement call, starting value: tests due within this many days are mentioned, once, at the start of a session
@@ -245,8 +248,9 @@ call_log_days = 30         # call-log detail (timing, sizes, errors per call) is
 after_leaving_days = 90    # a student marked as having left has all their data deleted this many days later (a window for appeals and questions)
 
 [results]                  # size of a tool result, in characters of compact JSON as sent (steps 05c, 05w). Engineering budgets, not from research
-max_chars = 2400           # about 600 tokens, every tool; over this, reference blocks (tutor_turn) or the lowest-ranked list items (get_my_progress) are dropped, then the call is logged as over budget
-max_chars_full_progress = 4000   # the same for get_my_progress with include_parts (every part listed): the one view allowed to be larger
+max_chars = 2400           # about 600 tokens, every tool but get_my_progress; over this, reference blocks (tutor_turn) are dropped, then the call is logged as over budget
+max_chars_progress = 3000  # get_my_progress (levels view), map link included: over this the lowest-ranked list items are dropped. Raised from 2400 when the real Edexcel Theme 1 pack's tree alone overflowed it (decision 0026)
+max_chars_full_progress = 6500   # the same for get_my_progress with include_parts (every part listed); raised from 4000 for the same reason
 
 [instructions]             # the MCP server instructions, sent once per chat (step 05c)
 max_words = 900            # server_instructions.md + style.md + every move section; over this is a startup error
