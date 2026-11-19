@@ -26,8 +26,9 @@ def test_an_upcoming_mock_raises_the_value_and_names_itself_as_the_reason(studen
     monkeypatch.setattr(learner, "final_exam_days", lambda *a, **k: None)
     plain = learner.step_value(student["id"], part)["value"]
     soon = (datetime.now(timezone.utc) + timedelta(days=3)).date().isoformat()
-    monkeypatch.setattr(learner, "assessments", lambda *a, **k: [
-        {"id": 1, "name": "Mock", "kind": "mock", "date": soon, "part_ids": [part]}])
+    monkeypatch.setattr(
+        learner, "assessments", lambda *a, **k: [{"id": 1, "name": "Mock", "kind": "mock", "date": soon, "part_ids": [part]}]
+    )
     found = learner.step_value(student["id"], part)
     assert found["value"] > plain
     assert found["reason"]["name"] == "Mock"

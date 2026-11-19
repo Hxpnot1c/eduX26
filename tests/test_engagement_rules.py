@@ -5,8 +5,6 @@ from datetime import datetime, timedelta, timezone
 from edux import graph, learner
 
 
-
-
 def _log(student_id, part, point, score, minute):
     ts = (datetime(2026, 11, 1, 10, tzinfo=timezone.utc) + timedelta(minutes=minute)).isoformat(timespec="seconds")
     learner.record_evidence(student_id, part, "explain_back", score, ts=ts, apply="none", point_id=point)
@@ -23,16 +21,16 @@ def test_early_misses_that_were_put_right_do_not_make_a_point_the_weakest(studen
         _log(sid, part, "pb", 1.0, 20 + i)
     for i in range(3):
         _log(sid, part, "pb", 0.0, 30 + i)
-    assert learner.weakest_point(sid, part, ["pa", "pb"]) == "pb"     # by all answers A (0.5) and B (0.625) would pick A
+    assert learner.weakest_point(sid, part, ["pa", "pb"]) == "pb"  # by all answers A (0.5) and B (0.625) would pick A
 
 
 def test_a_point_never_asked_counts_as_half(student, part):
     sid = student["id"]
     _log(sid, part, "pa", 1.0, 0)
-    assert learner.weakest_point(sid, part, ["pa", "pc"]) == "pc"      # 1.0 against 0.5
+    assert learner.weakest_point(sid, part, ["pa", "pc"]) == "pc"  # 1.0 against 0.5
     _log(sid, part, "pa", 0.0, 1)
     _log(sid, part, "pa", 0.0, 2)
-    assert learner.weakest_point(sid, part, ["pa", "pc"]) == "pa"      # 1/3 against 0.5
+    assert learner.weakest_point(sid, part, ["pa", "pc"]) == "pa"  # 1/3 against 0.5
 
 
 def _exchange(student_id, part, engagement, minute):
@@ -53,7 +51,7 @@ def test_two_passive_messages_are_coasting(student, part):
 
 # --- plan-level rules (step 05l) -----------------------------------------------------------------------------
 
-from edux import context_blocks, graph, plan  # noqa: E402
+from edux import context_blocks, plan  # noqa: E402
 
 
 def _turn(student, part):
@@ -71,12 +69,13 @@ def test_the_two_option_wrong_option_is_a_held_misconception_first(student):
     part = _part_with_misconceptions()
     if part is None:
         import pytest
+
         pytest.skip("needs a part with two misconceptions")
     found = [m["id"] for m in graph.misconceptions_for([part])]
     turn = _turn(student, part)
-    assert plan.two_option_wrong(turn, part)["id"] == found[0]                       # none held, no watch-for: pack order
+    assert plan.two_option_wrong(turn, part)["id"] == found[0]  # none held, no watch-for: pack order
     watch = {"misconceptions": {"watch_for": [{"id": found[1], "part_id": part}]}}
-    assert plan.two_option_wrong(turn, part, watch)["id"] == found[1]                # watch-for beats pack order
+    assert plan.two_option_wrong(turn, part, watch)["id"] == found[1]  # watch-for beats pack order
     learner.record_exchange(student["id"], [part], "surface", "active", misconception_ids=[found[1]], apply="now")
     held = {"misconceptions": {"watch_for": [{"id": found[0], "part_id": part}]}}
     assert plan.two_option_wrong(_turn(student, part), part, held)["id"] == found[1]  # held beats watch-for

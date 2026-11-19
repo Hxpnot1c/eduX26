@@ -66,7 +66,7 @@ def test_a_legacy_plaintext_key_still_works_once_and_is_then_hashed(student):
 
 def test_delete_student_leaves_no_row_about_them_in_any_table(student, part):
     _use(student, part)
-    assert len(_count_rows_about(student["id"])) >= 5          # the student really has rows in many tables
+    assert len(_count_rows_about(student["id"])) >= 5  # the student really has rows in many tables
     counts = learner.delete_student(student["id"])
     assert counts["student"] == 1
     assert _count_rows_about(student["id"]) == {}
@@ -151,7 +151,7 @@ def test_the_migration_keeps_an_existing_students_key_working(tmp_path, monkeypa
     db.run_migrations(conn, old)
     conn.execute("INSERT INTO student (id, key, display_name, course_id, created) VALUES ('old-1', 'plain-key', 'Old', 'c', '2026-01-01')")
     conn.commit()
-    assert db.run_migrations(conn)[0] == 14      # 014 first (then any later migration)
+    assert db.run_migrations(conn)[0] == 14  # 014 first (then any later migration)
     row = conn.execute("SELECT key, key_hash, left_on FROM student WHERE id = 'old-1'").fetchone()
     assert (row["key"], row["key_hash"], row["left_on"]) == ("plain-key", None, None)
     assert "prompt_text" not in [c["name"] for c in conn.execute("PRAGMA table_info(exchange_log)")]

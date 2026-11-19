@@ -13,6 +13,7 @@ import tomllib
 import typing
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 SETTINGS_PATH = ROOT / "settings.toml"
@@ -24,8 +25,8 @@ class SettingsError(ValueError):
     """A settings or context file is missing a key, has an unknown key or a wrong type."""
 
 
-MCQ_TYPES = ("mcq", "mcq_check", "prequestion", "ail_how")   # evidence types that can come from a multiple-choice question
-MIN_OPTIONS = 2            # the fewest options a multiple-choice question can show, so its largest guess is 1 / 2
+MCQ_TYPES = ("mcq", "mcq_check", "prequestion", "ail_how")  # evidence types that can come from a multiple-choice question
+MIN_OPTIONS = 2  # the fewest options a multiple-choice question can show, so its largest guess is 1 / 2
 
 
 @dataclass(frozen=True)
@@ -371,17 +372,17 @@ class Settings:
 @dataclass(frozen=True)
 class Profile:
     blocks: list[str]
-    plan: bool                 # false: tutor_turn returns no plan (a comparison profile)
+    plan: bool  # false: tutor_turn returns no plan (a comparison profile)
 
 
 @dataclass(frozen=True)
 class MoveReference:
-    reference: list[str]       # reference blocks this move uses, in priority order (step 05c)
+    reference: list[str]  # reference blocks this move uses, in priority order (step 05c)
 
 
 @dataclass(frozen=True)
 class WatchFor:
-    moves: list[str]           # moves that ask something also get the part's watch-for misconceptions (step 05c)
+    moves: list[str]  # moves that ask something also get the part's watch-for misconceptions (step 05c)
 
 
 @dataclass(frozen=True)
@@ -436,7 +437,7 @@ def _convert(value: object, tp: object, where: str) -> object:
     raise SettingsError(f"{where}: unsupported type {tp}")
 
 
-def _build(cls: type, data: dict, where: str) -> object:
+def _build(cls: Any, data: dict, where: str) -> Any:
     hints = typing.get_type_hints(cls)
     names = [f.name for f in dataclasses.fields(cls)]
     missing = [n for n in names if n not in data]
@@ -508,8 +509,10 @@ def check_identifiable(settings: Settings) -> None:
             if guess + slip >= 1:
                 raise SettingsError(f"bkt.evidence.{name}: guess {guess:.2f} + slip {slip:.2f} (at slip_cap) must be below 1")
             if learn_rate >= 1 - slip / (1 - guess):
-                raise SettingsError(f"bkt.evidence.{name}: learn_rate {learn_rate:.2f} (at the top personal bound) must be below "
-                                    f"1 - slip / (1 - guess) = {1 - slip / (1 - guess):.2f} (slip at slip_cap)")
+                raise SettingsError(
+                    f"bkt.evidence.{name}: learn_rate {learn_rate:.2f} (at the top personal bound) must be below "
+                    f"1 - slip / (1 - guess) = {1 - slip / (1 - guess):.2f} (slip at slip_cap)"
+                )
 
 
 def load_context(path: Path = CONTEXT_PATH) -> ContextConfig:

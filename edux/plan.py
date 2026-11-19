@@ -38,16 +38,27 @@ import json
 import logging
 import random
 import re
+from collections.abc import Sequence
+from typing import Any
 
 from edux import graph, learner
-from edux.context_blocks import (Turn, link_weight, _quick_parts, core_idea, held_misconceptions, intuition_source, known_parts,
-                                 known_terms)
+from edux.context_blocks import Turn, _quick_parts, core_idea, held_misconceptions, intuition_source, known_parts, known_terms, link_weight
 from edux.settings import TEXT_DIR, Settings, SettingsError, read_text
 
 log = logging.getLogger(__name__)
 
-STOP = {"reteach", "offer_choice", "ask_which", "ask_mcq", "explain_back", "reask", "session_summary", "extend", "say_line"}   # each ends in a question or the end of the chat
-PICKS = ("quiz", "extend", "stop")   # ways on from offer_choice the student picks, sent back as this_message.choice
+STOP = {
+    "reteach",
+    "offer_choice",
+    "ask_which",
+    "ask_mcq",
+    "explain_back",
+    "reask",
+    "session_summary",
+    "extend",
+    "say_line",
+}  # each ends in a question or the end of the chat
+PICKS = ("quiz", "extend", "stop")  # ways on from offer_choice the student picks, sent back as this_message.choice
 ASKS = {"reteach", "ask_mcq", "explain_back", "extend", "reask"}
 MAX_STEPS = 3
 # The answer.type the chatbot sends back for a step that asks something.
@@ -72,8 +83,10 @@ TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "ask_mcq_prequestion_bridge": ({"purpose", "options", "name", "answer_type"}, {"extra_option"}),
     "ask_mcq_prequestion_bridge_reason": ({"purpose", "options", "name", "reason", "answer_type"}, {"extra_option"}),
     "extend": ({"answer_type"}, set()),
-    "feedback": ({"type", "misconceptions"}, {"correct", "correct_idea", "correct_option", "purpose", "points_met", "missing",
-                                             "intuition", "secure"}),
+    "feedback": (
+        {"type", "misconceptions"},
+        {"correct", "correct_idea", "correct_option", "purpose", "points_met", "missing", "intuition", "secure"},
+    ),
     "offer_choice": ({"reason", "options"}, {"minutes", "quick_parts", "line"}),
     "session_summary": ({"covered"}, {"next_review"}),
     "reask": ({"asked"}, {"answer_type", "skill"}),
@@ -98,12 +111,14 @@ def placeholders(text: str) -> set[str]:
 
 def fill(text: str, data: dict) -> str:
     """Fill {field} placeholders from the step's data; a field that is missing this time is left out."""
+
     def value(m: re.Match) -> str:
         v = data.get(m.group(1))
         if v is None:
             log.warning("move text placeholder {%s} has no value in this step's data", m.group(1))
             return ""
         return v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)
+
     return PLACEHOLDER.sub(value, text)
 
 
@@ -152,8 +167,7 @@ def check_texts(settings: Settings) -> list[str]:
         fields = set().union(*(a | b for c in mine for a, b in [TEXT_FIELDS.get(c, (set(), set()))]))
         text = _text(key)
         if placeholders(text):
-            errors.append(f"text/moves/{key}.md: sections are sent once, so use data.<field>, "
-                          f"not {{{sorted(placeholders(text))[0]}}}")
+            errors.append(f"text/moves/{key}.md: sections are sent once, so use data.<field>, not {{{sorted(placeholders(text))[0]}}}")
         stray = sorted(set(re.findall(r"`([a-z_]+)`", text)) & fields)
         if stray:
             errors.append(f"text/moves/{key}.md: write data fields as data.<field>, not `{stray[0]}`")
@@ -194,9 +208,11 @@ def server_instructions(settings: Settings) -> str:
     words = len(text.split())
     if words > settings.instructions.max_words:
         longest = sorted(sections, key=lambda k: -len(sections[k].split()))[:3]
-        raise SettingsError(f"server instructions are {words} words, over instructions.max_words "
-                            f"({settings.instructions.max_words}); longest move sections: "
-                            + ", ".join(f"{k} ({len(sections[k].split())})" for k in longest))
+        raise SettingsError(
+            f"server instructions are {words} words, over instructions.max_words "
+            f"({settings.instructions.max_words}); longest move sections: "
+            + ", ".join(f"{k} ({len(sections[k].split())})" for k in longest)
+        )
     return text
 
 
@@ -212,7 +228,7 @@ def _step(move: str, part_id: str | None, data: dict | None = None, key: str | N
 
 
 def _summary(turn: Turn, part_id: str) -> dict:
-    node = graph.get_node(part_id)
+    node = graph.require_node(part_id)
     return {"id": part_id, "name": node["name"], "level": learner.shown_level(turn.student_id, part_id, turn.at)}
 
 
@@ -224,7 +240,7 @@ def distractors(part_id: str, settings: Settings) -> list[dict]:
     mcq.max_options - 1, as {id, text}."""
     found = graph.misconceptions_for([part_id])
     found.sort(key=lambda m: "examiner_report" not in graph.source_types(m["source_ids"]))
-    return [{"id": m["id"], "text": m["wrong_idea"]} for m in found[:settings.mcq.max_options - 1]]
+    return [{"id": m["id"], "text": m["wrong_idea"]} for m in found[: settings.mcq.max_options - 1]]
 
 
 def option_form(text: str) -> str:
@@ -236,8 +252,11 @@ def mcq_points(part_id: str) -> list[dict]:
     """The points a part's MCQs may use as the correct option: its own mark points only. Note key points, key
     wording and the description are never options (they are fragments or topic labels, so the key would stand
     out); a part without mark points gets open checks instead (open_check), and ingest warns about it."""
-    return [{"id": mp["id"], "point": mp["point"], "exemplar": mp["exemplar"] or ""}
-            for mp in graph.mark_points_for([part_id]) if mp["node_id"] == part_id]
+    return [
+        {"id": mp["id"], "point": mp["point"], "exemplar": mp["exemplar"] or ""}
+        for mp in graph.mark_points_for([part_id])
+        if mp["node_id"] == part_id
+    ]
 
 
 def question(part_id: str, purpose: str, correct: str, settings: Settings, point_id: str | None = None) -> dict:
@@ -246,11 +265,17 @@ def question(part_id: str, purpose: str, correct: str, settings: Settings, point
     mcq.min_distractors). Kept with a pending question so it can be asked again with new letters. Every option
     is in option_form."""
     wrong = [{**w, "text": option_form(w["text"])} for w in distractors(part_id, settings)]
-    return {"part_id": part_id, "purpose": purpose, "point_id": point_id, "correct": option_form(correct), "wrong": wrong,
-            "extra": len(wrong) < settings.mcq.min_distractors}
+    return {
+        "part_id": part_id,
+        "purpose": purpose,
+        "point_id": point_id,
+        "correct": option_form(correct),
+        "wrong": wrong,
+        "extra": len(wrong) < settings.mcq.min_distractors,
+    }
 
 
-def ask_mcq(turn: Turn, q: dict, data: dict | None = None, avoid: list[str] | None = None) -> dict:
+def ask_mcq(turn: Turn, q: dict, data: dict | None = None, avoid: Sequence[str | None] | None = None) -> dict:
     """The ask_mcq step for a question: its options shuffled by the server and lettered A, B, C..., with
     data.extra_option naming a letter the chatbot fills when the part has too few misconceptions. The shuffle
     differs per student and per asking, and never repeats avoid (the last order of the same question). The
@@ -260,20 +285,27 @@ def ask_mcq(turn: Turn, q: dict, data: dict | None = None, avoid: list[str] | No
     texts = {"correct": q["correct"], **{w["id"]: w["text"] for w in q["wrong"]}}
     rng = random.Random(hashlib.sha256(f"{turn.student_id}:{q['part_id']}:{q['purpose']}:{turn.at}".encode()).digest())
     shown = [i for i in avoid or [] if i != "extra"]
-    for _ in range(20):   # a repeat must look different: compare the options the student sees
+    for _ in range(20):  # a repeat must look different: compare the options the student sees
         rng.shuffle(ids)
         if len(shown) < 2 or [i for i in ids if i != "extra"] != shown:
             break
     letters = dict(zip(LETTERS, ids))
-    out = {"purpose": q["purpose"], **(data or {}),
-           "options": [{"letter": letter, "text": texts[i]} for letter, i in letters.items() if i != "extra"]}
+    out = {
+        "purpose": q["purpose"],
+        **(data or {}),
+        "options": [{"letter": letter, "text": texts[i]} for letter, i in letters.items() if i != "extra"],
+    }
     extra = next((letter for letter, i in letters.items() if i == "extra"), None)
     if extra:
         out["extra_option"] = extra
     step = _step("ask_mcq", q["part_id"], out, key=f"ask_mcq_{q['purpose']}")
     step["question"] = q
-    step["mcq"] = {"part_id": q["part_id"], "purpose": q["purpose"], "point_id": q["point_id"],
-                   "options": {letter: {"id": i, "text": texts.get(i, "")} for letter, i in letters.items()}}
+    step["mcq"] = {
+        "part_id": q["part_id"],
+        "purpose": q["purpose"],
+        "point_id": q["point_id"],
+        "options": {letter: {"id": i, "text": texts.get(i, "")} for letter, i in letters.items()},
+    }
     return step
 
 
@@ -312,26 +344,43 @@ def feedback(answer: dict, evidence: dict) -> tuple[dict, dict | None]:
     re-teaches the missing points (None when nothing is missing)."""
     part = evidence["part_id"]
     shown = [_misconception(m) for m in map(graph.get_misconception, evidence["misconception_ids"]) if m]
-    if answer["type"] == "mcq":   # the picked misconception comes first in misconception_ids
-        data = {"type": "mcq", "purpose": evidence["purpose"], "correct": evidence["correct"],
-                "correct_option": evidence["correct_option"], "misconceptions": shown}
-        if evidence["purpose"] == "how_ai_works":   # why chatbots do this, in one everyday line
-            data["intuition"] = graph.get_node(part)["intuition"]
+    if answer["type"] == "mcq":  # the picked misconception comes first in misconception_ids
+        data = {
+            "type": "mcq",
+            "purpose": evidence["purpose"],
+            "correct": evidence["correct"],
+            "correct_option": evidence["correct_option"],
+            "misconceptions": shown,
+        }
+        if evidence["purpose"] == "how_ai_works":  # why chatbots do this, in one everyday line
+            data["intuition"] = graph.require_node(part)["intuition"]
         return _step("feedback", part, data), None
-    if answer["type"] == "find_error":   # always show the correct statement afterwards; never leave the planted error standing
+    if answer["type"] == "find_error":  # always show the correct statement afterwards; never leave the planted error standing
         wrong = graph.get_misconception(evidence["shown_misconception"]) if evidence.get("shown_misconception") else None
-        return _step("feedback", part, {"type": "find_error", "purpose": "find_error", "correct": evidence["hit"],
-                                        "correct_option": evidence["correct_option"],
-                                        "misconceptions": [_misconception(wrong)] if wrong else []}), None
-    if answer["type"] == "prequestion":   # the picked option comes first in misconception_ids
-        return _step("feedback", part, {"type": "prequestion", "correct": evidence["score"] == 1.0,
-                                        "correct_idea": core_idea(part), "misconceptions": shown}), None
+        return _step(
+            "feedback",
+            part,
+            {
+                "type": "find_error",
+                "purpose": "find_error",
+                "correct": evidence["hit"],
+                "correct_option": evidence["correct_option"],
+                "misconceptions": [_misconception(wrong)] if wrong else [],
+            },
+        ), None
+    if answer["type"] == "prequestion":  # the picked option comes first in misconception_ids
+        return _step(
+            "feedback",
+            part,
+            {"type": "prequestion", "correct": evidence["score"] == 1.0, "correct_idea": core_idea(part), "misconceptions": shown},
+        ), None
     points = graph.score_points(part)
-    if evidence.get("scope"):   # an explain-back of one point is answered on that point only
+    if evidence.get("scope"):  # an explain-back of one point is answered on that point only
         points = [p for p in points if p["id"] in evidence["scope"]]
     met = set(evidence.get("points_met") or [])
-    first = _step("feedback", part, {"type": answer["type"], "points_met": [p["point"] for p in points if p["id"] in met],
-                                     "misconceptions": shown})
+    first = _step(
+        "feedback", part, {"type": answer["type"], "points_met": [p["point"] for p in points if p["id"] in met], "misconceptions": shown}
+    )
     missing = [p["point"] for p in points if p["id"] not in met]
     if not missing:
         return first, None
@@ -348,9 +397,15 @@ def _checked_this_session(turn: Turn, part_id: str, last_plan: list[dict]) -> bo
     session = learner.session_state(turn.student_id, turn.at)
     if session is None:
         return False
-    return learner._conn().execute(
-        "SELECT 1 FROM evidence_log WHERE student_id = ? AND part_id = ? AND ts >= ? AND ts <= ? LIMIT 1",
-        (turn.student_id, part_id, session["session_id"], learner._event_ts(turn.at))).fetchone() is not None
+    return (
+        learner._conn()
+        .execute(
+            "SELECT 1 FROM evidence_log WHERE student_id = ? AND part_id = ? AND ts >= ? AND ts <= ? LIMIT 1",
+            (turn.student_id, part_id, session["session_id"], learner._event_ts(turn.at)),
+        )
+        .fetchone()
+        is not None
+    )
 
 
 def corrected_in(steps: list[dict]) -> set[str]:
@@ -368,9 +423,17 @@ def corrected_in(steps: list[dict]) -> set[str]:
     return found
 
 
-def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_plan: list[dict],
-              handled: set[str], answered_prequestion: str | None, offered: frozenset[str] = frozenset(),
-              progress: dict | None = None) -> list[dict]:
+def main_step(
+    turn: Turn,
+    blocks: dict,
+    settings: Settings,
+    choice: str,
+    last_plan: list[dict],
+    handled: set[str],
+    answered_prequestion: str | None,
+    offered: frozenset[str] = frozenset(),
+    progress: dict | None = None,
+) -> list[dict]:
     """The steps of the first rule that matches, or [] when there is nothing to plan. Each offer_choice reason is
     offered once a session (offered holds those already made): if the student carries on, teaching goes on.
     progress is the point-by-point progress per part (step 05d), updated in place."""
@@ -381,32 +444,42 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
     if session and session["state"] == "fatigued" and "fatigued" not in offered:
         quick = [{"id": p["id"], "name": p["name"], "level": p["level"]} for p in session["quick_parts"]]
         line = read_text(f"fatigue/{session['reason']}.md").strip().format(minutes=session["minutes"])
-        return [offer_choice("fatigued", ["stop"] + (["quick"] if quick else []),
-                             {"minutes": session["minutes"], "quick_parts": quick, "line": line})]
+        return [
+            offer_choice(
+                "fatigued", ["stop"] + (["quick"] if quick else []), {"minutes": session["minutes"], "quick_parts": quick, "line": line}
+            )
+        ]
 
     if session and session["state"] == "stuck" and focus:
         stuck = next((p for p in session["parts"] if p["part_id"] == focus), None)
         # the step back (or whole-part reteach) comes once per stuck part a session; then teaching carries on.
         # Kept under its own key: a part's own progress is dropped when its explain_back is asked.
-        handled = progress.setdefault("_stuck_handled", {})
+        stuck_done: Any = progress.setdefault("_stuck_handled", {})
         session_id = (learner.session_state(turn.student_id, turn.at) or {}).get("session_id") if stuck else None
-        if stuck and handled.get(focus) != session_id:
-            handled[focus] = session_id
-            progress.pop("_misses", None)   # the stuck ladder counts misses from this step back on
+        if stuck and stuck_done.get(focus) != session_id:
+            stuck_done[focus] = session_id
+            progress.pop("_misses", None)  # the stuck ladder counts misses from this step back on
             back = stuck["step_back_to"]
             stepped = prereq_check(turn, back["id"], focus, settings, stuck=True) if back else None
             if stepped:
                 return [stepped]
             anchor = blocks.get("anchor")
-            return [_step("reteach", focus, {
-                "anchor": {"id": anchor["part_id"], "name": anchor["name"], "note": anchor["note"]} if anchor else None,
-                "answer_type": "explain_back"})]
+            return [
+                _step(
+                    "reteach",
+                    focus,
+                    {
+                        "anchor": {"id": anchor["part_id"], "name": anchor["name"], "note": anchor["note"]} if anchor else None,
+                        "answer_type": "explain_back",
+                    },
+                )
+            ]
 
     if focus is None:
         candidates = (blocks.get("focus") or {}).get("candidates")
         if candidates:
             return [_step("ask_which", None, {"candidates": [{k: c[k] for k in ("id", "name")} for c in candidates]})]
-        review = _second_step(turn, blocks, settings, reviews_only=True)   # e.g. "quiz me on what's due"
+        review = _second_step(turn, blocks, settings, reviews_only=True)  # e.g. "quiz me on what's due"
         return [review] if review else []
 
     if choice in ("just_show_me", "skip_point"):
@@ -415,14 +488,14 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
         return picked(turn, focus, settings, progress, choice)
 
     fatigued = bool(session and session["state"] == "fatigued")
-    if ("passive" not in offered and not fatigued
-            and learner.passive_streak(turn.student_id, turn.at) >= settings.engagement.passive_run):
-        earned = bool((blocks.get("support") or {}).get("extend"))   # extend is offered only when it is earned
+    if "passive" not in offered and not fatigued and learner.passive_streak(turn.student_id, turn.at) >= settings.engagement.passive_run:
+        earned = bool((blocks.get("support") or {}).get("extend"))  # extend is offered only when it is earned
         return [offer_choice("passive", ["quiz"] + (["extend"] if earned else []) + ["stop"])]
 
     pq = blocks.get("prequestion")
     asked_before = (progress.get(focus) or {}).get("intuition_asked") or any(
-        s["move"] == "ask_mcq" and s["data"].get("purpose") == "intuition" and s["part_id"] == focus for s in last_plan)
+        s["move"] == "ask_mcq" and s["data"].get("purpose") == "intuition" and s["part_id"] == focus for s in last_plan
+    )
     if pq and pq["part_id"] != answered_prequestion and not asked_before:
         return [ask_mcq(turn, question(pq["part_id"], "intuition", pq["correct"], settings), pq.get("source") or {})]
 
@@ -434,7 +507,7 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
 
     teaching = teach(turn, focus, settings, progress)
     held = [m for m in held_misconceptions(turn.student_id, turn.parts) if m["id"] not in handled]
-    if held:   # correct it, then carry on teaching
+    if held:  # correct it, then carry on teaching
         m = held[0]
         return [_step("feedback", m["node_id"], {"type": "held", "misconceptions": [_misconception(m)]})] + teaching
     return teaching
@@ -445,7 +518,7 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
 
 def _points(part_id: str) -> list[dict]:
     """The points a part is taught in: its score points, or its description as one point when it has none."""
-    return graph.score_points(part_id) or [{"id": None, "point": graph.get_node(part_id)["description"], "exemplar": ""}]
+    return graph.score_points(part_id) or [{"id": None, "point": graph.require_node(part_id)["description"], "exemplar": ""}]
 
 
 def _progress(progress: dict, part_id: str) -> dict:
@@ -455,16 +528,14 @@ def _progress(progress: dict, part_id: str) -> dict:
 def open_check(turn: Turn, part_id: str) -> list[dict]:
     """A part with no mark points has no MCQs: show its points, then the explain-back of the whole part, scored
     on its points (the open check). Ends the part's progress, as an explain-back does."""
-    return [_step("show", part_id, {"point": "; ".join(p["point"] for p in _points(part_id))}),
-            _step("explain_back", part_id)]
+    return [_step("show", part_id, {"point": "; ".join(p["point"] for p in _points(part_id))}), _step("explain_back", part_id)]
 
 
 def check(turn: Turn, part_id: str, index: int, settings: Settings, avoid: list[str] | None = None) -> dict:
     """ask_mcq (check) on one point of a part: the point's wording is the correct option. Only for a part with
     mark points (mcq_points), whose points are then its mark points."""
     point = _points(part_id)[index - 1]
-    return ask_mcq(turn, question(part_id, "check", point["point"], settings, point_id=point["id"]),
-                   {"index": index}, avoid)
+    return ask_mcq(turn, question(part_id, "check", point["point"], settings, point_id=point["id"]), {"index": index}, avoid)
 
 
 def teach(turn: Turn, part_id: str, settings: Settings, progress: dict) -> list[dict]:
@@ -479,16 +550,27 @@ def teach(turn: Turn, part_id: str, settings: Settings, progress: dict) -> list[
     if not mcq_points(part_id):
         progress.pop(part_id, None)
         return open_check(turn, part_id)
-    if state.pop("check_due", False) and state["index"] <= len(points):   # taught, but its check was replaced
+    if state.pop("check_due", False) and state["index"] <= len(points):  # taught, but its check was replaced
         return [check(turn, part_id, state["index"], settings)]
     if level == "explain_back" or state["index"] > len(points):
         progress.pop(part_id, None)
         return [explain_back(turn, part_id, points, settings)]
     point = points[state["index"] - 1]
-    return [_step("teach_point", part_id, {"index": state["index"], "total": len(points), "point": point["point"],
-                                           "exemplar": point["exemplar"], "level": level,
-                                           "max_words": settings.points.max_words}),
-            check(turn, part_id, state["index"], settings)]
+    return [
+        _step(
+            "teach_point",
+            part_id,
+            {
+                "index": state["index"],
+                "total": len(points),
+                "point": point["point"],
+                "exemplar": point["exemplar"],
+                "level": level,
+                "max_words": settings.points.max_words,
+            },
+        ),
+        check(turn, part_id, state["index"], settings),
+    ]
 
 
 def offer_choice(reason: str, options: list[str], data: dict | None = None) -> dict:
@@ -509,9 +591,9 @@ def picked(turn: Turn, part_id: str, settings: Settings, progress: dict, choice:
 
 def session_summary(turn: Turn) -> dict:
     """session_summary (stop): the parts worked on this session by name, and the next review (name and date), if any."""
-    covered = [graph.get_node(p)["name"] for p in learner.session_parts(turn.student_id, turn.at)]
+    covered = [graph.require_node(p)["name"] for p in learner.session_parts(turn.student_id, turn.at)]
     due = learner.next_review(turn.student_id)
-    nxt = {"name": graph.get_node(due["part_id"])["name"], "due": due["due"][:10]} if due else None
+    nxt = {"name": graph.require_node(due["part_id"])["name"], "due": due["due"][:10]} if due else None
     return _step("session_summary", None, {"covered": covered, "next_review": nxt})
 
 
@@ -555,9 +637,8 @@ def explain_back(turn: Turn, part_id: str, points: list[dict], settings: Setting
     return _step("explain_back", part_id, {"point": point["point"], "point_id": weakest}, key="explain_back_point")
 
 
-def shown_or_skipped(turn: Turn, part_id: str, settings: Settings, progress: dict, choice: str,
-                     blocks: dict | None = None) -> list[dict]:
-    """"I know this" (skip_point): the current point's check only, with no teaching. "Just show me": show, a
+def shown_or_skipped(turn: Turn, part_id: str, settings: Settings, progress: dict, choice: str, blocks: dict | None = None) -> list[dict]:
+    """ "I know this" (skip_point): the current point's check only, with no teaching. "Just show me": show, a
     one-line intuition (from the same source as the intuition question) and the point, then its check; after
     show.max_per_part_session shows of the part this session, a 2-option check first instead; its answer gets
     feedback and then the full show (full_show). A part with no mark points gets its open check."""
@@ -571,7 +652,7 @@ def shown_or_skipped(turn: Turn, part_id: str, settings: Settings, progress: dic
     if choice == "skip_point":
         return [asked]
     if learner.shows_this_session(turn.student_id, part_id, turn.at) > settings.show.max_per_part_session:
-        return [two_option_check(turn, part_id, index, settings, blocks)]   # try it first; the show follows its answer
+        return [two_option_check(turn, part_id, index, settings, blocks)]  # try it first; the show follows its answer
     return full_show(turn, part_id, settings, progress)
 
 
@@ -607,8 +688,10 @@ def after_check(turn: Turn, evidence: dict, settings: Settings, progress: dict, 
         state["reteaches"] += 1
         point = points[min(state["index"], len(points)) - 1]
         avoid = [o["id"] for _, o in sorted((last_mcq or {}).get("options", {}).items())] or None
-        return [_step("reteach", part, {"point": point["point"], "level": learner.support_level(turn.p(part))}),
-                check(turn, part, min(state["index"], len(points)), settings, avoid)]
+        return [
+            _step("reteach", part, {"point": point["point"], "level": learner.support_level(turn.p(part))}),
+            check(turn, part, min(state["index"], len(points)), settings, avoid),
+        ]
     state["index"] += 1
     state["reteaches"] = 0
     return teach(turn, part, settings, progress)
@@ -620,21 +703,23 @@ def prereq_check(turn: Turn, part_id: str, for_part: str, settings: Settings, no
     mark points."""
     if not mcq_points(part_id):
         return None
-    data = {"name": graph.get_node(part_id)["name"], "for": for_part}
+    data = {"name": graph.require_node(part_id)["name"], "for": for_part}
     if note:
         data["note"] = note
     if stuck:
         data["stuck"] = True
-    return ask_mcq(turn, question(part_id, "prereq", _points(part_id)[0]["point"], settings,
-                                  point_id=_points(part_id)[0]["id"]), data)
+    return ask_mcq(turn, question(part_id, "prereq", _points(part_id)[0]["point"], settings, point_id=_points(part_id)[0]["id"]), data)
 
 
 def review_check(turn: Turn, r: dict, settings: Settings) -> dict:
     """ask_mcq (review) on a due part, in its mode (recall, or transfer framed in data.new_context). The correct
     option rotates through the part's points: the point at (its evidence count) mod (its number of points)."""
     points = _points(r["part_id"])
-    row = learner._conn().execute("SELECT n_evidence FROM part_state WHERE student_id = ? AND part_id = ?",
-                                  (turn.student_id, r["part_id"])).fetchone()
+    row = (
+        learner._conn()
+        .execute("SELECT n_evidence FROM part_state WHERE student_id = ? AND part_id = ?", (turn.student_id, r["part_id"]))
+        .fetchone()
+    )
     point = points[(row["n_evidence"] if row else 0) % len(points)]
     data = {"name": r["name"], "mode": r["mode"]}
     if r.get("new_context"):
@@ -667,10 +752,15 @@ def bridge_target(turn: Turn, settings: Settings) -> dict | None:
     edges = graph.linked(here)
 
     def candidate(part: str) -> bool:
-        return (part != here and not graph.is_literacy(part) and _first_key_point(part) is not None
-                and learner.not_yet_taught(turn.student_id, part, turn.at) and _prereqs_at_least_developing(turn, part, settings))
+        return (
+            part != here
+            and not graph.is_literacy(part)
+            and _first_key_point(part) is not None
+            and learner.not_yet_taught(turn.student_id, part, turn.at)
+            and _prereqs_at_least_developing(turn, part, settings)
+        )
 
-    for section in learner.uncovered_sections(turn.student_id, turn.at)[:1]:       # only the very next section
+    for section in learner.uncovered_sections(turn.student_id, turn.at)[:1]:  # only the very next section
         parts = graph.parts_of(section["id"])
         link = next((e for e in edges if e["other"] in parts or e["other"] == section["id"]), None)
         if link is None:
@@ -691,9 +781,13 @@ def bridge_question(turn: Turn, target: dict, settings: Settings) -> dict:
     """The bridge: the pre-question move (ask_mcq, purpose intuition) on the target part's first key point, carrying
     data.link and a cue of its own. Being pre-teaching, its answer feeds the starting offset of the target's sector."""
     point = _first_key_point(target["part_id"])
+    assert point is not None  # a bridge target is chosen because it has a first key point
     q = question(target["part_id"], "intuition", point["point"], settings, point_id=point["id"])
-    data = {"name": graph.get_node(target["part_id"])["name"], "bridge": True,
-            "link": {"from": target["from"], "to": target["part_id"], "text": target["text"]}}
+    data = {
+        "name": graph.require_node(target["part_id"])["name"],
+        "bridge": True,
+        "link": {"from": target["from"], "to": target["part_id"], "text": target["text"]},
+    }
     if target["from_class"]:
         data["reason"] = read_text("bridge/reason.md").strip()
     step = ask_mcq(turn, q, data)
@@ -717,21 +811,31 @@ def find_error_step(turn: Turn, blocks: dict, settings: Settings) -> dict | None
         return None
     state = learner.session_state(turn.student_id, turn.at)
     start = state["session_id"] if state else turn.at
-    done = [r["point_id"] for r in conn.execute(
-        "SELECT point_id, ts FROM evidence_log WHERE student_id = ? AND evidence_type = 'find_error' ORDER BY id", (turn.student_id,))]
-    this_session = conn.execute("SELECT COUNT(*) FROM evidence_log WHERE student_id = ? AND evidence_type = 'find_error' AND ts >= ?",
-                                (turn.student_id, start)).fetchone()[0]
+    done = [
+        r["point_id"]
+        for r in conn.execute(
+            "SELECT point_id, ts FROM evidence_log WHERE student_id = ? AND evidence_type = 'find_error' ORDER BY id", (turn.student_id,)
+        )
+    ]
+    this_session = conn.execute(
+        "SELECT COUNT(*) FROM evidence_log WHERE student_id = ? AND evidence_type = 'find_error' AND ts >= ?", (turn.student_id, start)
+    ).fetchone()[0]
     points, wrongs = graph.score_points(part), graph.misconceptions_for([part])
     if this_session >= settings.find_error.max_per_session or len(points) < 2 or not wrongs:
         return None
     roll = int(hashlib.sha256(f"{turn.student_id}:{part}:{start}".encode()).hexdigest(), 16) % 100
     clean_id = f"clean:{part}"
     want_clean = roll < settings.find_error.clean_share * 100 and clean_id not in done
-    name, sentences = graph.get_node(part)["name"], [p["point"].strip().rstrip(".") + "." for p in points]
-    item = None
+    name, sentences = graph.require_node(part)["name"], [p["point"].strip().rstrip(".") + "." for p in points]
+    item: dict[str, Any] | None = None
     if want_clean:
-        item = {"id": clean_id, "kind": "clean", "part_id": part, "misconception_id": None,
-                "reveal": read_text("find_error/reveal_clean.md").strip()}
+        item = {
+            "id": clean_id,
+            "kind": "clean",
+            "part_id": part,
+            "misconception_id": None,
+            "reveal": read_text("find_error/reveal_clean.md").strip(),
+        }
     else:
         for m in wrongs:
             item_id = f"err:{part}:{m['id']}"
@@ -742,14 +846,24 @@ def find_error_step(turn: Turn, blocks: dict, settings: Settings) -> dict | None
             if scores[points[best]["id"]] <= 0:
                 continue
             sentences[best] = m["wrong_idea"].strip().rstrip(".") + "."
-            item = {"id": item_id, "kind": "error", "part_id": part, "misconception_id": m["id"], "sentence": best + 1,
-                    "reveal": read_text("find_error/reveal_error.md").strip().format(n=best + 1, correction=m["correction"].strip())}
+            item = {
+                "id": item_id,
+                "kind": "error",
+                "part_id": part,
+                "misconception_id": m["id"],
+                "sentence": best + 1,
+                "reveal": read_text("find_error/reveal_error.md").strip().format(n=best + 1, correction=m["correction"].strip()),
+            }
             break
     if item is None:
         return None
     statement = "\n".join(f"{i}. {s}" for i, s in enumerate(sentences, 1))
-    step = _step("say_line", part, {"line": read_text("find_error/intro.md").strip().format(name=name, statement=statement),
-                                    "answer_type": "find_error"}, key="say_line_find_error")
+    step = _step(
+        "say_line",
+        part,
+        {"line": read_text("find_error/intro.md").strip().format(name=name, statement=statement), "answer_type": "find_error"},
+        key="say_line_find_error",
+    )
     step["item"] = item
     return step
 
@@ -777,12 +891,19 @@ def ending_tiers(turn: Turn, blocks: dict, settings: Settings, reviews_only: boo
     tiers += [{"tier": 1, "kind": "review", "part_id": r["part_id"], "value": valued[r["part_id"]]["value"], "review": r} for r in urgent]
     if not reviews_only:
         item = find_error_step(turn, blocks, settings)
-        if item:     # rare (once a session, off unless switched on): ahead of the bridge in the same tier
+        if item:  # rare (once a session, off unless switched on): ahead of the bridge in the same tier
             tiers.append({"tier": 2, "kind": "find_error", "part_id": item["part_id"], "value": 0.0, "step": item})
         target = bridge_target(turn, settings)
         if target:
-            tiers.append({"tier": 2, "kind": "bridge", "part_id": target["part_id"], "value": turn.valued(target["part_id"])["value"],
-                          "target": target})
+            tiers.append(
+                {
+                    "tier": 2,
+                    "kind": "bridge",
+                    "part_id": target["part_id"],
+                    "value": turn.valued(target["part_id"])["value"],
+                    "target": target,
+                }
+            )
         support = blocks.get("support")
         if support and support.get("extend"):
             tiers.append({"tier": 3, "kind": "extend", "part_id": support["part_id"], "value": turn.valued(support["part_id"])["value"]})
@@ -809,10 +930,10 @@ def _second_step(turn: Turn, blocks: dict, settings: Settings, reviews_only: boo
         step = review_check(turn, pick["review"], settings)
         found = turn.valued(pick["part_id"])
         if found["reason"]:
-            step = _refill({**step, "key": "ask_mcq_review_reason",
-                            "data": {**step["data"], "reason": learner.reason_text(found["reason"], turn.at)}})
-    step["considered"] = [{"tier": t["tier"], "move": t["kind"], "part_id": t["part_id"], "value": round(t["value"], 5)}
-                          for t in tiers[1:]]
+            step = _refill(
+                {**step, "key": "ask_mcq_review_reason", "data": {**step["data"], "reason": learner.reason_text(found["reason"], turn.at)}}
+            )
+    step["considered"] = [{"tier": t["tier"], "move": t["kind"], "part_id": t["part_id"], "value": round(t["value"], 5)} for t in tiers[1:]]
     return step
 
 
@@ -863,14 +984,15 @@ def _point_index(part_id: str, point_id: str | None = None, text: str | None = N
     return 1
 
 
-def worked_example(turn: Turn, part_id: str, index: int, settings: Settings, progress: dict,
-                   avoid: list[str] | None = None) -> list[dict]:
+def worked_example(turn: Turn, part_id: str, index: int, settings: Settings, progress: dict, avoid: list[str] | None = None) -> list[dict]:
     """show (stuck): the point as a worked example, then its check (the point loop carries on from it); a part with
     no mark points: the worked points, then its explain-back."""
     if not mcq_points(part_id):
         progress.pop(part_id, None)
-        return [_step("show", part_id, {"point": "; ".join(p["point"] for p in _points(part_id)), "stuck": True},
-                      key="show_stuck"), _step("explain_back", part_id)]
+        return [
+            _step("show", part_id, {"point": "; ".join(p["point"] for p in _points(part_id)), "stuck": True}, key="show_stuck"),
+            _step("explain_back", part_id),
+        ]
     _progress(progress, part_id)["index"] = index
     data = {"point": _points(part_id)[index - 1]["point"], "stuck": True}
     source = intuition_source(turn, part_id)
@@ -882,8 +1004,10 @@ def worked_example(turn: Turn, part_id: str, index: int, settings: Settings, pro
 def easier_prereq(turn: Turn, part_id: str, settings: Settings, last_plan: list[dict]) -> dict | None:
     """A prerequisite check (stuck) on the weakest prerequisite of the part not yet checked this session (else the
     weakest one); None when the part has no prerequisite with mark points."""
-    pres = sorted({pre for edge in graph.prerequisites(part_id, 1) for pre in graph.parts_of(edge["other"])
-                   if mcq_points(pre)}, key=lambda p: (turn.p(p), p))
+    pres = sorted(
+        {pre for edge in graph.prerequisites(part_id, 1) for pre in graph.parts_of(edge["other"]) if mcq_points(pre)},
+        key=lambda p: (turn.p(p), p),
+    )
     if not pres:
         return None
     fresh = [p for p in pres if not _checked_this_session(turn, p, last_plan)]
@@ -894,13 +1018,30 @@ def stop_or_switch(turn: Turn, part_id: str, settings: Settings) -> dict:
     """offer_choice (stuck): stopping, or switching to a few developing parts other than the one they're stuck on."""
     session = learner.session_state(turn.student_id, turn.at) or {}
     quick = _quick_parts(turn, settings, {part_id})
-    return _step("offer_choice", None, {"reason": "stuck", "options": ["stop"] + (["quick"] if quick else []),
-                                        "minutes": round(session.get("minutes") or 0), "quick_parts": quick},
-                 key="offer_choice_stuck")
+    return _step(
+        "offer_choice",
+        None,
+        {
+            "reason": "stuck",
+            "options": ["stop"] + (["quick"] if quick else []),
+            "minutes": round(session.get("minutes") or 0),
+            "quick_parts": quick,
+        },
+        key="offer_choice_stuck",
+    )
 
 
-def stuck_ladder(turn: Turn, settings: Settings, evidence: dict, retry: dict | None, progress: dict,
-                 offered: frozenset[str], last_plan: list[dict], last_mcq: dict | None, misses: int) -> list[dict] | None:
+def stuck_ladder(
+    turn: Turn,
+    settings: Settings,
+    evidence: dict,
+    retry: dict | None,
+    progress: dict,
+    offered: frozenset[str],
+    last_plan: list[dict],
+    last_mcq: dict | None,
+    misses: int,
+) -> list[dict] | None:
     """The steps for a miss on the focus part instead of another reteach (see LADDER), or None to carry on as
     before. misses is the count _misses returned this turn."""
     if not misses:
@@ -913,20 +1054,20 @@ def stuck_ladder(turn: Turn, settings: Settings, evidence: dict, retry: dict | N
     else:
         index = _point_index(part, point_id=evidence.get("point_id"))
     avoid = [o["id"] for _, o in sorted((last_mcq or {}).get("options", {}).items())] or None
-    if not stepped_back:   # not stuck yet: cap bare reteaches of an open answer
+    if not stepped_back:  # not stuck yet: cap bare reteaches of an open answer
         if retry is not None and misses > OPEN_RETEACHES_IN_A_ROW:
             return worked_example(turn, part, index, settings, progress, avoid)
         return None
-    for rung in LADDER[misses - 1:]:   # empty past the last rung
+    for rung in LADDER[misses - 1 :]:  # empty past the last rung
         if rung == "worked_example":
             return worked_example(turn, part, index, settings, progress, avoid)
         if rung == "easier_prereq":
             asked = easier_prereq(turn, part, settings, last_plan)
             if asked:
                 return [asked]
-        if rung == "offer_choice" and not {"fatigued", "stuck"} & offered:   # stopping already offered this session
+        if rung == "offer_choice" and not {"fatigued", "stuck"} & offered:  # stopping already offered this session
             return [stop_or_switch(turn, part, settings)]
-    if misses > len(LADDER):   # past the ladder: the next point's worked example
+    if misses > len(LADDER):  # past the ladder: the next point's worked example
         index = index % len(_points(part)) + 1
     return worked_example(turn, part, index, settings, progress, avoid)
 
@@ -966,10 +1107,20 @@ def _urgent(steps: list[dict]) -> bool:
     return bool(steps) and (steps[0]["move"] in ("reteach", "offer_choice") or bool(steps[0]["data"].get("stuck")))
 
 
-def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", answer: dict | None = None,
-           evidence: dict | None = None, last_plan: list[dict] | None = None,
-           corrected: set[str] | None = None, offered: frozenset[str] = frozenset(), pending: dict | None = None,
-           progress: dict | None = None, last_mcq: dict | None = None) -> list[dict]:
+def choose(
+    turn: Turn,
+    blocks: dict,
+    settings: Settings,
+    choice: str = "none",
+    answer: dict | None = None,
+    evidence: dict | None = None,
+    last_plan: list[dict] | None = None,
+    corrected: set[str] | None = None,
+    offered: frozenset[str] = frozenset(),
+    pending: dict | None = None,
+    progress: dict | None = None,
+    last_mcq: dict | None = None,
+) -> list[dict]:
     """The plan for this turn (see the module docstring). answer is what the chatbot sent about the student's
     answer and evidence its scored item; last_plan is the plan issued on the previous turn; corrected holds the
     misconceptions already corrected this session, which aren't corrected again; offered holds the offer_choice
@@ -991,48 +1142,45 @@ def choose(turn: Turn, blocks: dict, settings: Settings, choice: str = "none", a
     misses = 0
     if answer and evidence:
         first, retry = feedback(answer, evidence)
-        was = evidence.get("p_before")   # the level before this answer: the one that tips a part to secure still gets its why
+        was = evidence.get("p_before")  # the level before this answer: the one that tips a part to secure still gets its why
         was = turn.p(evidence["part_id"]) if was is None else was
         if evidence["score"] >= settings.bkt.correct_share and learner.level(was) == "secure":
-            first = _refill({**first, "data": {**first["data"], "secure": True}})   # right at secure: confirm, no why
+            first = _refill({**first, "data": {**first["data"], "secure": True}})  # right at secure: confirm, no why
         steps.append(first)
         handled |= set(evidence["misconception_ids"])
         if answer["type"] == "prequestion" or evidence.get("purpose") == "intuition":
             answered_prequestion = evidence["part_id"]
             _progress(progress, evidence["part_id"])["intuition_asked"] = True
-        if evidence.get("purpose") == "check" and _then_show(last_plan):   # the repeated show's question: feedback, then the show
+        if evidence.get("purpose") == "check" and _then_show(last_plan):  # the repeated show's question: feedback, then the show
             return ([first] + full_show(turn, evidence["part_id"], settings, progress))[:MAX_STEPS]
         misses = _misses(turn, progress, evidence, retry, last_plan)
-        if retry:   # reteach ends the plan, unless they're tired or stuck: then say what's missing and do that instead
+        if retry:  # reteach ends the plan, unless they're tired or stuck: then say what's missing and do that instead
             urgent = main()
-            if not _urgent(urgent):   # missed again: the next rung of the stuck ladder, not another reteach
-                urgent = stuck_ladder(turn, settings, evidence, retry, progress, offered, last_plan, last_mcq,
-                                      misses) or urgent
+            if not _urgent(urgent):  # missed again: the next rung of the stuck ladder, not another reteach
+                urgent = stuck_ladder(turn, settings, evidence, retry, progress, offered, last_plan, last_mcq, misses) or urgent
             if _urgent(urgent):
-                return ([_refill({**first, "data": {**first["data"], "missing": retry["data"]["missing"]}})]
-                        + urgent)[:MAX_STEPS]
+                return ([_refill({**first, "data": {**first["data"], "missing": retry["data"]["missing"]}})] + urgent)[:MAX_STEPS]
             return [first, retry]
     rest = main()
-    if misses and not _urgent(rest):   # a missed check after the step back: the ladder, not the reteach loop
-        rest = stuck_ladder(turn, settings, evidence, None, progress, offered, last_plan, last_mcq, misses) or rest
+    if misses and not _urgent(rest):  # a missed check after the step back: the ladder, not the reteach loop
+        rest = stuck_ladder(turn, settings, evidence or {}, None, progress, offered, last_plan, last_mcq, misses) or rest
     # all points met on an explain-back or a harder question (a retry returned above): the part is done for now
     finished = bool(answer and evidence and answer["type"] in ("explain_back", "extend"))
     if not _urgent(rest):
-        if rest and rest[0]["move"] == "feedback" and steps:   # a held misconception joins the answer's feedback
+        if rest and rest[0]["move"] == "feedback" and steps:  # a held misconception joins the answer's feedback
             known = {m["id"] for m in steps[0]["data"]["misconceptions"]}
             extra = [m for m in rest[0]["data"]["misconceptions"] if m["id"] not in known]
-            steps[0] = _refill({**steps[0], "data": {**steps[0]["data"],
-                                                     "misconceptions": steps[0]["data"]["misconceptions"] + extra}})
+            steps[0] = _refill({**steps[0], "data": {**steps[0]["data"], "misconceptions": steps[0]["data"]["misconceptions"] + extra}})
             rest = rest[1:]
-        if evidence and evidence.get("purpose") == "intuition":   # whatever the answer, teaching starts
+        if evidence and evidence.get("purpose") == "intuition":  # whatever the answer, teaching starts
             rest = teach(turn, evidence["part_id"], settings, progress)
-            if _bridge_in(last_plan) and rest and rest[0]["move"] == "teach_point":   # after a bridge they can still stop or switch
+            if _bridge_in(last_plan) and rest and rest[0]["move"] == "teach_point":  # after a bridge they can still stop or switch
                 rest[0] = _refill({**rest[0], "key": "teach_point_bridge", "data": {**rest[0]["data"], "can_stop": True}})
         elif evidence and evidence.get("purpose") == "how_ai_works" and not turn.parts:
-            rest = []   # back to what they were doing: with no course focus, nothing more
+            rest = []  # back to what they were doing: with no course focus, nothing more
         elif evidence and evidence.get("purpose") == "check":
             rest = after_check(turn, evidence, settings, progress, last_mcq)
-        elif finished:   # the part is done for now: extend or a due review instead of teaching it again
+        elif finished:  # the part is done for now: extend or a due review instead of teaching it again
             rest = []
     steps += rest
     if (not answer or finished) and steps and not any(is_stop(s) for s in steps) and steps[-1]["move"] != "show":
@@ -1065,8 +1213,7 @@ def literacy_task(turn: Turn, blocks: dict, settings: Settings, features: list[s
     level = learner.level(turn.p(part))
     task = level != "secure" or learner.research_turns(turn.student_id, turn.at) % settings.literacy.secure_every == 0
     skill = "ask" if ask else "verify"
-    data = {"skill": skill, "level": level, "task": task, "features": sorted(set(features)),
-            "pattern": literacy_pattern(skill, level)}
+    data = {"skill": skill, "level": level, "task": task, "features": sorted(set(features)), "pattern": literacy_pattern(skill, level)}
     if task and not ask:
         data["answer_type"] = "ail_task"
     return _step("literacy_task", part, data)
@@ -1092,7 +1239,7 @@ def literacy_reask(task: dict) -> dict:
 def with_source_conflict(steps: list[dict]) -> list[dict]:
     """source_conflict first (the student found a link that failed or didn't say what was claimed), keeping the
     end of the plan, where its question is."""
-    return [_step("source_conflict", None)] + steps[-(MAX_STEPS - 1):]
+    return [_step("source_conflict", None)] + steps[-(MAX_STEPS - 1) :]
 
 
 # --- how-AI-works checks (step 05e) -----------------------------------------------------
@@ -1101,10 +1248,16 @@ def with_source_conflict(steps: list[dict]) -> list[dict]:
 HOW_TRIGGERS = (
     ("ail_how_fabrication", lambda m: bool(m.get("source_conflict")), "source_conflict = 1"),
     ("ail_how_agreement", lambda m: bool(m.get("pushback_changed")), "pushback_changed = 1"),
-    ("ail_how_confidence", lambda m: bool(m.get("conflict_flagged")) and not m.get("source_conflict"),
-     "conflict_flagged = 1 AND source_conflict = 0"),
-    ("ail_how_cutoff", lambda m: m.get("request_type") == "research" and bool(m.get("asks_recent"))
-     and m.get("web_access") is False, "request_type = 'research' AND asks_recent = 1 AND web_access = 0"),
+    (
+        "ail_how_confidence",
+        lambda m: bool(m.get("conflict_flagged")) and not m.get("source_conflict"),
+        "conflict_flagged = 1 AND source_conflict = 0",
+    ),
+    (
+        "ail_how_cutoff",
+        lambda m: m.get("request_type") == "research" and bool(m.get("asks_recent")) and m.get("web_access") is False,
+        "request_type = 'research' AND asks_recent = 1 AND web_access = 0",
+    ),
 )
 
 
@@ -1121,7 +1274,7 @@ def with_check(steps: list[dict], check: dict) -> list[dict]:
     """The plan with a how-AI-works check (or its re-ask) as the last step. The check wins: the plan's own question
     and any literacy task are left out, and the steps handling the moment are kept, within the step limit."""
     keep = [s for s in steps if not is_stop(s) and s["move"] != "literacy_task"]
-    return keep[:MAX_STEPS - 1] + [check]
+    return keep[: MAX_STEPS - 1] + [check]
 
 
 def lettered(part_id: str) -> list[dict]:
@@ -1135,20 +1288,20 @@ def score_next(plan: list[dict]) -> dict[str, list[dict]]:
     course content when the answer comes back, so no mapping is saved."""
     out: dict[str, list[dict]] = {}
     for step in plan:
-        if step.get("key") == "say_line_find_error":   # the same four letters for every item, so they give nothing away
+        if step.get("key") == "say_line_find_error":  # the same four letters for every item, so they give nothing away
             out[step["part_id"]] = [{"id": k, "point": text} for k, text in learner.FIND_ERROR_POINTS]
             continue
-        if step["move"] == "offer_choice":   # the short burst of quick questions, if they choose it
+        if step["move"] == "offer_choice":  # the short burst of quick questions, if they choose it
             for part in step["data"].get("quick_parts") or []:
                 points = lettered(part["id"])
                 if points:
                     out.setdefault(part["id"], points)
         by_option = step["move"] == "ask_mcq" or step["data"].get("asked") in ("ask_mcq", "prequestion")
-        if step["part_id"] == learner.AIL_ASK:   # an ask task is done by asking a research question, not ticked
+        if step["part_id"] == learner.AIL_ASK:  # an ask task is done by asking a research question, not ticked
             continue
         if step["move"] in ASKS and not by_option and step["part_id"] and step["part_id"] not in out:
             points = lettered(step["part_id"])
-            if step["data"].get("point_id") and step["move"] == "explain_back":   # one point: its own letter only
+            if step["data"].get("point_id") and step["move"] == "explain_back":  # one point: its own letter only
                 ids = [p["id"] for p in graph.score_points(step["part_id"])]
                 points = [points[ids.index(step["data"]["point_id"])]] if step["data"]["point_id"] in ids else points
             if points:

@@ -6,17 +6,16 @@ from edux import learner, settings
 
 
 def _p_known(student_id, part_id):
-    row = learner._conn().execute(
-        "SELECT p_known FROM part_state WHERE student_id = ? AND part_id = ?", (student_id, part_id)).fetchone()
+    row = learner._conn().execute("SELECT p_known FROM part_state WHERE student_id = ? AND part_id = ?", (student_id, part_id)).fetchone()
     return row["p_known"]
 
 
 def test_many_deep_exchanges_never_pass_the_ceiling(student, part):
     ceiling = learner._settings().nudges.ceiling
-    for _ in range(80):    # about 14 labelled messages used to reach "secure"
+    for _ in range(80):  # about 14 labelled messages used to reach "secure"
         learner.record_exchange(student["id"], [part], "transfer", "constructive", apply="now")
     assert _p_known(student["id"], part) <= ceiling + 1e-9
-    assert learner.level(learner.part_p(student["id"], part)) == "new"      # not "developing", not "secure"
+    assert learner.level(learner.part_p(student["id"], part)) == "new"  # not "developing", not "secure"
 
 
 def test_the_nudge_still_raises_a_part_below_the_ceiling(student, part):

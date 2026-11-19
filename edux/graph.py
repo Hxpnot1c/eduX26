@@ -77,16 +77,29 @@ def _visible_ids() -> set[str]:
 
 def get_node(node_id: str) -> dict | None:
     """One node by id, or None if it doesn't exist or is hidden."""
-    row = _conn().execute(f"{VISIBLE} SELECT n.* FROM node n JOIN visible v ON v.id = n.id WHERE n.id = ?",
-                          (canonical(node_id),)).fetchone()
+    row = (
+        _conn().execute(f"{VISIBLE} SELECT n.* FROM node n JOIN visible v ON v.id = n.id WHERE n.id = ?", (canonical(node_id),)).fetchone()
+    )
     return _node_dict(row) if row else None
+
+
+def require_node(node_id: str) -> dict:
+    """One node by id; a KeyError (not a None to trip over later) if it doesn't exist or is hidden. For ids that came
+    from the graph itself."""
+    node = get_node(node_id)
+    if node is None:
+        raise KeyError(f"unknown or hidden node {node_id!r}")
+    return node
 
 
 def topics() -> list[dict]:
     """The course's top-level topics, in pack order. The AI-literacy topic (step 05e) is not one of them: it
     stays out of the course tree, levers, candidates and reviews."""
-    rows = _conn().execute(f"{VISIBLE} SELECT n.* FROM node n JOIN visible v ON v.id = n.id "
-                           "WHERE coalesce(n.parent_id, '') = '' AND n.id != ? ORDER BY n.rowid", (AI_LITERACY_TOPIC,))
+    rows = _conn().execute(
+        f"{VISIBLE} SELECT n.* FROM node n JOIN visible v ON v.id = n.id "
+        "WHERE coalesce(n.parent_id, '') = '' AND n.id != ? ORDER BY n.rowid",
+        (AI_LITERACY_TOPIC,),
+    )
     return [_node_dict(r) for r in rows]
 
 
@@ -94,7 +107,7 @@ def is_diagram(part_id: str) -> bool:
     """True when the pack marks the part's content as a diagram (nodes.csv `diagram`). It depends on the content,
     never on the student."""
     node = get_node(part_id)
-    return bool(node) and node.get("diagram") == "true"
+    return node is not None and node.get("diagram") == "true"
 
 
 def is_literacy(node_id: str) -> bool:
@@ -104,8 +117,9 @@ def is_literacy(node_id: str) -> bool:
 
 def children(node_id: str) -> list[dict]:
     """Direct children of a node, in pack order."""
-    rows = _conn().execute(f"{VISIBLE} SELECT n.* FROM node n JOIN visible v ON v.id = n.id "
-                           "WHERE n.parent_id = ? ORDER BY n.rowid", (canonical(node_id),))
+    rows = _conn().execute(
+        f"{VISIBLE} SELECT n.* FROM node n JOIN visible v ON v.id = n.id WHERE n.parent_id = ? ORDER BY n.rowid", (canonical(node_id),)
+    )
     return [_node_dict(r) for r in rows]
 
 
@@ -155,10 +169,13 @@ def match_sections(keys: list[str]) -> tuple[list[dict], list[str]]:
 def parts_of(node_id: str) -> list[str]:
     """All parts under any node (recursive); a part returns itself."""
     node_id = canonical(node_id)
-    rows = _conn().execute(f"""{VISIBLE}, sub(id) AS (
+    rows = _conn().execute(
+        f"""{VISIBLE}, sub(id) AS (
             SELECT id FROM visible WHERE id = ?
             UNION SELECT n.id FROM node n JOIN sub s ON n.parent_id = s.id JOIN visible v ON v.id = n.id)
-        SELECT n.id FROM node n JOIN sub s ON s.id = n.id WHERE n.level = 'part' ORDER BY n.rowid""", (node_id,))
+        SELECT n.id FROM node n JOIN sub s ON s.id = n.id WHERE n.level = 'part' ORDER BY n.rowid""",
+        (node_id,),
+    )
     return [r[0] for r in rows]
 
 
@@ -189,14 +206,18 @@ def _edges(node_id: str, edge_type: str, direction: str) -> list[dict]:
         return []
     own = _own_ids(node_id)
     visible = _visible_ids()
-    rows = _conn().execute(
-        f"""SELECT e.from_id, e.to_id, e.type, e.note, e.teach_use, e.confidence, w.weight
+    rows = (
+        _conn()
+        .execute(
+            f"""SELECT e.from_id, e.to_id, e.type, e.note, e.teach_use, e.confidence, w.weight
             FROM edge e LEFT JOIN edge_weight w ON w.from_id = e.from_id AND w.to_id = e.to_id AND w.type = e.type
             WHERE e.type = ? AND e.status != 'rejected'
-            AND (e.from_id IN ({','.join('?' * len(own))}) OR e.to_id IN ({','.join('?' * len(own))}))
+            AND (e.from_id IN ({",".join("?" * len(own))}) OR e.to_id IN ({",".join("?" * len(own))}))
             ORDER BY e.rowid""",
-        [edge_type, *own, *own],
-    ).fetchall()
+            [edge_type, *own, *own],
+        )
+        .fetchall()
+    )
     results, seen = [], set()
     for r in rows:
         if r["from_id"] not in visible or r["to_id"] not in visible:
@@ -204,17 +225,19 @@ def _edges(node_id: str, edge_type: str, direction: str) -> list[dict]:
         for end, other, wanted in ((r["from_id"], r["to_id"], "out"), (r["to_id"], r["from_id"], "in")):
             if end in own and direction in (wanted, "both") and other not in own and (other, r["type"]) not in seen:
                 seen.add((other, r["type"]))
-                results.append({
-                    "other": other,
-                    "other_name": get_node(other)["name"],
-                    "type": r["type"],
-                    "direction": wanted,
-                    "via": None if end == node_id else end,
-                    "note": r["note"] or "",
-                    "teach_use": r["teach_use"] or "none",
-                    "confidence": r["confidence"],
-                    "weight": r["weight"],
-                })
+                results.append(
+                    {
+                        "other": other,
+                        "other_name": require_node(other)["name"],
+                        "type": r["type"],
+                        "direction": wanted,
+                        "via": None if end == node_id else end,
+                        "note": r["note"] or "",
+                        "teach_use": r["teach_use"] or "none",
+                        "confidence": r["confidence"],
+                        "weight": r["weight"],
+                    }
+                )
     return results
 
 
@@ -269,9 +292,9 @@ def links(edge_type: str) -> list[dict]:
         """SELECT e.from_id, e.to_id, e.note, w.weight FROM edge e
            LEFT JOIN edge_weight w ON w.from_id = e.from_id AND w.to_id = e.to_id AND w.type = e.type
            WHERE e.type = ? AND e.status != 'rejected' ORDER BY e.rowid""",
-        (edge_type,))
-    return [dict(r) | {"type": edge_type, "note": r["note"] or ""} for r in rows
-            if r["from_id"] in visible and r["to_id"] in visible]
+        (edge_type,),
+    )
+    return [dict(r) | {"type": edge_type, "note": r["note"] or ""} for r in rows if r["from_id"] in visible and r["to_id"] in visible]
 
 
 def _expand_parts(node_ids: list[str]) -> list[str]:
@@ -298,12 +321,16 @@ def notes_for(part_ids: list[str], limit: int | None = None) -> list[dict]:
     results, seen = [], set()
     for part in _expand_parts(part_ids):
         own = _own_ids(part)
-        rows = _conn().execute(
-            f"""SELECT n.*, s.title AS source_title, s.type AS source_type FROM note n
+        rows = (
+            _conn()
+            .execute(
+                f"""SELECT n.*, s.title AS source_title, s.type AS source_type FROM note n
                 LEFT JOIN source s ON s.id = n.source_id
                 WHERE n.node_id IN ({_placeholders(own)}) AND n.status != 'rejected'""",
-            own,
-        ).fetchall()
+                own,
+            )
+            .fetchall()
+        )
         notes = []
         for r in rows:
             note = dict(r)
@@ -336,8 +363,7 @@ def misconceptions_for(part_ids: list[str]) -> list[dict]:
 
 def get_misconception(misconception_id: str) -> dict | None:
     """One misconception by id (old ids resolve through id_map), or None if unknown or rejected."""
-    row = _conn().execute("SELECT * FROM misconception WHERE id = ? AND status != 'rejected'",
-                          (canonical(misconception_id),)).fetchone()
+    row = _conn().execute("SELECT * FROM misconception WHERE id = ? AND status != 'rejected'", (canonical(misconception_id),)).fetchone()
     return {**dict(row), "source_ids": split_list(row["source_ids"])} if row else None
 
 
@@ -358,8 +384,11 @@ def mark_points_for(part_ids: list[str]) -> list[dict]:
 def score_points(part_id: str) -> list[dict]:
     """The points an answer on a part is scored against, and taught in: {id, point, exemplar}. The part's own
     mark points in their order (ids from mark_point), or, if it has none, the key points of its notes, with ids "<note_id>:k<n>" (n from 1)."""
-    points = [{"id": mp["id"], "point": mp["point"], "exemplar": mp["exemplar"] or ""}
-              for mp in mark_points_for([part_id]) if mp["node_id"] == part_id]
+    points = [
+        {"id": mp["id"], "point": mp["point"], "exemplar": mp["exemplar"] or ""}
+        for mp in mark_points_for([part_id])
+        if mp["node_id"] == part_id
+    ]
     if points:
         return points
     for note in notes_for([part_id]):
@@ -406,15 +435,19 @@ def questions_for(part_ids: list[str]) -> list[dict]:
     found: dict[str, dict] = {}
     for part in _expand_parts(part_ids):
         lineage = [part] + [a["id"] for a in ancestors(part)]
-        rows = _conn().execute(
-            f"""SELECT q.*, qn.node_id AS tag, pp.series, pp.exam_paper_id AS paper_id, ep.name AS paper_name
+        rows = (
+            _conn()
+            .execute(
+                f"""SELECT q.*, qn.node_id AS tag, pp.series, pp.exam_paper_id AS paper_id, ep.name AS paper_name
                 FROM question_node qn JOIN question q ON q.id = qn.question_id
                 LEFT JOIN past_paper pp ON pp.id = q.past_paper_id
                 LEFT JOIN exam_paper ep ON ep.id = pp.exam_paper_id
                 WHERE qn.node_id IN ({_placeholders(lineage)}) AND q.status != 'rejected'
                 ORDER BY q.rowid""",
-            lineage,
-        ).fetchall()
+                lineage,
+            )
+            .fetchall()
+        )
         for r in rows:
             question = found.get(r["id"])
             if question is None:
@@ -442,9 +475,11 @@ def exam_papers_for(part_id: str) -> list[dict]:
 
 
 # Words too common to tell topics apart; dropped from search queries.
-STOPWORDS = frozenset("""a an and are as at be but by can could do does did for from had has have how i if in is it its
+STOPWORDS = frozenset(
+    """a an and are as at be but by can could do does did for from had has have how i if in is it its
     me my of on or so than that the their them then there these they this to too was we what when where which who why
-    will with would you your explain tell help please show work out about between""".split())
+    will with would you your explain tell help please show work out about between""".split()
+)
 
 
 def _fts_query(text: str) -> str | None:
@@ -498,7 +533,7 @@ def search(text: str, limit: int) -> list[dict]:
         combined[node_id] = combined.get(node_id, 0.0) + score
     results = []
     for node_id, score in _top({k: v for k, v in combined.items() if not is_literacy(k)}, limit):
-        node = get_node(node_id)
+        node = require_node(node_id)
         results.append({"id": node_id, "name": node["name"], "level": node["level"], "score": score})
     return results
 
@@ -585,15 +620,20 @@ def trusted_sources(node_ids: list[str], limit: int) -> list[dict]:
                 order.append(n)
     if not order:
         return []
-    rows = _conn().execute(f"SELECT node_id, name, url, what_for FROM trusted_source WHERE status != 'rejected' "
-                           f"AND node_id IN ({_placeholders(order)}) ORDER BY rowid", order).fetchall()
+    rows = (
+        _conn()
+        .execute(
+            f"SELECT node_id, name, url, what_for FROM trusted_source WHERE status != 'rejected' "
+            f"AND node_id IN ({_placeholders(order)}) ORDER BY rowid",
+            order,
+        )
+        .fetchall()
+    )
     rows = sorted(rows, key=lambda r: order.index(r["node_id"]))
     return [{"name": r["name"], "url": r["url"], "what_for": r["what_for"]} for r in rows[:limit]]
 
 
 def weight(node_id: str) -> dict:
     """exam_weight, dependents and importance for a node (zeros if it has none)."""
-    row = _conn().execute("SELECT exam_weight, dependents, importance FROM node_weight WHERE node_id = ?",
-                          (canonical(node_id),)).fetchone()
+    row = _conn().execute("SELECT exam_weight, dependents, importance FROM node_weight WHERE node_id = ?", (canonical(node_id),)).fetchone()
     return dict(row) if row else {"exam_weight": 0.0, "dependents": 0, "importance": 0.0}
-

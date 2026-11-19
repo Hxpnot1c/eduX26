@@ -48,16 +48,23 @@ def test_an_ok_false_result_is_logged_with_its_cut_error(monkeypatch):
 
 def _progress(n):
     item = {"part_id": "p", "name": "x" * 60, "level": "new"}
-    return {"tree": {"a": "b"}, "levers": [dict(item) for _ in range(n)], "weak_links": [dict(item) for _ in range(n)],
-            "reviews_due": [dict(item) for _ in range(n)], "trends": {}, "ai_literacy": {}, "study_pattern": None}
+    return {
+        "tree": {"a": "b"},
+        "levers": [dict(item) for _ in range(n)],
+        "weak_links": [dict(item) for _ in range(n)],
+        "reviews_due": [dict(item) for _ in range(n)],
+        "trends": {},
+        "ai_literacy": {},
+        "study_pattern": None,
+    }
 
 
 def test_the_levels_view_is_trimmed_from_the_lowest_ranked_items_to_fit():
     limit = service._settings().results.max_chars
     fitted = service.fit_progress(_progress(12))
     assert service.result_size(fitted) <= limit
-    assert fitted["weak_links"] == [] or len(fitted["weak_links"]) < 12     # trimmed first
-    assert fitted["tree"] == {"a": "b"} and "ai_literacy" in fitted             # never cut
+    assert fitted["weak_links"] == [] or len(fitted["weak_links"]) < 12  # trimmed first
+    assert fitted["tree"] == {"a": "b"} and "ai_literacy" in fitted  # never cut
 
 
 def test_a_progress_view_that_already_fits_is_left_alone():
@@ -77,7 +84,7 @@ def test_the_every_part_progress_view_has_its_own_larger_limit():
     assert results.max_chars_full_progress > results.max_chars
     assert not service.over_budget("get_my_progress", results.max_chars + 1, full_progress=True)
     assert service.over_budget("get_my_progress", results.max_chars_full_progress + 1, full_progress=True)
-    assert service.over_budget("tutor_turn", results.max_chars + 1, full_progress=True)    # only progress gets the larger limit
+    assert service.over_budget("tutor_turn", results.max_chars + 1, full_progress=True)  # only progress gets the larger limit
 
 
 def test_the_every_part_view_is_trimmed_to_its_own_limit():

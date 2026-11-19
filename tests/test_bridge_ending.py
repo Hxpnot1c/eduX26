@@ -2,7 +2,6 @@
 
 from datetime import datetime, timedelta, timezone
 
-
 from edux import context_blocks, graph, learner, plan
 
 DAY = timedelta(days=1)
@@ -19,13 +18,22 @@ def _turn(student, part):
 def _know(sid, part, days_ago=1):
     """Make the part at least developing by the number, with some answers."""
     for i in range(3):
-        learner.record_evidence(sid, part, "mcq_check", 1.0, ts=(_now() - (days_ago + 0.1 * i) * DAY).isoformat(timespec="seconds"),
-                                apply="now", n_options=4)
+        learner.record_evidence(
+            sid, part, "mcq_check", 1.0, ts=(_now() - (days_ago + 0.1 * i) * DAY).isoformat(timespec="seconds"), apply="now", n_options=4
+        )
 
 
 def _review(part):
-    return {"part_id": part, "name": graph.get_node(part)["name"], "mode": "recall", "p_now": 0.2, "level": "new",
-            "reason": "scheduled", "due": learner.now_iso(), "linked_to_focus": False}
+    return {
+        "part_id": part,
+        "name": graph.get_node(part)["name"],
+        "mode": "recall",
+        "p_now": 0.2,
+        "level": "new",
+        "reason": "scheduled",
+        "due": learner.now_iso(),
+        "linked_to_focus": False,
+    }
 
 
 def _blocks(reviews=(), extend=None):
@@ -56,8 +64,10 @@ def test_an_urgent_review_beats_the_bridge(student):
     _know(sid, "ped_formula")
     _know(sid, "yed_definition", days_ago=5)
     soon = (_now() + 3 * DAY).date().isoformat()
-    learner._conn().execute("INSERT INTO student_assessment (student_id, name, kind, date, part_ids, created_at) VALUES (?, 'Mock', 'mock', ?, ?, ?)",
-                            (sid, soon, '["yed_definition"]', learner.now_iso()))
+    learner._conn().execute(
+        "INSERT INTO student_assessment (student_id, name, kind, date, part_ids, created_at) VALUES (?, 'Mock', 'mock', ?, ?, ?)",
+        (sid, soon, '["yed_definition"]', learner.now_iso()),
+    )
     tiers = plan.ending_tiers(_turn(student, "ped_formula"), _blocks(reviews=["yed_definition"]), learner._settings())
     assert [t["kind"] for t in tiers][:2] == ["review", "bridge"] and tiers[0]["tier"] == 1
 
@@ -96,7 +106,7 @@ def test_the_class_next_section_is_preferred_and_carries_its_reason_line(course,
     _know(sid, "ped_formula")
     class_id = learner.add_class("C")
     learner.add_students_to_class(class_id, [sid])
-    learner.set_class_coverage(class_id, ["ped"], (_now() - 20 * DAY).date().isoformat())       # PED taught; next is PES
+    learner.set_class_coverage(class_id, ["ped"], (_now() - 20 * DAY).date().isoformat())  # PED taught; next is PES
     target = plan.bridge_target(_turn(student, "ped_formula"), learner._settings())
     assert target["from_class"] is True and target["part_id"].startswith("pes_")
     step = plan.bridge_question(_turn(student, "ped_formula"), target, learner._settings())
@@ -108,9 +118,13 @@ def test_without_a_link_to_the_next_section_it_falls_back_to_the_strongest_link(
     _know(sid, "ped_formula")
     class_id = learner.add_class("C")
     learner.add_students_to_class(class_id, [sid])
-    learner.set_class_coverage(class_id, ["pes"], (_now() - 20 * DAY).date().isoformat())       # next uncovered is PED's neighbour? make it unlinked
+    learner.set_class_coverage(
+        class_id, ["pes"], (_now() - 20 * DAY).date().isoformat()
+    )  # next uncovered is PED's neighbour? make it unlinked
     learner.set_class_coverage(class_id, ["ped"], (_now() - 20 * DAY).date().isoformat())
-    learner.set_class_coverage(class_id, ["yed"], (_now() - 20 * DAY).date().isoformat())        # next uncovered: tax incidence, not linked to ped_formula
+    learner.set_class_coverage(
+        class_id, ["yed"], (_now() - 20 * DAY).date().isoformat()
+    )  # next uncovered: tax incidence, not linked to ped_formula
     target = plan.bridge_target(_turn(student, "ped_formula"), learner._settings())
     assert target is not None and target["from_class"] is False
 
@@ -131,6 +145,7 @@ def test_every_candidate_not_picked_is_logged_with_its_tier(student):
 
 def test_quiz_me_requests_only_ever_get_reviews(student):
     _know(student["id"], "ped_formula")
-    tiers = plan.ending_tiers(_turn(student, "ped_formula"), _blocks(reviews=["yed_definition"], extend="ped_formula"),
-                              learner._settings(), reviews_only=True)
+    tiers = plan.ending_tiers(
+        _turn(student, "ped_formula"), _blocks(reviews=["yed_definition"], extend="ped_formula"), learner._settings(), reviews_only=True
+    )
     assert {t["kind"] for t in tiers} == {"review"}

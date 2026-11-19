@@ -54,7 +54,7 @@ def test_a_covered_part_starts_the_boost_up_in_log_odds_and_respects_difficulty(
 
 
 def test_coverage_dated_after_the_time_asked_does_not_count(student, klass, part):
-    _cover(klass, part, days_ago=-5)         # taught in five days' time
+    _cover(klass, part, days_ago=-5)  # taught in five days' time
     assert learner.covered_since(student["id"], part) is None
     assert learner.covered_since(student["id"], part, _now() + 6 * DAY) is not None
 
@@ -81,8 +81,8 @@ def test_a_part_with_no_answer_never_shows_developing_or_secure(student, klass, 
     assert learner.shown_level(student["id"], part) == "new"
     _cover(klass, part)
     p = learner.part_p(student["id"], part)
-    assert learner.level(p) in ("new", "developing")           # the number may say developing...
-    assert learner.shown_level(student["id"], part) == "taught_in_class"        # ...the display never does
+    assert learner.level(p) in ("new", "developing")  # the number may say developing...
+    assert learner.shown_level(student["id"], part) == "taught_in_class"  # ...the display never does
     learner.record_evidence(student["id"], part, "explain_back", 1.0, apply="now")
     assert learner.shown_level(student["id"], part) in ("new", "developing", "secure")
 
@@ -103,6 +103,7 @@ def test_the_progress_view_shows_a_covered_untouched_topic_as_taught_in_class(st
         for n in nodes:
             flat.append(n)
             walk(n.get("children", []))
+
     walk(tree)
     assert any(n["level"] == "taught_in_class" for n in flat)
     assert all(n["level"] in ("new", "taught_in_class", "developing", "secure") for n in flat)
@@ -128,8 +129,7 @@ def test_pre_teaching_success_on_uncovered_parts_leaves_the_covered_offset_alone
 
 def test_a_first_answer_after_teaching_does_not_feed_the_offset(student, part):
     sid = student["id"]
-    learner.record_exchange(sid, [part], "surface", "active", support_given="worked_example",
-                            ts=_iso(_now() - 12 * DAY), apply="now")
+    learner.record_exchange(sid, [part], "surface", "active", support_given="worked_example", ts=_iso(_now() - 12 * DAY), apply="now")
     _answer(sid, part, "explain_back", 1.0, 10)
     assert learner.starting_offsets(sid)["n_not_covered"] == 0
 
@@ -186,7 +186,7 @@ def test_a_part_with_its_own_evidence_ignores_the_prerequisite_shift(student):
     p_with_row = learner.part_p(student["id"], part)
     for i in range(4):
         _answer(student["id"], pre, "mcq_check", 1.0, 0.5 - i * 0.05)
-    assert learner.part_p(student["id"], part) == pytest.approx(p_with_row, abs=0.02)      # only decay, no shift
+    assert learner.part_p(student["id"], part) == pytest.approx(p_with_row, abs=0.02)  # only decay, no shift
 
 
 def test_no_starting_point_is_above_the_cap(student, klass, part, monkeypatch):
@@ -270,8 +270,9 @@ def test_sections_match_by_id_spec_code_or_name(course):
 
 def test_a_student_can_say_what_was_covered_and_it_applies_to_them_only(course, student, part):
     other = learner.add_student("Other", course)
-    out = service.update_profile(learner.get_student(student["id"]),
-                                 covered_in_class={"topics": [graph.concept_of(part), "nonsense"], "when": "2026-10-01"})
+    out = service.update_profile(
+        learner.get_student(student["id"]), covered_in_class={"topics": [graph.concept_of(part), "nonsense"], "when": "2026-10-01"}
+    )
     assert out["ok"] and out["covered"]["unmatched"] == ["nonsense"]
     at = "2026-11-01T00:00:00+00:00"
     assert learner.covered_since(student["id"], part, at) == "2026-10-01"
@@ -313,7 +314,7 @@ def test_deleting_a_student_removes_their_own_coverage(course, student, part):
 
 
 def test_a_covered_part_never_answered_does_not_decay_below_where_it_would_start_untaught(student, klass, part):
-    _cover(klass, part, days_ago=60)                    # 60 days: the 2-day half-life would take it to nothing
+    _cover(klass, part, days_ago=60)  # 60 days: the 2-day half-life would take it to nothing
     p = learner.part_p(student["id"], part)
     assert p >= learner.initial_state(part)[0] - 1e-9
 

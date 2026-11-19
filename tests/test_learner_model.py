@@ -8,8 +8,7 @@ from edux import learner
 
 
 def _p_known(student_id, part_id):
-    row = learner._conn().execute(
-        "SELECT p_known FROM part_state WHERE student_id = ? AND part_id = ?", (student_id, part_id)).fetchone()
+    row = learner._conn().execute("SELECT p_known FROM part_state WHERE student_id = ? AND part_id = ?", (student_id, part_id)).fetchone()
     return row["p_known"] if row else None
 
 
@@ -40,7 +39,7 @@ def test_forgetting_halves_recall_each_half_life():
     start = datetime(2026, 11, 1, tzinfo=timezone.utc)
     assert learner.p_now(0.8, 2.0, start, start + timedelta(days=2)) == pytest.approx(0.4)
     assert learner.p_now(0.8, 2.0, start, start) == pytest.approx(0.8)
-    assert learner.p_now(0.8, 2.0, None, start + timedelta(days=30)) == pytest.approx(0.8)   # no clock, no decay
+    assert learner.p_now(0.8, 2.0, None, start + timedelta(days=30)) == pytest.approx(0.8)  # no clock, no decay
 
 
 @pytest.mark.parametrize(("p", "expected"), [(0.10, "new"), (0.50, "developing"), (0.90, "secure")])

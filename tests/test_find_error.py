@@ -19,13 +19,20 @@ def on(monkeypatch):
 
 def _known(student, part=PART, n=3):
     for i in range(n):
-        learner.record_evidence(student["id"], part, "explain_back", 1.0, apply="now",
-                                ts=(datetime.now(timezone.utc) - timedelta(days=2, minutes=5 * (n - i))).isoformat(timespec="seconds"))
+        learner.record_evidence(
+            student["id"],
+            part,
+            "explain_back",
+            1.0,
+            apply="now",
+            ts=(datetime.now(timezone.utc) - timedelta(days=2, minutes=5 * (n - i))).isoformat(timespec="seconds"),
+        )
 
 
 def _turn(student, part=PART):
-    return context_blocks.Turn(student=learner.get_student(student["id"]), parts=[part], message="", at=learner.now_iso(),
-                               limits={}, resolution={})
+    return context_blocks.Turn(
+        student=learner.get_student(student["id"]), parts=[part], message="", at=learner.now_iso(), limits={}, resolution={}
+    )
 
 
 def _step(student, blocks=None):
@@ -39,9 +46,9 @@ def test_it_is_off_by_default(student, monkeypatch):
 
 
 def test_it_needs_a_part_at_developing_or_above_with_an_answer(student, on):
-    assert _step(student) is None                                             # nothing answered yet
+    assert _step(student) is None  # nothing answered yet
     learner.record_evidence(student["id"], PART, "explain_back", 0.0, apply="now")
-    assert _step(student) is None                                             # answered, but still new
+    assert _step(student) is None  # answered, but still new
 
 
 def test_the_item_is_labelled_as_practice_and_gives_nothing_away(student, on):
@@ -53,7 +60,7 @@ def test_the_item_is_labelled_as_practice_and_gives_nothing_away(student, on):
     public = service.public_steps([step])[0]
     assert "item" not in public and "misconception" not in str(public).lower() and "kind" not in public["data"]
     letters = plan.score_next([step])[PART]
-    assert [x["id"] for x in letters] == ["a", "b", "c", "d"]                  # the same four for every item
+    assert [x["id"] for x in letters] == ["a", "b", "c", "d"]  # the same four for every item
 
 
 def test_an_error_item_swaps_exactly_one_sentence_for_the_misconception(student, on, monkeypatch):
@@ -71,6 +78,7 @@ def test_an_error_item_swaps_exactly_one_sentence_for_the_misconception(student,
 
 def _with_clean_share(share):
     import dataclasses
+
     s = learner._settings()
     changed = dataclasses.replace(s, find_error=dataclasses.replace(s.find_error, clean_share=share))
     return lambda: changed
@@ -91,11 +99,23 @@ def test_about_two_fifths_of_items_are_clean_controls(on):
     assert 170 <= clean <= 230
 
 
-@pytest.mark.parametrize(("kind", "ticked", "hit"), [
-    ("error", ["b", "c"], True), ("error", ["a", "b", "c"], True), ("error", ["a"], False), ("error", ["a", "b"], False),
-    ("error", ["b"], False), ("error", ["d"], False), ("error", [], False),
-    ("clean", ["d"], True), ("clean", ["d", "a"], False), ("clean", ["a"], False), ("clean", ["a", "b", "c"], False), ("clean", [], False),
-])
+@pytest.mark.parametrize(
+    ("kind", "ticked", "hit"),
+    [
+        ("error", ["b", "c"], True),
+        ("error", ["a", "b", "c"], True),
+        ("error", ["a"], False),
+        ("error", ["a", "b"], False),
+        ("error", ["b"], False),
+        ("error", ["d"], False),
+        ("error", [], False),
+        ("clean", ["d"], True),
+        ("clean", ["d", "a"], False),
+        ("clean", ["a"], False),
+        ("clean", ["a", "b", "c"], False),
+        ("clean", [], False),
+    ],
+)
 def test_hits_and_false_alarms_are_scored_apart(kind, ticked, hit):
     item = {"id": "x", "kind": kind, "part_id": PART, "reveal": "r", "misconception_id": "m" if kind == "error" else None}
     out = learner.score_find_error({"points_met": ticked}, item)
@@ -111,7 +131,9 @@ def test_a_blanket_there_is_a_mistake_is_never_rewarded():
 
 def test_an_unknown_letter_is_refused():
     with pytest.raises(ValueError):
-        learner.score_find_error({"points_met": ["z"]}, {"id": "x", "kind": "clean", "part_id": PART, "reveal": "", "misconception_id": None})
+        learner.score_find_error(
+            {"points_met": ["z"]}, {"id": "x", "kind": "clean", "part_id": PART, "reveal": "", "misconception_id": None}
+        )
 
 
 def test_not_while_rushing_and_at_most_one_a_session(student, on):
@@ -125,8 +147,15 @@ def test_items_rotate_through_the_parts_misconceptions(student, on, monkeypatch)
     _known(student)
     monkeypatch.setattr(learner, "_settings", _with_clean_share(0.0))
     first = _step(student)["item"]["id"]
-    learner.record_evidence(student["id"], PART, "find_error", 1.0, ts=(datetime.now(timezone.utc) - timedelta(days=3)).isoformat(timespec="seconds"),
-                            apply="now", point_id=first)
+    learner.record_evidence(
+        student["id"],
+        PART,
+        "find_error",
+        1.0,
+        ts=(datetime.now(timezone.utc) - timedelta(days=3)).isoformat(timespec="seconds"),
+        apply="now",
+        point_id=first,
+    )
     second = _step(student)
     assert second is None or second["item"]["id"] != first
 
@@ -149,8 +178,13 @@ def _hold_an_item(student, monkeypatch, share):
 
 
 def _answer(student, ticked):
-    return service.tutor_turn(learner.get_student(student["id"]), "my answer", LABELS, node_ids=[PART],
-                              answer={"part_id": PART, "type": "find_error", "points_met": ticked})
+    return service.tutor_turn(
+        learner.get_student(student["id"]),
+        "my answer",
+        LABELS,
+        node_ids=[PART],
+        answer={"part_id": PART, "type": "find_error", "points_met": ticked},
+    )
 
 
 def test_a_hit_is_recorded_on_the_part_and_on_verify_as_its_own_type_and_the_error_is_corrected(student, on, monkeypatch):
@@ -160,9 +194,19 @@ def test_a_hit_is_recorded_on_the_part_and_on_verify_as_its_own_type_and_the_err
     fb = out["plan"][0]
     assert fb["move"] == "feedback" and fb["data"]["correct"] is True and "right idea" in fb["data"]["correct_option"]
     assert fb["data"]["misconceptions"] and fb["data"]["misconceptions"][0]["id"] == item["misconception_id"]
-    rows = learner._conn().execute("SELECT part_id, evidence_type, score, point_id FROM evidence_log WHERE student_id = ? "
-                                   "AND evidence_type IN ('find_error', 'ail_find_error') ORDER BY id", (student["id"],)).fetchall()
-    assert [(r["part_id"], r["evidence_type"], r["score"]) for r in rows] == [(PART, "find_error", 1.0), ("ail_verify", "ail_find_error", 1.0)]
+    rows = (
+        learner._conn()
+        .execute(
+            "SELECT part_id, evidence_type, score, point_id FROM evidence_log WHERE student_id = ? "
+            "AND evidence_type IN ('find_error', 'ail_find_error') ORDER BY id",
+            (student["id"],),
+        )
+        .fetchall()
+    )
+    assert [(r["part_id"], r["evidence_type"], r["score"]) for r in rows] == [
+        (PART, "find_error", 1.0),
+        ("ail_verify", "ail_find_error", 1.0),
+    ]
     assert rows[0]["point_id"] == item["id"] and rows[0]["point_id"].startswith("err:")
     assert learner._conn().execute("SELECT COUNT(*) FROM student_misconception WHERE student_id = ?", (student["id"],)).fetchone()[0] == 0
 
@@ -173,7 +217,11 @@ def test_a_false_alarm_on_a_clean_item_scores_zero_and_still_reveals_it_was_clea
     out = _answer(student, ["a", "b", "c"])
     fb = out["plan"][0]
     assert fb["data"]["correct"] is False and "no mistake" in fb["data"]["correct_option"] and fb["data"]["misconceptions"] == []
-    row = learner._conn().execute("SELECT score, point_id FROM evidence_log WHERE student_id = ? AND evidence_type = 'find_error'", (student["id"],)).fetchone()
+    row = (
+        learner._conn()
+        .execute("SELECT score, point_id FROM evidence_log WHERE student_id = ? AND evidence_type = 'find_error'", (student["id"],))
+        .fetchone()
+    )
     assert row["score"] == 0.0 and row["point_id"].startswith("clean:")
 
 
@@ -189,7 +237,7 @@ def test_the_verify_rows_use_their_own_type_so_real_verify_moments_are_not_infla
     before = learner.part_p(student["id"], "ail_verify")
     _answer(student, ["a", "b", "c"])
     assert "ail_find_error" in learner._settings().bkt.evidence and learner.part_p(student["id"], "ail_verify") >= before
-    assert learner.verified_this_session(student["id"]) is False     # practice is not checking a source: no Ask sources credit
+    assert learner.verified_this_session(student["id"]) is False  # practice is not checking a source: no Ask sources credit
 
 
 def test_the_server_checks_the_sentence_number_when_it_is_sent():
@@ -198,8 +246,8 @@ def test_the_server_checks_the_sentence_number_when_it_is_sent():
     wrong = learner.score_find_error({"points_met": ["a", "b", "c"], "choice": "1"}, item)
     absent = learner.score_find_error({"points_met": ["a", "b", "c"]}, item)
     assert right["hit"] is True and wrong["hit"] is False and wrong["score"] == 0.0
-    assert absent["hit"] is True      # no number sent: the tick is trusted, as before
-    assert learner.score_find_error({"points_met": ["b", "c"], "choice": "2."}, item)["hit"] is True      # "2." is accepted
+    assert absent["hit"] is True  # no number sent: the tick is trusted, as before
+    assert learner.score_find_error({"points_met": ["b", "c"], "choice": "2."}, item)["hit"] is True  # "2." is accepted
 
 
 def test_the_letters_ask_for_the_number():

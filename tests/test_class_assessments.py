@@ -50,10 +50,15 @@ def test_class_assessments_count_in_priorities(student, klass):
 def test_exactly_one_of_student_and_class_is_set(course, student, klass):
     conn = learner._conn()
     with pytest.raises(Exception):
-        conn.execute("INSERT INTO student_assessment (student_id, class_id, name, kind, date, part_ids, created_at) VALUES (?, ?, 'x', 'mock', ?, '[]', ?)",
-                     (student["id"], klass, _day(5), learner.now_iso()))
+        conn.execute(
+            "INSERT INTO student_assessment (student_id, class_id, name, kind, date, part_ids, created_at) VALUES (?, ?, 'x', 'mock', ?, '[]', ?)",
+            (student["id"], klass, _day(5), learner.now_iso()),
+        )
     with pytest.raises(Exception):
-        conn.execute("INSERT INTO student_assessment (name, kind, date, part_ids, created_at) VALUES ('x', 'mock', ?, '[]', ?)", (_day(5), learner.now_iso()))
+        conn.execute(
+            "INSERT INTO student_assessment (name, kind, date, part_ids, created_at) VALUES ('x', 'mock', ?, '[]', ?)",
+            (_day(5), learner.now_iso()),
+        )
 
 
 def test_a_student_cannot_remove_a_class_assessment(student, klass):
@@ -101,10 +106,10 @@ def test_the_reminder_appears_on_the_first_turn_of_a_session_only(student, klass
     first = service._reminder(sid, {"ts": None}, learner.now_iso(), True)
     assert first and first["items"][0]["name"] == "Soon" and "once" in first["cue"]
     recent = (_now() - timedelta(minutes=5)).isoformat(timespec="seconds")
-    assert service._reminder(sid, {"ts": recent}, learner.now_iso(), True) is None        # the same session
-    assert service._reminder(sid, {"ts": None}, learner.now_iso(), False) is None         # style not being sent: not a new session
+    assert service._reminder(sid, {"ts": recent}, learner.now_iso(), True) is None  # the same session
+    assert service._reminder(sid, {"ts": None}, learner.now_iso(), False) is None  # style not being sent: not a new session
     long_ago = (_now() - 3 * DAY).isoformat(timespec="seconds")
-    assert service._reminder(sid, {"ts": long_ago}, learner.now_iso(), True)              # a new session again
+    assert service._reminder(sid, {"ts": long_ago}, learner.now_iso(), True)  # a new session again
 
 
 def test_no_reminder_when_nothing_is_due_or_the_student_switched_them_off(student, klass):
@@ -129,7 +134,7 @@ def test_the_plan_covers_the_right_parts_spaced_from_today_to_the_due_date(stude
     assert plan["ok"] and plan["sessions_per_week"] == 3
     dates = [s["date"] for s in plan["sessions"]]
     assert dates == sorted(dates) and dates[0] == _day(0) and dates[-1] < _day(14)
-    assert len(plan["sessions"]) == 6                                                      # 14 days at 3 a week
+    assert len(plan["sessions"]) == 6  # 14 days at 3 a week
     planned = {p["id"] for s in plan["sessions"] for p in s["parts"]}
     assert planned <= set(parts) and len(planned) > 1
     assert plan["sessions"][-1]["kind"] == "mixed practice"
@@ -140,7 +145,9 @@ def test_the_weakest_part_comes_first(student, klass):
     parts = _parts("elasticities")
     strong, weak = parts[0], parts[-1]
     for i in range(5):
-        learner.record_evidence(sid, strong, "mcq_check", 1.0, ts=(_now() - (1 + 0.1 * i) * DAY).isoformat(timespec="seconds"), apply="now", n_options=4)
+        learner.record_evidence(
+            sid, strong, "mcq_check", 1.0, ts=(_now() - (1 + 0.1 * i) * DAY).isoformat(timespec="seconds"), apply="now", n_options=4
+        )
     learner.record_evidence(sid, weak, "mcq_check", 0.0, ts=(_now() - DAY).isoformat(timespec="seconds"), apply="now", n_options=4)
     plan = learner.study_plan(sid, learner.add_class_assessment(klass, "Test", "class_test", _day(10), parts))
     assert plan["sessions"][0]["parts"][0]["id"] != strong

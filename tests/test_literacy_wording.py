@@ -8,7 +8,7 @@ from edux import learner, service
 def test_asking_for_sources_earns_no_credit_on_its_own():
     features = ["concept", "context", "asks_sources", "asks_reasoning"]
     alone = learner.question_evidence(features)
-    assert alone["score"] == 0.75                                   # three of four: the sources feature is not counted
+    assert alone["score"] == 0.75  # three of four: the sources feature is not counted
     with_check = learner.question_evidence(features, sources_credit=True)
     assert with_check["score"] == 1.0
 
@@ -30,7 +30,7 @@ def test_a_verify_moment_in_an_earlier_session_does_not(student):
     sid = student["id"]
     old = (datetime.now(timezone.utc) - timedelta(days=3)).isoformat(timespec="seconds")
     learner.record_evidence(sid, learner.AIL_VERIFY, "ail_task", 1.0, ts=old, apply="now")
-    learner.record_exchange(sid, ["ail_ask"], "surface", "active", apply="now")      # a current session, with no verify
+    learner.record_exchange(sid, ["ail_ask"], "surface", "active", apply="now")  # a current session, with no verify
     assert learner.verified_this_session(sid) is False
 
 

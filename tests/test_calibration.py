@@ -51,8 +51,10 @@ def test_after_a_check_answer_the_reply_asks_how_sure_and_keeps_the_feedback_bac
     assert [s["move"] for s in out["plan"]] == ["say_line"] and out["score_next"] == {}
     assert "how sure" in out["plan"][0]["data"]["line"].lower() and "skip" in out["plan"][0]["data"]["line"].lower()
     held = service._last_plan(student["id"])
-    assert held["confidence_for"]["part_id"] and any(s["move"] in ("feedback", "teach_point", "explain_back", "ask_mcq") for s in held["plan"])
-    assert learner.evidence_ids_of_exchange(held["confidence_for"]["exchange_id"])        # the answer was recorded and scored at once
+    assert held["confidence_for"]["part_id"] and any(
+        s["move"] in ("feedback", "teach_point", "explain_back", "ask_mcq") for s in held["plan"]
+    )
+    assert learner.evidence_ids_of_exchange(held["confidence_for"]["exchange_id"])  # the answer was recorded and scored at once
 
 
 def test_the_reply_to_how_sure_delivers_the_held_plan_and_stores_the_rating(student):
@@ -82,8 +84,14 @@ def test_the_rating_never_changes_what_the_model_thinks_they_know(course):
         _to_a_check(s)
         _answer_check(s, right=False)
         _turn(s, said, confidence=said)
-        results.append([tuple(r) for r in learner._conn().execute(
-            "SELECT part_id, p_known FROM part_state WHERE student_id = ? ORDER BY part_id", (s["id"],))])
+        results.append(
+            [
+                tuple(r)
+                for r in learner._conn().execute(
+                    "SELECT part_id, p_known FROM part_state WHERE student_id = ? ORDER BY part_id", (s["id"],)
+                )
+            ]
+        )
     # identical to within the second or so between the two students' timestamps (forgetting decay), not because of the rating
     assert [r[0] for r in results[0]] == [r[0] for r in results[1]]
     assert [r[1] for r in results[0]] == pytest.approx([r[1] for r in results[1]], abs=1e-4)
@@ -118,7 +126,7 @@ def test_two_skips_in_a_row_stop_the_asking_for_the_session(student):
     blocks = {}
     assert service._confidence_due(sid, evidence, {"x": 1}, {}, blocks, "none", learner.now_iso()) is False
     e = learner.record_evidence(sid, PART, "mcq_check", 1.0, apply="now", n_options=4)
-    learner.record_confidence(sid, e, "certain")                  # an answer breaks the streak
+    learner.record_confidence(sid, e, "certain")  # an answer breaks the streak
     assert service._confidence_due(sid, evidence, {"x": 1}, {}, blocks, "none", learner.now_iso()) is True
 
 
@@ -166,15 +174,22 @@ def test_the_progress_view_carries_the_calibration_block_when_there_is_one(stude
         e = learner.record_evidence(sid, PART, "mcq_check", 1.0, apply="now", n_options=4)
         learner.record_confidence(sid, e, "certain")
     assert "calibration" in service.my_progress(learner.get_student(sid))
-    other = learner.add_student("Other", service._settings() and learner._conn().execute("SELECT course_id FROM student LIMIT 1").fetchone()[0])
+    other = learner.add_student(
+        "Other", service._settings() and learner._conn().execute("SELECT course_id FROM student LIMIT 1").fetchone()[0]
+    )
     assert "calibration" not in service.my_progress(learner.get_student(other["id"]))
 
 
 def test_an_unanswered_ask_is_dropped_after_the_session_gap(student):
     _to_a_check(student)
     _answer_check(student)
-    out = service.tutor_turn(learner.get_student(student["id"]), "hello again", LABELS, node_ids=[PART],
-                             at=(learner.parse_ts(learner.now_iso()).replace(microsecond=0) + __import__("datetime").timedelta(hours=5)).isoformat())
+    out = service.tutor_turn(
+        learner.get_student(student["id"]),
+        "hello again",
+        LABELS,
+        node_ids=[PART],
+        at=(learner.parse_ts(learner.now_iso()).replace(microsecond=0) + __import__("datetime").timedelta(hours=5)).isoformat(),
+    )
     assert learner._conn().execute("SELECT COUNT(*) FROM confidence_log").fetchone()[0] == 0
     assert "say_line" not in [s["move"] for s in out["plan"]]
 

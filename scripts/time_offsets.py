@@ -43,8 +43,7 @@ def main() -> None:
         for s in range(args.sessions):
             for a in range(args.answers):
                 ts = (start + timedelta(days=s, minutes=3 * a)).isoformat(timespec="seconds")
-                learner.record_evidence(student, rng.choice(parts), "mcq_check", float(rng.random() < 0.6), ts=ts,
-                                        apply="now", n_options=4)
+                learner.record_evidence(student, rng.choice(parts), "mcq_check", float(rng.random() < 0.6), ts=ts, apply="now", n_options=4)
         n = args.sessions * args.answers
 
         def timed(label: str, fn, repeat: int = 5) -> None:

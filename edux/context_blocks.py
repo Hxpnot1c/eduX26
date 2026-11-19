@@ -25,13 +25,13 @@ class Turn:
     """What one turn (tutor_turn, or service.learning_context for debugging) is about."""
 
     student: dict
-    parts: list[str]            # focus parts, best first
+    parts: list[str]  # focus parts, best first
     message: str
-    at: str                     # ISO time the state is read at
+    at: str  # ISO time the state is read at
     limits: dict[str, int]
-    resolution: dict            # graph.resolve() output
-    blocks: dict[str, dict | None] = field(default_factory=dict)   # blocks produced so far this turn
-    cache: dict = field(default_factory=dict)                       # values worked out once a turn (priorities)
+    resolution: dict  # graph.resolve() output
+    blocks: dict[str, dict | None] = field(default_factory=dict)  # blocks produced so far this turn
+    cache: dict = field(default_factory=dict)  # values worked out once a turn (priorities)
 
     @property
     def student_id(self) -> str:
@@ -62,10 +62,15 @@ def _r(value: float) -> float:
 
 
 def _part_summary(turn: Turn, part_id: str) -> dict:
-    node = graph.get_node(part_id)
+    node = graph.require_node(part_id)
     p = turn.p(part_id)
-    return {"id": part_id, "name": node["name"], "part_type": node["part_type"],
-            "level": learner.shown_level(turn.student_id, part_id, turn.at), "p_now": _r(p)}
+    return {
+        "id": part_id,
+        "name": node["name"],
+        "part_type": node["part_type"],
+        "level": learner.shown_level(turn.student_id, part_id, turn.at),
+        "p_now": _r(p),
+    }
 
 
 def _node_level(turn: Turn, node_id: str) -> str:
@@ -92,14 +97,19 @@ def _held_misconceptions(turn: Turn, active_only: bool) -> dict[str, dict]:
     rows = learner._conn().execute(
         """SELECT sm.misconception_id, sm.last_seen, sm.active, m.node_id FROM student_misconception sm
            JOIN content.misconception m ON m.id = sm.misconception_id WHERE sm.student_id = ?""",
-        (turn.student_id,))
+        (turn.student_id,),
+    )
     return {r["misconception_id"]: dict(r) for r in rows if r["active"] or not active_only}
 
 
 def held_misconceptions(student_id: str, parts: list[str]) -> list[dict]:
     """Misconceptions on the parts that the student currently holds, most recently seen first."""
-    held = {r["misconception_id"]: r["last_seen"] for r in learner._conn().execute(
-        "SELECT misconception_id, last_seen FROM student_misconception WHERE student_id = ? AND active = 1", (student_id,))}
+    held = {
+        r["misconception_id"]: r["last_seen"]
+        for r in learner._conn().execute(
+            "SELECT misconception_id, last_seen FROM student_misconception WHERE student_id = ? AND active = 1", (student_id,)
+        )
+    }
     found = [m for m in graph.misconceptions_for(parts) if m["id"] in held]
     found.sort(key=lambda m: -learner.parse_ts(held[m["id"]]).timestamp())
     return found
@@ -114,8 +124,8 @@ def _neighbour_parts(part_id: str) -> set[str]:
     for lookup in (graph.prerequisites, graph.dependents):
         for edge in lookup(part_id, 1):
             found.update(graph.parts_of(edge["other"]))
-    for lookup in (graph.analogous, graph.confusables, graph.causal_out, graph.causal_in):
-        for edge in lookup(part_id):
+    for link_lookup in (graph.analogous, graph.confusables, graph.causal_out, graph.causal_in):
+        for edge in link_lookup(part_id):
             found.update(graph.parts_of(edge["other"]))
     found.discard(part_id)
     return found
@@ -125,13 +135,14 @@ def order_parts(student: dict, parts: list[str], message: str) -> list[str]:
     """Focus parts best first: relevance to the message, then the parts the student touched most recently,
     then importance."""
     relevance = graph.node_relevance(message, parts)
-    seen = {r["part_id"]: r["last_seen"] for r in learner._conn().execute(
-        "SELECT part_id, last_seen FROM part_state WHERE student_id = ?", (student["id"],))}
+    seen = {
+        r["part_id"]: r["last_seen"]
+        for r in learner._conn().execute("SELECT part_id, last_seen FROM part_state WHERE student_id = ?", (student["id"],))
+    }
 
     def key(part: str) -> tuple:
         last = seen.get(part)
-        return (-_r(relevance.get(part, 0.0)), -(learner.parse_ts(last).timestamp() if last else 0.0),
-                -graph.weight(part)["importance"])
+        return (-_r(relevance.get(part, 0.0)), -(learner.parse_ts(last).timestamp() if last else 0.0), -graph.weight(part)["importance"])
 
     return sorted(parts, key=key)
 
@@ -157,9 +168,14 @@ def focus(turn: Turn, settings: Settings) -> dict | None:
 
 
 def _latest_evidence_correct(turn: Turn, part_id: str, settings: Settings) -> bool:
-    row = learner._conn().execute(
-        "SELECT score FROM evidence_log WHERE student_id = ? AND part_id = ? AND ts <= ? ORDER BY ts DESC, id DESC LIMIT 1",
-        (turn.student_id, part_id, learner._event_ts(turn.at))).fetchone()
+    row = (
+        learner._conn()
+        .execute(
+            "SELECT score FROM evidence_log WHERE student_id = ? AND part_id = ? AND ts <= ? ORDER BY ts DESC, id DESC LIMIT 1",
+            (turn.student_id, part_id, learner._event_ts(turn.at)),
+        )
+        .fetchone()
+    )
     return row is not None and row["score"] >= settings.bkt.correct_share
 
 
@@ -180,10 +196,15 @@ def _session_offloaded(turn: Turn) -> bool:
     session = learner.session_state(turn.student_id, turn.at)
     if session is None:
         return False
-    row = learner._conn().execute(
-        """SELECT 1 FROM exchange_log WHERE student_id = ? AND ts >= ? AND ts <= ?
+    row = (
+        learner._conn()
+        .execute(
+            """SELECT 1 FROM exchange_log WHERE student_id = ? AND ts >= ? AND ts <= ?
            AND (offloading = 1 OR choice_taken = 'just_show_me') LIMIT 1""",
-        (turn.student_id, session["session_id"], learner._event_ts(turn.at))).fetchone()
+            (turn.student_id, session["session_id"], learner._event_ts(turn.at)),
+        )
+        .fetchone()
+    )
     return row is not None
 
 
@@ -198,21 +219,24 @@ def core_idea(part_id: str) -> str:
         idea = (note["key_wording"] or note["key_points"] or [None])[0]
         if idea:
             return idea
-    return graph.get_node(part_id)["description"]
+    return graph.require_node(part_id)["description"]
 
 
 def intuition_source(turn: Turn, part_id: str) -> dict | None:
     """Where an intuition question on a part leads in from (step 05d): an edge with teach_use = intuition from a
     part or concept the student has at developing or above (the strongest link first), as {note, via}; else the
     part's own intuition line, as {note}; else None. Linked parts the student doesn't know are never named."""
-    edges = [e for lookup in (graph.prerequisites, graph.analogous, graph.confusables, graph.causal_in)
-             for e in (lookup(part_id, 1) if lookup is graph.prerequisites else lookup(part_id))
-             if e["teach_use"] == "intuition" and e["direction"] == "in" and e["note"]]
+    edges = [
+        e
+        for lookup in (graph.prerequisites, graph.analogous, graph.confusables, graph.causal_in)
+        for e in (lookup(part_id, 1) if lookup is graph.prerequisites else lookup(part_id))
+        if e["teach_use"] == "intuition" and e["direction"] == "in" and e["note"]
+    ]
     known = [e for e in edges if _node_level(turn, e["other"]) != "new"]
     if known:
         best = max(known, key=lambda e: e["weight"] or 0)
         return {"note": best["note"], "via": best["other_name"]}
-    line = graph.get_node(part_id).get("intuition") or ""
+    line = graph.require_node(part_id).get("intuition") or ""
     return {"note": line} if line else None
 
 
@@ -225,8 +249,14 @@ def prequestion(turn: Turn, settings: Settings) -> dict | None:
     if not pq.enabled or not turn.parts:
         return None
     part = turn.parts[0]
-    answered = learner._conn().execute("SELECT 1 FROM evidence_log WHERE student_id = ? AND part_id = ? AND ts <= ? LIMIT 1",
-                                       (turn.student_id, part, learner._event_ts(turn.at))).fetchone()
+    answered = (
+        learner._conn()
+        .execute(
+            "SELECT 1 FROM evidence_log WHERE student_id = ? AND part_id = ? AND ts <= ? LIMIT 1",
+            (turn.student_id, part, learner._event_ts(turn.at)),
+        )
+        .fetchone()
+    )
     if answered or turn.p(part) >= settings.support.worked_example_below:
         return None
     found = graph.misconceptions_for([part])
@@ -234,11 +264,16 @@ def prequestion(turn: Turn, settings: Settings) -> dict | None:
         return None
     found.sort(key=lambda m: "examiner_report" not in graph.source_types(m["source_ids"]))
     keys = [mp for mp in graph.mark_points_for([part]) if mp["node_id"] == part]
-    if not keys:   # the key is a mark point, never key wording or the description (plan.mcq_points)
+    if not keys:  # the key is a mark point, never key wording or the description (plan.mcq_points)
         return None
-    return {"part_id": part, "correct": keys[0]["point"], "source": intuition_source(turn, part),
-            "distractors": [{"id": m["id"], "wrong_idea": m["wrong_idea"], "correction": m["correction"]}
-                            for m in found[:settings.mcq.max_options - 1]]}
+    return {
+        "part_id": part,
+        "correct": keys[0]["point"],
+        "source": intuition_source(turn, part),
+        "distractors": [
+            {"id": m["id"], "wrong_idea": m["wrong_idea"], "correction": m["correction"]} for m in found[: settings.mcq.max_options - 1]
+        ],
+    }
 
 
 def _quick_parts(turn: Turn, settings: Settings, stuck: set[str]) -> list[dict]:
@@ -250,7 +285,7 @@ def _quick_parts(turn: Turn, settings: Settings, stuck: set[str]) -> list[dict]:
         if settings.levels.new <= p < settings.levels.secure and part not in stuck:
             found.append((graph.weight(part)["importance"], part))
     found.sort(key=lambda f: -f[0])
-    return [_part_summary(turn, part) for _, part in found[:settings.session.quick_parts]]
+    return [_part_summary(turn, part) for _, part in found[: settings.session.quick_parts]]
 
 
 def _step_back_to(turn: Turn, part_id: str) -> dict | None:
@@ -268,13 +303,26 @@ def session(turn: Turn, settings: Settings) -> dict | None:
     if state is None:
         return None
     if state["fatigued"]:
-        out = {"state": "fatigued", "reason": state["fatigue_reason"], "minutes": round(state["minutes"]), "quick_parts": _quick_parts(turn, settings, {p["part_id"] for p in state["stuck_parts"]})}
+        out = {
+            "state": "fatigued",
+            "reason": state["fatigue_reason"],
+            "minutes": round(state["minutes"]),
+            "quick_parts": _quick_parts(turn, settings, {p["part_id"] for p in state["stuck_parts"]}),
+        }
         if state["stuck_parts"]:
             out["also_stuck_on"] = [p["part_id"] for p in state["stuck_parts"]]
         return out
     if state["stuck_parts"]:
-        parts = [{"part_id": p["part_id"], "name": p["name"], "attempts": p["attempts"], "mean_score": _r(p["mean_score"]),
-                  "step_back_to": _step_back_to(turn, p["part_id"])} for p in state["stuck_parts"]]
+        parts = [
+            {
+                "part_id": p["part_id"],
+                "name": p["name"],
+                "attempts": p["attempts"],
+                "mean_score": _r(p["mean_score"]),
+                "step_back_to": _step_back_to(turn, p["part_id"]),
+            }
+            for p in state["stuck_parts"]
+        ]
         return {"state": "stuck", "parts": parts, "step_back_to": parts[0]["step_back_to"]}
     return None
 
@@ -292,10 +340,17 @@ def weak_prerequisites(turn: Turn, settings: Settings) -> dict | None:
                     continue
                 score = (turn.value(pre) * w, (1 - p) * w * graph.weight(pre)["importance"])
                 if pre not in found or score > found[pre]["score"]:
-                    node = graph.get_node(pre)
-                    found[pre] = {"part_id": pre, "name": node["name"], "level": learner.shown_level(turn.student_id, pre, turn.at), "p_now": _r(p),
-                                  "for": part, "note": edge["note"], "score": score}
-    items = sorted(found.values(), key=lambda i: (-i["score"][0], -i["score"][1]))[:turn.limit("weak_prerequisites")]
+                    node = graph.require_node(pre)
+                    found[pre] = {
+                        "part_id": pre,
+                        "name": node["name"],
+                        "level": learner.shown_level(turn.student_id, pre, turn.at),
+                        "p_now": _r(p),
+                        "for": part,
+                        "note": edge["note"],
+                        "score": score,
+                    }
+    items = sorted(found.values(), key=lambda i: (-i["score"][0], -i["score"][1]))[: turn.limit("weak_prerequisites")]
     for item in items:
         del item["score"]
     return {"items": items} if items else None
@@ -326,12 +381,17 @@ def confusables(turn: Turn, settings: Settings) -> dict | None:
         other = edge["other"]
         sides = set(turn.parts) | set(graph.parts_of(other))
         mixup = 1.0 if held_nodes & sides else 0.0
-        score = link_weight(edge, part, settings) * (1 + b.confusable_mixup * mixup
-                                                     + b.confusable_mention * relevance.get(other, 0.0))
+        score = link_weight(edge, part, settings) * (1 + b.confusable_mixup * mixup + b.confusable_mention * relevance.get(other, 0.0))
         if other not in found or score > found[other]["score"]:
-            found[other] = {"id": other, "name": edge["other_name"], "level": _node_level(turn, other),
-                            "note": edge["note"], "past_mixup": bool(mixup), "score": score}
-    items = sorted(found.values(), key=lambda i: -i["score"])[:turn.limit("confusables")]
+            found[other] = {
+                "id": other,
+                "name": edge["other_name"],
+                "level": _node_level(turn, other),
+                "note": edge["note"],
+                "past_mixup": bool(mixup),
+                "score": score,
+            }
+    items = sorted(found.values(), key=lambda i: -i["score"])[: turn.limit("confusables")]
     for item in items:
         del item["score"]
     return {"items": items} if items else None
@@ -360,9 +420,16 @@ def causal(turn: Turn, settings: Settings) -> dict | None:
         score = link_weight(edge, part, settings) * (1 + b.causal_mention * mention)
         key = (edge["other"], direction)
         if key not in found or score > found[key]["score"]:
-            found[key] = {"direction": direction, "id": edge["other"], "name": edge["other_name"],
-                          "level": _node_level(turn, edge["other"]), "note": edge["note"], "for": part, "score": score}
-    items = sorted(found.values(), key=lambda i: -i["score"])[:turn.limit("causal")]
+            found[key] = {
+                "direction": direction,
+                "id": edge["other"],
+                "name": edge["other_name"],
+                "level": _node_level(turn, edge["other"]),
+                "note": edge["note"],
+                "for": part,
+                "score": score,
+            }
+    items = sorted(found.values(), key=lambda i: -i["score"])[: turn.limit("causal")]
     for item in items:
         del item["score"]
     return {"items": items} if items else None
@@ -394,16 +461,24 @@ def notes(turn: Turn, settings: Settings) -> dict | None:
     if not turn.parts:
         return None
     found = graph.notes_for(turn.parts)
-    relevance = graph.relevance(turn.message, {
-        n["id"]: " ".join([n["summary"], *n["key_points"], *n["key_wording"]]) for n in found})
+    relevance = graph.relevance(turn.message, {n["id"]: " ".join([n["summary"], *n["key_points"], *n["key_wording"]]) for n in found})
     items = []
     for part in turn.parts:
         mine = [n for n in found if n["part_id"] == part]
         mine.sort(key=lambda n: (-round(relevance[n["id"]], 1), -n["authority"]))
-        for n in mine[:turn.limit("notes")]:
-            items.append({"id": n["id"], "part_id": part, "summary": n["summary"], "key_points": n["key_points"],
-                          "key_wording": n["key_wording"][:turn.limit("key_wording")], "source": n["source_title"],
-                          "source_type": n["source_type"], "location": n["location"]})
+        for n in mine[: turn.limit("notes")]:
+            items.append(
+                {
+                    "id": n["id"],
+                    "part_id": part,
+                    "summary": n["summary"],
+                    "key_points": n["key_points"],
+                    "key_wording": n["key_wording"][: turn.limit("key_wording")],
+                    "source": n["source_title"],
+                    "source_type": n["source_type"],
+                    "location": n["location"],
+                }
+            )
     mark_points: dict[str, list[dict]] = {}
     for mp in graph.mark_points_for(turn.parts):
         mark_points.setdefault(mp["node_id"], []).append({"point": mp["point"], "exemplar": mp["exemplar"]})
@@ -430,8 +505,12 @@ def exam_relevance(turn: Turn, settings: Settings) -> dict | None:
     for part in turn.parts:
         for paper in graph.exam_papers_for(part):
             days = _days_until(paper["date"], turn.at)
-            papers[paper["id"]] = {"id": paper["id"], "name": paper["name"], "date": paper["date"],
-                                   "days_to_exam": None if days is None else round(days)}
+            papers[paper["id"]] = {
+                "id": paper["id"],
+                "name": paper["name"],
+                "date": paper["date"],
+                "days_to_exam": None if days is None else round(days),
+            }
     questions = graph.questions_for(turn.parts)
     if not questions and not papers:
         return None
@@ -441,13 +520,26 @@ def exam_relevance(turn: Turn, settings: Settings) -> dict | None:
     for q in questions:
         days = _days_until(papers.get(q["paper_id"], {}).get("date"), turn.at)
         closeness = 0.0 if days is None else max(0.0, 1 - days / b.exam_horizon_days)
-        score = (b.exam_w_marks * q["marks"] / max_marks + b.exam_w_closeness * closeness
-                 + b.exam_w_command * (1.0 if command[q["id"]] > 0 else 0.0))
+        score = (
+            b.exam_w_marks * q["marks"] / max_marks
+            + b.exam_w_closeness * closeness
+            + b.exam_w_command * (1.0 if command[q["id"]] > 0 else 0.0)
+        )
         scored.append((score, q))
     scored.sort(key=lambda sq: -sq[0])
-    items = [{"id": q["id"], "paper": q["paper_name"], "series": q["series"], "number": q["number"], "marks": q["marks"],
-              "command_word": q["command_word"], "summary": q["summary"], "parts": q["parts"]}
-             for _, q in scored[:turn.limit("exam_questions")]]
+    items = [
+        {
+            "id": q["id"],
+            "paper": q["paper_name"],
+            "series": q["series"],
+            "number": q["number"],
+            "marks": q["marks"],
+            "command_word": q["command_word"],
+            "summary": q["summary"],
+            "parts": q["parts"],
+        }
+        for _, q in scored[: turn.limit("exam_questions")]
+    ]
     return {"papers": list(papers.values()), "questions": items}
 
 
@@ -485,17 +577,30 @@ def _new_context(part_id: str, settings: Settings) -> dict:
     questions = sorted(graph.questions_for([part_id]), key=lambda q: -q["marks"])
     if questions:
         q = questions[0]
-        return {"kind": "past_question", "id": q["id"], "series": q["series"], "marks": q["marks"],
-                "command_word": q["command_word"], "summary": q["summary"]}
+        return {
+            "kind": "past_question",
+            "id": q["id"],
+            "series": q["series"],
+            "marks": q["marks"],
+            "command_word": q["command_word"],
+            "summary": q["summary"],
+        }
     return {"kind": "unseen_case"}
 
 
 def _review_item(turn: Turn, r: dict, is_linked: bool, settings: Settings) -> dict:
     """A due review with its mode: recall when the part is weak (p_now < levels.new), otherwise transfer to a new context."""
     mode = "recall" if r["p_now"] < settings.levels.new else "transfer"
-    item = {"part_id": r["part_id"], "name": r["name"], "level": learner.shown_level(turn.student_id, r["part_id"], turn.at),
-            "p_now": _r(r["p_now"]),
-            "reason": r["reason"], "due": r["due"], "linked_to_focus": is_linked, "mode": mode}
+    item = {
+        "part_id": r["part_id"],
+        "name": r["name"],
+        "level": learner.shown_level(turn.student_id, r["part_id"], turn.at),
+        "p_now": _r(r["p_now"]),
+        "reason": r["reason"],
+        "due": r["due"],
+        "linked_to_focus": is_linked,
+        "mode": mode,
+    }
     if mode == "transfer":
         item["new_context"] = _new_context(r["part_id"], settings)
     return item
@@ -544,16 +649,18 @@ def teaching_note(turn: Turn, settings: Settings) -> dict | None:
         if t.get(piece):
             pieces.append(t[piece].format(**values))
 
-    if blocks.get("focus") and blocks["focus"].get("parts"):
-        add("focus", parts=_names(blocks["focus"]["parts"]))
-    if blocks.get("support"):
-        add("support", level=blocks["support"]["level"].replace("_", " "))
-    if blocks.get("weak_prerequisites"):
-        add("weak_prerequisites", items=_names(blocks["weak_prerequisites"]["items"]))
-    if blocks.get("anchor"):
-        add("anchor", name=blocks["anchor"]["name"], note=blocks["anchor"]["note"] or "")
-    if blocks.get("misconceptions") and blocks["misconceptions"]["held"]:
-        add("misconceptions", items="; ".join(m["wrong_idea"].rstrip(".") for m in blocks["misconceptions"]["held"]))
+    focus, support, weak = blocks.get("focus"), blocks.get("support"), blocks.get("weak_prerequisites")
+    anchor, misconceptions = blocks.get("anchor"), blocks.get("misconceptions")
+    if focus and focus.get("parts"):
+        add("focus", parts=_names(focus["parts"]))
+    if support:
+        add("support", level=support["level"].replace("_", " "))
+    if weak:
+        add("weak_prerequisites", items=_names(weak["items"]))
+    if anchor:
+        add("anchor", name=anchor["name"], note=anchor["note"] or "")
+    if misconceptions and misconceptions["held"]:
+        add("misconceptions", items="; ".join(m["wrong_idea"].rstrip(".") for m in misconceptions["held"]))
     if turn.parts:
         days = learner.days_to_exam(turn.student_id, turn.parts[0], learner.parse_ts(turn.at))
         if days is not None and days <= settings.teaching_note.exam_close_days:
@@ -564,7 +671,7 @@ def teaching_note(turn: Turn, settings: Settings) -> dict | None:
     if not pieces:
         return None
     words = " ".join(pieces).split()
-    text = " ".join(words[:settings.teaching_note.max_words])
+    text = " ".join(words[: settings.teaching_note.max_words])
     return {"text": text if len(words) <= settings.teaching_note.max_words else text + " ..."}
 
 
@@ -624,8 +731,7 @@ def asks_watch_for(context: ContextConfig, step: dict) -> bool:
 
 def _part_turn(turn: Turn, part_id: str) -> Turn:
     """The same turn narrowed to one part, so a block shows only what that step is about."""
-    return Turn(student=turn.student, parts=[part_id], message=turn.message, at=turn.at, limits=turn.limits,
-                resolution=turn.resolution)
+    return Turn(student=turn.student, parts=[part_id], message=turn.message, at=turn.at, limits=turn.limits, resolution=turn.resolution)
 
 
 def _merge(into: dict, name: str, value: object) -> None:
@@ -652,8 +758,7 @@ def _mentions_exam(turn: Turn, settings: Settings) -> bool:
     return bool(words & set(settings.blocks.exam_cues)) or bool(words & commands)
 
 
-def reference_for(turn: Turn, steps: list[dict], profile_blocks: list[str], settings: Settings,
-                  context: ContextConfig) -> dict:
+def reference_for(turn: Turn, steps: list[dict], profile_blocks: list[str], settings: Settings, context: ContextConfig) -> dict:
     """The reference the plan's moves use, in priority order: for each step in plan order, the blocks in its
     move's table (context.toml [moves.<key>]), narrowed to the step's part; misconceptions are the step part's
     held ones in full. Then exam_relevance when the message mentions an exam or a command word, and last the
@@ -687,8 +792,11 @@ def reference_for(turn: Turn, steps: list[dict], profile_blocks: list[str], sett
         for step in steps:
             if step.get("part_id") and asks_watch_for(context, step):
                 value = block("misconceptions", step["part_id"]) or {}
-                watch += [{"id": m["id"], "wrong_idea": m["wrong_idea"]} for m in value.get("watch_for", [])
-                          if m["id"] not in {w["id"] for w in watch}]
+                watch += [
+                    {"id": m["id"], "wrong_idea": m["wrong_idea"]}
+                    for m in value.get("watch_for", [])
+                    if m["id"] not in {w["id"] for w in watch}
+                ]
         if watch:
             out["watch_for"] = watch
     return out
@@ -703,8 +811,8 @@ def _linked_parts(part_id: str) -> set[str]:
     for lookup in (graph.prerequisites, graph.dependents):
         for edge in lookup(part_id, 1):
             found.update(graph.parts_of(edge["other"]))
-    for lookup in (graph.analogous, graph.confusables, graph.causal_out, graph.causal_in):
-        for edge in lookup(part_id):
+    for link_lookup in (graph.analogous, graph.confusables, graph.causal_out, graph.causal_in):
+        for edge in link_lookup(part_id):
             found.update(graph.parts_of(edge["other"]))
     found.discard(part_id)
     return found
@@ -718,11 +826,11 @@ def known_terms(turn: Turn, part_ids: list[str], known: list[str]) -> list[str]:
     order = list(part_ids) + [p for p in known if p in linked] + [p for p in known if p not in linked]
     terms: list[str] = []
     for part in dict.fromkeys(order):
-        node = graph.get_node(part)
+        node = graph.require_node(part)
         for term in [node["name"], *node["aliases"]]:
             if term and term not in terms:
                 terms.append(term)
-    return terms[:turn.limit("terms", 30)]
+    return terms[: turn.limit("terms", 30)]
 
 
 def known_parts(turn: Turn) -> list[str]:

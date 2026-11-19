@@ -48,7 +48,7 @@ def test_each_parts_first_answer_is_left_out(student, monkeypatch):
     parts = _course_parts(4)
     if len(parts) < 4:
         pytest.skip("needs four course parts")
-    _answers(student["id"], parts, per_part=4)                 # 16 answers, 4 of them first answers
+    _answers(student["id"], parts, per_part=4)  # 16 answers, 4 of them first answers
     assert learner.learning_offset(student["id"])["n"] == 12
 
 
@@ -74,11 +74,17 @@ def test_an_ai_literacy_part_learns_at_the_population_rate_whatever_the_offset(s
     monkeypatch.setattr(learner, "learning_offset", lambda *a, **k: {"offset": 1.0, "n": 99, "weight": math.e})
     sid = student["id"]
     learner.record_evidence(sid, "ail_verify", "ail_task", 1.0, apply="now")
-    with_offset = learner._conn().execute(
-        "SELECT p_known FROM part_state WHERE student_id = ? AND part_id = 'ail_verify'", (sid,)).fetchone()["p_known"]
+    with_offset = (
+        learner._conn()
+        .execute("SELECT p_known FROM part_state WHERE student_id = ? AND part_id = 'ail_verify'", (sid,))
+        .fetchone()["p_known"]
+    )
     monkeypatch.setattr(learner, "learning_offset", lambda *a, **k: {"offset": 0.0, "n": 0, "weight": 1.0})
     other = learner.add_student("Other Student", learner._conn().execute("SELECT course_id FROM student LIMIT 1").fetchone()[0])
     learner.record_evidence(other["id"], "ail_verify", "ail_task", 1.0, apply="now")
-    without = learner._conn().execute(
-        "SELECT p_known FROM part_state WHERE student_id = ? AND part_id = 'ail_verify'", (other["id"],)).fetchone()["p_known"]
+    without = (
+        learner._conn()
+        .execute("SELECT p_known FROM part_state WHERE student_id = ? AND part_id = 'ail_verify'", (other["id"],))
+        .fetchone()["p_known"]
+    )
     assert with_offset == pytest.approx(without)

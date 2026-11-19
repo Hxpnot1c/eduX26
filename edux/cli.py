@@ -88,18 +88,41 @@ def cmd_leave_student(student: str, on: str | None) -> int:
 def cmd_purge() -> int:
     """Apply the retention settings: old call-log rows, and students who left long enough ago."""
     done = learner.purge()
-    print(f"purged {done['call_log']} call-log row(s) and {len(done['students'])} student(s)" +
-          (": " + ", ".join(done["students"]) if done["students"] else ""))
+    print(
+        f"purged {done['call_log']} call-log row(s) and {len(done['students'])} student(s)"
+        + (": " + ", ".join(done["students"]) if done["students"] else "")
+    )
     return 0
 
 
-def cmd_log(student: str, nodes: list[str], depth: str, engagement: str, offloading: bool = False,
-            support: str | None = None, choice: str | None = None, misconceptions: list[str] | None = None,
-            ts: str | None = None, evidence: list[dict] | None = None) -> int:
+def cmd_log(
+    student: str,
+    nodes: list[str],
+    depth: str,
+    engagement: str,
+    offloading: bool = False,
+    support: str | None = None,
+    choice: str | None = None,
+    misconceptions: list[str] | None = None,
+    ts: str | None = None,
+    evidence: list[dict] | None = None,
+) -> int:
     """Record one exchange (and any evidence with it) by hand and apply it straight away."""
     try:
-        event_id = learner.record_exchange(student, nodes, depth, engagement, offloading, support, choice,
-                                           misconceptions, ts=ts, client="cli", evidence=evidence, apply="now")
+        event_id = learner.record_exchange(
+            student,
+            nodes,
+            depth,
+            engagement,
+            offloading,
+            support,
+            choice,
+            misconceptions,
+            ts=ts,
+            client="cli",
+            evidence=evidence,
+            apply="now",
+        )
     except ValueError as e:
         print(e, file=sys.stderr)
         return 1
@@ -107,8 +130,9 @@ def cmd_log(student: str, nodes: list[str], depth: str, engagement: str, offload
     return 0
 
 
-def cmd_evidence(student: str, part: str, evidence_type: str, score: float, ts: str | None = None,
-                 misconceptions: list[str] | None = None) -> int:
+def cmd_evidence(
+    student: str, part: str, evidence_type: str, score: float, ts: str | None = None, misconceptions: list[str] | None = None
+) -> int:
     """Record evidence with no exchange by hand and apply it straight away."""
     try:
         ids = learner.record_evidence(student, part, evidence_type, score, misconceptions, ts=ts, apply="now")
@@ -121,10 +145,14 @@ def cmd_evidence(student: str, part: str, evidence_type: str, score: float, ts: 
 
 def _priority_lines(student: str, at: str | None) -> list[str]:
     """Upcoming assessments and the top three due reviews by expected marks (priorities). CLI only."""
-    lines = [f"assessment {a['id']}: {a['name']} ({a['kind']}) on {a['date']}, {len(a['part_ids'])} parts"
-             for a in learner.assessments(student, at)] or ["assessments: none upcoming"]
-    valued = sorted(((learner.step_value(student, r["part_id"], at), r["part_id"])
-                     for r in learner.due_reviews(student, 10_000, at)), key=lambda v: -v[0]["value"])
+    lines = [
+        f"assessment {a['id']}: {a['name']} ({a['kind']}) on {a['date']}, {len(a['part_ids'])} parts"
+        for a in learner.assessments(student, at)
+    ] or ["assessments: none upcoming"]
+    valued = sorted(
+        ((learner.step_value(student, r["part_id"], at), r["part_id"]) for r in learner.due_reviews(student, 10_000, at)),
+        key=lambda v: -v[0]["value"],
+    )
     for found, part in valued[:3]:
         why = f" ({learner.reason_text(found['reason'], at)})" if found["reason"] else ""
         lines.append(f"candidate review {part}: value {found['value']:.4f}{why}")
@@ -138,16 +166,17 @@ def _learning_line(student: str, at: str | None) -> str:
         return "learning rate: personalisation off"
     session = learner.session_state(student, at)
     found = learner.learning_offset(student, session["session_id"] if session else at)
-    return (f"learning rate: offset {found['offset']:+.2f} log-odds (x{found['weight']:.2f} odds) "
-            f"from n={found['n']} pieces of evidence")
+    return f"learning rate: offset {found['offset']:+.2f} log-odds (x{found['weight']:.2f} odds) from n={found['n']} pieces of evidence"
 
 
 def _starting_line(student: str, at: str | None) -> str:
     """The personal starting adjustment by sector (step 05q): CLI only, never shown to students or teachers."""
     o = learner.starting_offsets(student, at)
     cls = learner.student_class(student)
-    return (f"starting adjustment: covered {o['covered']:+.2f} (n={o['n_covered']}), not covered {o['not_covered']:+.2f} "
-            f"(n={o['n_not_covered']}); class {cls or '-'}")
+    return (
+        f"starting adjustment: covered {o['covered']:+.2f} (n={o['n_covered']}), not covered {o['not_covered']:+.2f} "
+        f"(n={o['n_not_covered']}); class {cls or '-'}"
+    )
 
 
 def cmd_class_add(name: str, pack: str | None) -> int:
@@ -253,27 +282,30 @@ def cmd_state(student: str, node: str | None = None, at: str | None = None) -> i
     conn = learner._conn()
     states = {r["part_id"]: r for r in conn.execute("SELECT * FROM part_state WHERE student_id = ?", (student,))}
     reviews = {r["part_id"]: r for r in conn.execute("SELECT * FROM review_queue WHERE student_id = ?", (student,))}
-    roots = [graph.get_node(node)] if node else graph.topics()
+    roots = [graph.require_node(node)] if node else graph.topics()
 
     print(_session_line(learner.session_state(student, at)))
     print(_learning_line(student, at))
     print(_starting_line(student, at))
     for line in _priority_lines(student, at):
         print(line)
-    print(f"{'part':24} {'level':10} {'p_now':>5} {'p_known':>7} {'half-life':>9} {'checks':>6} {'chats':>5}  "
-          f"{'last correct':12} review due")
+    print(
+        f"{'part':24} {'level':10} {'p_now':>5} {'p_known':>7} {'half-life':>9} {'checks':>6} {'chats':>5}  {'last correct':12} review due"
+    )
     for root in roots:
         print(f"{root['name']} ({root['level']}): {learner.rollup(student, root['id'], at):.2f}")
         for part in graph.parts_of(root["id"]):
             p = learner.part_p(student, part, at)
             state, review = states.get(part), reviews.get(part)
             if state:
-                numbers = (f"{state['p_known']:7.2f} {state['half_life_days']:8.1f}d {state['n_evidence']:6d} "
-                           f"{state['exchanges_since_evidence']:5d}  {(state['last_correct'] or '-')[:10]:12}")
+                numbers = (
+                    f"{state['p_known']:7.2f} {state['half_life_days']:8.1f}d {state['n_evidence']:6d} "
+                    f"{state['exchanges_since_evidence']:5d}  {(state['last_correct'] or '-')[:10]:12}"
+                )
             else:
                 numbers = f"{'-':>7} {'-':>9} {'-':>6} {'-':>5}  {'-':12}"
             due = f"{review['due'][:16].replace('T', ' ')} ({review['reason']})" if review else "-"
-            mark = "*" if learner.covered_since(student, part, at) else " "     # * = covered in class
+            mark = "*" if learner.covered_since(student, part, at) else " "  # * = covered in class
             print(f" {mark}{part:22} {learner.level(p):10} {p:5.2f} {numbers} {due}")
     return 0
 
@@ -285,8 +317,10 @@ def _share(value: float | None) -> str:
 def _session_line(session: dict | None) -> str:
     if session is None:
         return "session: none in progress"
-    parts = [f"session: started {session['session_id'][:16].replace('T', ' ')}, {session['minutes']:.0f} min",
-             f"{session['n_evidence']} evidence"]
+    parts = [
+        f"session: started {session['session_id'][:16].replace('T', ' ')}, {session['minutes']:.0f} min",
+        f"{session['n_evidence']} evidence",
+    ]
     if session["fatigued"]:
         parts.append(f"{session['fatigue_reason'].replace('_', '-')} mode since minute {session['fatigued_since_minute']:.0f}")
     if session["rapid_guesses"]:
@@ -335,13 +369,17 @@ def cmd_calls(student: str | None = None, last: int = 20) -> int:
     print(f"{'time':23} {'student':12} {'tool':18} {'ms':>7} {'chars':>7}  result")
     for r in stats["recent"]:
         result = ("ok" if r["ok"] else f"error: {r['error']}") + (" OVER BUDGET" if r["over_budget"] else "")
-        print(f"{r['ts'][:23].replace('T', ' '):23} {r['student_id'] or '-':12} {r['tool']:18} {r['ms']:7.1f} "
-              f"{r['result_chars']:7d}  {result}")
+        print(
+            f"{r['ts'][:23].replace('T', ' '):23} {r['student_id'] or '-':12} {r['tool']:18} {r['ms']:7.1f} "
+            f"{r['result_chars']:7d}  {result}"
+        )
     print()
     print(f"{'tool':18} {'calls':>5} {'median ms':>9} {'p90 ms':>7} {'median chars':>12} {'max chars':>9} {'over budget':>11}")
     for tool, t in stats["tools"].items():
-        print(f"{tool:18} {t['calls']:5d} {t['median_ms']:9.1f} {t['p90_ms']:7.1f} {t['median_chars']:12.0f} "
-              f"{t['max_chars']:9d} {t['over_budget']:11d}")
+        print(
+            f"{tool:18} {t['calls']:5d} {t['median_ms']:9.1f} {t['p90_ms']:7.1f} {t['median_chars']:12.0f} "
+            f"{t['max_chars']:9d} {t['over_budget']:11d}"
+        )
     if stats["gaps"]:
         print()
         print(f"{'student':12} median gap between calls")
@@ -357,7 +395,7 @@ def cmd_set_profile(student: str, profile: str) -> int:
     except ValueError as e:
         print(e, file=sys.stderr)
         return 1
-    print(f"{student}: profile {learner.profile_of(learner.get_student(student))}")
+    print(f"{student}: profile {learner.profile_of(learner.require_student(student))}")
     return 0
 
 
@@ -408,7 +446,10 @@ def _evidence(value: str) -> dict:
 
 def main(argv: list[str] | None = None) -> None:
     """Parse arguments and run a command."""
-    parser = argparse.ArgumentParser(prog="python -m edux.cli", description="Synapse command line: load a course pack, manage students, inspect and rebuild the learner model, run the server.")
+    parser = argparse.ArgumentParser(
+        prog="python -m edux.cli",
+        description="Synapse command line: load a course pack, manage students, inspect and rebuild the learner model, run the server.",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("load", help="load a course pack into content.db")
     p.add_argument("pack", type=Path)
@@ -467,8 +508,9 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--choice", help="try_first / hint / just_show_me / none")
     p.add_argument("--misconceptions", type=_list, help="comma-separated misconception ids")
     p.add_argument("--ts", help="ISO timestamp (default: now)")
-    p.add_argument("--evidence", type=_evidence, action="append",
-                   help="part_id:type:score, what the student produced this turn (repeatable)")
+    p.add_argument(
+        "--evidence", type=_evidence, action="append", help="part_id:type:score, what the student produced this turn (repeatable)"
+    )
     p = sub.add_parser("evidence", help="record evidence by hand, with no exchange")
     p.add_argument("--student", required=True)
     p.add_argument("--part", required=True, help="part or concept id")
@@ -494,8 +536,9 @@ def main(argv: list[str] | None = None) -> None:
     p = sub.add_parser("seed-demo", help="create the three demo students from scripted events")
     p.add_argument("--course", help="course id (default: the only loaded course)")
     p.add_argument("--reset", action="store_true", help="remove the demo students and their events first")
-    p.add_argument("--parts", help="override roles, e.g. target=ped_values,prereq=ped_formula "
-                                   "(review_parts and showme_parts take ;-separated ids)")
+    p.add_argument(
+        "--parts", help="override roles, e.g. target=ped_values,prereq=ped_formula (review_parts and showme_parts take ;-separated ids)"
+    )
     p = sub.add_parser("serve", help="start the MCP server")
     p.add_argument("--host", help="default: HOST from the environment, else 127.0.0.1")
     p.add_argument("--port", type=int, help="default: PORT from the environment, else 8000")
@@ -514,19 +557,32 @@ def main(argv: list[str] | None = None) -> None:
     elif args.command == "purge":
         code = cmd_purge()
     elif args.command == "class":
-        code = (cmd_class_add(args.name, args.pack) if args.class_command == "add"
-                else cmd_class_add_students(args.class_id, args.students))
+        code = cmd_class_add(args.name, args.pack) if args.class_command == "add" else cmd_class_add_students(args.class_id, args.students)
     elif args.command == "assessment":
         code = cmd_assessment_add(args.class_id, args.name, args.kind, args.date, args.topics)
     elif args.command == "coverage":
-        code = (cmd_coverage_set(args.class_id, args.sections, args.taught_on) if args.coverage_command == "set"
-                else cmd_coverage_import(args.class_id, args.file) if args.coverage_command == "import"
-                else cmd_coverage_export(args.class_id, args.json))
+        code = (
+            cmd_coverage_set(args.class_id, args.sections, args.taught_on)
+            if args.coverage_command == "set"
+            else cmd_coverage_import(args.class_id, args.file)
+            if args.coverage_command == "import"
+            else cmd_coverage_export(args.class_id, args.json)
+        )
     elif args.command == "set-profile":
         code = cmd_set_profile(args.student, args.profile)
     elif args.command == "log":
-        code = cmd_log(args.student, args.nodes, args.depth, args.engagement, args.offloading, args.support,
-                       args.choice, args.misconceptions, args.ts, args.evidence)
+        code = cmd_log(
+            args.student,
+            args.nodes,
+            args.depth,
+            args.engagement,
+            args.offloading,
+            args.support,
+            args.choice,
+            args.misconceptions,
+            args.ts,
+            args.evidence,
+        )
     elif args.command == "evidence":
         code = cmd_evidence(args.student, args.part, args.type, args.score, args.ts, args.misconceptions)
     elif args.command == "state":

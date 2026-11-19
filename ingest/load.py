@@ -118,7 +118,8 @@ def insert_file(conn: sqlite3.Connection, spec: FileSpec, rows: list[dict[str, s
         names.append("course_id")
     if "extra" in db_columns:
         names.append("extra")
-    sql = f"INSERT INTO {spec.table} ({', '.join(f'"{n}"' for n in names)}) VALUES ({', '.join('?' * len(names))})"
+    columns = ", ".join('"' + n + '"' for n in names)
+    sql = f"INSERT INTO {spec.table} ({columns}) VALUES ({', '.join('?' * len(names))})"
     for row in rows:
         values = [_convert(row.get(c.name, ""), c) for c in known]
         if spec.course_scoped and "course_id" in db_columns:
@@ -179,8 +180,10 @@ def _apply_feedback_row(conn: sqlite3.Connection, fb: dict[str, str], course_id:
 
     if action in ("approve", "reject"):
         status = "approved" if action == "approve" else "rejected"
-        cur = conn.execute(f"UPDATE {spec.table} SET status = ?, updated_by = ?, updated_at = ? WHERE {where}",
-                           [status, stamp["updated_by"], stamp["updated_at"], *args])
+        cur = conn.execute(
+            f"UPDATE {spec.table} SET status = ?, updated_by = ?, updated_at = ? WHERE {where}",
+            [status, stamp["updated_by"], stamp["updated_at"], *args],
+        )
         if not cur.rowcount:
             raise FeedbackError("target not found")
         return f"status set to {status}"
@@ -208,8 +211,10 @@ def _apply_feedback_row(conn: sqlite3.Connection, fb: dict[str, str], course_id:
         problem = value_error(column, value)
         if problem:
             raise FeedbackError(problem)
-        cur = conn.execute(f'UPDATE {spec.table} SET "{field_name}" = ?, updated_by = ?, updated_at = ? WHERE {where}',
-                           [_convert(value, column), stamp["updated_by"], stamp["updated_at"], *args])
+        cur = conn.execute(
+            f'UPDATE {spec.table} SET "{field_name}" = ?, updated_by = ?, updated_at = ? WHERE {where}',
+            [_convert(value, column), stamp["updated_by"], stamp["updated_at"], *args],
+        )
         if not cur.rowcount:
             raise FeedbackError("target not found")
         return f"{field_name} edited"
@@ -245,8 +250,9 @@ def apply_feedback(conn: sqlite3.Connection, feedback_csv: Path, course_id: str 
             message, applied = _apply_feedback_row(conn, fb, course_id), 1
         except FeedbackError as e:
             message, applied = str(e), 0
-            not_applied.append(f"{feedback_csv.name}:{line}: {fb.get('action', '')} {fb.get('table', '')} "
-                               f"{fb.get('target_id', '')!r}: {message}")
+            not_applied.append(
+                f"{feedback_csv.name}:{line}: {fb.get('action', '')} {fb.get('table', '')} {fb.get('target_id', '')!r}: {message}"
+            )
         conn.execute(
             """INSERT INTO teacher_feedback (ts, teacher, tbl, target_id, action, field, value, note, applied, message)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
@@ -361,7 +367,7 @@ def compute_weights(conn: sqlite3.Connection, settings: Settings) -> None:
         dependents[node_id] = len(reached - own)
 
     literacy = {i for i in tree.level if registry.AI_LITERACY_TOPIC in tree.ancestors_and_self(i)}
-    importance = {i: settings.literacy.importance for i in literacy}   # no exam weight: a fixed importance
+    importance = {i: settings.literacy.importance for i in literacy}  # no exam weight: a fixed importance
     for level in set(tree.level.values()):
         ids = [i for i, lv in tree.level.items() if lv == level and i not in literacy]
         pe = percentile_ranks({i: exam_weight[i] for i in ids})
@@ -370,8 +376,7 @@ def compute_weights(conn: sqlite3.Connection, settings: Settings) -> None:
             importance[i] = settings.importance.w_exam * pe[i] + settings.importance.w_dependents * pd[i]
 
     conn.execute("DELETE FROM node_weight")
-    conn.executemany("INSERT INTO node_weight VALUES (?, ?, ?, ?)",
-                     [(i, exam_weight[i], dependents[i], importance[i]) for i in tree.level])
+    conn.executemany("INSERT INTO node_weight VALUES (?, ?, ?, ?)", [(i, exam_weight[i], dependents[i], importance[i]) for i in tree.level])
 
 
 def question_tags(conn: sqlite3.Connection, tree: Tree) -> dict[str, tuple[int, set[str]]]:
@@ -391,7 +396,7 @@ def material_sections(conn: sqlite3.Connection, tree: Tree, source_types: list[s
     rows = conn.execute(
         f"""SELECT n.source_id, n.location, n.node_id FROM note n JOIN source s ON s.id = n.source_id
             WHERE n.status != 'rejected' AND coalesce(n.location, '') != ''
-            AND s.type IN ({', '.join('?' * len(source_types))})""",
+            AND s.type IN ({", ".join("?" * len(source_types))})""",
         source_types,
     )
     for source_id, location, node_id in rows:
@@ -449,16 +454,21 @@ def suggest_links(conn: sqlite3.Connection, tree: Tree, questions: dict[str, tup
             for p in tree.targets(from_id):
                 for q in tree.targets(to_id):
                     linked.update({(p, q), (q, p)})
-    return [f"{p} <-> {q}: tested together in {n} questions"
-            for (p, q), n in sorted(together.items(), key=lambda kv: -kv[1]) if n >= min_questions and (p, q) not in linked]
+    return [
+        f"{p} <-> {q}: tested together in {n} questions"
+        for (p, q), n in sorted(together.items(), key=lambda kv: -kv[1])
+        if n >= min_questions and (p, q) not in linked
+    ]
 
 
 def build_node_index(conn: sqlite3.Connection) -> None:
     """Fill node_fts from each node's name, aliases and description, so students' own words find nodes."""
     conn.execute("DELETE FROM node_fts")
     for nid, name, aliases, description in conn.execute("SELECT id, name, aliases, description FROM node").fetchall():
-        conn.execute("INSERT INTO node_fts (id, name, aliases, description) VALUES (?, ?, ?, ?)",
-                     (nid, name, " ".join(split_list(aliases)), description))
+        conn.execute(
+            "INSERT INTO node_fts (id, name, aliases, description) VALUES (?, ?, ?, ?)",
+            (nid, name, " ".join(split_list(aliases)), description),
+        )
 
 
 def count_rows(conn: sqlite3.Connection) -> dict[str, int]:
@@ -476,24 +486,30 @@ def flagged_rows(conn: sqlite3.Connection) -> tuple[list[str], list[str]]:
         key = " || '|' || ".join(spec.key)
         rows = conn.execute(f"SELECT {key}, flag FROM {spec.table} WHERE flag != '' AND status != 'rejected'")
         flagged += [f"{spec.name} {k}: {flag}" for k, flag in rows]
-    low = [f"nodes.csv {i}: {c}" for i, c in conn.execute(
-        "SELECT id, extraction_confidence FROM node WHERE extraction_confidence < 0.5 AND status != 'rejected'")]
+    low = [
+        f"nodes.csv {i}: {c}"
+        for i, c in conn.execute("SELECT id, extraction_confidence FROM node WHERE extraction_confidence < 0.5 AND status != 'rejected'")
+    ]
     return flagged, low
 
 
 def write_load_info(conn: sqlite3.Connection, report: LoadReport) -> None:
     """Record when and what was loaded."""
-    summary = json.dumps({
-        "counts": report.counts,
-        "warnings": len(report.warnings),
-        "flagged": len(report.flagged),
-        "low_confidence": len(report.low_confidence),
-        "feedback_not_applied": len(report.feedback_not_applied),
-        "suggested_links": len(report.suggested_links),
-    })
+    summary = json.dumps(
+        {
+            "counts": report.counts,
+            "warnings": len(report.warnings),
+            "flagged": len(report.flagged),
+            "low_confidence": len(report.low_confidence),
+            "feedback_not_applied": len(report.feedback_not_applied),
+            "suggested_links": len(report.suggested_links),
+        }
+    )
     conn.execute("DELETE FROM load_info")
-    conn.execute("INSERT INTO load_info VALUES (?, ?, ?, ?)",
-                 (datetime.now(timezone.utc).isoformat(timespec="seconds"), report.course_id, report.pack_path, summary))
+    conn.execute(
+        "INSERT INTO load_info VALUES (?, ?, ?, ?)",
+        (datetime.now(timezone.utc).isoformat(timespec="seconds"), report.course_id, report.pack_path, summary),
+    )
 
 
 def _section(title: str, lines: list[str]) -> None:

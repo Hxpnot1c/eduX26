@@ -36,8 +36,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-SLIP, GUESS, S0, MIN_S = 0.10, 0.25, 4.0, 1.0       # the truth model: our choices, not findings
-SESSION_EVERY, ATTEND, PER_SESSION = 2, 0.8, 3       # a session every 2 days, attended 80% of the time, 3 reviews a time
+SLIP, GUESS, S0, MIN_S = 0.10, 0.25, 4.0, 1.0  # the truth model: our choices, not findings
+SESSION_EVERY, ATTEND, PER_SESSION = 2, 0.8, 3  # a session every 2 days, attended 80% of the time, 3 reviews a time
 
 
 def uniform(seed: int, part: str, day: int) -> float:
@@ -65,13 +65,13 @@ def simulate(threshold: float, seeds: list[int], days: int, folder: Path) -> lis
         with learner._conn() as conn:
             conn.execute("UPDATE student_profile SET exam_date_override = ? WHERE student_id = ?", (exam.date().isoformat(), sid))
         rng = random.Random(seed)
-        strength, last = {}, {}                     # hidden truth per part
+        strength, last = {}, {}  # hidden truth per part
         reviews = missed = 0
 
         def stamp(day: float) -> str:
             return (start + timedelta(days=day)).isoformat(timespec="seconds")
 
-        for i, part in enumerate(parts):            # taught and checked in the first weeks
+        for i, part in enumerate(parts):  # taught and checked in the first weeks
             day = 1 + 3 * i
             ok = rng.random() < 0.7
             strength[part], last[part] = (S0 if ok else MIN_S), float(day)
@@ -96,9 +96,16 @@ def simulate(threshold: float, seeds: list[int], days: int, folder: Path) -> lis
         truth = {p: math.exp(-(days - last[p]) / strength[p]) for p in parts}
         belief = {p: learner.part_p(sid, p, exam_at) for p in parts}
         secure = [p for p in parts if learner.level(belief[p]) == "secure"]
-        rows.append({"reviews_per_week": reviews / (days / 7), "retention": statistics.mean(truth.values()),
-                     "false_secure": sum(truth[p] < 0.5 for p in secure), "truly_secure": sum(truth[p] >= 0.75 for p in secure),
-                     "secure": len(secure), "capped": missed})
+        rows.append(
+            {
+                "reviews_per_week": reviews / (days / 7),
+                "retention": statistics.mean(truth.values()),
+                "false_secure": sum(truth[p] < 0.5 for p in secure),
+                "truly_secure": sum(truth[p] >= 0.75 for p in secure),
+                "secure": len(secure),
+                "capped": missed,
+            }
+        )
     return rows
 
 
@@ -108,25 +115,32 @@ def main() -> None:
     parser.add_argument("--thresholds", type=float, nargs="+", default=[0.5, 0.75])
     parser.add_argument("--days", type=int, default=90)
     args = parser.parse_args()
-    seeds = list(range(1, args.students + 1))
     print(f"SYNTHETIC students, {args.students} per variant, {args.days} days, example-mini pack (9 parts). Not learning gains.")
-    print(f"{'review_when_below':>18} {'reviews/week':>13} {'true retention':>15} {'false secure':>13} {'truly secure':>13} {'reviews capped':>15}")
+    print(
+        f"{'review_when_below':>18} {'reviews/week':>13} {'true retention':>15} {'false secure':>13} {'truly secure':>13} {'reviews capped':>15}"
+    )
     for threshold in args.thresholds:
         with tempfile.TemporaryDirectory() as folder:
             import subprocess
 
-            out = subprocess.run([sys.executable, __file__, "--worker", str(threshold), str(args.students), str(args.days), folder],
-                                 capture_output=True, text=True, check=True).stdout.strip()
+            out = subprocess.run(
+                [sys.executable, __file__, "--worker", str(threshold), str(args.students), str(args.days), folder],
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
             print(out)
 
 
 def worker(threshold: float, students: int, days: int, folder: str) -> None:
     rows = simulate(threshold, list(range(1, students + 1)), days, Path(folder))
-    mean = lambda k: statistics.mean(r[k] for r in rows)       # noqa: E731
-    sd = lambda k: statistics.stdev(r[k] for r in rows) / math.sqrt(len(rows))       # noqa: E731
-    print(f"{threshold:>18.2f} {mean('reviews_per_week'):>7.2f}±{sd('reviews_per_week'):<4.2f} {mean('retention'):>9.3f}±{sd('retention'):<5.3f} "
-          f"{mean('false_secure'):>7.2f}±{sd('false_secure'):<4.2f} {mean('truly_secure'):>7.2f}±{sd('truly_secure'):<4.2f} "
-          f"{mean('capped'):>9.1f}±{sd('capped'):<4.1f}")
+    mean = lambda k: statistics.mean(r[k] for r in rows)  # noqa: E731
+    sd = lambda k: statistics.stdev(r[k] for r in rows) / math.sqrt(len(rows))  # noqa: E731
+    print(
+        f"{threshold:>18.2f} {mean('reviews_per_week'):>7.2f}±{sd('reviews_per_week'):<4.2f} {mean('retention'):>9.3f}±{sd('retention'):<5.3f} "
+        f"{mean('false_secure'):>7.2f}±{sd('false_secure'):<4.2f} {mean('truly_secure'):>7.2f}±{sd('truly_secure'):<4.2f} "
+        f"{mean('capped'):>9.1f}±{sd('capped'):<4.1f}"
+    )
 
 
 if __name__ == "__main__":

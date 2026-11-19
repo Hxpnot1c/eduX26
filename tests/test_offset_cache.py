@@ -13,11 +13,19 @@ from edux import graph, learner
 def _reference_learning_offset(student_id, before=None):
     """The learning-rate offset as step 05h/05m computed it: from the whole history, every call (the code before step 05r)."""
     p = learner._settings().personalisation
-    rows = learner._conn().execute(
-        """SELECT d.evidence_id, d.session_id, l.part_id, d.surprise FROM evidence_derived d JOIN evidence_log l ON l.id = d.evidence_id
+    rows = (
+        learner._conn()
+        .execute(
+            """SELECT d.evidence_id, d.session_id, l.part_id, d.surprise FROM evidence_derived d JOIN evidence_log l ON l.id = d.evidence_id
            WHERE d.student_id = ? AND d.session_id < ? AND d.fatigued = 0 AND d.immediate = 0 AND d.weight > 0
-           ORDER BY l.ts, l.id""", (student_id, learner._event_ts(before))).fetchall()
-    firsts = {r[0] for r in learner._conn().execute("SELECT MIN(id) FROM evidence_log WHERE student_id = ? GROUP BY part_id", (student_id,))}
+           ORDER BY l.ts, l.id""",
+            (student_id, learner._event_ts(before)),
+        )
+        .fetchall()
+    )
+    firsts = {
+        r[0] for r in learner._conn().execute("SELECT MIN(id) FROM evidence_log WHERE student_id = ? GROUP BY part_id", (student_id,))
+    }
     rows = [r for r in rows if not graph.is_literacy(r["part_id"]) and r["evidence_id"] not in firsts]
     low, high = (math.log(b) for b in p.learn_rate_weight_bounds)
     offset, used = 0.0, 0
@@ -51,8 +59,7 @@ def _history(student_id, sessions, per_session, seed=3, start_days=400):
     for s in range(sessions):
         for a in range(per_session):
             ts = (start + timedelta(days=s * 2, minutes=3 * a)).isoformat(timespec="seconds")
-            learner.record_evidence(student_id, rng.choice(parts), "mcq_check", float(rng.random() < 0.7), ts=ts,
-                                    apply="now", n_options=4)
+            learner.record_evidence(student_id, rng.choice(parts), "mcq_check", float(rng.random() < 0.7), ts=ts, apply="now", n_options=4)
 
 
 def test_the_cached_offset_equals_the_one_computed_from_scratch_after_every_session(student):
@@ -77,8 +84,14 @@ def test_the_offset_actually_moves_so_the_comparison_is_not_trivial(student):
 def test_the_cache_fills_in_session_order_and_a_second_call_reads_it(student):
     _history(student["id"], 10, 4)
     learner.learning_offset(student["id"])
-    rows = learner._conn().execute("SELECT session_id FROM learner_offset_cache WHERE student_id = ? AND learn_state IS NOT NULL "
-                                   "ORDER BY session_id", (student["id"],)).fetchall()
+    rows = (
+        learner._conn()
+        .execute(
+            "SELECT session_id FROM learner_offset_cache WHERE student_id = ? AND learn_state IS NOT NULL ORDER BY session_id",
+            (student["id"],),
+        )
+        .fetchall()
+    )
     assert len(rows) >= 5 and [r[0] for r in rows] == sorted(r[0] for r in rows)
     again = learner.learning_offset(student["id"])
     assert again["offset"] == pytest.approx(_reference_learning_offset(student["id"])["offset"], abs=1e-9)
@@ -88,10 +101,14 @@ def test_rebuild_clears_and_refills_the_cache_to_the_same_values(student):
     sid = student["id"]
     _history(sid, 12, 4)
     before = learner.learning_offset(sid)
-    rows_before = [dict(r) for r in learner._conn().execute("SELECT * FROM learner_offset_cache WHERE student_id = ? ORDER BY session_id", (sid,))]
+    rows_before = [
+        dict(r) for r in learner._conn().execute("SELECT * FROM learner_offset_cache WHERE student_id = ? ORDER BY session_id", (sid,))
+    ]
     learner.rebuild_state(sid)
     assert learner.learning_offset(sid) == before
-    rows_after = [dict(r) for r in learner._conn().execute("SELECT * FROM learner_offset_cache WHERE student_id = ? ORDER BY session_id", (sid,))]
+    rows_after = [
+        dict(r) for r in learner._conn().execute("SELECT * FROM learner_offset_cache WHERE student_id = ? ORDER BY session_id", (sid,))
+    ]
     assert [r["learn_state"] for r in rows_after if r["learn_state"]] == [r["learn_state"] for r in rows_before if r["learn_state"]]
 
 
@@ -101,9 +118,15 @@ def test_an_event_out_of_order_drops_the_later_cached_sessions_and_the_answer_st
     learner.learning_offset(sid)
     old = (datetime.now(timezone.utc) - timedelta(days=350)).isoformat(timespec="seconds")
     part = next(p for p in learner.all_parts() if not graph.is_literacy(p))
-    learner.record_evidence(sid, part, "mcq_check", 0.0, ts=old, apply="now", n_options=4)       # earlier than everything cached
-    left = learner._conn().execute("SELECT COUNT(*) FROM learner_offset_cache WHERE student_id = ? AND session_id > ?",
-                                   (sid, learner.session_start(learner._conn(), sid, old))).fetchone()[0]
+    learner.record_evidence(sid, part, "mcq_check", 0.0, ts=old, apply="now", n_options=4)  # earlier than everything cached
+    left = (
+        learner._conn()
+        .execute(
+            "SELECT COUNT(*) FROM learner_offset_cache WHERE student_id = ? AND session_id > ?",
+            (sid, learner.session_start(learner._conn(), sid, old)),
+        )
+        .fetchone()[0]
+    )
     assert left == 0
     assert learner.learning_offset(sid)["offset"] == pytest.approx(_reference_learning_offset(sid)["offset"], abs=1e-9)
 
@@ -134,8 +157,12 @@ def test_starting_offsets_are_cached_and_equal_when_computed_again(student):
         ts = (datetime.now(timezone.utc) - timedelta(days=30 - i)).isoformat(timespec="seconds")
         learner.record_evidence(sid, p, "prequestion", 1.0 if i % 2 else 0.0, ts=ts, apply="now", n_options=4)
     first = learner.starting_offsets(sid)
-    cached = learner._conn().execute("SELECT COUNT(*) FROM learner_offset_cache WHERE student_id = ? AND covered_offset IS NOT NULL", (sid,)).fetchone()[0]
-    assert cached >= 1                  # one per session whose start was asked for, the current one included
+    cached = (
+        learner._conn()
+        .execute("SELECT COUNT(*) FROM learner_offset_cache WHERE student_id = ? AND covered_offset IS NOT NULL", (sid,))
+        .fetchone()[0]
+    )
+    assert cached >= 1  # one per session whose start was asked for, the current one included
     learner._conn().execute("DELETE FROM learner_offset_cache WHERE student_id = ?", (sid,))
     assert learner.starting_offsets(sid) == first
 

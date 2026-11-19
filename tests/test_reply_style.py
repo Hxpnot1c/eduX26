@@ -1,11 +1,10 @@
 """Step 05o: a student's answer_length decides teach_point's word budget, up to one point's worth."""
 
-
 from edux import plan, service
 
 
 class _Turn:
-    def p(self, part_id):          # not reached: a student's own length skips the mastery-based shrinking
+    def p(self, part_id):  # not reached: a student's own length skips the mastery-based shrinking
         raise AssertionError("turn.p should not be read when answer_length is set")
 
 

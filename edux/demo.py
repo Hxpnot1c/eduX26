@@ -17,7 +17,7 @@ from edux import db, graph, learner
 STUDENTS = {"demo-secure": "Demo: mostly secure", "demo-weak": "Demo: weak prerequisite", "demo-showme": "Demo: just show me"}
 EXAM_IN_DAYS = 150
 CLASS_ID = "demo-class"
-COVERED_DAYS_AGO = 25          # the demo class was taught its first two Theme 1 sections about 3-4 weeks ago
+COVERED_DAYS_AGO = 25  # the demo class was taught its first two Theme 1 sections about 3-4 weeks ago
 ROLES = ("target", "prereq", "misconception", "anchor", "confusable", "review_parts", "showme_parts")
 
 
@@ -37,13 +37,13 @@ def _ranked(parts: list[str]) -> list[str]:
 def _linked_parts(part: str, lookup: Callable[[str], list[dict]], same_type: bool = False) -> list[str]:
     """Parts at the far end of the part's edges, strongest link first (then the same part type, if asked)."""
     order = {p: i for i, p in enumerate(learner.all_parts())}
-    part_type = graph.get_node(part)["part_type"]
+    part_type = graph.require_node(part)["part_type"]
     found: dict[str, tuple] = {}
     for edge in lookup(part):
         for other in graph.parts_of(edge["other"]):
             if other == part:
                 continue
-            key = (-(edge["weight"] or 0.0), not (same_type and graph.get_node(other)["part_type"] == part_type), order.get(other, 0))
+            key = (-(edge["weight"] or 0.0), not (same_type and graph.require_node(other)["part_type"] == part_type), order.get(other, 0))
             found[other] = min(found.get(other, key), key)
     return sorted(found, key=lambda p: found[p])
 
@@ -182,16 +182,31 @@ class _Clock:
 _pending: list[tuple[str, int, int, Callable[[], object]]] = []
 
 
-def _exchange(sid: str, nodes: list[str], ts: str, depth: str = "mechanism", engagement: str = "active",
-              support: str | None = None, choice: str | None = None, offloading: bool = False,
-              misconceptions: list[str] | None = None) -> None:
-    _pending.append((ts, 0, len(_pending), lambda: learner.record_exchange(
-        sid, nodes, depth, engagement, offloading, support, choice, misconceptions, client="demo", ts=ts, apply="now")))
+def _exchange(
+    sid: str,
+    nodes: list[str],
+    ts: str,
+    depth: str = "mechanism",
+    engagement: str = "active",
+    support: str | None = None,
+    choice: str | None = None,
+    offloading: bool = False,
+    misconceptions: list[str] | None = None,
+) -> None:
+    _pending.append(
+        (
+            ts,
+            0,
+            len(_pending),
+            lambda: learner.record_exchange(
+                sid, nodes, depth, engagement, offloading, support, choice, misconceptions, client="demo", ts=ts, apply="now"
+            ),
+        )
+    )
 
 
 def _evidence(sid: str, part: str, kind: str, score: float, ts: str, misconceptions: list[str] | None = None) -> None:
-    _pending.append((ts, 1, len(_pending), lambda: learner.record_evidence(
-        sid, part, kind, score, misconceptions, ts=ts, apply="now")))
+    _pending.append((ts, 1, len(_pending), lambda: learner.record_evidence(sid, part, kind, score, misconceptions, ts=ts, apply="now")))
 
 
 def _flush() -> None:
@@ -245,9 +260,10 @@ def _seed_mock(sid: str, roles: dict, clock: _Clock) -> None:
     busy = near_target(roles["target"]) | {roles["prereq"]}
     review = next((p for p in parts if p not in busy), None)
     with learner._conn() as conn:
-        conn.execute("INSERT INTO student_assessment (student_id, name, kind, date, part_ids, created_at) "
-                     "VALUES (?, ?, 'mock', ?, ?, ?)", (sid, "Mock", (clock.now + timedelta(days=5)).date().isoformat(),
-                                                      json.dumps(parts), clock.ago()))
+        conn.execute(
+            "INSERT INTO student_assessment (student_id, name, kind, date, part_ids, created_at) VALUES (?, ?, 'mock', ?, ?, ?)",
+            (sid, "Mock", (clock.now + timedelta(days=5)).date().isoformat(), json.dumps(parts), clock.ago()),
+        )
     if review:
         _exchange(sid, [review], clock.ago(days=8, minutes=10), choice="try_first")
         _evidence(sid, review, "explain_back", 1.0, clock.ago(days=8))
@@ -266,8 +282,16 @@ def _seed_showme(sid: str, roles: dict, clock: _Clock) -> None:
             _evidence(sid, part, "past_question", 1.0, clock.session(days, 15))
     for days in (9, 6, 3):
         for minute, part in ((2, showme[0]), (24, showme[-1]), (47, showme[0])):
-            _exchange(sid, [part], clock.session(days, minute), depth="surface", engagement="passive",
-                      support="worked_example", choice="just_show_me", offloading=True)
+            _exchange(
+                sid,
+                [part],
+                clock.session(days, minute),
+                depth="surface",
+                engagement="passive",
+                support="worked_example",
+                choice="just_show_me",
+                offloading=True,
+            )
         early = [known[i % len(known)] for i in range(4)]
         for minute, part in zip((5, 10, 15, 20), early):
             _evidence(sid, part, "past_question", 1.0, clock.session(days, minute))
@@ -324,7 +348,7 @@ def remove_students() -> dict[str, str]:
     return keys
 
 
-def _seed_class(clock: "_Clock") -> None:
+def _seed_class(clock: _Clock) -> None:
     """The demo class, with the first two concepts of the first topic marked as taught COVERED_DAYS_AGO days ago (set by
     'seed'). The class estimate stays off in the demo: covered parts start at the covered boost."""
     conn = learner._conn()
@@ -355,7 +379,7 @@ def seed(course: str | None = None, reset: bool = False, overrides: str | None =
         # --reset keeps each demo student's key, so connector URLs keep working
         keys[sid] = learner.add_student(name, course_id, student_id=sid, key=old_keys.get(sid))["key"]
         learner.add_students_to_class(CLASS_ID, [sid])
-        service.update_profile(learner.get_student(sid), exam_date_override=exam)
+        service.update_profile(learner.require_student(sid), exam_date_override=exam)
         SEEDS[sid](sid, roles, clock)
         _flush()
     keys_path().write_text(json.dumps(keys), encoding="utf-8")
