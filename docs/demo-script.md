@@ -11,7 +11,7 @@ The demo path has these differences from the earlier script. Each is on a pull r
 - **A bridge question (step 05t).** When a part finishes, the reply can end with a short lead-in question on a linked, untaught part ("this links to what's next in class"), then a teaching step that says they can stop or switch.
 - **Study pattern is gone (step 05s).** Section 5 no longer says "your answers drop after about 35 minutes": that line came from a rule our own simulation found unreliable.
 - **Personalisation is off by default (step 05m)** and find-the-error practice is built but off (`EDUX_FIND_ERROR=1` to show it; say on camera that it is untested at this age).
-- **Film with web search off.** Plan A should still end with Verify at "developing"; that rehearsal is in the overnight runbook and was **not re-run** after these changes.
+- **Film with web search off.** Plan A was **re-run on 19 November against the full stack** (the overnight `run_episode.py`, all six scenarios, with one line changed in the harness copy because it read the plaintext key that step 05x removed): Verify ends at **0.740, "developing"**, the same as the overnight run, Ask at 0.528, and no result went over budget. The margin below "secure" (0.75) is **0.01**, so do not add a Verify task to the take; re-run before filming if anything in `settings.toml` changes.
 
 ## Before recording
 - Run `scripts/demo.sh` and note the roles it prints. On `example-mini` they are:
