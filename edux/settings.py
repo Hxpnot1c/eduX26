@@ -327,6 +327,7 @@ class Retention:
 @dataclass(frozen=True)
 class Results:
     max_chars: int
+    max_chars_progress: int
     max_chars_full_progress: int
 
 

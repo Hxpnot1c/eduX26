@@ -939,7 +939,11 @@ def _ai_literacy(student_id: str, at: str) -> dict:
             "evidence": evidence(how_parts),
             "skipped": learner.skips(student_id, how_parts, at),
         },
-        "question_features": {f: _trend(share(f, recent), share(f, before)) for f in learner.QUESTION_FEATURES},
+        "question_features": {  # a feature with no research questions in either window is left out (it would be all nulls)
+            f: _trend(share(f, recent), share(f, before))
+            for f in learner.QUESTION_FEATURES
+            if share(f, recent) is not None or share(f, before) is not None
+        },
     }
 
 
@@ -949,7 +953,7 @@ def my_progress(student: dict, include_parts: bool = False, at: str | None = Non
     URL set, also map_url: a single-use link to the student's own page that never carries their key (decision 0026),
     added before the cut so it counts towards the limit. If the result still doesn't fit (the tree and AI literacy are
     never cut), the link is left out; its token simply expires unused."""
-    limit = result_limit(include_parts)
+    limit = result_limit("get_my_progress", include_parts)
     out = progress_parts(student, include_parts, at)
     url = links.map_url(student["id"])
     if url:
@@ -1073,10 +1077,10 @@ PROGRESS_TRIM_ORDER = ("weak_links", "reviews_due", "levers")  # lowest-ranked i
 
 
 def fit_progress(out: dict, limit: int | None = None) -> dict:
-    """Keep get_my_progress within its limit (results.max_chars, or max_chars_full_progress for the every-part
+    """Keep get_my_progress within its limit (results.max_chars_progress, or max_chars_full_progress for the every-part
     view) by dropping the last, lowest-ranked item of weak_links, then reviews_due, then levers, until it fits.
     The tree, trends and ai_literacy are never cut."""
-    limit = limit or result_limit()
+    limit = limit or result_limit("get_my_progress")
     for name in PROGRESS_TRIM_ORDER:
         while out.get(name) and result_size(out) > limit:
             out[name] = out[name][:-1]
@@ -1282,15 +1286,18 @@ def log_call(
         )
 
 
-def result_limit(full_progress: bool = False) -> int:
-    """results.max_chars for every tool, or results.max_chars_full_progress for get_my_progress with include_parts."""
+def result_limit(tool: str = "", full_progress: bool = False) -> int:
+    """results.max_chars for every tool but get_my_progress, which has max_chars_progress, or max_chars_full_progress
+    with include_parts (decision 0026)."""
     results = _settings().results
-    return results.max_chars_full_progress if full_progress else results.max_chars
+    if tool == "get_my_progress":
+        return results.max_chars_full_progress if full_progress else results.max_chars_progress
+    return results.max_chars
 
 
 def over_budget(tool: str, result_chars: int, full_progress: bool = False) -> bool:
     """Any tool's result over its limit (result_limit), after fit_budget or fit_progress dropped what they could."""
-    return result_chars > result_limit(full_progress and tool == "get_my_progress")
+    return result_chars > result_limit(tool, full_progress)
 
 
 def _percentile(values: list[float], share: float) -> float:
