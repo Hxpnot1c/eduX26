@@ -592,6 +592,7 @@ def add_students_to_class(class_id: str, student_ids: list[str]) -> None:
     with conn:
         for student_id in student_ids:
             conn.execute("UPDATE student SET class_id = ? WHERE id = ?", (class_id, student_id))
+            conn.execute("DELETE FROM learner_offset_cache WHERE student_id = ?", (student_id,))
 
 
 def set_class_coverage(class_id: str, node_ids: list[str], taught_on: str, set_by: str = "cli") -> None:
@@ -604,6 +605,7 @@ def set_class_coverage(class_id: str, node_ids: list[str], taught_on: str, set_b
         for node_id in node_ids:
             conn.execute("INSERT OR REPLACE INTO class_coverage (class_id, node_id, taught_on, set_by) VALUES (?, ?, ?, ?)",
                          (class_id, node_id, taught_on, set_by))
+        conn.execute("DELETE FROM learner_offset_cache WHERE student_id IN (SELECT id FROM student WHERE class_id = ?)", (class_id,))
 
 
 def class_coverage(class_id: str) -> list[dict]:
@@ -692,20 +694,6 @@ def _pre_teaching_answers(conn: sqlite3.Connection, student_id: str, before: str
     return keep
 
 
-def _state_key(student_id: str) -> tuple:
-    """What the starting offsets depend on, cheaply: the row counts of the logs and coverage tables."""
-    conn = _conn()
-    cid = student_class(student_id)
-    return (student_id, cid,
-            conn.execute("SELECT COUNT(*) FROM evidence_log WHERE student_id = ?", (student_id,)).fetchone()[0],
-            conn.execute("SELECT COUNT(*) FROM exchange_log WHERE student_id = ?", (student_id,)).fetchone()[0],
-            conn.execute("SELECT COUNT(*) FROM student_coverage WHERE student_id = ?", (student_id,)).fetchone()[0],
-            conn.execute("SELECT COUNT(*) FROM class_coverage WHERE class_id IS ?", (cid,)).fetchone()[0])
-
-
-_offsets_memo: dict[tuple, dict] = {}
-
-
 def starting_offsets(student_id: str, before: str | datetime | None = None) -> dict:
     """The student's personal starting adjustment, in log-odds, in two sectors that never mix: parts the class had
     covered when they answered, and parts it had not. Built from their pre-teaching first answers in sessions before
@@ -715,9 +703,15 @@ def starting_offsets(student_id: str, before: str | datetime | None = None) -> d
     +-starting.bound_logits. Returns {covered, not_covered, n_covered, n_not_covered}."""
     st, conn = _settings().starting, _conn()
     cutoff = session_start(conn, student_id, _event_ts(before))
-    key = (*_state_key(student_id), cutoff)
-    if key in _offsets_memo:
-        return _offsets_memo[key]
+    cacheable = not _settings().coverage.class_estimate_enabled       # a class estimate depends on other students: not cached
+    shash = settings_hash()
+    if cacheable:
+        row = conn.execute("""SELECT covered_offset, covered_n, uncovered_offset, uncovered_n FROM learner_offset_cache
+                              WHERE student_id = ? AND session_id = ? AND settings_hash = ? AND covered_offset IS NOT NULL""",
+                           (student_id, cutoff, shash)).fetchone()
+        if row:
+            return {"covered": row["covered_offset"], "not_covered": row["uncovered_offset"],
+                    "n_covered": row["covered_n"], "n_not_covered": row["uncovered_n"]}
     sums = {True: [0, 0.0, 0.0], False: [0, 0.0, 0.0]}      # sector -> [n, sum score, sum expected]
     for r in _pre_teaching_answers(conn, student_id, cutoff):
         sector = covered_since(student_id, r["part_id"], r["ts"]) is not None
@@ -735,9 +729,15 @@ def starting_offsets(student_id: str, before: str | datetime | None = None) -> d
 
     out = {"covered": offset(*sums[True]), "not_covered": offset(*sums[False]),
            "n_covered": sums[True][0], "n_not_covered": sums[False][0]}
-    if len(_offsets_memo) > 2000:
-        _offsets_memo.clear()
-    _offsets_memo[key] = out
+    if cacheable:
+        with conn:
+            conn.execute(
+                """INSERT INTO learner_offset_cache (student_id, session_id, settings_hash, covered_offset, covered_n,
+                     uncovered_offset, uncovered_n) VALUES (?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT (student_id, session_id) DO UPDATE SET settings_hash = excluded.settings_hash,
+                     covered_offset = excluded.covered_offset, covered_n = excluded.covered_n,
+                     uncovered_offset = excluded.uncovered_offset, uncovered_n = excluded.uncovered_n""",
+                (student_id, cutoff, shash, out["covered"], out["n_covered"], out["not_covered"], out["n_not_covered"]))
     return out
 
 
@@ -947,6 +947,9 @@ def apply_exchange(event: dict) -> None:
     s, conn = _settings(), _conn()
     student_id, ts = event["student_id"], event["ts"]
     t = parse_ts(ts)
+    # an exchange earlier than cached sessions changes what counts as teaching there: drop their cached offsets
+    conn.execute("DELETE FROM learner_offset_cache WHERE student_id = ? AND session_id > ?",
+                 (student_id, session_start(conn, student_id, ts)))
     multiplier = s.nudges.depth[event["question_depth"]] * s.nudges.engagement[event["engagement"]]
     offloaded = bool(event["offloading"]) or event.get("choice_taken") == "just_show_me"
     support = event.get("support_given")
@@ -1176,41 +1179,95 @@ def personalisation_on() -> bool:
     return _settings().personalisation.enabled if switch is None else switch == "1"
 
 
+def _clear_offset_cache(student_id: str, after_session: str | None = None) -> None:
+    """Drop the student's cached offsets (all of them, or those for sessions after after_session). The cache holds
+    nothing that cannot be recomputed from the event logs, so dropping it is always safe."""
+    conn = _conn()
+    with conn:
+        if after_session is None:
+            conn.execute("DELETE FROM learner_offset_cache WHERE student_id = ?", (student_id,))
+        else:
+            conn.execute("DELETE FROM learner_offset_cache WHERE student_id = ? AND session_id > ?", (student_id, after_session))
+
+
+def _learn_eligible(conn: sqlite3.Connection, student_id: str, since: str | None, before: str) -> list[sqlite3.Row]:
+    """The evidence the learning-rate offset counts, from session `since` (inclusive) to before `before`, in order:
+    not fatigued, immediate or weightless, not on an AI-literacy part, and not a part's first answer (that belongs
+    to the starting-point adjustment)."""
+    rows = conn.execute(
+        """SELECT d.evidence_id, d.session_id, l.part_id, d.surprise FROM evidence_derived d JOIN evidence_log l ON l.id = d.evidence_id
+           WHERE d.student_id = ? AND d.session_id >= ? AND d.session_id < ? AND d.fatigued = 0 AND d.immediate = 0 AND d.weight > 0
+           ORDER BY l.ts, l.id""", (student_id, since or "", before)).fetchall()
+    firsts = {r[0] for r in conn.execute("SELECT MIN(id) FROM evidence_log WHERE student_id = ? GROUP BY part_id", (student_id,))}
+    return [r for r in rows if not graph.is_literacy(r["part_id"]) and r["evidence_id"] not in firsts]
+
+
+def _learn_step(state: dict, p) -> float:
+    """One step of the offset at a session boundary, from the running statistics of the evidence before it."""
+    low, high = (math.log(b) for b in p.learn_rate_weight_bounds)
+    n, target = state["n"], 0.0
+    if n >= p.min_observations and len(state["parts"]) >= p.min_parts and state["w"] > 0:
+        target = min(high, max(low, n / (n + p.learn_rate_k) * (state["sx"] / state["w"]) * p.surprise_scale))
+    step = p.max_change_per_session
+    return state["offset"] + min(step, max(-step * p.down_change_factor, target - state["offset"]))
+
+
 def learning_offset(student_id: str, before: str | datetime | None = None) -> dict:
     """The student's learning-rate offset (log-odds on bkt.learn_rate) for a session starting at before (default now),
     a pure function of evidence in earlier sessions, so rebuild gives the same values (personal-learning-rate).
 
     Evidence counts unless it was fatigued, immediate recall, an untaught pre-question (weight 0), on an AI-literacy
     part, or the student's first piece of evidence on its part (that belongs to the starting-point adjustment, step
-    05q, and counting it here would count "already knew it" twice). The offset steps once per session, in order: target = n / (n + learn_rate_k) x the mean surprise of the
-    evidence before that session, weighted by recency (half each recency_half_life pieces back), x surprise_scale,
-    within log(learn_rate_weight_bounds); 0 until min_observations pieces across min_parts parts. Each step rises
-    at most max_change_per_session, and falls at most down_change_factor times that. Returns {offset, n, weight}:
-    the offset, the pieces of evidence it rests on, and the odds weight exp(offset). Off: offset 0."""
-    p = _settings().personalisation
+    05q, and counting it here would count "already knew it" twice). The offset steps once per session, in order: target
+    = n / (n + learn_rate_k) x the mean surprise of the evidence before that session, weighted by recency (half each
+    recency_half_life pieces back), x surprise_scale, within log(learn_rate_weight_bounds); 0 until min_observations
+    pieces across min_parts parts. Each step rises at most max_change_per_session, and falls at most
+    down_change_factor times that. Returns {offset, n, weight}: the offset, the pieces of evidence it rests on, and
+    the odds weight exp(offset). Off: offset 0.
+
+    Step 05r: the running statistics (count, recency-weighted sums, parts seen, offset) are cached per session in
+    learner_offset_cache, so a call reads only the sessions since the last cached boundary instead of the whole
+    history; the weighted mean is updated one piece at a time (S = S x r + x, W = W x r + 1 with r = 0.5 ^ (1 /
+    recency_half_life)), which equals the direct sum, and live and rebuild use the same updates in the same order, so
+    rebuild gives identical state."""
+    p, conn = _settings().personalisation, _conn()
     if not personalisation_on():
         return {"offset": 0.0, "n": 0, "weight": 1.0}
-    rows = _conn().execute(
-        """SELECT d.evidence_id, d.session_id, l.part_id, d.surprise FROM evidence_derived d JOIN evidence_log l ON l.id = d.evidence_id
-           WHERE d.student_id = ? AND d.session_id < ? AND d.fatigued = 0 AND d.immediate = 0 AND d.weight > 0
-           ORDER BY l.ts, l.id""", (student_id, _event_ts(before))).fetchall()
-    firsts = {r[0] for r in _conn().execute(
-        "SELECT MIN(id) FROM evidence_log WHERE student_id = ? GROUP BY part_id", (student_id,))}   # each part's first answer
-    rows = [r for r in rows if not graph.is_literacy(r["part_id"]) and r["evidence_id"] not in firsts]
-    low, high = (math.log(b) for b in p.learn_rate_weight_bounds)
-    offset, used = 0.0, 0
-    for session_id in sorted({r["session_id"] for r in rows})[1:] + [None]:   # each later session, then the asked one
-        earlier = [r for r in rows if session_id is None or r["session_id"] < session_id]
-        n = len(earlier)
-        target = 0.0
-        if n >= p.min_observations and len({r["part_id"] for r in earlier}) >= p.min_parts:
-            weights = [0.5 ** ((n - 1 - i) / p.recency_half_life) for i in range(n)]
-            mean = sum(w * r["surprise"] for w, r in zip(weights, earlier)) / sum(weights)
-            target = min(high, max(low, n / (n + p.learn_rate_k) * mean * p.surprise_scale))
-        step = p.max_change_per_session
-        offset += min(step, max(-step * p.down_change_factor, target - offset))
-        used = n
-    return {"offset": offset, "n": used, "weight": math.exp(offset)}
+    before_ts, shash = _event_ts(before), settings_hash()
+    cached = conn.execute(
+        """SELECT session_id, learn_state FROM learner_offset_cache WHERE student_id = ? AND settings_hash = ?
+           AND learn_state IS NOT NULL AND session_id < ? ORDER BY session_id DESC LIMIT 1""",
+        (student_id, shash, before_ts)).fetchone()
+    rows = _learn_eligible(conn, student_id, cached["session_id"] if cached else None, before_ts)
+    if cached and (not rows or rows[0]["session_id"] != cached["session_id"]):
+        _clear_offset_cache(student_id)        # the cached boundary no longer matches the evidence: start again
+        cached, rows = None, _learn_eligible(conn, student_id, None, before_ts)
+    state = json.loads(cached["learn_state"]) if cached else {"n": 0, "sx": 0.0, "w": 0.0, "parts": [], "offset": 0.0, "groups": 0}
+    state["parts"] = set(state["parts"])
+    decay, current, fresh = 0.5 ** (1 / p.recency_half_life), None, []
+    for r in rows:
+        if r["session_id"] != current:
+            resumed = current is None and cached is not None       # this group's boundary is already in the state
+            if state["groups"] > 0 and not resumed:                # every group but the first has a boundary step
+                state["offset"] = _learn_step(state, p)
+                fresh.append((r["session_id"], {**state, "parts": sorted(state["parts"])}))
+            state["groups"] += 1
+            current = r["session_id"]
+        state["n"] += 1
+        state["sx"] = state["sx"] * decay + r["surprise"]
+        state["w"] = state["w"] * decay + 1.0
+        state["parts"].add(r["part_id"])
+    offset = _learn_step(state, p)
+    if fresh:
+        with conn:
+            for session_id, snap in fresh:
+                conn.execute(
+                    """INSERT INTO learner_offset_cache (student_id, session_id, settings_hash, learn_state, learn_offset, learn_n)
+                       VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (student_id, session_id) DO UPDATE SET
+                       settings_hash = excluded.settings_hash, learn_state = excluded.learn_state,
+                       learn_offset = excluded.learn_offset, learn_n = excluded.learn_n""",
+                    (student_id, session_id, shash, json.dumps(snap), snap["offset"], snap["n"]))
+    return {"offset": offset, "n": state["n"], "weight": math.exp(offset)}
 
 
 def _reported(conn: sqlite3.Connection, event: dict) -> bool:
@@ -1261,6 +1318,7 @@ def apply_evidence_event(event: dict) -> None:
         # reports can't make Verify secure
         cap = s.levels.secure - 0.01
     session_id = session_start(conn, student_id, ts)
+    conn.execute("DELETE FROM learner_offset_cache WHERE student_id = ? AND session_id > ?", (student_id, session_id))   # out of order
     rapid = event["origin"] == "chat" and _rapid_for_evidence(conn, event)
     if rapid:
         weight = 0.0    # a rapid guess says nothing about knowledge (effort-moderated scoring: Wise & DeMars, 2006)
@@ -1715,7 +1773,8 @@ def misconception_link_signal(from_id: str, to_id: str) -> float:
     return 0.0
 
 
-DERIVED_TABLES = ("part_state", "student_misconception", "approach_record", "review_queue", "evidence_derived")
+DERIVED_TABLES = ("part_state", "student_misconception", "approach_record", "review_queue", "evidence_derived",
+                  "learner_offset_cache")
 
 
 def rebuild_state(student_id: str) -> int:

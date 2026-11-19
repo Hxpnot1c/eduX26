@@ -850,6 +850,7 @@ def update_profile(
             for node_id in covered["node_ids"]:
                 conn.execute("INSERT OR REPLACE INTO student_coverage (student_id, node_id, taught_on, set_by) VALUES (?, ?, ?, 'student')",
                              (student["id"], node_id, covered["taught_on"]))
+            conn.execute("DELETE FROM learner_offset_cache WHERE student_id = ?", (student["id"],))     # its starting offsets are stale
     row = conn.execute("SELECT interests, exam_date_override, answer_length FROM student_profile WHERE student_id = ?",
                        (student["id"],)).fetchone()
     out = {"ok": True, "profile": {**dict(row), "assessments": [
