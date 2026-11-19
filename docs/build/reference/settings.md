@@ -334,7 +334,13 @@ Plain markdown files read at startup. Changing wording never touches code.
 | `moves/<key>.cue.md` | one line, at most 15 words, sent with every step of that move (step 05c). The key adds the variant (`ask_mcq_<purpose>`, `teach_<level>`, `review_<mode>`), falling back to the bare move |
 | `literacy/<skill>_<level>.md` | feedback and task patterns for `ask` and `verify` at `new`, `developing` and `secure` (step 05e) |
 | `format/<client>.md` | formatting for maths, money and diagrams per chatbot (`claude`, `chatgpt`, `gemini`, `default`), returned in `style.format` |
-| `progress/study_pattern.md` | the study-pattern line in `get_my_progress` (`{minutes}` is filled in) |
+| `progress/calibration.md` | the calibration line in `get_my_progress` (only after enough rated answers; step 05z) |
+| `fatigue/long_session.md`, `fatigue/rushing.md` | the break and the slow-down suggestions (steps 05s; pacing, not a mood label) |
+| `bridge/reason.md`, `cues/upcoming.md`, `cues/diagram.md` | the "this links to what's next in class" lead-in (05t) and the upcoming-test and diagram cues |
+| `plan/*.md` | the study-plan wording for `plan_my_study` (05u) |
+| `notices/class_estimate.md` | the notice shown when a class-level estimate is on (05q) |
+| `confidence/ask.md` | the "how sure are you?" line (05z) |
+| `find_error/intro.md`, `reveal_error.md`, `reveal_clean.md` | the find-the-error practice item and its reveals (05za) |
 | `checks/<kind>.md` | marking instructions for `points` and `level` checks (step 07) |
 | `prompts/<prompt>.md` | the text of the `review_due` and `check_me` prompts (`{topic}` is filled in) |
 | `teaching_note.md` | the teaching-note template with `{placeholders}` (debugging output only) |

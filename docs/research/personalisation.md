@@ -296,7 +296,7 @@ What is personal and what stays population-level:
 |---|---|---|---|---|---|
 | Learning rate | Yes: one offset pooled across all parts (`offset_scope = "global"`) | offset = n/(n+20) × recency-weighted mean surprise over earlier evidence. Excludes fatigued, immediate and w = 0 pre-question evidence. Applied as an odds weight on `bkt.learn_rate` | 10 pieces of evidence across ≥ 3 parts | Weight in [0.5, 1.5] in odds. Max change 0.25 log-odds per derived session. Downward moves allowed more readily than upward | 8-01 ✓, 8-04 ~, 8-05 ~, 8-06 ~, 8-07 ~, 8-12 ~ (all P, not L) |
 | Half-life multipliers (`decay.on_success`/`on_failure`) | Later only, tied to the same offset | k = 40 post-gap reviews | 8 post-gap reviews | Same bounds | 8-09 ✓, 8-10 ~ |
-| Fatigue onset | Later, shown only as `study_pattern` | k = 3 sessions with an onset | `session.pattern_min_sessions` = 3 | Population thresholds stay the floor | 8-11 ✓ |
+| Fatigue onset | **Dropped 19 Nov (decision 0013):** the per-student onset and `study_pattern` were removed; pacing now uses elapsed time and rapid guesses only. Row kept as the original design: | k = 3 sessions with an onset | `session.pattern_min_sessions` = 3 | Population thresholds stay the floor | 8-11 ✓ |
 | Prior (`bkt.prior`) | No, but there is a class-level option (below) | k = 10 classmates with evidence on the part | Class size ≥ 5 | Downward shift ≤ 0.075 (half of `difficulty.prior_shift`) | 8-03 ~, 7a-01 ~ |
 | Slip and guess | No: they stay per evidence type in `[bkt.evidence]`, because they describe the check more than the student. There is no `slip_k` | n/a | n/a | n/a | 8-02 ~ |
 | Reply length | No: student-stated `answer_length` only | n/a | n/a | n/a | 8-13 ~ |
