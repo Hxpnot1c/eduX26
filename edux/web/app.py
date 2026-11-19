@@ -113,6 +113,24 @@ async def api_me(request: Request) -> Response:
     return JSONResponse(views.student_page(who))
 
 
+async def api_teacher_class(request: Request) -> Response:
+    """One class, at class level only. A student key is refused; a teacher sees only classes assigned to them, and a class
+    that is not theirs is a 404, so its existence is not revealed."""
+    refused = refuse_url_key(request)
+    if refused:
+        return refused
+    found = principal(request)
+    if found is None:
+        return unauthorised()
+    role, who = found
+    if role != "teacher":
+        return JSONResponse({"error": "this page is for teachers"}, status_code=403)
+    class_id = request.path_params["class_id"]
+    if not teachers.may_see(who["id"], class_id):
+        return JSONResponse({"error": "no such class"}, status_code=404)
+    return JSONResponse(views.class_summary(class_id))
+
+
 async def api_public_map(request: Request) -> Response:
     """The map of the synthetic example pack, with no key, if web.public_example_map is on. Any other pack: 404."""
     if not learner._settings().web.public_example_map:
@@ -162,6 +180,7 @@ def build_web_app() -> ASGIApp:
     routes.append(Route("/api/map", api_map, methods=["GET"]))
     routes.append(Route("/api/public/map", api_public_map, methods=["GET"]))
     routes.append(Route("/api/me", api_me, methods=["GET"]))
+    routes.append(Route("/api/teacher/class/{class_id}", api_teacher_class, methods=["GET"]))
     routes.append(Mount("/static", StaticFiles(directory=STATIC), name="static"))
     return _Headers(Starlette(routes=routes))
 

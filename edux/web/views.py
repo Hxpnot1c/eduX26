@@ -6,6 +6,8 @@ size is withheld, and nothing a teacher can reach holds a student's id, name or 
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from edux import graph, learner
 
 EXAMPLE_COURSE_ID = "example-mini"  # the synthetic pack that may be shown without a key (web.public_example_map)
@@ -211,4 +213,159 @@ def student_page(student: dict, at: str | None = None) -> dict:
         },
         "parts": [{"id": p, "name": graph.require_node(p)["name"]} for p in learner.all_parts() if not graph.is_literacy(p)],
         "setup": chatbot_setup(),
+    }
+
+
+# --- the teacher's class view ------------------------------------------------------------------------------------
+# Class level only (decision 0024). Nothing here names a student, and nothing is shown for fewer than the minimum
+# number of students (coverage.class_min_students, 5): a cell with fewer answers than that is withheld, a class smaller
+# than that shows nothing but its coverage and assessments, and a part is shown as a band, never as a count at each
+# level, so that no small group can be picked out by subtraction.
+
+THIN = 8  # judgement call, starting value: a cell resting on fewer students than this is drawn lighter and called thin
+BAND_LOW, BAND_HIGH = 1 / 3, 2 / 3  # judgement call: the share at developing or secure that makes a part "few", "mixed" or "most"
+BAND_WORDS = {
+    "few": "few at developing yet",
+    "mixed": "about half at developing or secure",
+    "most": "most at developing or secure",
+}
+BAND_LEVEL = {"few": "new", "mixed": "developing", "most": "secure"}  # the level colour each band borrows, so colour keeps one meaning
+
+
+def class_members(class_id: str) -> list[str]:
+    return [r["id"] for r in learner._conn().execute("SELECT id FROM student WHERE class_id = ? ORDER BY id", (class_id,))]
+
+
+def _class_overlay(members: list[str], at: str, minimum: int) -> dict[str, dict]:
+    overlay = {}
+    conn = learner._conn()
+    marks = ",".join("?" * len(members))
+    answered: dict[str, dict[str, str]] = {}
+    for r in conn.execute(
+        f"SELECT part_id, student_id, MAX(ts) AS last FROM evidence_log WHERE student_id IN ({marks}) AND ts <= ? GROUP BY part_id, student_id",
+        (*members, learner._event_ts(at)),
+    ):
+        answered.setdefault(r["part_id"], {})[r["student_id"]] = r["last"]
+    for part in learner.all_parts():
+        if graph.is_literacy(part):
+            continue
+        who = answered.get(part, {})
+        if len(who) < minimum:
+            overlay[part] = {
+                "level": "none",
+                "label": "not enough answers to show",
+                "note": f"Fewer than {minimum} students have answered.",
+                "fade": 1.0,
+            }
+            continue
+        practised = sum(learner.shown_level(sid, part, at) in ("developing", "secure") for sid in who)
+        share = practised / len(who)
+        band = "few" if share < BAND_LOW else "mixed" if share <= BAND_HIGH else "most"
+        last = max(who.values())[:10]
+        thin = len(who) < THIN
+        overlay[part] = {
+            "level": BAND_LEVEL[band],
+            "band": band,
+            "label": BAND_WORDS[band],
+            "note": f"{len(who)} students have answered. Latest answer {last}." + (" Thin: this rests on few students." if thin else ""),
+            "fade": 0.6 if thin else 1.0,
+        }
+    return overlay
+
+
+def _held_wrong_ideas(members: list[str], minimum: int) -> list[dict]:
+    marks = ",".join("?" * len(members))
+    rows = learner._conn().execute(
+        f"SELECT misconception_id, COUNT(*) AS n FROM student_misconception WHERE active = 1 AND student_id IN ({marks}) "
+        "GROUP BY misconception_id HAVING COUNT(*) >= ? ORDER BY n DESC, misconception_id",
+        (*members, minimum),
+    )
+    out = []
+    for r in rows:
+        m = graph.get_misconception(r["misconception_id"])
+        if m is None:
+            continue
+        node = graph.get_node(m["node_id"]) or {}
+        out.append(
+            {
+                "id": m["id"],
+                "wrong_idea": m["wrong_idea"],
+                "correction": m["correction"],
+                "part": node.get("name", ""),
+                "part_id": m["node_id"],
+                "students": r["n"],
+            }
+        )
+    return out
+
+
+def _help_seeking(members: list[str], at: str, minimum: int) -> dict | None:
+    """The class's share of messages where a student asked to be shown the answer, over the recent trend window against
+    before it. Withheld unless at least `minimum` students wrote in each window."""
+    from edux import service
+
+    s = learner._settings().progress
+    cut = learner._event_ts(learner.parse_ts(at) - timedelta(days=s.trend_days))
+    marks = ",".join("?" * len(members))
+    rows = (
+        learner._conn()
+        .execute(
+            f"SELECT student_id, ts, choice_taken FROM exchange_log WHERE student_id IN ({marks}) AND ts <= ?",
+            (*members, learner._event_ts(at)),
+        )
+        .fetchall()
+    )
+    windows = {"recent": [r for r in rows if r["ts"] > cut], "before": [r for r in rows if r["ts"] <= cut]}
+    if any(len({r["student_id"] for r in w}) < minimum for w in windows.values()):
+        return None
+    share = {k: sum(r["choice_taken"] == "just_show_me" for r in w) / len(w) for k, w in windows.items()}
+    trend = service._trend(share["recent"], share["before"])
+    return {"recent": round(share["recent"], 2), "before": round(share["before"], 2), "direction": trend["direction"], "days": s.trend_days}
+
+
+def _class_assessments(class_id: str, at: str) -> list[dict]:
+    today = learner.parse_ts(at).date().isoformat()
+    rows = learner._conn().execute(
+        "SELECT DISTINCT name, kind, date FROM student_assessment WHERE class_id = ? AND date >= ? ORDER BY date, name", (class_id, today)
+    )
+    return [dict(r) for r in rows]
+
+
+def _coverage(class_id: str) -> dict:
+    taught = learner.class_coverage(class_id)
+    done: set[str] = set()
+    for row in taught:
+        done |= set(graph.parts_of(row["node_id"]))
+    left = [
+        {"id": c["id"], "name": c["name"], "spec_ref": c.get("spec_ref") or ""}
+        for t in graph.topics()
+        for c in graph.children(t["id"])
+        if c["level"] == "concept" and not (set(graph.parts_of(c["id"])) & done)
+    ]
+    return {"taught": [{k: r[k] for k in ("name", "spec_ref", "taught_on", "parts")} for r in taught], "not_yet": left if taught else []}
+
+
+def class_summary(class_id: str, at: str | None = None) -> dict | None:
+    """The class view: coverage, assessments, a band per part, wrong ideas held by at least the minimum number of
+    students, and the help-seeking pattern. None if the class does not exist."""
+    at = at or learner.now_iso()
+    row = learner._conn().execute("SELECT id, name FROM class WHERE id = ?", (class_id,)).fetchone()
+    if row is None:
+        return None
+    members = class_members(class_id)
+    minimum = learner._settings().coverage.class_min_students
+    summary = {
+        "class": {"id": row["id"], "name": row["name"], "size": len(members)},
+        "min_cell": minimum,
+        "coverage": _coverage(class_id),
+        "assessments": _class_assessments(class_id, at),
+        "seeded": any(m.startswith("demo-") for m in members),
+    }
+    if len(members) < minimum:
+        return summary | {"enough": False, "overlay": {}, "wrong_ideas": [], "help_seeking": None}
+    return summary | {
+        "enough": True,
+        "overlay": _class_overlay(members, at, minimum),
+        "wrong_ideas": _held_wrong_ideas(members, minimum),
+        "help_seeking": _help_seeking(members, at, minimum),
     }
