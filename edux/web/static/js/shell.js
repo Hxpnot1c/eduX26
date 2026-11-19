@@ -16,12 +16,14 @@
     if (kind === "none") { el("circle", { class: "dot", cx: 10, cy: 10, r: 2.2 }); return svg; }
     if (kind === "developing") el("path", { class: "half", d: "M10 2.5 A7.5 7.5 0 0 0 10 17.5 Z" });
     el("circle", { class: "ring", cx: 10, cy: 10, r: 7.5 });
+    if (kind === "review") el("circle", { class: "mark", cx: 10, cy: 10, r: 2.6 }); // new's colours, marked: learnt once, now fading
     if (kind === "developing") el("path", { class: "half", d: "M10 2.5 A7.5 7.5 0 0 0 10 17.5 Z" });
     return svg;
   }
 
   const LEVELS = [
     ["new", "new"],
+    ["review", "needs review"],
     ["developing", "developing"],
     ["secure", "secure"],
     ["taught", "taught in class, not yet checked"],
@@ -76,7 +78,7 @@
     if (forget) forget.addEventListener("click", function () { Synapse.forget(); location.reload(); });
   }
 
-  window.SynapseUI = { disc: disc };
+  window.SynapseUI = { disc: disc, words: Object.fromEntries(LEVELS) };
   buildKey();
   signIn();
 })();

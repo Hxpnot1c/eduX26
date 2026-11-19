@@ -1131,17 +1131,38 @@ def uncovered_sections(student_id: str, at: str | datetime | None = None) -> lis
 
 
 def shown_level(student_id: str, part_id: str, at: str | datetime | None = None) -> str:
-    """The level to show a student for a part: new, developing or secure once they have an answer on it; before that
-    never developing or secure, whatever the starting number: "taught_in_class" if their class covered it ("taught in
-    class, not yet checked"), else new. The planner still uses the number."""
-    if graph.is_literacy(part_id) or has_evidence(student_id, part_id, at):
+    """The level to show a student (or their teacher) for a part. Before its first answer never developing or secure,
+    whatever the starting number: "taught_in_class" if their class covered it ("taught in class, not yet checked"),
+    else new. Once answered right at least once and faded below levels.new: "needs_review", so new keeps meaning "not
+    shown yet" (decision 0025). Otherwise new, developing or secure. AI-literacy parts show their level as it is. The
+    planner, the prerequisite gates and the queue band still use level() on the number."""
+    if graph.is_literacy(part_id):
         return level(part_p(student_id, part_id, at))
-    return "taught_in_class" if covered_since(student_id, part_id, at) else "new"
+    if not has_evidence(student_id, part_id, at):
+        return "taught_in_class" if covered_since(student_id, part_id, at) else "new"
+    p = part_p(student_id, part_id, at)
+    if p < _settings().levels.new and _answered_right(student_id, part_id, at):
+        return "needs_review"
+    return level(p)
+
+
+def _answered_right(student_id: str, part_id: str, at: str | datetime | None) -> bool:
+    """The student has answered the part right at least once (part_state.last_correct is set). Read from the current
+    state, so a view of a past moment may count a right answer made after it."""
+    row = (
+        _conn()
+        .execute("SELECT last_correct FROM part_state WHERE student_id = ? AND part_id = ?", (student_id, graph.canonical(part_id)))
+        .fetchone()
+    )
+    return bool(row and row["last_correct"])
 
 
 def shown_rollup(student_id: str, node_id: str, at: str | datetime | None = None) -> str:
     """shown_level for a concept or topic: with no answer on any part under it, taught_in_class if any part is
-    covered, else new; otherwise the rollup's level."""
+    covered, else new; otherwise the rollup's level. A part reads its own shown_level."""
+    node = graph.get_node(node_id)
+    if node and node["level"] == "part":
+        return shown_level(student_id, node_id, at)
     parts = [p for p in graph.parts_of(node_id)]
     if parts and not any(has_evidence(student_id, p, at) for p in parts):
         return "taught_in_class" if any(covered_since(student_id, p, at) for p in parts) else "new"

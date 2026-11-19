@@ -13,6 +13,8 @@
 .node .ring { stroke-width: 1.5; }
 .node.plain .ring { fill: var(--paper); stroke: var(--muted); }
 .node.disc.new .ring { fill: var(--lv-new-fill); stroke: var(--lv-new-ring); }
+.node.disc.review .ring { fill: var(--lv-new-fill); stroke: var(--lv-new-ring); }
+.node.disc.review .mark { fill: var(--lv-new-ring); }
 .node.disc.developing .ring { fill: var(--paper); stroke: var(--lv-developing-ring); }
 .node .half { fill: var(--lv-developing-fill); }
 .node.disc.secure .ring { fill: var(--lv-secure-fill); stroke: var(--lv-secure-ring); }
@@ -21,6 +23,7 @@
 .node.collapsed .ring { fill: var(--paper); stroke: var(--rule); stroke-width: 6; }
 .node .seg { fill: none; stroke-width: 6; }
 .node .seg.new { stroke: var(--lv-new-ring); }
+.node .seg.review { stroke: var(--lv-new-ring); stroke-dasharray: 4 3; }
 .node .seg.developing { stroke: var(--lv-developing-fill); }
 .node .seg.secure { stroke: var(--lv-secure-fill); }
 .stage.dimmed .node { opacity: 0.32; }

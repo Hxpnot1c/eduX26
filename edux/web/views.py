@@ -129,12 +129,15 @@ def student_overlay(student_id: str, at: str) -> dict[str, dict]:
             if days <= FADE_FULL_DAYS
             else max(FADE_FLOOR, 1 - (1 - FADE_FLOOR) * (days - FADE_FULL_DAYS) / (FADE_FLOOR_DAYS - FADE_FULL_DAYS))
         )
-        overlay[part] = {"level": shown, "note": f"{n} answer{'s' if n != 1 else ''}, last {_ago(days)}", "fade": round(fade, 2)}
+        overlay[part] = {"level": _word(shown), "note": f"{n} answer{'s' if n != 1 else ''}, last {_ago(days)}", "fade": round(fade, 2)}
     return overlay
 
 
+LEVEL_CLASS = {"taught_in_class": "taught", "needs_review": "review"}  # shown_level -> the pages' level key (shell.js LEVELS)
+
+
 def _word(level: str) -> str:
-    return "taught" if level == "taught_in_class" else level
+    return LEVEL_CLASS.get(level, level)
 
 
 def chatbot_setup() -> dict:

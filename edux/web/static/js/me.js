@@ -38,9 +38,9 @@
     h("p", "Where a little practice moves you most, in order.", rows.next, "muted");
     const nextHost = h("div", null, rows.next);
     itemList(nextHost, data.next, (li, f) => {
-      li.appendChild(SynapseUI.disc(f.level === "taught" ? "taught" : f.level));
+      li.appendChild(SynapseUI.disc(f.level));
       const head = h("div", null, li, "head");
-      h("strong", f.name, head); h("span", f.level === "taught" ? "taught in class, not yet checked" : f.level, head, "muted");
+      h("strong", f.name, head); h("span", SynapseUI.words[f.level] || f.level, head, "muted");
     }, "Nothing stands out yet: answer a few questions and this fills in.");
 
     itemList(rows.reviews, data.reviews, (li, r) => {
