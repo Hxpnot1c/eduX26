@@ -96,5 +96,6 @@ The result that would make us revisit this.
 | [0013](0013-fatigue-as-pacing.md) | Fatigue becomes pacing: time on task and rapid guesses | Proposed |
 | [0014](0014-formative-literacy-and-ask-scoring.md) | Ask and Verify are formative practice feedback, and asking for sources earns nothing alone | Proposed |
 | [0015](0015-coverage-and-starting-points.md) | Classes, coverage and starting points | Proposed |
+| [0016](0016-learner-offset-cache.md) | Cache the per-session learner offsets | Proposed |
 
 Each later record is added to this table in the pull request that introduces it.

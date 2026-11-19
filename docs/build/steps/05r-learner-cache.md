@@ -2,6 +2,9 @@
 
 Branch `build/learner-cache`, from `main` after step 05q.
 
+## Built
+Migration **017** `learner_offset_cache(student_id, session_id, settings_hash, learn_state, learn_offset, learn_n, covered_offset, covered_n, uncovered_offset, uncovered_n)` (two columns more than planned: `settings_hash`, so the cache is used only under the settings it was computed with, and `learn_state`, the running statistics at a session boundary). `learning_offset` now keeps the count, the recency-weighted sums and the parts seen, and updates them one piece at a time, resuming from the last cached boundary; `starting_offsets` caches its two offsets per session. Dropped when it could be stale: an event earlier than the cached sessions, a change of coverage or class membership, a rebuild, deleting the student, other settings, and always (not cached) while the class estimate is on. Decision [0016](../../decisions/0016-learner-offset-cache.md). Tests: `tests/test_offset_cache.py` compares against the previous implementation (kept in the test file) after every session of a synthetic history; `scripts/time_offsets.py` gives the timing; `check_mcp` compares cached and uncached for the demo students.
+
 ## What
 `learner.learning_offset` (step 05h) re-reads every earlier session's evidence each time evidence is applied, live and on rebuild. That's about sessions × evidence per call. Step 05q's two starting offsets work the same way.
 
