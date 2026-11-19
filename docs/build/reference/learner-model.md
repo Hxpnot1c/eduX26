@@ -188,6 +188,9 @@ Shares are adapted from Cepeda et al. (2008): the optimal gap shrinks as the tes
 
 `reviews_due` returns up to `max_reviews_per_reply` due parts, ordered by importance.
 
+## Find-the-error practice (decision 0012; off by default)
+Evidence types `find_error` (on the part, doubling as refutation of the planted misconception) and `ail_find_error` (on Verify, its own type with its own slip and guess so it cannot inflate Verify from real source checks; `verified_this_session` ignores it). Both score the same way: 1 for a hit, 0 otherwise, with hits and false alarms apart (see `tools-and-context.md`). The item id (`err:<part>:<misconception>` or `clean:<part>`) is stored as the evidence's `point_id`, so error items and clean controls can be told apart afterwards and the misconceptions rotate. The planted misconception is never activated: a mistake on a practice item says little about what the student believes.
+
 ## Confidence and calibration (step 05z)
 A rating (`confidence_log`) is stored beside the answer it rates and read only for the calibration line. It never enters `p_known`, `half_life`, the surprise, the offsets or the fatigue rules: a student who says "certain" and is wrong is not marked down for the confidence, and one who says "guess" and is right is not marked up. A test compares two students with identical answers and different ratings and finds identical state.
 

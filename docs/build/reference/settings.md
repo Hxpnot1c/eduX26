@@ -37,6 +37,7 @@ immediate = { slip = 0.10, guess = 0.30 }   # chat evidence straight after a wor
 ail_question = { slip = 0.15, guess = 0.20 }     # a research question, scored by its features (step 05e)
 ail_task = { slip = 0.10, guess = 0.15 }         # the answer to a verify task (a reported dead or mismatched source scores 1)
 ail_unprompted = { slip = 0.05, guess = 0.10 }   # checking a claim without being asked: counts more
+ail_find_error = { slip = 0.15, guess = 0.25 }   # find-the-error practice, on Verify: its own type so it cannot inflate Verify from real moments (decision 0012)
 ail_how = { slip = 0.10, guess = 0.25 }          # a how-AI-works check: 4-option multiple choice
 mcq_check = { slip = 0.10, guess = 0.25 }   # a multiple-choice check on one point (step 05d); guess about 1 in 4 options
 
@@ -157,6 +158,11 @@ enabled = true             # judgement call: asked only on checks, reviews and p
 max_per_session = 6        # judgement call, starting value: at most this many asks in a session
 stop_after_skips = 2       # judgement call, starting value: two skips in a row and it stops asking for the session (no penalty for skipping)
 min_per_group = 5          # judgement call (Vishnu, 18 Nov): the calibration line shows a group only after this many rated answers in it
+
+[find_error]               # find-the-error practice (decision 0012). Built but OFF until Vishnu approves it: the evidence is thin
+enabled = false            # judgement call: EDUX_FIND_ERROR=1 turns it on without editing this file
+clean_share = 0.4          # judgement call, starting value: share of items with no error at all (the review's design rules say 30 to 50%; no study gives a ratio)
+max_per_session = 1        # judgement call: rare, at most this many a session, never while rushing, only on a part at developing or above
 
 [reminders]               # in-chat deadline reminders (step 05u). Synapse cannot push notifications
 days_ahead = 7             # judgement call, starting value: tests due within this many days are mentioned, once, at the start of a session
