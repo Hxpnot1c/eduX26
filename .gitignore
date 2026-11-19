@@ -18,6 +18,9 @@ venv/
 # Secrets
 .env
 
+# Local data: the databases and demo-keys.json (the demo students' keys) that seed-demo writes
+data/
+
 # Real course packs
 coursepacks/*/private/
 
