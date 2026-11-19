@@ -354,6 +354,13 @@ def research_turns(student_id: str, at: str | datetime | None = None) -> int:
                            (student_id, _event_ts(at))).fetchone()[0]
 
 
+def confidence_on() -> bool:
+    """confidence.enabled, unless the environment sets EDUX_CONFIDENCE (1 on, 0 off): a switch for whoever runs a demo or a
+    pilot to turn the "how sure are you?" question off without editing settings.toml."""
+    switch = os.environ.get("EDUX_CONFIDENCE")
+    return _settings().confidence.enabled if switch is None else switch == "1"
+
+
 CONFIDENCE_LEVELS = ("guess", "fairly_sure", "certain")      # skipped is also stored: asked, no answer, no penalty
 
 

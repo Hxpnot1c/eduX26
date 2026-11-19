@@ -191,3 +191,13 @@ def test_a_bad_level_is_refused(student):
     e = learner.record_evidence(student["id"], PART, "mcq_check", 1.0, apply="now", n_options=4)
     with pytest.raises(ValueError):
         learner.record_confidence(student["id"], e, "very sure")
+
+
+def test_the_environment_switches_the_question_on_and_off(student, monkeypatch):
+    evidence = {"purpose": "check"}
+    args = (student["id"], evidence, {"x": 1}, {}, {}, "none", learner.now_iso())
+    assert service._confidence_due(*args) is True
+    monkeypatch.setenv("EDUX_CONFIDENCE", "0")
+    assert learner.confidence_on() is False and service._confidence_due(*args) is False
+    monkeypatch.setenv("EDUX_CONFIDENCE", "1")
+    assert service._confidence_due(*args) is True

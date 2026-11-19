@@ -4,6 +4,15 @@ A walkthrough for the demo video: which student and which question show each fea
 
 All questions below are written by us in the style of Pearson Edexcel A level Economics A (9EC0) data and short-answer questions. They are not taken from Pearson's papers, and no Pearson text appears in the video (the papers are © Pearson Education Limited). Where a real paper is mentioned, mention it by reference only (for example "the kind of short calculation set on Paper 1, Markets and business behaviour").
 
+## What changed on 19 November (read this before you film)
+The demo path has these differences from the earlier script. Each is on a pull request; none is merged yet.
+- **"How sure are you?" (step 05z).** After an answer to a *check, review or prerequisite check*, the chatbot asks "How sure are you: guess, fairly sure or certain? (You can skip this.)" and gives the feedback on the next message. It adds one short exchange to section 4 (reviews) and to any MCQ check. Skip it by saying "skip", or turn it off for filming with `EDUX_CONFIDENCE=0` on the server. It is not asked after the pre-question in section 2 or on ordinary chat. The progress view shows a calibration line only after 5 rated answers in a level, so it will not appear in a short take.
+- **"Taught in class" (step 05q).** The demo class has covered the first two Theme 1 concepts (PED, PES), so parts the student has not answered on show "taught in class, not yet checked" in `get_my_progress`, never "developing" or "secure". `state --student …` marks covered parts with `*`.
+- **A bridge question (step 05t).** When a part finishes, the reply can end with a short lead-in question on a linked, untaught part ("this links to what's next in class"), then a teaching step that says they can stop or switch.
+- **Study pattern is gone (step 05s).** Section 5 no longer says "your answers drop after about 35 minutes": that line came from a rule our own simulation found unreliable.
+- **Personalisation is off by default (step 05m)** and find-the-error practice is built but off (`EDUX_FIND_ERROR=1` to show it; say on camera that it is untested at this age).
+- **Film with web search off.** Plan A should still end with Verify at "developing"; that rehearsal is in the overnight runbook and was **not re-run** after these changes.
+
 ## Before recording
 - Run `scripts/demo.sh` and note the roles it prints. On `example-mini` they are:
   - target `ped_formula`
@@ -43,7 +52,7 @@ Optionally show the plans side by side (`python -m edux.cli context --student <i
 3. Give an explanation that misses one point, e.g. "you divide the change in quantity by the change in price". The chatbot ticks the points you made, and the server scores them (points met / points). The plan is `feedback` then `reteach` with only the missing point: the chatbot says what was good, re-teaches just the missing point and asks you to try again.
 
 ## 4. Reviews: recall and transfer (demo-secure, about 1 minute)
-Ask **"Quiz me on what's due"** (the `review_due` prompt). Three reviews are due:
+Ask **"Quiz me on what's due"** (the `review_due` prompt). After each answer the chatbot asks how sure they are (skip it, or set `EDUX_CONFIDENCE=0`), then gives the feedback. Three reviews are due:
 - `tax_incidence_split` and `tax_supply_shift`, weak (below `levels.new`): **recall** questions ("who bears an indirect tax, and what decides the split?")
 - `pes_definition`, developing: a **transfer** question in a new context, e.g. a linked idea from the graph
 
@@ -60,8 +69,9 @@ The seed gives demo-weak a mock in 5 days on the market-failure topic, and one p
 2. Ask the PED calculation question again: no pre-question now, because they chose "just show me" this session.
 3. Ask **"How am I doing?"** (`get_my_progress`). It should mention:
    - asking to be shown answers more often recently (`trends.just_show_me: up`)
-   - "your answers tend to drop after about 35 minutes of studying" (`study_pattern`)
    - reviews due on the parts they were shown
+   - the AI-literacy levels *with the evidence behind them* ("from N checks over D days: practice feedback, not a grade")
+   - parts the class covered but they haven't answered on, as "taught in class, not yet checked"
 
 ## 6. Harder question when earned (any student, about 1 minute)
 On a part they're developing on, answer a question correctly. A later turn's plan adds an `extend` step after the teaching step, and the chatbot asks one harder question:

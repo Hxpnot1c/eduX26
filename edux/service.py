@@ -819,7 +819,7 @@ def _confidence_due(student_id: str, evidence: dict | None, course_answer: dict 
     send the confidence, not while they are in long-session or rushing mode or asking to be shown, at most
     confidence.max_per_session times a session, and not after confidence.stop_after_skips skips in a row."""
     c = _settings().confidence
-    if (not c.enabled or evidence is None or course_answer is None or this_message.get("confidence") is not None
+    if (not learner.confidence_on() or evidence is None or course_answer is None or this_message.get("confidence") is not None
             or evidence.get("purpose") not in ("check", "review", "prereq") or choice == "just_show_me"
             or (blocks.get("session") or {}).get("state") == "fatigued"):
         return False

@@ -1,3 +1,8 @@
+# LABELLING RULE (house rule, decision 0002 R5): every number in this file is a JUDGEMENT CALL, STARTING VALUE unless its own
+# comment says "from research" and names the source. Nothing here has been fitted to real A-level students. The research-backed
+# ones are: the slip + guess < 1 and the 0.5 caps (BKT identifiability), the spacing shares (Cepeda et al., 2008), the class
+# estimate sizes (personalisation.md), the class_k range (Simpson et al., 2024) and the ceiling/retention figures noted below.
+# tests/test_settings_labels.py checks that this rule stays at the top.
 protocol = "v0.3"          # bump when the meaning of labels or scoring changes (v0.2: labels describe the student's message; scores come from points met; v0.3: an exchange alone can't lift a part past nudges.ceiling)
 
 [levels]                   # part levels shown to students
@@ -77,7 +82,7 @@ textbook = 2
 ours = 1
 
 [scheduling]               # review gap as a share of days left to the exam
-share_far = 0.10           # > 60 days to the exam (Cepeda et al., 2008: a smaller share when the exam is far)
+share_far = 0.10           # from research (Cepeda et al., 2008: a smaller share of the gap when the exam is far; the exact shares are judgement calls) > 60 days to the exam
 share_mid = 0.19           # 14–60 days
 share_near = 0.30          # < 14 days
 min_gap_days = 1
