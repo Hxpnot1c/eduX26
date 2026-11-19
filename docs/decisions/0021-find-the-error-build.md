@@ -17,6 +17,7 @@ Build exactly what 0012 scoped, with these concrete choices:
 - 40% clean controls (**judgement call**; no study gives a ratio), one planted error, rotation, at most one a session, only on a part at developing or above, never while rushing.
 - Scoring is deterministic on the server from four letters that are identical for every item, hits and false alarms apart, so "there is a mistake" alone and blanket suspicion earn nothing.
 - Always labelled as practice; the correct statement is always given afterwards, naming the planted wrong idea and the right one (the misinformation-retention caution).
+- The sentence the student named is checked by the server too, when the chatbot sends its number as `answer.choice` (found while auditing: letters alone let a tick stand for any sentence).
 - Evidence on the part and on Verify as its own type (`ail_find_error`); it is not counted as checking a source, and activates no misconception.
 - A shared two-line move (`say_line`) with the confidence question, so no instruction words are added (898 of 900).
 - **Off by default** (`find_error.enabled = false`; `EDUX_FIND_ERROR=1` switches it on).

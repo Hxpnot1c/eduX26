@@ -190,3 +190,17 @@ def test_the_verify_rows_use_their_own_type_so_real_verify_moments_are_not_infla
     _answer(student, ["a", "b", "c"])
     assert "ail_find_error" in learner._settings().bkt.evidence and learner.part_p(student["id"], "ail_verify") >= before
     assert learner.verified_this_session(student["id"]) is False     # practice is not checking a source: no Ask sources credit
+
+
+def test_the_server_checks_the_sentence_number_when_it_is_sent():
+    item = {"id": "e", "kind": "error", "part_id": PART, "reveal": "r", "misconception_id": "m", "sentence": 2}
+    right = learner.score_find_error({"points_met": ["a", "b", "c"], "choice": "2"}, item)
+    wrong = learner.score_find_error({"points_met": ["a", "b", "c"], "choice": "1"}, item)
+    absent = learner.score_find_error({"points_met": ["a", "b", "c"]}, item)
+    assert right["hit"] is True and wrong["hit"] is False and wrong["score"] == 0.0
+    assert absent["hit"] is True      # no number sent: the tick is trusted, as before
+    assert learner.score_find_error({"points_met": ["b", "c"], "choice": "2."}, item)["hit"] is True      # "2." is accepted
+
+
+def test_the_letters_ask_for_the_number():
+    assert "answer.choice" in dict(learner.FIND_ERROR_POINTS)["b"]

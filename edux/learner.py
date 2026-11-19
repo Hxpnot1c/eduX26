@@ -248,7 +248,7 @@ def _evidence_rows(evidence: list[dict]) -> list[tuple[str, str, float, list[str
     return rows
 
 
-FIND_ERROR_POINTS = (("a", "Says the explanation has a mistake"), ("b", "Says which sentence is wrong"),
+FIND_ERROR_POINTS = (("a", "Says the explanation has a mistake"), ("b", "Names which sentence is wrong (send its number as answer.choice)"),
                      ("c", "Says what the right idea is"), ("d", "Says the explanation has no mistake"))
 
 
@@ -263,7 +263,8 @@ def score_find_error(answer: dict, item: dict) -> dict:
     four letters, the same four for every item so the letters give nothing away: a (says there is a mistake), b (says
     which sentence), c (says what is right), d (says there is no mistake). Hits and false alarms are scored apart:
     an item with an error scores 1 only if they say where it is and what is right (b and c); "there is a mistake"
-    alone scores nothing. A clean item scores 1 only for "no mistake" with no claim of one (d, and none of a, b, c);
+    alone scores nothing. When the chatbot also sends the sentence number as answer.choice, the server compares it with
+    the sentence that was actually changed and drops b if it differs, so a wrong sentence cannot score on a tick. A clean item scores 1 only for "no mistake" with no claim of one (d, and none of a, b, c);
     claiming a mistake there is a false alarm and scores 0. Returns evidence {part_id, type, score, ...} with
     hit, kind (error or clean) and the text to reveal."""
     ticked = {str(x).strip().lower() for x in answer.get("points_met") or []}
@@ -271,6 +272,9 @@ def score_find_error(answer: dict, item: dict) -> dict:
     if bad:
         raise ValueError(f"answer.points_met: {', '.join(sorted(bad))} is not a point; use the letters from score_next")
     if item["kind"] == "error":
+        named = str(answer.get("choice") or "").strip().rstrip(".")
+        if "b" in ticked and named.isdigit() and int(named) != item.get("sentence"):
+            ticked.discard("b")      # they named a different sentence: the server checks this itself, not the chatbot's tick
         hit = {"b", "c"} <= ticked
     else:
         hit = "d" in ticked and not ({"a", "b", "c"} & ticked)
