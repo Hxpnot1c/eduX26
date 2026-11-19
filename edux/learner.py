@@ -1792,9 +1792,10 @@ def apply_evidence_event(event: dict) -> None:
         n_points = 1 if event.get("point_id") else len(graph.score_points(part_id))
     slip, guess = slip_guess(evidence_type, event.get("n_options"), immediate, n_points)
     cap = None
-    if immediate and event["evidence_type"] not in OPEN_ANSWERS:
+    if immediate and (event["evidence_type"] not in OPEN_ANSWERS or event.get("point_id")):
         # a pick straight after being shown or hinted (the option repeats the point just shown) can't make a part
-        # secure; an answer they write themselves (explain-back, extend) still can (research fixes, 0010b)
+        # secure; an answer they write themselves on the whole part (explain-back, extend) still can (research fixes,
+        # 0010b). An answer on one point, picked or written, shows that point only, so it can't either (decision 0028)
         cap = s.levels.secure - 0.01
     if part_id == AIL_VERIFY and _reported(conn, event) and not _checked_before(conn, event):
         # a reported dead or mismatched source counts as a check (a dead page has nothing else to tick), but it can't
