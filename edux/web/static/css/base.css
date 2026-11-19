@@ -38,7 +38,8 @@ hr { border: 0; border-top: 1px solid var(--rule); margin: calc(var(--space) * 4
 .frame { max-width: 68rem; margin: 0 auto; padding: 0 var(--gutter); }
 .masthead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space) calc(var(--space) * 3);
   padding: calc(var(--space) * 3) 0 calc(var(--space) * 2); border-bottom: 1px solid var(--rule); }
-.wordmark { font-family: var(--font-display); font-style: italic; font-size: var(--step-1); text-decoration: none; }
+.wordmark { display: inline-flex; align-self: center; text-decoration: none; }
+.wordmark img { display: block; height: 30px; width: auto; }
 .nav { display: flex; flex-wrap: wrap; gap: var(--space) calc(var(--space) * 3); font-size: var(--step--1); }
 .nav a { text-decoration: none; padding-bottom: 2px; border-bottom: 1px solid transparent; }
 .nav a:hover { border-bottom-color: var(--ink); }

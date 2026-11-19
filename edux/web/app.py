@@ -30,7 +30,7 @@ PAGES = {"/": "index.html", "/map": "map.html", "/me": "me.html", "/teacher": "t
 
 SECURITY_HEADERS = {
     "Content-Security-Policy": (
-        "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; "
+        "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; "
         "base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
     ),
     "Referrer-Policy": "no-referrer",
@@ -265,8 +265,14 @@ class _Headers:
         await self.app(scope, receive, wrapped)
 
 
+async def favicon(request: Request) -> Response:
+    """/favicon.ico, for browsers and tools that ask for it at the root rather than reading the page's icon links."""
+    return FileResponse(STATIC / "brand" / "favicon.ico", media_type="image/vnd.microsoft.icon")
+
+
 def build_web_app() -> ASGIApp:
     routes: list[BaseRoute] = [Route(path, _page(name), methods=["GET"]) for path, name in PAGES.items()]
+    routes.append(Route("/favicon.ico", favicon, methods=["GET"]))
     routes.append(Route("/api/whoami", whoami, methods=["GET"]))
     routes.append(Route("/api/map", api_map, methods=["GET"]))
     routes.append(Route("/api/public/map", api_public_map, methods=["GET"]))
@@ -281,7 +287,7 @@ def build_web_app() -> ASGIApp:
 
 
 def is_web_path(path: str) -> bool:
-    return path in PAGES or path.startswith(("/static/", "/api/"))
+    return path in PAGES or path == "/favicon.ico" or path.startswith(("/static/", "/api/"))
 
 
 class WebLayer:
