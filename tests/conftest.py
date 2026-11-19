@@ -48,5 +48,5 @@ def graph_part() -> str:
 @pytest.fixture(autouse=True)
 def _default_switches(monkeypatch):
     """Tests run with the shipped defaults whatever the shell has set; a test that wants a switch sets it itself."""
-    for name in ("EDUX_FIND_ERROR", "EDUX_PERSONALISATION", "EDUX_CONFIDENCE"):
+    for name in ("EDUX_FIND_ERROR", "EDUX_PERSONALISATION", "EDUX_CONFIDENCE", "EDUX_QUESTION_GAP"):
         monkeypatch.delenv(name, raising=False)

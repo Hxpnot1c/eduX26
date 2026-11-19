@@ -27,6 +27,14 @@ def clock():
     return Clock()
 
 
+@pytest.fixture(autouse=True)
+def mcq_every_turn(monkeypatch):
+    """These tests are about confidence, so multiple-choice checks may follow each other (no question-mix gap, 0028)."""
+    s = service._settings()
+    gapless = dataclasses.replace(s, questions=dataclasses.replace(s.questions, min_open_between_mcq=0))
+    monkeypatch.setattr(service, "_settings", lambda: gapless)
+
+
 def _turn(student, message, clock, gap=SLOW, answer=None, **labels):
     return service.tutor_turn(
         learner.get_student(student["id"]), message, {**LABELS, **labels}, node_ids=[PART], answer=answer, at=clock.step(gap)
