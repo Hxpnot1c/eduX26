@@ -87,5 +87,23 @@ The result that would make us revisit this.
 | [0003](0003-cap-the-exchange-nudge.md) | Cap what an ordinary exchange can do to a part's estimate | Proposed |
 | [0004](0004-count-results-as-sent.md) | Count tool results as they are sent, and keep every default result inside the budget | Proposed |
 | [0005](0005-name-the-product-synapse.md) | Name the product Synapse; eduX is the competition | Proposed |
+| [0006](0006-judge-secure-feedback-before-the-answer.md) | Judge feedback's "secure" flag on the level before the answer | Proposed |
+| [0007](0007-personal-learning-rate-off-by-default.md) | Recalibrate the personal learning rate and switch it off by default | Proposed |
+| [0008](0008-drop-move-chance-from-the-value-score.md) | Drop the learning-chance factor from the priority value score | Proposed |
+| [0009](0009-cap-teach-point-under-a-longer-answer-length.md) | Cap teach_point at 120 words under a longer answer length | Proposed |
+| [0010](0010-engagement-rule-fixes.md) | Engagement rules: question first, a session summary on stop, and less noisy signals | Proposed |
+| [0011](0011-data-handling.md) | Opaque ids, hashed keys, and delete, export and retention | Proposed |
+| [0013](0013-fatigue-as-pacing.md) | Fatigue becomes pacing: time on task and rapid guesses | Proposed |
+| [0014](0014-formative-literacy-and-ask-scoring.md) | Ask and Verify are formative practice feedback, and asking for sources earns nothing alone | Proposed |
+| [0015](0015-coverage-and-starting-points.md) | Classes, coverage and starting points | Proposed |
+| [0016](0016-learner-offset-cache.md) | Cache the per-session learner offsets | Proposed |
+| [0017](0017-bridge-ending.md) | End a finished part with a bridge question towards the next topic | Proposed |
+| [0018](0018-class-assessments-reminders-plans.md) | Class assessments, deadline reminders and study plans | Proposed |
+| [0019](0019-confidence-and-calibration.md) | Ask "how sure are you?" after a check and show a calibration line | Proposed |
+| [0020](0020-keep-the-review-threshold.md) | Keep review_when_below at 0.50; label it a judgement call | Proposed |
+| [0021](0021-find-the-error-build.md) | Build find-the-error practice, off by default | Proposed |
+| [0022](0022-aided-and-unaided-evidence-scoping.md) | Aided and unaided evidence: scoping (not built) | Held |
+| [0023](0023-web-pages-and-teacher-access.md) | Web pages, bearer-only sign-in and teacher keys | Proposed |
+| [0024](0024-visual-language-and-what-the-pages-will-not-show.md) | Visual language, and what the pages will not show | Proposed |
 
 Each later record is added to this table in the pull request that introduces it.

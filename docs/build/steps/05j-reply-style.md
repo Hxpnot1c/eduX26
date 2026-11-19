@@ -38,7 +38,7 @@ length_fatigued_share = 0.4
 ## Done when
 - A review on a secure part carries `max_words` at about half the ceiling.
 - A fatigued turn carries the fatigued share.
-- With `answer_length` set, no step carries a smaller `max_words`.
+- With `answer_length` set, no step carries a smaller `max_words`, except `teach_point`: a shorter length wins, and a longer one raises it only to `points.max_words_requested` (120), per step [05o](05o-reply-style-fixes.md).
 - A step on a `diagram` part carries `diagram: true`, and a step on another part doesn't.
 - Results stay under 2,400 characters, and the instructions stay at or under 900 words (894).
 

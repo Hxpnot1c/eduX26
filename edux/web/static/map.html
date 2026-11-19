@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Course map · Synapse</title>
+<link rel="icon" href="data:,">
+<meta name="description" content="Synapse: a plain record of what has been practised.">
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/map.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to the page</a>
+<div class="frame">
+<header class="masthead">
+<a class="wordmark" href="/">Synapse</a>
+<nav class="nav" aria-label="Pages">
+<a href="/map" aria-current="page">Course map</a>
+<a href="/me">My progress</a>
+<a href="/teacher">For teachers</a>
+</nav>
+</header>
+<main id="main">
+<h1 class="visually-hidden">Course map</h1>
+<section class="row" data-signin="any" data-nokey="Showing the public example course. Open the link you were given to see your own.">
+<div class="label"><h2>Sign in</h2></div>
+<div><p class="status" role="status">Checking…</p><button type="button" class="quiet" data-forget hidden>Forget this device</button></div>
+</section>
+<section class="row span">
+<div class="label"><h2>Course map</h2><p class="muted">Topics hold concepts, concepts hold parts. A bigger disc is a part that matters more for the exam.</p></div>
+<div class="wide">
+<p class="status" id="map-status" role="status">Loading the map…</p>
+<ul data-level-key></ul>
+<div id="map" class="map spaced"></div>
+</div>
+</section>
+</main>
+<footer class="foot">
+<p>Practice feedback, not a grade. Synapse shows what has been practised and how recently, and it is often based on very few answers.</p>
+</footer>
+</div>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/shell.js"></script>
+<script src="/static/js/graph.js"></script>
+<script src="/static/js/map.js"></script>
+
+</body>
+</html>

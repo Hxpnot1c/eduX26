@@ -1,0 +1,70 @@
+/* Design tokens (decision 0024). Colour means one thing only: how well a part is known. Everything else is ink on paper.
+   scripts/check_contrast.py reads this file and fails the build if a pair drops below its WCAG threshold. */
+
+:root {
+  --paper: #f4f1ea;
+  --paper-sunk: #ece8dd;
+  --ink: #1b1a17;
+  --muted: #5a5548;
+  --rule: #d3ccba;
+  --accent: #b03a24;          /* focus, selection and "due now" only */
+
+  /* levels: pale to deep as the part is known better; a ring and a fill state repeat each one without colour */
+  --lv-new-fill: #e9dfc2;
+  --lv-new-ring: #7a6a33;
+  --lv-developing-fill: #5b9a97;
+  --lv-developing-ring: #2f6a67;
+  --lv-secure-fill: #1f4a5a;
+  --lv-secure-ring: #1f4a5a;
+
+  --font-ui: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", Verdana, sans-serif;
+  --font-display: "Newsreader", Georgia, "Times New Roman", serif;
+
+  --step--1: 0.875rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.375rem;
+  --step-2: 1.875rem;
+  --step-3: 2.75rem;
+  --space: 0.5rem;            /* the 8 px grid */
+  --measure: 40rem;
+  --gutter: 1rem;
+  --motion: 120ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #15140f;
+    --paper-sunk: #1c1b15;
+    --ink: #ece6d6;
+    --muted: #a8a290;
+    --rule: #38352b;
+    --accent: #f08c70;
+
+    --lv-new-fill: #3b3626;
+    --lv-new-ring: #b3a266;
+    --lv-developing-fill: #4f9895;
+    --lv-developing-ring: #7fc0bd;
+    --lv-secure-fill: #b9e0dc;
+    --lv-secure-ring: #b9e0dc;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #15140f;
+  --paper-sunk: #1c1b15;
+  --ink: #ece6d6;
+  --muted: #a8a290;
+  --rule: #38352b;
+  --accent: #f08c70;
+
+  --lv-new-fill: #3b3626;
+  --lv-new-ring: #b3a266;
+  --lv-developing-fill: #4f9895;
+  --lv-developing-ring: #7fc0bd;
+  --lv-secure-fill: #b9e0dc;
+  --lv-secure-ring: #b9e0dc;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --motion: 0ms; }
+}

@@ -48,16 +48,23 @@ def test_an_ok_false_result_is_logged_with_its_cut_error(monkeypatch):
 
 def _progress(n):
     item = {"part_id": "p", "name": "x" * 60, "level": "new"}
-    return {"tree": {"a": "b"}, "levers": [dict(item) for _ in range(n)], "weak_links": [dict(item) for _ in range(n)],
-            "reviews_due": [dict(item) for _ in range(n)], "trends": {}, "ai_literacy": {}, "study_pattern": None}
+    return {
+        "tree": {"a": "b"},
+        "levers": [dict(item) for _ in range(n)],
+        "weak_links": [dict(item) for _ in range(n)],
+        "reviews_due": [dict(item) for _ in range(n)],
+        "trends": {},
+        "ai_literacy": {},
+        "study_pattern": None,
+    }
 
 
 def test_the_levels_view_is_trimmed_from_the_lowest_ranked_items_to_fit():
     limit = service._settings().results.max_chars
     fitted = service.fit_progress(_progress(12))
     assert service.result_size(fitted) <= limit
-    assert fitted["weak_links"] == [] or len(fitted["weak_links"]) < 12     # trimmed first
-    assert fitted["tree"] == {"a": "b"} and "ai_literacy" in fitted             # never cut
+    assert fitted["weak_links"] == [] or len(fitted["weak_links"]) < 12  # trimmed first
+    assert fitted["tree"] == {"a": "b"} and "ai_literacy" in fitted  # never cut
 
 
 def test_a_progress_view_that_already_fits_is_left_alone():
@@ -77,7 +84,7 @@ def test_the_every_part_progress_view_has_its_own_larger_limit():
     assert results.max_chars_full_progress > results.max_chars
     assert not service.over_budget("get_my_progress", results.max_chars + 1, full_progress=True)
     assert service.over_budget("get_my_progress", results.max_chars_full_progress + 1, full_progress=True)
-    assert service.over_budget("tutor_turn", results.max_chars + 1, full_progress=True)    # only progress gets the larger limit
+    assert service.over_budget("tutor_turn", results.max_chars + 1, full_progress=True)  # only progress gets the larger limit
 
 
 def test_the_every_part_view_is_trimmed_to_its_own_limit():
@@ -85,3 +92,13 @@ def test_the_every_part_view_is_trimmed_to_its_own_limit():
     fitted = service.fit_progress(_progress(40), limit)
     assert service.result_size(fitted) <= limit
     assert len(fitted["levers"]) > 0 or len(fitted["reviews_due"]) > 0 or len(fitted["weak_links"]) > 0
+
+
+def test_score_next_ignores_a_reteach_when_the_reply_ends_in_a_multiple_choice_question(course):
+    """The next answer is a letter, so the points of an earlier reteach are not sent (300 characters saved)."""
+    from edux import plan
+
+    reteach = {"move": "reteach", "part_id": "ped_formula", "data": {"point": "x"}}
+    mcq = {"move": "ask_mcq", "part_id": "ped_formula", "data": {"options": []}}
+    assert plan.score_next([reteach, mcq]) == {}
+    assert plan.score_next([reteach])  # on its own, the reteach still has points to tick

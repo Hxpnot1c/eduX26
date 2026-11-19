@@ -13,6 +13,7 @@ import tomllib
 import typing
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 SETTINGS_PATH = ROOT / "settings.toml"
@@ -24,8 +25,8 @@ class SettingsError(ValueError):
     """A settings or context file is missing a key, has an unknown key or a wrong type."""
 
 
-MCQ_TYPES = ("mcq", "mcq_check", "prequestion", "ail_how")   # evidence types that can come from a multiple-choice question
-MIN_OPTIONS = 2            # the fewest options a multiple-choice question can show, so its largest guess is 1 / 2
+MCQ_TYPES = ("mcq", "mcq_check", "prequestion", "ail_how")  # evidence types that can come from a multiple-choice question
+MIN_OPTIONS = 2  # the fewest options a multiple-choice question can show, so its largest guess is 1 / 2
 
 
 @dataclass(frozen=True)
@@ -41,12 +42,20 @@ class SlipGuess:
 
 
 @dataclass(frozen=True)
+class ExplainBackGuess:
+    up_to_2: float
+    three: float
+    four_plus: float
+
+
+@dataclass(frozen=True)
 class Bkt:
     prior: float
     learn_rate: float
     correct_share: float
     mcq_guess_from_options: bool
     evidence: dict[str, SlipGuess]
+    explain_back_guess: ExplainBackGuess
 
 
 @dataclass(frozen=True)
@@ -75,6 +84,23 @@ class Decay:
 class Propagation:
     prereq_boost: float
     queue_band: tuple[float, float]
+    forward_weight: float
+
+
+@dataclass(frozen=True)
+class Coverage:
+    boost_logit: float
+    class_k: float
+    class_estimate_enabled: bool
+    class_min_students: int
+    class_max_down: float
+
+
+@dataclass(frozen=True)
+class Starting:
+    k: float
+    bound_logits: float
+    cap: float
 
 
 @dataclass(frozen=True)
@@ -121,6 +147,7 @@ class Prequestion:
 @dataclass(frozen=True)
 class Points:
     max_words: int
+    max_words_requested: int
     reteach_limit: int
     warn_min: int
     warn_max: int
@@ -145,23 +172,61 @@ class Literacy:
 @dataclass(frozen=True)
 class Session:
     gap_minutes: float
-    fatigue_min_minutes: float
-    fatigue_window: int
-    fatigue_threshold: float
-    fatigue_min_parts: int
-    fatigue_slip_add: float
     slip_cap: float
     signal_window: int
     stuck_attempts: int
     stuck_below: float
     quick_parts: int
-    pattern_min_sessions: int
+
+
+@dataclass(frozen=True)
+class Fatigue:
+    slip_start_minutes: float
+    slip_per_minute: float
+    extra_slip_cap: float
+    mode_minutes: float
+    rapid_guesses: int
+    reading_wpm: float
+    typing_wpm: float
+    min_students_per_bin: int
 
 
 @dataclass(frozen=True)
 class Engagement:
     passive_run: int
     low_share: float
+    weakest_last_n: int
+    coasting_min_messages: int
+
+
+@dataclass(frozen=True)
+class Confidence:
+    enabled: bool
+    max_per_session: int
+    stop_after_skips: int
+    min_per_group: int
+
+
+@dataclass(frozen=True)
+class FindError:
+    enabled: bool
+    clean_share: float
+    max_per_session: int
+
+
+@dataclass(frozen=True)
+class Web:
+    public_example_map: bool
+
+
+@dataclass(frozen=True)
+class Reminders:
+    days_ahead: float
+
+
+@dataclass(frozen=True)
+class Plan:
+    sessions_per_week: int
 
 
 @dataclass(frozen=True)
@@ -185,6 +250,7 @@ class Personalisation:
 @dataclass(frozen=True)
 class Priorities:
     weight_homework: float
+    weight_written_assignment: float
     weight_class_test: float
     weight_mock: float
     weight_final: float
@@ -247,6 +313,12 @@ class Style:
 
 
 @dataclass(frozen=True)
+class Retention:
+    call_log_days: int
+    after_leaving_days: int
+
+
+@dataclass(frozen=True)
 class Results:
     max_chars: int
     max_chars_full_progress: int
@@ -267,6 +339,8 @@ class Settings:
     levels: Levels
     bkt: Bkt
     nudges: Nudges
+    coverage: Coverage
+    starting: Starting
     evidence: Evidence
     decay: Decay
     propagation: Propagation
@@ -280,8 +354,14 @@ class Settings:
     mcq: Mcq
     literacy: Literacy
     session: Session
+    fatigue: Fatigue
     engagement: Engagement
     show: Show
+    confidence: Confidence
+    find_error: FindError
+    web: Web
+    reminders: Reminders
+    plan: Plan
     personalisation: Personalisation
     priorities: Priorities
     difficulty: Difficulty
@@ -291,23 +371,24 @@ class Settings:
     blocks: Blocks
     style: Style
     results: Results
+    retention: Retention
     instructions: Instructions
 
 
 @dataclass(frozen=True)
 class Profile:
     blocks: list[str]
-    plan: bool                 # false: tutor_turn returns no plan (a comparison profile)
+    plan: bool  # false: tutor_turn returns no plan (a comparison profile)
 
 
 @dataclass(frozen=True)
 class MoveReference:
-    reference: list[str]       # reference blocks this move uses, in priority order (step 05c)
+    reference: list[str]  # reference blocks this move uses, in priority order (step 05c)
 
 
 @dataclass(frozen=True)
 class WatchFor:
-    moves: list[str]           # moves that ask something also get the part's watch-for misconceptions (step 05c)
+    moves: list[str]  # moves that ask something also get the part's watch-for misconceptions (step 05c)
 
 
 @dataclass(frozen=True)
@@ -362,7 +443,7 @@ def _convert(value: object, tp: object, where: str) -> object:
     raise SettingsError(f"{where}: unsupported type {tp}")
 
 
-def _build(cls: type, data: dict, where: str) -> object:
+def _build(cls: Any, data: dict, where: str) -> Any:
     hints = typing.get_type_hints(cls)
     names = [f.name for f in dataclasses.fields(cls)]
     missing = [n for n in names if n not in data]
@@ -395,6 +476,8 @@ def load_settings(path: Path = SETTINGS_PATH) -> Settings:
     low, high = settings.personalisation.learn_rate_weight_bounds
     if not 0 < low <= 1 <= high:
         raise SettingsError("personalisation.learn_rate_weight_bounds: expected 0 < low <= 1 <= high")
+    if settings.points.max_words_requested < settings.points.max_words:
+        raise SettingsError("points.max_words_requested: expected at least points.max_words")
     check_identifiable(settings)
     return settings
 
@@ -432,8 +515,10 @@ def check_identifiable(settings: Settings) -> None:
             if guess + slip >= 1:
                 raise SettingsError(f"bkt.evidence.{name}: guess {guess:.2f} + slip {slip:.2f} (at slip_cap) must be below 1")
             if learn_rate >= 1 - slip / (1 - guess):
-                raise SettingsError(f"bkt.evidence.{name}: learn_rate {learn_rate:.2f} (at the top personal bound) must be below "
-                                    f"1 - slip / (1 - guess) = {1 - slip / (1 - guess):.2f} (slip at slip_cap)")
+                raise SettingsError(
+                    f"bkt.evidence.{name}: learn_rate {learn_rate:.2f} (at the top personal bound) must be below "
+                    f"1 - slip / (1 - guess) = {1 - slip / (1 - guess):.2f} (slip at slip_cap)"
+                )
 
 
 def load_context(path: Path = CONTEXT_PATH) -> ContextConfig:

@@ -2,6 +2,11 @@
 
 Branch `build/fatigue-time-on-task`, from `main` after step 05r. This replaces the rule questioned in #24.
 
+## Built, and deferred
+**Built in the first pull request (migration 015):** the time-based slip; rapid guesses (`this_message.words`, latency, question words stored on the exchange; `evidence_derived.rapid`); the new fatigued-mode rule (50 minutes or the 2nd rapid guess) replacing the 4-answer rule and its settings; the plain pacing lines (`text/fatigue/`, sent as `data.line`); and **the stored `study_pattern` removed** (audit item C4, Vishnu's decision). Tests: `tests/test_time_on_task.py` (9) and two `check_mcp` checks.
+
+**Deferred to a follow-up:** the `answer_timing` table, `fatigue-curve` in the CLI, the per-class curve and its school setting (`fatigue.class_curve_enabled`). The class curve needs the classes from step [05q](05q-class-coverage-and-starting-points.md), and the teacher mock-up's chart is labelled seeded data either way.
+
 ## What
 A student's answers can't reliably show tiredness at chat pace. Our simulation of the current 4-answer rule flagged 77% of not-tired students by 60 minutes. So fatigue now follows the published time-on-task curve, plus rapid guesses.
 

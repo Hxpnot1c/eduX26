@@ -29,6 +29,17 @@ A part the student hasn't met starts at `bkt.prior` with `decay.base_half_life_d
 - The starting half-life is `base_half_life_days × (1 − half_life_shift × shift)`.
 - So hard parts start lower and are forgotten faster.
 
+### Where a part starts for this student (step 05q)
+`learner.starting_point(student, part, at)` applies to a part with no evidence yet. In order:
+1. **Base:** the normal start above. If the student's class (or the student, by `covered_in_class`) has been taught the part by `at`, it is raised by `coverage.boost_logit` (0.5) in log-odds. With the school's class estimate on, the class's own shift replaces the boost's size, never starting the part more than `coverage.class_max_down` (0.075) below the boosted start, and only with at least `coverage.class_min_students` (5) students.
+2. **Plus the student's starting adjustment**, one log-odds offset for covered parts and a separate one for not-covered parts, which never mix. Built from their first answer on each part when it came before any teaching (a pre-question, an "I know this" check, an explain-back), in sessions before the current one: `n / (n + starting.k) × (logit(smoothed score) − logit(smoothed expected))`, both smoothed as `(sum + 0.5) / (n + 1)`, within ±`starting.bound_logits` (1.5). "Teaching" is an earlier exchange on the part with a worked example, a hint or "just show me".
+3. **Plus the prerequisite shift:** `propagation.forward_weight × mean over its direct prerequisites of (logit p_now − logit starting point)`, counting only prerequisites the student has answered on (the others contribute 0). One hop; zero once the part has its own evidence.
+4. Back to a probability within [0.01, `starting.cap`] (0.65); answers can take a part anywhere.
+
+AI-literacy parts get none of this. **The forgetting clock starts at the date the part was taught** (`taught_on`), and a covered part with no answer is due for review (reason `taught_in_class`) at `taught_on` + the share gap. Because the half-life is short, a part taught weeks ago and never answered would decay to nothing, weaker than an untaught one, so **its forgetting stops at its normal start**; the same floor applies to its first answer's `p_before`. Coverage is profile, not events: a coverage row counts for an event only from its `taught_on` date, so a rebuild gives the same state.
+
+**What the student sees.** Until a part has its first answer it never shows developing or secure: a covered part shows `taught_in_class` ("taught in class, not yet checked"), any other shows `new` (`learner.shown_level`, `shown_rollup`). The planner uses the number.
+
 Later, a cross-student estimate (`learner.difficulty_signal`, e.g. first-attempt failure rates) is blended in at share `difficulty.w_cross`. It's 0 until there is enough evidence across students.
 
 ## Current p_known (decay)
@@ -84,13 +95,13 @@ The update starts from `p_now`, the decayed value. Then:
 
 If `offload_left > 0`, guess is replaced by `offloading.guess_after` and `offload_left -= 1`. (Removed in step 05d: see Offloading.)
 
-While the session is fatigued (see Sessions), slip is raised by `session.fatigue_slip_add`, capped at `session.slip_cap`.
+Time on task raises slip for everyone (step 05s): `extra_slip(minutes into the session)` is 0 before `fatigue.slip_start_minutes` (28), then `fatigue.slip_per_minute` (0.002) per minute, up to `fatigue.extra_slip_cap` (0.12), and the slip stays within `session.slip_cap`. It is used in the expected-success calculation and the BKT update alike.
 
 **Startup check (identifiability).** Settings fail to load unless, for every evidence type, with slip at its largest (`session.slip_cap`) and guess at its largest (1/2 for a multiple-choice type when `mcq_guess_from_options` is on, and the immediate rule's larger guess):
 - `guess + slip < 1`, so a correct answer is evidence of knowing;
 - `learn_rate < 1 - slip / (1 - guess)`, so a wrong answer still lowers the estimate (Baker, Corbett & Aleven, 2008).
 
-With the current values the tightest case is a 2-option question while fatigued: `learn_rate` must stay below 0.20.
+With the current values the tightest case is a 2-option question at the slip cap: `learn_rate` must stay below 0.20.
 
 **Personal learning rate (personal-learning-rate).** Each student has one learning-rate offset, pooled across their course parts (`learner.learning_offset`; `docs/research/personalisation.md`, section 7). It is applied as an odds weight on `bkt.learn_rate`: `odds(learn_rate) × exp(offset)`.
 - **What it's built from:** the `surprise` of the student's evidence in earlier sessions. Fatigued evidence, immediate recall (`evidence_derived.immediate`), untaught pre-questions (weight 0) and AI-literacy parts are left out.
@@ -99,7 +110,9 @@ With the current values the tightest case is a 2-option question while fatigued:
   - The target is 0 until there are `min_observations` pieces across `min_parts` parts.
 - **Steps:** the offset moves once per session, towards the target. It rises at most `max_change_per_session` log-odds and falls at most `down_change_factor` times that, so under-crediting is the more likely error.
 - **Rebuild:** it is a pure function of earlier events, so rebuild gives the same state.
-- **Switching it on and off:** `personalisation.enabled = true` by default. `EDUX_PERSONALISATION=0` turns it off without editing the file, and changing either then needs a rebuild to re-score.
+- **Cached per session (step 05r):** the running statistics are kept in `learner_offset_cache` at each session boundary, so a call reads only the sessions since the last one (about the new session's evidence) instead of the whole history. The recency-weighted mean is updated one piece at a time, which equals the direct sum; live and rebuild use the same updates in the same order, so rebuild stays identical. The cache is dropped on rebuild, for an out-of-order event, a coverage change, or other settings.
+- **Switching it on and off:** `personalisation.enabled = false` by default (Children's Code Standard 12: profiling off unless there is a compelling reason; after the 05m recalibration the offset barely moves). `EDUX_PERSONALISATION=1` turns it on and `=0` off without editing the file, and changing either then needs a rebuild to re-score. This switch covers the learning-rate offset only. The starting-point adjustments (step 05q) stay on: they use the student's own pre-teaching answers, for their own teaching only.
+- **Left out of the offset:** a part's first answer (it belongs to the starting-point adjustment), AI-literacy evidence, and fatigued, immediate or untaught evidence. AI-literacy parts learn at the population rate.
 - **Who sees it:** it is never a label and is never shown to students or teachers. Only the CLI student view (`python -m edux.cli state`) prints the offset and `n`.
 - **What isn't personal:** slip and guess stay per evidence type.
 
@@ -153,7 +166,7 @@ A review queued by an exchange keeps any earlier due date already in the queue. 
 
 ### 7. AI-literacy skills (step 05e)
 The parts `ail_ask`, `ail_verify` and the four `ail_how_*` parts (`fabrication`, `confidence`, `cutoff`, `agreement`), loaded with every pack (see `course-pack-format.md`), are tracked like any other part: decay, spacing and levels. They have a fixed importance (`literacy.importance`) and are left out of the course tree, levers, candidates, search and course reviews (they are practised through their tasks and checks).
-- **`ail_question`** on `ail_ask`, on every research question: score = question features present / 4.
+- **`ail_question`** on `ail_ask`, on every research question: score = question features present / 4, **except that `asks_sources` counts only when the student has checked a claim (Verify evidence) earlier in the session** (step 05y). Asking a chatbot for sources invites invented ones, and asking is not checking. Features are judged on what the question asks for, never its wording, length or polish. Levels are formative: the student view shows each level with the evidence behind it.
 - **`ail_task`** on `ail_verify`: the student's reply to a verify task, scored by the ticks they produced / 4. A correct Verify answer moves the part only `score` of the way (3 of 4 ticks moves it 3/4 as far as 4 of 4). A reported dead or mismatched source (`source_conflict`, sent as the Verify answer or while a verify task is pending this session) is a successful check: `ail_task` with score 1, whatever was ticked, since a dead page has no publisher, date or figure to tick. It is always `ail_task`, never `ail_unprompted`, so one report can't make Verify secure (research fixes, 0003). A report can't be told apart from a made-up one, so until the student has done one successful check of their own on Verify (a correct Verify answer whose exchange wasn't labelled `source_conflict`), reports can't lift Verify past `levels.secure − 0.01`: they cap it at developing. After one real check, reports count in full (research fixes, 0009b). The `tutor_turn` labelling rules also say never to tick a point for words that only repeat the chatbot's own reply, a point it just showed or its citation.
 - **Skips (research fixes, 0003).** A task (any skill) still ignored after `literacy.max_followups` re-asks is missing, not wrong: no evidence is written, and the skip is recorded in `literacy_skip` (an event table, migration 013) and shown as `skipped` beside the level in progress. A task that was never re-asked expires at session end with nothing recorded.
 - **`ail_unprompted`** on `ail_verify`: the student reports checking a claim without being asked. Its slip is lower, so it counts more.
@@ -168,12 +181,21 @@ gap = share × days_to_exam
 
 - `share` comes from `scheduling` based on days to the student's next test on the part (`learner.days_to_exam`): the soonest of the final exam (`exam_date_override` if set and ahead, else the pack's exam papers) and the student's own upcoming assessments covering the part (priorities: homework, class tests, mocks). Spacing works towards the nearest test, and goes back to the final exam once that test has passed (Cepeda et al., 2008).
 - The gap is floored at `min_gap_days`.
-- **Recall threshold:** when a clock is running and `p_known > scheduling.review_when_below`, the part is also due when `p_now` is expected to fall below that threshold, `half_life × log2(p_known / review_when_below)` days on. If that comes first, it replaces the share gap (still floored at `min_gap_days`) with reason `recall_below`. A part already below the threshold, or with no clock, uses the share gap only.
+- **Recall threshold:** when a clock is running and `p_known > scheduling.review_when_below`, the part is also due when `p_now` is expected to fall below that threshold, `half_life × log2(p_known / review_when_below)` days on. If that comes first, it replaces the share gap (still floored at `min_gap_days`) with reason `recall_below`. A part already at or below the threshold, or with no clock, uses the share gap only. A crossing sooner than `min_gap_days` is floored to `min_gap_days` (pinned by tests, step 05k).
 - `due = now + gap`, with reason `scheduled` (or `recall_below`)
 
 Shares are adapted from Cepeda et al. (2008): the optimal gap shrinks as the test gets closer, but it is a larger share of the time left (0.10 far, 0.19 mid, 0.30 near; tune-from-research). With no exam date, `base_half_life_days` is used as the gap.
 
 `reviews_due` returns up to `max_reviews_per_reply` due parts, ordered by importance.
+
+## Find-the-error practice (decision 0012; off by default)
+Evidence types `find_error` (on the part, doubling as refutation of the planted misconception) and `ail_find_error` (on Verify, its own type with its own slip and guess so it cannot inflate Verify from real source checks; `verified_this_session` ignores it). Both score the same way: 1 for a hit, 0 otherwise, with hits and false alarms apart (see `tools-and-context.md`). The item id (`err:<part>:<misconception>` or `clean:<part>`) is stored as the evidence's `point_id`, so error items and clean controls can be told apart afterwards and the misconceptions rotate. The planted misconception is never activated: a mistake on a practice item says little about what the student believes.
+
+## Confidence and calibration (step 05z)
+A rating (`confidence_log`) is stored beside the answer it rates and read only for the calibration line. It never enters `p_known`, `half_life`, the surprise, the offsets or the fatigue rules: a student who says "certain" and is wrong is not marked down for the confidence, and one who says "guess" and is right is not marked up. A test compares two students with identical answers and different ratings and finds identical state.
+
+## The reply's ending: the bridge question (step 05t)
+The ending is chosen in four tiers (an urgent review, a bridge, an earned extend, another review); see `tools-and-context.md`. A bridge answer is a pre-question, so it follows the pre-question rules and feeds the starting offset of its target's sector (step 05q): the not-covered offset for a coverage-next target and for any part the class has not covered, the covered offset for a strongest-link target that was covered in class but never practised here. The candidates not picked are logged in `considered` and never sent; the CLI's `context` command prints the tiers (`ending_tiers`).
 
 ## Priorities: the add-on step by expected marks
 The student's message still sets the main step. The value score orders only the choices Synapse makes itself:
@@ -182,14 +204,14 @@ The student's message still sets the main step. The value score orders only the 
 - the order of prerequisite repairs (`weak_prerequisites`).
 
 ```
-value = move_chance × Σ over the final exam and the student's upcoming assessments covering the part
+value = Σ over the final exam and the student's upcoming assessments covering the part
         [ weight(kind) × urgency(days to it) × (1 − p on its date) ]
 urgency(days) = clamp(horizon_days / max(days, 1), urgency_floor, 1)
 ```
 
 - **Prediction at the test date.** `p on its date` is `p_now` with decay run forward to the test date, not today's value, so a part that is secure now but will fade before the mock counts as a gap.
 - **The final exam is always in the sum** (`weight_final`), at the date spacing uses. With no exam ahead, it counts at `urgency_floor` with today's p.
-- **`move_chance`** is the student's learn rate, including their personal offset. The learn rate isn't per evidence type, so a review and an extend get the same chance today.
+- **No learning-chance factor (step 05n).** The score once multiplied by the student's learn rate (`move_chance`). With one learn rate for all evidence types that factor is the same for every step, so it scaled every value equally and never changed a choice. It was removed; the `considered` values change scale but not order. Per-type learn rates are a research item in `later.md`.
 - **No cramming.** Due-ness (the share gap or `review_when_below`) still decides whether a review is eligible. A test only orders the eligible reviews and decides between extend, a review or nothing; it never makes a review due.
 - **Ties** keep the old order (extend first, then overdue × importance), so with no assessments only the extend-vs-review choice changes.
 - **Reason.** A review picked because of a test (the assessment adding the most to its value) carries `data.reason`, e.g. "on your mock on Tuesday" (the day name within 7 days, else the date).
@@ -222,15 +244,12 @@ Each due review has a mode:
 Derived from both event logs at read and rebuild time. There are no session events.
 - **Session:** a student's exchanges and evidence in time order, until a gap longer than `session.gap_minutes`. `session_id` is the start timestamp.
 - **Surprise:** `score − expected` for each piece of evidence, where `expected = p_before × (1 − slip) + (1 − p_before) × guess` is the chance of a correct answer under that evidence's slip and guess (after the multiple-choice and immediate rules, before any fatigue slip), and `p_before` is the part's `p_now` just before applying it. Scaled by `w` for pre-questions. Measuring against `p_before` alone made a lucky guess on a 4-option question look like a surprise and a slip on a known part look larger than it is (tune-from-research). It is stored with `fatigued` and `immediate` (migration 011) in the derived table `evidence_derived`. Comparing with the model's expectation, not with "correct or not", stops hard material from looking like fatigue.
-- **Fatigue:** from the first piece of evidence where:
-  - the session is at least `session.fatigue_min_minutes` old
-  - the mean surprise of the last `session.fatigue_window` pieces is ≤ `session.fatigue_threshold`
-  - those pieces span at least `session.fatigue_min_parts` parts
-
-  It lasts until the session ends. Evidence while fatigued uses the raised slip above, so errors count for less and correct answers still count fully. The "just show me" share and the `surface` share over the last `session.signal_window` exchanges are reported but never trigger fatigue.
+- **Long-session and rushing mode (step 05s; the code still calls it "fatigued").** A session is in the mode from `fatigue.mode_minutes` (50) into the session, or from its `fatigue.rapid_guesses`-th (2nd) rapid guess, whichever comes first, until a new session starts. It follows time on task and answer speed, never how well the student answers: the old rule (four answers worse than expected) flagged 77% of not-tired students by 60 minutes in our simulation and is gone. Its effects are shorter replies, no literacy checks or tasks, a short reteach, and one `offer_choice` with a plain line (`data.line`, from `text/fatigue/`): at 50 minutes "You've been at this for N minutes; concentration usually dips around now. Take a short break, or one quick last question?"; after rapid guesses "Looks like you're rushing a bit. Want to switch to something different?" Teachers see "long-session mode" and "rushing (answers faster than reading time)", never "tired" or "fatigued".
+- **Rapid guess.** An answer is a rapid guess when the time since the student's previous turn is less than the question's words at `fatigue.reading_wpm` (300) plus their message's words at `fatigue.typing_wpm` (52). The latency includes the chatbot's writing time, which makes a flag less likely: the safe direction. The three numbers are stored on the exchange (`latency_s`, `question_words`, `answer_words`; counts only, no text), so the flag is replayed identically on rebuild. A chatbot that does not send `this_message.words` is never flagged. A rapid-guess answer gets weight 0 for knowledge (effort-moderated scoring) and is counted in the session.
+- The "just show me" share and the `surface` share over the last `session.signal_window` exchanges are reported but never trigger the mode.
 - **Engagement (engagement-rules):**
   - `learner.passive_streak` counts the latest messages in the session labelled `passive`, in a row. It drives a one-off `offer_choice`.
-  - `learner.coasting_share` is the share of the last `session.signal_window` messages that were `passive` or "just show me". At `engagement.low_share` or above, the explain-back asks for the weakest point only (`learner.weakest_point`).
+  - `learner.coasting_share` is the share of the last `session.signal_window` messages that were `passive` or "just show me", and needs at least `engagement.coasting_min_messages` (2) messages, so one passive first message is not coasting. At `engagement.low_share` or above, the explain-back asks for the weakest point only (`learner.weakest_point`: the lowest mean of each point's last `engagement.weakest_last_n` (5) answers; a point never asked counts as 0.5).
   - `learner.shows_this_session` counts "just show me" on a part. After `show.max_per_part_session`, a 2-option check comes first.
 
   See `tools-and-context.md` for the plans these give. Like fatigue, these signals are in-session only, read from the events each turn, and never stored as a trait of the student.

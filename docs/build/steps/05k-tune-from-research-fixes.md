@@ -19,9 +19,10 @@ Branch `build/fix-tune-from-research`, from `main`. Follow-up to step [05f](05f-
 ## Files
 - `edux/plan.py`: in `choose`, read `p_before` for the answer's evidence (from `evidence_derived`, or `turn` before the update) in place of `turn.p` after it.
 - `edux/learner.py`: a small reader for an evidence row's `p_before`, if one isn't already exposed.
-- `scripts/check_mcp.py`:
-  - #23: a part below 0.50 is queued at the share gap; a crossing sooner than `min_gap_days` is floored.
-  - #26: the answer that makes a part secure carries no `secure`; the next right answer does.
+- `tests/test_secure_flag_and_reviews.py` (pytest, no server needed; replaces the planned `check_mcp` checks):
+  - #23: a part at or below 0.50 keeps the share gap; a crossing sooner than `min_gap_days` is floored;
+  - #26: the answer that makes a part secure was not secure before it; the next right answer is on a secure part.
+- `edux/service.py`: `tutor_turn` reads the stored `p_before` after recording the answer and passes it to the plan.
 - **Docs:** this file; `reference/learner-model.md` (the `secure` flag and the `review_when_below` edge cases); 05f is already written to match.
 
 ## Settings

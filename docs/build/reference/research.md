@@ -44,7 +44,7 @@ The evidence behind Synapse's teaching and modelling decisions. Effect sizes are
 |---|---|---|---|
 | Open-answer guess 0.20 (explain_back, past_question, link, extend) and spacing shares 0.10 / 0.19 / 0.30 | Settings proposal (`docs/research/settings-proposal.toml`); tested in overnight report 06 (w1-06-04 ✓, w1-06-05 ✓) | Far scenario: false "secure" on exam day fell by 20.6 points (paired CI ±5.8); truly secure parts rose by +0.5 (near) and +0.8 (far) of 9; reviews due per morning fell from 4.5 to 2.9 | Our simulation |
 | MCQ guess = 1 / options shown | Standard BKT practice; overnight report 06 | Chance of guessing depends on the number of options | |
-| `review_when_below = 0.50` | Settings proposal; overnight report 06 | A part is due at whichever comes first, the share gap or this threshold. Below 0.50 already, it keeps the share gap, so weak parts don't flood the review list | The threshold value is from the proposal, not a study |
+| `review_when_below = 0.50` (a **judgement call**; corrected 19 Nov) | Eglington & Pavlik (2020), *npj Science of Learning* 5, 15 (nearest study); our simulation | The study (291 adults, word pairs) found recall thresholds of 0.86 and 0.94 beat 0.40, 0.98 and conventional spacing, and did not differ from 0.70; 0.50 was not tested, and the quantity is a fitted recall probability, not our `p_now`. In 60 synthetic students per row, raising the threshold to 0.75 gave slightly lower retention and fewer truly secure parts at the same workload | Our simulation; the truth model is ours (`docs/research/review-threshold-simulation.md`). The earlier "0.70 to 0.80" is an interpolation, not a finding |
 | Surprise = score − expected success, with expected = p(1 − slip) + (1 − p) × guess | Overnight report 06 | Counts guessing and slips, so weak students aren't cushioned and strong students aren't penalised | |
 | Clamp `p_known` to [0.001, 0.999] | w1-06-01 ✓, w4-fix-core-1 ✓ | Reaching exactly 1.0 crashed `tutor_turn` with a divide-by-zero | Bug fix found by simulation |
 | One step back per stuck part per session, then a stuck ladder | w1-06-02 ~, w4-fix-core-2 ✓, w5-fix-stuck-1 ✓ | The step-back check repeated on 12 of 14 turns; with the ladder an always-failing student gets a stop/switch offer at turn 8 instead of never | Our simulation |
@@ -66,9 +66,12 @@ The evidence behind Synapse's teaching and modelling decisions. Effect sizes are
 | … but the size of the learning-rate spread is uncertain | Lee, Lichand et al. (2026), arXiv 2605.01690 | The same model on the same data gives learning-rate variation inflated by a median of 118% depending on which observations are included | Preprint |
 | A per-student starting point | Pardos & Heffernan (2010), UMAP | Individualising the initial-knowledge parameter gave a reliable improvement in predicting real data, even set simply from first responses | |
 | The counterpoint | Yudelson, Koedinger & Gordon (2013), AIED | In individualised BKT, student-specific learning speed helped prediction more than student-specific prior knowledge | Older, smaller-scale than Koedinger (2023) |
+| Coverage lifts a covered part's start by 0.5 log-odds; no start above 0.65; a part with no answer never shows developing or secure | Koedinger et al. (2023) on learning opportunities; the decisions of 18 November | Achievement gaps come mainly from what students have been taught; a start is a prior, not a result | The size (0.5) and the cap (0.65) are judgement calls; display rule follows the nudge ceiling (decision 0003) |
+| A part taught in class and never answered forgets only to its untaught start | Reasoning | With a 2-day half-life a part taught weeks ago would decay to 0.00, below an untaught one (0.30) | A minimal decay-to-prior for unanswered parts; the full change is held |
 | Starting adjustment: k = 25 first answers, bounds ±1.5 logits | Simpson et al. (2024) spread plus our simulation | With that spread, k ≈ 18–44 for half weight; after 10 first answers the estimate correlates 0.4–0.6 with the truth | Our simulation |
 | Starting adjustment split into covered and not-covered sectors | Koedinger et al. (2023), opportunities | Success on topics taught in class says little about topics not yet taught | |
 | Only pre-teaching answers feed the starting adjustment | Soderstrom & Bjork (2015) | Answers straight after teaching show the student followed it, not that they knew it | |
+| Learning-rate offset **off by default**; starting-point adjustments stay on | ICO Children's Code, Standard 12 (profiling off by default unless there is a compelling reason); `personalisation.md` §5 ("off until evaluated") | After recalibration the offset barely moves, so switching it on buys little and is profiling a minor | A judgement call about risk, not a finding about learning |
 | Learning-rate offset recalibrated: k = 400, scale 1.0, bounds 0.7–1.3, recency half-life 100 | Koedinger (2023); Simpson (2024); our simulation | After 48 answers, average surprise correlates only 0.10–0.23 with the true learning rate at research-sized spreads (10–30%), implying k ≈ 400+ and a scale ≈ 0.2–1.0 | Our simulation; the half-life is a judgement call |
 | The offset uses only answers after the first on each part | Reasoning | Otherwise "already knew it" is counted twice: once in the starting point and again as faster learning | |
 | Downward moves allowed more readily (factor 2) | Doroudi & Brunskill (2019), LAK, "Fairer but not fair enough" | Models fit to the whole population can leave lower-performing students under-practised; over-crediting is the more harmful mistake | The direction is from the source; the factor of 2 is a judgement call |
@@ -124,6 +127,27 @@ The evidence behind Synapse's teaching and modelling decisions. Effect sizes are
 | Options alike in form, and right-option length rank checked | Haladyna, Downing & Rodriguez (2002), item-writing guidelines (via w3-05-08 ~) | Every example-pack part's right option differed in form from its wrong options | |
 | … and the effect of fixing it | w4-fix-mcq-1 ✓; w5-06g-05 ~; w6-len-1 ✓ | A testwise student who knows nothing fell from 0.96 to 0.28 right (chance 0.31). A remaining cue (drop longest and shortest) got 58%, addressed by patch 0011's rewording and ingest warnings | Our simulation; the wording needs an economist's read |
 | Rotating wrong options (held) | Roediger & Marsh (2005) | Seeing the same wrong option repeatedly can teach it | Held item |
+
+## Confidence and calibration (step 05z)
+
+| Decision | Source | What it shows | Caveat |
+|---|---|---|---|
+| Calibration (confidence against accuracy) as a signature measure, shown to the student as feedback | Fernandes et al. (2025), CHI; the project's literature review (Summary §3.2, principle 3) | AI use raised task scores but inflated self-estimates, and higher AI literacy predicted worse calibration | One research group, seen via a secondary paper; no validated reliance instrument exists |
+| Ask for the commitment before the feedback is revealed | Buçinca et al. (2021), CSCW, cognitive forcing | Making people commit before the AI's answer reduced over-reliance, and was liked less | Decision tasks with AI recommendations, not revision checks |
+| Optional, switch-off, no penalty for skipping | ICO Children's Code, Standard 5 (detrimental use of data); `personalisation.md` §2.4 | Do not make a measure a hurdle or a source of pressure | Design guidance |
+| A calibration line only after 5 rated answers in a level | Our own arithmetic: small counts mislead (research summary §6(e)) | A level with fewer than 5 answers swings with one answer | Judgement call |
+| Rating never changes p_known | Reasoning | A self-report is a different quantity from a performance; mixing them would let confidence inflate or deflate the model | Tested |
+| Not built: early review of high-confidence errors (hypercorrection) | Butterfield & Metcalfe (2001) | Errors made with high confidence are corrected well when feedback is given | Lab recall of facts; thin for A-level |
+
+## Reminders, deadlines and study plans (step 05u)
+
+| Decision | Source | What it shows | Caveat |
+|---|---|---|---|
+| A concrete plan with days and topics | Sheeran, Listrom & Gollwitzer (2024), meta-analysis; Gollwitzer & Sheeran (2006); Duckworth et al. (2011) | Implementation intentions improved outcomes (d = .27 to .66); with mental contrasting, high-school students completed over 60% more practice questions | Mostly other goals and populations; not tested on chat-generated plans |
+| Spacing towards the class's tests; weakest first | Cepeda et al. (2008), *Psychological Science* | The best gap is a falling share of the time to the test | Adults, trivia facts |
+| In-chat reminder only, once, switch-off, no streaks | Fryer (2016), *Journal of Public Economics*; Oreopoulos et al. (NBER w25036); Bergman & Chan (2021); ICO Children's Code, Standards 5, 12 and 13 | Texts to students alone had no measurable effect on outcomes; texts to parents did; nudges can crowd out motivation (Damgaard & Nielsen, 2018) | So the reminder is a courtesy, not a claimed lever; the opt-out and wording are design guidance (the Code's Standard 13 text is about data and privacy nudges) |
+| A written-assignment plan never writes the content | JCQ (2025) on unacknowledged AI use in assessed work; DfE (2026) on tools not handing over final answers | Unacknowledged AI use in assessed work can be malpractice | Guidance, not an experiment |
+| Teacher-set low-stakes quizzes help | Yang et al. (2021), *Psychological Bulletin* | Classroom quizzing g = 0.50 (222 studies) | Abstract-level read |
 
 ## Evidence for held work (not yet built)
 

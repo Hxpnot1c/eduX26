@@ -42,7 +42,8 @@ cp .env.example .env
 - `EDUX_DATA_DIR`: where `content.db` and `learner.db` live (default `./data`)
 - `HOST`, `PORT`: where the server listens (default `127.0.0.1:8000`)
 - `ALLOWED_HOSTS`: host names the server accepts, comma-separated
-- `STORE_PROMPTS`: `1` stores students' message text with each exchange; off by default
+
+Students' messages are never stored. Student keys are stored only as hashes, and student ids are random (`s-1a2b3c4d`), never made from a name.
 
 The commands below read the environment, so load `.env` first (`set -a; . ./.env; set +a`). `scripts/demo.sh` does this for you.
 

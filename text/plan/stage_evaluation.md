@@ -1,0 +1,1 @@
+Decide what you will weigh up (the other side, the size, the time, who is affected) and what your judgement will be. Plan it as points before writing; then write the full answer yourself and review it against the mark scheme wording.

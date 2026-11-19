@@ -30,6 +30,7 @@ Branch `build/fix-priorities`, from `main`. Follow-up to step [05i](05i-prioriti
 - `docs/build/steps/05i-priorities.md`: the formula, with a note pointing here.
 - `docs/build/steps/later.md`: the per-type learn-rate research item is already listed by the docs PR. Update it if the wording changes.
 - `scripts/check_mcp.py`: the priorities run, unchanged in outcome.
+- `tests/test_priorities.py`: no `move_chance`; the final counted at `urgency_floor` with today's p when no exam is ahead; an upcoming mock raises the value and is named as the reason; the value ignores the learning-rate offset.
 - **Docs:** this file; `reference/learner-model.md`.
 
 ## Settings

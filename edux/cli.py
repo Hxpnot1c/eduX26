@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
 
-from edux import graph, learner
+from edux import graph, learner, teachers
 
 
 def cmd_load(pack: Path) -> int:
@@ -44,13 +45,117 @@ def cmd_add_student(name: str, course: str, profile: str | None = None) -> int:
     return 0
 
 
-def cmd_log(student: str, nodes: list[str], depth: str, engagement: str, offloading: bool = False,
-            support: str | None = None, choice: str | None = None, misconceptions: list[str] | None = None,
-            ts: str | None = None, evidence: list[dict] | None = None) -> int:
+def cmd_delete_student(student: str, yes: bool) -> int:
+    """Delete every row about a student, in every table. Needs --yes: it cannot be undone."""
+    if learner.get_student(student) is None:
+        print(f"unknown student {student!r}", file=sys.stderr)
+        return 1
+    if not yes:
+        print(f"this deletes every row about {student} and cannot be undone; run again with --yes", file=sys.stderr)
+        return 1
+    counts = learner.delete_student(student)
+    print(f"{student}: deleted " + ", ".join(f"{n} {t}" for t, n in counts.items() if n))
+    return 0
+
+
+def cmd_export_student(student: str, out: Path | None) -> int:
+    """Write everything stored about a student as JSON, to a file or to the screen."""
+    try:
+        data = learner.export_student(student)
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
+    text = json.dumps(data, indent=2, ensure_ascii=False)
+    if out:
+        out.write_text(text, encoding="utf-8")
+        print(f"{student}: exported {sum(len(r) for r in data['tables'].values())} rows to {out}")
+    else:
+        print(text)
+    return 0
+
+
+def cmd_leave_student(student: str, on: str | None) -> int:
+    """Mark a student as having left; their data is deleted retention.after_leaving_days later by purge."""
+    try:
+        learner.leave_student(student, on)
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(f"{student}: marked as left; purge deletes their data after {learner._settings().retention.after_leaving_days} days")
+    return 0
+
+
+def cmd_purge() -> int:
+    """Apply the retention settings: old call-log rows, and students who left long enough ago."""
+    done = learner.purge()
+    print(
+        f"purged {done['call_log']} call-log row(s) and {len(done['students'])} student(s)"
+        + (": " + ", ".join(done["students"]) if done["students"] else "")
+    )
+    gone = teachers.purge_left_teachers()
+    if gone:
+        print(f"purged {gone} teacher(s) who left")
+    return 0
+
+
+def cmd_teacher(action: str, name: str | None = None, teacher: str | None = None, class_id: str | None = None, yes: bool = False) -> int:
+    """Teachers for the web pages: add (prints the key once), assign a class, list, leave, delete."""
+    try:
+        if action == "add":
+            created = teachers.add_teacher(name or "")
+            print(f"teacher: {created['id']}")
+            print(f"key:     {created['key']}   (shown once; open /teacher#key=<key>)")
+        elif action == "assign":
+            teachers.assign_class(teacher or "", class_id or "")
+            print(f"{teacher}: may now see class {class_id}")
+        elif action == "list":
+            rows = learner._conn().execute("SELECT id, name, left_on FROM teacher ORDER BY id").fetchall()
+            for r in rows:
+                names = ", ".join(c["id"] for c in teachers.classes_of(r["id"])) or "no classes"
+                print(f"{r['id']}  {r['name']}  [{names}]" + (f"  left {r['left_on']}" if r["left_on"] else ""))
+        elif action == "leave":
+            teachers.leave_teacher(teacher or "")
+            print(f"{teacher}: marked as having left; the key no longer works")
+        else:
+            if not yes:
+                print("this deletes the teacher and their class assignments; pass --yes to confirm", file=sys.stderr)
+                return 1
+            teachers.delete_teacher(teacher or "")
+            print(f"{teacher}: deleted")
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
+    return 0
+
+
+def cmd_log(
+    student: str,
+    nodes: list[str],
+    depth: str,
+    engagement: str,
+    offloading: bool = False,
+    support: str | None = None,
+    choice: str | None = None,
+    misconceptions: list[str] | None = None,
+    ts: str | None = None,
+    evidence: list[dict] | None = None,
+) -> int:
     """Record one exchange (and any evidence with it) by hand and apply it straight away."""
     try:
-        event_id = learner.record_exchange(student, nodes, depth, engagement, offloading, support, choice,
-                                           misconceptions, ts=ts, client="cli", evidence=evidence, apply="now")
+        event_id = learner.record_exchange(
+            student,
+            nodes,
+            depth,
+            engagement,
+            offloading,
+            support,
+            choice,
+            misconceptions,
+            ts=ts,
+            client="cli",
+            evidence=evidence,
+            apply="now",
+        )
     except ValueError as e:
         print(e, file=sys.stderr)
         return 1
@@ -58,8 +163,9 @@ def cmd_log(student: str, nodes: list[str], depth: str, engagement: str, offload
     return 0
 
 
-def cmd_evidence(student: str, part: str, evidence_type: str, score: float, ts: str | None = None,
-                 misconceptions: list[str] | None = None) -> int:
+def cmd_evidence(
+    student: str, part: str, evidence_type: str, score: float, ts: str | None = None, misconceptions: list[str] | None = None
+) -> int:
     """Record evidence with no exchange by hand and apply it straight away."""
     try:
         ids = learner.record_evidence(student, part, evidence_type, score, misconceptions, ts=ts, apply="now")
@@ -72,11 +178,14 @@ def cmd_evidence(student: str, part: str, evidence_type: str, score: float, ts: 
 
 def _priority_lines(student: str, at: str | None) -> list[str]:
     """Upcoming assessments and the top three due reviews by expected marks (priorities). CLI only."""
-    lines = [f"assessment {a['id']}: {a['name']} ({a['kind']}) on {a['date']}, {len(a['part_ids'])} parts"
-             for a in learner.assessments(student, at)] or ["assessments: none upcoming"]
-    chance = learner.move_chance(student, "mcq_check", at)
-    valued = sorted(((learner.step_value(student, r["part_id"], chance, at), r["part_id"])
-                     for r in learner.due_reviews(student, 10_000, at)), key=lambda v: -v[0]["value"])
+    lines = [
+        f"assessment {a['id']}: {a['name']} ({a['kind']}) on {a['date']}, {len(a['part_ids'])} parts"
+        for a in learner.assessments(student, at)
+    ] or ["assessments: none upcoming"]
+    valued = sorted(
+        ((learner.step_value(student, r["part_id"], at), r["part_id"]) for r in learner.due_reviews(student, 10_000, at)),
+        key=lambda v: -v[0]["value"],
+    )
     for found, part in valued[:3]:
         why = f" ({learner.reason_text(found['reason'], at)})" if found["reason"] else ""
         lines.append(f"candidate review {part}: value {found['value']:.4f}{why}")
@@ -90,8 +199,109 @@ def _learning_line(student: str, at: str | None) -> str:
         return "learning rate: personalisation off"
     session = learner.session_state(student, at)
     found = learner.learning_offset(student, session["session_id"] if session else at)
-    return (f"learning rate: offset {found['offset']:+.2f} log-odds (x{found['weight']:.2f} odds) "
-            f"from n={found['n']} pieces of evidence")
+    return f"learning rate: offset {found['offset']:+.2f} log-odds (x{found['weight']:.2f} odds) from n={found['n']} pieces of evidence"
+
+
+def _starting_line(student: str, at: str | None) -> str:
+    """The personal starting adjustment by sector (step 05q): CLI only, never shown to students or teachers."""
+    o = learner.starting_offsets(student, at)
+    cls = learner.student_class(student)
+    return (
+        f"starting adjustment: covered {o['covered']:+.2f} (n={o['n_covered']}), not covered {o['not_covered']:+.2f} "
+        f"(n={o['n_not_covered']}); class {cls or '-'}"
+    )
+
+
+def cmd_class_add(name: str, pack: str | None) -> int:
+    print(f"class: {learner.add_class(name, pack)}")
+    return 0
+
+
+def cmd_class_add_students(class_id: str, students: list[str]) -> int:
+    try:
+        learner.add_students_to_class(class_id, students)
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(f"{class_id}: {len(students)} student(s) added")
+    return 0
+
+
+def _sections(class_id: str, keys: list[str]) -> list[str] | None:
+    matched, unmatched = graph.match_sections(keys)
+    if unmatched or not matched:
+        print("no match for: " + ", ".join(unmatched or keys), file=sys.stderr)
+        return None
+    return [n["id"] for n in matched]
+
+
+def cmd_assessment_add(class_id: str, name: str, kind: str, day: str, topics: list[str]) -> int:
+    """Add a test or assignment for every member of a class (the teacher mock-up's form has the same fields)."""
+    matched, unmatched = graph.match_sections(topics)
+    if unmatched or not matched:
+        print("no match for: " + ", ".join(unmatched or topics), file=sys.stderr)
+        return 1
+    parts = list(dict.fromkeys(p for n in matched for p in graph.parts_of(n["id"])))
+    try:
+        found = learner.add_class_assessment(class_id, name, kind, day, parts)
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(f"{class_id}: assessment {found} added ({kind}, {day}, {len(parts)} parts)")
+    return 0
+
+
+def cmd_coverage_set(class_id: str, sections: list[str], taught_on: str | None) -> int:
+    ids = _sections(class_id, sections)
+    if ids is None:
+        return 1
+    day = taught_on or learner.parse_ts(learner.now_iso()).date().isoformat()
+    try:
+        learner.set_class_coverage(class_id, ids, day, "cli")
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(f"{class_id}: {len(ids)} section(s) marked as taught on {day}")
+    return 0
+
+
+def cmd_coverage_import(class_id: str, path: Path) -> int:
+    """Import coverage from a CSV with columns section,taught_on (a node id, spec code or name, and YYYY-MM-DD)."""
+    import csv
+
+    try:
+        with path.open(encoding="utf-8", newline="") as f:
+            rows = list(csv.DictReader(f))
+    except OSError as e:
+        print(e, file=sys.stderr)
+        return 1
+    if not rows or not {"section", "taught_on"} <= set(rows[0]):
+        print("the CSV needs the columns section,taught_on", file=sys.stderr)
+        return 1
+    done = 0
+    for row in rows:
+        ids = _sections(class_id, [row["section"]])
+        if ids is None:
+            return 1
+        try:
+            learner.set_class_coverage(class_id, ids, row["taught_on"].strip(), "csv")
+        except ValueError as e:
+            print(f"{row['section']}: {e}", file=sys.stderr)
+            return 1
+        done += len(ids)
+    print(f"{class_id}: {done} section(s) imported from {path}")
+    return 0
+
+
+def cmd_coverage_export(class_id: str, as_json: bool) -> int:
+    """The class's coverage, for the teacher mock-up's 'where we are in the spec' tick-list (--json) or as a table."""
+    rows = learner.class_coverage(class_id)
+    if as_json:
+        print(json.dumps({"class": class_id, "coverage": rows}, indent=2))
+    else:
+        for r in rows:
+            print(f"{r['taught_on']}  {r['spec_ref'] or '-':8} {r['name']}  ({r['parts']} parts, set by {r['set_by']})")
+    return 0
 
 
 def cmd_state(student: str, node: str | None = None, at: str | None = None) -> int:
@@ -105,26 +315,31 @@ def cmd_state(student: str, node: str | None = None, at: str | None = None) -> i
     conn = learner._conn()
     states = {r["part_id"]: r for r in conn.execute("SELECT * FROM part_state WHERE student_id = ?", (student,))}
     reviews = {r["part_id"]: r for r in conn.execute("SELECT * FROM review_queue WHERE student_id = ?", (student,))}
-    roots = [graph.get_node(node)] if node else graph.topics()
+    roots = [graph.require_node(node)] if node else graph.topics()
 
     print(_session_line(learner.session_state(student, at)))
     print(_learning_line(student, at))
+    print(_starting_line(student, at))
     for line in _priority_lines(student, at):
         print(line)
-    print(f"{'part':24} {'level':10} {'p_now':>5} {'p_known':>7} {'half-life':>9} {'checks':>6} {'chats':>5}  "
-          f"{'last correct':12} review due")
+    print(
+        f"{'part':24} {'level':10} {'p_now':>5} {'p_known':>7} {'half-life':>9} {'checks':>6} {'chats':>5}  {'last correct':12} review due"
+    )
     for root in roots:
         print(f"{root['name']} ({root['level']}): {learner.rollup(student, root['id'], at):.2f}")
         for part in graph.parts_of(root["id"]):
             p = learner.part_p(student, part, at)
             state, review = states.get(part), reviews.get(part)
             if state:
-                numbers = (f"{state['p_known']:7.2f} {state['half_life_days']:8.1f}d {state['n_evidence']:6d} "
-                           f"{state['exchanges_since_evidence']:5d}  {(state['last_correct'] or '-')[:10]:12}")
+                numbers = (
+                    f"{state['p_known']:7.2f} {state['half_life_days']:8.1f}d {state['n_evidence']:6d} "
+                    f"{state['exchanges_since_evidence']:5d}  {(state['last_correct'] or '-')[:10]:12}"
+                )
             else:
                 numbers = f"{'-':>7} {'-':>9} {'-':>6} {'-':>5}  {'-':12}"
             due = f"{review['due'][:16].replace('T', ' ')} ({review['reason']})" if review else "-"
-            print(f"  {part:22} {learner.level(p):10} {p:5.2f} {numbers} {due}")
+            mark = "*" if learner.covered_since(student, part, at) else " "  # * = covered in class
+            print(f" {mark}{part:22} {learner.level(p):10} {p:5.2f} {numbers} {due}")
     return 0
 
 
@@ -135,12 +350,14 @@ def _share(value: float | None) -> str:
 def _session_line(session: dict | None) -> str:
     if session is None:
         return "session: none in progress"
-    parts = [f"session: started {session['session_id'][:16].replace('T', ' ')}, {session['minutes']:.0f} min",
-             f"{session['n_evidence']} evidence"]
-    if session["rolling_surprise"] is not None:
-        parts.append(f"rolling surprise {session['rolling_surprise']:+.2f}")
+    parts = [
+        f"session: started {session['session_id'][:16].replace('T', ' ')}, {session['minutes']:.0f} min",
+        f"{session['n_evidence']} evidence",
+    ]
     if session["fatigued"]:
-        parts.append(f"FATIGUED since minute {session['fatigued_since_minute']:.0f}")
+        parts.append(f"{session['fatigue_reason'].replace('_', '-')} mode since minute {session['fatigued_since_minute']:.0f}")
+    if session["rapid_guesses"]:
+        parts.append(f"{session['rapid_guesses']} rapid guess(es)")
     if session["stuck_parts"]:
         parts.append("stuck on " + ", ".join(p["part_id"] for p in session["stuck_parts"]))
     parts.append(f"just-show-me {_share(session['just_show_me_share'])}, surface {_share(session['surface_share'])}")
@@ -185,13 +402,17 @@ def cmd_calls(student: str | None = None, last: int = 20) -> int:
     print(f"{'time':23} {'student':12} {'tool':18} {'ms':>7} {'chars':>7}  result")
     for r in stats["recent"]:
         result = ("ok" if r["ok"] else f"error: {r['error']}") + (" OVER BUDGET" if r["over_budget"] else "")
-        print(f"{r['ts'][:23].replace('T', ' '):23} {r['student_id'] or '-':12} {r['tool']:18} {r['ms']:7.1f} "
-              f"{r['result_chars']:7d}  {result}")
+        print(
+            f"{r['ts'][:23].replace('T', ' '):23} {r['student_id'] or '-':12} {r['tool']:18} {r['ms']:7.1f} "
+            f"{r['result_chars']:7d}  {result}"
+        )
     print()
     print(f"{'tool':18} {'calls':>5} {'median ms':>9} {'p90 ms':>7} {'median chars':>12} {'max chars':>9} {'over budget':>11}")
     for tool, t in stats["tools"].items():
-        print(f"{tool:18} {t['calls']:5d} {t['median_ms']:9.1f} {t['p90_ms']:7.1f} {t['median_chars']:12.0f} "
-              f"{t['max_chars']:9d} {t['over_budget']:11d}")
+        print(
+            f"{tool:18} {t['calls']:5d} {t['median_ms']:9.1f} {t['p90_ms']:7.1f} {t['median_chars']:12.0f} "
+            f"{t['max_chars']:9d} {t['over_budget']:11d}"
+        )
     if stats["gaps"]:
         print()
         print(f"{'student':12} median gap between calls")
@@ -207,7 +428,7 @@ def cmd_set_profile(student: str, profile: str) -> int:
     except ValueError as e:
         print(e, file=sys.stderr)
         return 1
-    print(f"{student}: profile {learner.profile_of(learner.get_student(student))}")
+    print(f"{student}: profile {learner.profile_of(learner.require_student(student))}")
     return 0
 
 
@@ -222,12 +443,12 @@ def cmd_serve(host: str | None = None, port: int | None = None) -> int:
     return 0
 
 
-def cmd_seed_demo(course: str | None = None, reset: bool = False, parts: str | None = None) -> int:
+def cmd_seed_demo(course: str | None = None, reset: bool = False, parts: str | None = None, pupils: int = 0) -> int:
     """Create the three demo students by replaying scripted events; print the roles picked and their keys."""
     from edux import demo
 
     try:
-        result = demo.seed(course, reset, parts)
+        result = demo.seed(course, reset, parts, pupils)
     except ValueError as e:
         print(e, file=sys.stderr)
         return 1
@@ -240,6 +461,8 @@ def cmd_seed_demo(course: str | None = None, reset: bool = False, parts: str | N
     host, port = os.environ.get("HOST", "127.0.0.1"), os.environ.get("PORT", "8000")
     for student_id, key in result["students"].items():
         print(f"{student_id:12} key {key}   http://{host}:{port}/mcp?key={key}")
+    if result["pupils"]:
+        print(f"{result['pupils']} synthetic pupils added to {demo.CLASS_ID} (seeded data, for the teacher page)")
     return 0
 
 
@@ -258,7 +481,10 @@ def _evidence(value: str) -> dict:
 
 def main(argv: list[str] | None = None) -> None:
     """Parse arguments and run a command."""
-    parser = argparse.ArgumentParser(prog="python -m edux.cli", description="Synapse command line: load a course pack, manage students, inspect and rebuild the learner model, run the server.")
+    parser = argparse.ArgumentParser(
+        prog="python -m edux.cli",
+        description="Synapse command line: load a course pack, manage students, inspect and rebuild the learner model, run the server.",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("load", help="load a course pack into content.db")
     p.add_argument("pack", type=Path)
@@ -266,6 +492,57 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--name", required=True)
     p.add_argument("--course", required=True)
     p.add_argument("--profile", help="context profile (default from context.toml)")
+    p = sub.add_parser("delete-student", help="delete every row about a student, in every table (cannot be undone)")
+    p.add_argument("--student", required=True)
+    p.add_argument("--yes", action="store_true", help="confirm")
+    p = sub.add_parser("export-student", help="write everything stored about a student as JSON")
+    p.add_argument("--student", required=True)
+    p.add_argument("--out", type=Path, help="a file (default: print it)")
+    p = sub.add_parser("leave-student", help="mark a student as having left; purge deletes their data later")
+    p.add_argument("--student", required=True)
+    p.add_argument("--on", help="the date they left, YYYY-MM-DD (default: today)")
+    p = sub.add_parser("purge", help="apply the retention settings: old call-log rows and students who left")
+    p = sub.add_parser("teacher", help="teachers for the web pages: teacher add, assign, list, leave, delete")
+    tsub = p.add_subparsers(dest="teacher_command", required=True)
+    q = tsub.add_parser("add", help="create a teacher and print their key once")
+    q.add_argument("--name", required=True)
+    q = tsub.add_parser("assign", help="let a teacher see a class")
+    q.add_argument("--teacher", required=True)
+    q.add_argument("--class", dest="class_id", required=True)
+    tsub.add_parser("list", help="list teachers and their classes")
+    q = tsub.add_parser("leave", help="mark a teacher as having left (the key stops working)")
+    q.add_argument("--teacher", required=True)
+    q = tsub.add_parser("delete", help="delete a teacher and their class assignments")
+    q.add_argument("--teacher", required=True)
+    q.add_argument("--yes", action="store_true", help="confirm")
+    p = sub.add_parser("class", help="classes: class add, class add-students")
+    csub = p.add_subparsers(dest="class_command", required=True)
+    q = csub.add_parser("add", help="create a class")
+    q.add_argument("--name", required=True)
+    q.add_argument("--pack", help="the course pack the class follows")
+    q = csub.add_parser("add-students", help="put students in a class")
+    q.add_argument("--class", dest="class_id", required=True)
+    q.add_argument("--students", required=True, type=_list, help="comma-separated student ids")
+    p = sub.add_parser("coverage", help="what a class has been taught: coverage set, import, export")
+    vsub = p.add_subparsers(dest="coverage_command", required=True)
+    q = vsub.add_parser("set", help="mark sections as taught")
+    q.add_argument("--class", dest="class_id", required=True)
+    q.add_argument("--sections", required=True, type=_list, help="comma-separated node ids, spec codes or names")
+    q.add_argument("--taught-on", help="YYYY-MM-DD (default today)")
+    q = vsub.add_parser("import", help="import coverage from a CSV with columns section,taught_on")
+    q.add_argument("--class", dest="class_id", required=True)
+    q.add_argument("file", type=Path)
+    q = vsub.add_parser("export", help="show a class's coverage")
+    q.add_argument("--class", dest="class_id", required=True)
+    q.add_argument("--json", action="store_true", help="JSON, for the teacher mock-up's tick-list")
+    p = sub.add_parser("assessment", help="class assessments: assessment add")
+    asub = p.add_subparsers(dest="assessment_command", required=True)
+    q = asub.add_parser("add", help="add a test or assignment for every member of a class")
+    q.add_argument("--class", dest="class_id", required=True)
+    q.add_argument("--name", required=True)
+    q.add_argument("--kind", required=True, help="homework, class_test, mock or written_assignment")
+    q.add_argument("--date", required=True, help="YYYY-MM-DD")
+    q.add_argument("--topics", required=True, type=_list, help="comma-separated node ids, spec codes or names")
     p = sub.add_parser("set-profile", help="switch a student's context profile")
     p.add_argument("--student", required=True)
     p.add_argument("--profile", required=True, help="a profile in context.toml, or 'default'")
@@ -279,8 +556,9 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--choice", help="try_first / hint / just_show_me / none")
     p.add_argument("--misconceptions", type=_list, help="comma-separated misconception ids")
     p.add_argument("--ts", help="ISO timestamp (default: now)")
-    p.add_argument("--evidence", type=_evidence, action="append",
-                   help="part_id:type:score, what the student produced this turn (repeatable)")
+    p.add_argument(
+        "--evidence", type=_evidence, action="append", help="part_id:type:score, what the student produced this turn (repeatable)"
+    )
     p = sub.add_parser("evidence", help="record evidence by hand, with no exchange")
     p.add_argument("--student", required=True)
     p.add_argument("--part", required=True, help="part or concept id")
@@ -306,8 +584,10 @@ def main(argv: list[str] | None = None) -> None:
     p = sub.add_parser("seed-demo", help="create the three demo students from scripted events")
     p.add_argument("--course", help="course id (default: the only loaded course)")
     p.add_argument("--reset", action="store_true", help="remove the demo students and their events first")
-    p.add_argument("--parts", help="override roles, e.g. target=ped_values,prereq=ped_formula "
-                                   "(review_parts and showme_parts take ;-separated ids)")
+    p.add_argument("--pupils", type=int, default=0, help="also add this many synthetic pupils to the demo class, for the teacher page")
+    p.add_argument(
+        "--parts", help="override roles, e.g. target=ped_values,prereq=ped_formula (review_parts and showme_parts take ;-separated ids)"
+    )
     p = sub.add_parser("serve", help="start the MCP server")
     p.add_argument("--host", help="default: HOST from the environment, else 127.0.0.1")
     p.add_argument("--port", type=int, help="default: PORT from the environment, else 8000")
@@ -317,11 +597,49 @@ def main(argv: list[str] | None = None) -> None:
         code = cmd_load(args.pack)
     elif args.command == "add-student":
         code = cmd_add_student(args.name, args.course, args.profile)
+    elif args.command == "delete-student":
+        code = cmd_delete_student(args.student, args.yes)
+    elif args.command == "export-student":
+        code = cmd_export_student(args.student, args.out)
+    elif args.command == "leave-student":
+        code = cmd_leave_student(args.student, args.on)
+    elif args.command == "purge":
+        code = cmd_purge()
+    elif args.command == "teacher":
+        code = cmd_teacher(
+            args.teacher_command,
+            getattr(args, "name", None),
+            getattr(args, "teacher", None),
+            getattr(args, "class_id", None),
+            getattr(args, "yes", False),
+        )
+    elif args.command == "class":
+        code = cmd_class_add(args.name, args.pack) if args.class_command == "add" else cmd_class_add_students(args.class_id, args.students)
+    elif args.command == "assessment":
+        code = cmd_assessment_add(args.class_id, args.name, args.kind, args.date, args.topics)
+    elif args.command == "coverage":
+        code = (
+            cmd_coverage_set(args.class_id, args.sections, args.taught_on)
+            if args.coverage_command == "set"
+            else cmd_coverage_import(args.class_id, args.file)
+            if args.coverage_command == "import"
+            else cmd_coverage_export(args.class_id, args.json)
+        )
     elif args.command == "set-profile":
         code = cmd_set_profile(args.student, args.profile)
     elif args.command == "log":
-        code = cmd_log(args.student, args.nodes, args.depth, args.engagement, args.offloading, args.support,
-                       args.choice, args.misconceptions, args.ts, args.evidence)
+        code = cmd_log(
+            args.student,
+            args.nodes,
+            args.depth,
+            args.engagement,
+            args.offloading,
+            args.support,
+            args.choice,
+            args.misconceptions,
+            args.ts,
+            args.evidence,
+        )
     elif args.command == "evidence":
         code = cmd_evidence(args.student, args.part, args.type, args.score, args.ts, args.misconceptions)
     elif args.command == "state":
@@ -333,7 +651,7 @@ def main(argv: list[str] | None = None) -> None:
     elif args.command == "calls":
         code = cmd_calls(args.student, args.last)
     elif args.command == "seed-demo":
-        code = cmd_seed_demo(args.course, args.reset, args.parts)
+        code = cmd_seed_demo(args.course, args.reset, args.parts, args.pupils)
     elif args.command == "serve":
         code = cmd_serve(args.host, args.port)
     else:

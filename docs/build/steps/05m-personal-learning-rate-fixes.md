@@ -8,6 +8,7 @@ Branch `build/fix-personal-learning-rate`, from `main`. Follow-up to step [05h](
    - A part's first answer belongs to the starting-point adjustment (step [05q](05q-class-coverage-and-starting-points.md)). This stops "already knew it" being counted twice.
    - Here, "first answer" means the student's first evidence row on that part, in `evidence_log` order.
 3. **#32: AI-literacy evidence stays out of the offset, and AI-literacy parts use the population learn rate.** `apply_evidence_event` passes `bkt.learn_rate` unchanged for `ail_*` parts.
+4. **Off by default (audit item C5, Vishnu's decision of 18 November).** `personalisation.enabled = false`, for the learning-rate offset only. `EDUX_PERSONALISATION=1` turns it on. The starting-point adjustments (05q) stay on. Reasons: after the recalibration the offset barely moves; `docs/research/personalisation.md` §5 says "off until evaluated"; and the ICO Children's Code (Standard 12) says profiling is off by default. See [decision 0007](../../decisions/0007-personal-learning-rate-off-by-default.md).
 
 ## Why, with sources
 - **Students differ far less in learning rate than in starting knowledge.**
@@ -24,10 +25,7 @@ Branch `build/fix-personal-learning-rate`, from `main`. Follow-up to step [05h](
 - `edux/learner.py`:
   - `learning_offset` leaves out each part's first evidence row (`ail_*` is already left out);
   - `apply_evidence_event` uses the population learn rate on `ail_*` parts.
-- `scripts/check_mcp.py`:
-  - a first answer doesn't move the offset;
-  - an `ail_*` update uses `bkt.learn_rate`;
-  - the offset stays within [0.7, 1.3].
+- `tests/test_personal_learning_rate.py` (pytest, replaces the planned `check_mcp` checks): off by default; the environment switch; a first answer is left out (16 answers on 4 parts give n = 12); AI-literacy evidence leaves the offset alone; an `ail_*` update uses the population rate; the offset stays within the bounds.
 - **Docs:** this file; 05h is written to match; `reference/settings.md` (values and labels); `reference/learner-model.md` (first answers, `ail_*`); `reference/research.md` rows if anything ends up different.
 - The demo: re-capture each demo student's offset (it will be smaller) and update the 05h "How to check" numbers in the PR description.
 
@@ -53,7 +51,7 @@ Branch `build/fix-personal-learning-rate`, from `main`. Follow-up to step [05h](
 - A first answer and `ail_*` evidence leave the offset unchanged.
 - Issues #31 and #32 are closed with a one-line comment.
 - The gate passes:
-  - `check_mcp` passes, with personalisation on and with `EDUX_PERSONALISATION=0`;
+  - `check_mcp` passes, with `EDUX_PERSONALISATION=1` and with it unset (off);
   - no result is over 2,400 characters;
   - rebuild gives identical state;
   - the instructions word count is reported (unchanged).

@@ -19,6 +19,11 @@ learn_rate = 0.10          # chance of learning from one piece of evidence; star
 correct_share = 0.67       # share of a link/check score that counts as "correct"
 mcq_guess_from_options = true   # a multiple-choice guess is 1 / the options shown (mcq_check, ail_how, an intuition question; tune-from-research)
 
+[bkt.explain_back_guess]   # judgement call: a complete multi-point answer is far harder to produce by luck
+up_to_2 = 0.20             # explain-back guess when the answer needs 1 or 2 mark points
+three = 0.15               # 3 mark points
+four_plus = 0.10           # 4 or more
+
 [bkt.evidence]             # slip / guess per evidence type
 explain_back = { slip = 0.10, guess = 0.20 }    # open answers 0.20 from tune-from-research: one reply can't reach secure
 past_question = { slip = 0.10, guess = 0.20 }
@@ -32,6 +37,7 @@ immediate = { slip = 0.10, guess = 0.30 }   # chat evidence straight after a wor
 ail_question = { slip = 0.15, guess = 0.20 }     # a research question, scored by its features (step 05e)
 ail_task = { slip = 0.10, guess = 0.15 }         # the answer to a verify task (a reported dead or mismatched source scores 1)
 ail_unprompted = { slip = 0.05, guess = 0.10 }   # checking a claim without being asked: counts more
+ail_find_error = { slip = 0.15, guess = 0.25 }   # find-the-error practice, on Verify: its own type so it cannot inflate Verify from real moments (decision 0012)
 ail_how = { slip = 0.10, guess = 0.25 }          # a how-AI-works check: 4-option multiple choice
 mcq_check = { slip = 0.10, guess = 0.25 }   # a multiple-choice check on one point (step 05d); guess about 1 in 4 options
 
@@ -58,6 +64,20 @@ seen_refresh = 0.2         # an exchange moves the forgetting clock this share o
 [propagation]
 prereq_boost = 0.20        # share of a gain passed one hop to prerequisites
 queue_band = [0.30, 0.75]  # parts in this band are candidates to teach next
+forward_weight = 0.5       # judgement call, starting value: Kaser et al. (2014, 2017) model skill links but give no weight; shifts a new part by this share of its prerequisites' log-odds change
+
+[coverage]                 # starting points for parts a class has been taught (step 05q; Vishnu's change of 18 Nov: a boost, not a fixed prior)
+boost_logit = 0.5          # judgement call, starting value: a covered part starts this far up in log-odds from its normal start (0.30 -> about 0.41)
+class_k = 25               # from research: Simpson et al. (2024) intercept SD 0.57-0.90 logits implies k of about 18-44 in our simulation
+class_estimate_enabled = false   # off by default: on only with the school's written instruction (personalisation.md section 7)
+class_min_students = 5     # from personalisation.md sections 5 and 7: minimum cell size
+class_max_down = 0.075     # from personalisation.md section 7: the class estimate never starts a covered part more than this below its boosted start
+
+[starting]                 # a student's own starting adjustment (step 05q)
+k = 25                     # from research: Simpson et al. (2024) spread plus our simulation: first answers for half weight
+bound_logits = 1.5         # from research: about +-2 SD of the same spread
+cap = 0.65                 # judgement call, starting value: no starting point (coverage, personal adjustment and feed-forward together) is above this; answers can take a part anywhere
+
 
 [importance]
 w_exam = 0.6
@@ -76,7 +96,7 @@ share_far = 0.10           # > 60 days to the exam (tune-from-research: was 0.25
 share_mid = 0.19           # 14–60 days (was 0.15)
 share_near = 0.30          # < 14 days (was 0.08)
 min_gap_days = 1
-review_when_below = 0.50   # also due when recall is expected to fall below this, if that comes before the share gap (tune-from-research)
+review_when_below = 0.50   # judgement call, starting value: also due when recall is expected to fall below this, if that comes before the share gap. Not from research (see docs/research/review-threshold-simulation.md)
 just_show_me_gap_days = 1.5
 max_reviews_per_reply = 3
 untested_after = 4         # this many exchanges on a part with no check
@@ -110,36 +130,62 @@ importance = 0.5           # fixed importance of the AI-literacy parts (they hav
 
 [session]                  # sessions, fatigue and getting stuck, derived from events
 gap_minutes = 30           # a longer gap starts a new session
-fatigue_min_minutes = 25   # no fatigue call before this
-fatigue_window = 4         # pieces of evidence in the rolling mean
-fatigue_threshold = -0.25  # mean surprise at or below this = doing worse than expected
-fatigue_min_parts = 2      # the drop must span at least this many parts
-fatigue_slip_add = 0.15    # extra slip while fatigued
-slip_cap = 0.40
+slip_cap = 0.40            # judgement call: the most any slip can reach, time on task included
 signal_window = 6          # exchanges used for the supporting signals
 stuck_attempts = 3         # open answers on a part before it can count as stuck (MCQ checks: same point missed twice)
 stuck_below = 0.5          # and their mean score below this
-quick_parts = 3            # parts offered for a short burst when fatigued
-pattern_min_sessions = 3   # sessions with a fatigue onset before study_pattern is shown
+quick_parts = 3            # parts offered for a short burst in long-session or rushing mode
+
+[fatigue]                  # time on task and rapid guesses (step 05s). Pacing, never an emotion: no affect label, no biometric data
+slip_start_minutes = 28    # from research: Randles, Harlow & Inzlicht (2017), performance declines from about 28 minutes
+slip_per_minute = 0.002    # from research (fit to the same decline of 4-5 points by about 50 minutes): extra slip per minute after that
+extra_slip_cap = 0.12      # from research: end-of-test declines of 7.5-12% (Brown, Kaur, Kingdon & Schofield; TIMSS); the top is used
+mode_minutes = 50          # from research: Randles et al. (2017), with Sievertsen, Gino & Piovesan (2016) on breaks: long-session mode starts here
+rapid_guesses = 2          # judgement call, starting value: rapid guesses in a session that start rushing mode
+reading_wpm = 300          # from research: Brysbaert (2019), mean silent reading 238 wpm, range 175-300; the top is used so fewer students are flagged wrongly
+typing_wpm = 52            # from research: Dhakal et al. (2018), mean typing speed 52 wpm on a keyboard
+min_students_per_bin = 5   # judgement call: a class fatigue-curve bin with fewer students is hidden
 
 [engagement]               # in-session engagement rules (engagement-rules); never stored as a trait
 passive_run = 4            # passive messages in a row before offer_choice offers ways on (once a session, never when fatigued)
 low_share = 0.5            # passive or "just show me" share of the last session.signal_window messages at or above which the
                            # explain-back asks for the weakest point only
+weakest_last_n = 5          # from research: Galyardt & Goldin (2015), 75-93% of predictive weight on the last 5 attempts
+coasting_min_messages = 2   # judgement call, starting value: messages in the window before a student can count as coasting
+
+[confidence]               # "how sure are you?" after an answer to a check (step 05z). Never an input to p_known
+enabled = true             # judgement call: asked only on checks, reviews and prerequisite checks, never on ordinary chat or while rushing
+max_per_session = 6        # judgement call, starting value: at most this many asks in a session
+stop_after_skips = 2       # judgement call, starting value: two skips in a row and it stops asking for the session (no penalty for skipping)
+min_per_group = 5          # judgement call (Vishnu, 18 Nov): the calibration line shows a group only after this many rated answers in it
+
+[find_error]               # find-the-error practice (decision 0012). Built but OFF until Vishnu approves it: the evidence is thin
+enabled = false            # judgement call: EDUX_FIND_ERROR=1 turns it on without editing this file
+clean_share = 0.4          # judgement call, starting value: share of items with no error at all (the review's design rules say 30 to 50%; no study gives a ratio)
+max_per_session = 1        # judgement call: rare, at most this many a session, never while rushing, only on a part at developing or above
+
+[web]                      # the map, student and teacher pages (decision 0023)
+public_example_map = true  # judgement call: serve the synthetic example pack's course map with no key; any other pack always needs a key
+
+[reminders]               # in-chat deadline reminders (step 05u). Synapse cannot push notifications
+days_ahead = 7             # judgement call, starting value: tests due within this many days are mentioned, once, at the start of a session
+
+[plan]                     # day-by-day study plans (step 05u)
+sessions_per_week = 3      # judgement call, starting value; the student can say otherwise
 
 [show]                     # "just show me" (engagement-rules)
 max_per_part_session = 2   # after this many shows of one part in a session, the next first asks a 2-option question on the point
 
-[personalisation]          # per-student learning rate (personal-learning-rate; docs/research/personalisation.md section 7)
-enabled = true             # on for the demo; EDUX_PERSONALISATION=0 turns it off without editing this file
-learn_rate_k = 20          # shrinkage: the offset is n / (n + k) of the evidence's mean surprise
-min_observations = 10      # pieces of evidence (earlier sessions, not fatigued, immediate or untaught) before any offset
-min_parts = 3              # and across at least this many parts
-recency_half_life = 20     # a piece of evidence counts half as much this many pieces later
-surprise_scale = 2.0       # log-odds of learn-rate change per unit of shrunk mean surprise
-learn_rate_weight_bounds = [0.5, 1.5]   # odds multiplier on bkt.learn_rate; narrow on purpose (over-crediting locks errors in)
-max_change_per_session = 0.25   # log-odds the offset may rise from one session to the next
-down_change_factor = 2.0   # it may fall this many times faster: under-crediting is the safer mistake
+[personalisation]          # per-student learning rate (05h, recalibrated in 05m). Not the starting-point adjustments (05q), which are core and always on
+enabled = false            # judgement call: off by default (Children's Code Standard 12, profiling off by default; the recalibrated offset barely moves); EDUX_PERSONALISATION=1 turns it on without editing this file
+learn_rate_k = 400         # from research spread plus our simulation: shrinkage, the offset is n / (n + k) of the evidence's mean surprise
+min_observations = 10      # judgement call, starting value: pieces of evidence (earlier sessions, not fatigued, immediate, untaught or a part's first answer) before any offset
+min_parts = 3              # judgement call, starting value: and across at least this many parts
+recency_half_life = 100    # judgement call: the rate is treated as a stable trait, so a piece of evidence counts half as much 100 pieces later
+surprise_scale = 1.0       # from our simulation's regression slope: log-odds of learn-rate change per unit of shrunk mean surprise
+learn_rate_weight_bounds = [0.7, 1.3]   # from research: about +-2 SD of the replicated spread (Koedinger et al., 2023; Simpson et al., 2024); odds multiplier on bkt.learn_rate
+max_change_per_session = 0.25   # judgement call, starting value: log-odds the offset may rise from one session to the next
+down_change_factor = 2.0   # direction from Doroudi & Brunskill (2019); size is a judgement call: it may fall this many times faster, since under-crediting is the safer mistake
 
 [priorities]               # which add-on step Synapse picks, by expected marks (priorities). These are starting guesses, to be learned
                            # from pilot data (the considered logs in issued_plan)
@@ -191,6 +237,10 @@ exam_cues = ["exam", "paper", "marks", "question"]   # exam_relevance is sent on
 max_words = 120            # default length of a reply's explanation (MCQ options don't count); the student's profile answer_length overrides
 length_known_share = 0.5   # a review or check on a part at developing or above: this share of the ceiling (step 05j; Kalyuga et al., 2003)
 length_fatigued_share = 0.4   # every step while fatigued; neither shrinks a student's own answer_length
+
+[retention]                # how long data is kept (step 05x). Judgement calls, starting values: schools set their own; run `purge` to apply them
+call_log_days = 30         # call-log detail (timing, sizes, errors per call) is deleted after this many days
+after_leaving_days = 90    # a student marked as having left has all their data deleted this many days later (a window for appeals and questions)
 
 [results]                  # size of a tutor_turn or levels-only get_my_progress result, in characters of compact JSON as sent (steps 05c, 05w)
 max_chars = 2400           # engineering budget, about 600 tokens, not from research; every tool. Over this, reference blocks (tutor_turn) or the lowest-ranked list items (get_my_progress) are dropped, then the call is logged as over budget
@@ -287,7 +337,13 @@ Plain markdown files read at startup. Changing wording never touches code.
 | `moves/<key>.cue.md` | one line, at most 15 words, sent with every step of that move (step 05c). The key adds the variant (`ask_mcq_<purpose>`, `teach_<level>`, `review_<mode>`), falling back to the bare move |
 | `literacy/<skill>_<level>.md` | feedback and task patterns for `ask` and `verify` at `new`, `developing` and `secure` (step 05e) |
 | `format/<client>.md` | formatting for maths, money and diagrams per chatbot (`claude`, `chatgpt`, `gemini`, `default`), returned in `style.format` |
-| `progress/study_pattern.md` | the study-pattern line in `get_my_progress` (`{minutes}` is filled in) |
+| `progress/calibration.md` | the calibration line in `get_my_progress` (only after enough rated answers; step 05z) |
+| `fatigue/long_session.md`, `fatigue/rushing.md` | the break and the slow-down suggestions (steps 05s; pacing, not a mood label) |
+| `bridge/reason.md`, `cues/upcoming.md`, `cues/diagram.md` | the "this links to what's next in class" lead-in (05t) and the upcoming-test and diagram cues |
+| `plan/*.md` | the study-plan wording for `plan_my_study` (05u) |
+| `notices/class_estimate.md` | the notice shown when a class-level estimate is on (05q) |
+| `confidence/ask.md` | the "how sure are you?" line (05z) |
+| `find_error/intro.md`, `reveal_error.md`, `reveal_clean.md` | the find-the-error practice item and its reveals (05za) |
 | `checks/<kind>.md` | marking instructions for `points` and `level` checks (step 07) |
 | `prompts/<prompt>.md` | the text of the `review_due` and `check_me` prompts (`{topic}` is filled in) |
 | `teaching_note.md` | the teaching-note template with `{placeholders}` (debugging output only) |

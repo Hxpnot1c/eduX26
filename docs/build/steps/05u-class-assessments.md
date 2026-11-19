@@ -2,6 +2,9 @@
 
 Branch `build/class-assessments`, from `main` after step 05t.
 
+## Built
+Migration **018** (`student_assessment` rebuilt with a nullable `student_id`, `class_id` and a check that exactly one is set; `student_profile.reminders`); `written_assignment` as a kind (weight `priorities.weight_written_assignment` 0.6, a judgement call); `assessment add --class` in the CLI; `learner.assessments` (own and class, with `scope`), `add_class_assessment`, `upcoming`, `study_plan`; the `plan_my_study` tool; `upcoming` on the first call of a session; 16 tests and an `assessments` run in `check_mcp`. **Two additions beyond the spec:** (1) students can switch the reminder off (`update_my_profile(reminders=false)`; the ICO Children's Code asks for easy opt-outs and no guilt or streaks), and (2) a student's own tests are matched against any topic, concept or part (by id, spec code or name), not only top-level topics, so "PED" works. **Not built:** the teacher mock-up's form (its fields match the CLI). Decision [0018](../../decisions/0018-class-assessments-reminders-plans.md).
+
 ## What
 1. **Class-level assessments.**
    - `student_assessment` gets a nullable `class_id`, and `student_id` becomes nullable. A check requires exactly one of the two.

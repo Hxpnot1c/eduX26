@@ -42,9 +42,7 @@ def connect_content(path: Path | None = None) -> sqlite3.Connection:
     return conn
 
 
-def connect_learner(
-    path: Path | None = None, attach_content: bool = True, content_path: Path | None = None
-) -> sqlite3.Connection:
+def connect_learner(path: Path | None = None, attach_content: bool = True, content_path: Path | None = None) -> sqlite3.Connection:
     """Open learner.db in WAL mode, run pending migrations and attach content.db AS content."""
     conn = sqlite3.connect(path or learner_db_path(), timeout=10)
     conn.row_factory = sqlite3.Row
@@ -64,7 +62,9 @@ def run_migrations(conn: sqlite3.Connection, migrations_dir: Path = MIGRATIONS_D
     done = {r[0] for r in conn.execute("SELECT version FROM schema_version")} if has_table else set()
     applied = []
     for path in sorted(migrations_dir.glob("[0-9][0-9][0-9]_*.sql")):
-        version = int(re.match(r"\d+", path.name).group())
+        match = re.match(r"\d+", path.name)
+        assert match is not None  # the glob above only yields names that start with three digits
+        version = int(match.group())
         if version in done:
             continue
         now = datetime.now(timezone.utc).isoformat(timespec="seconds")

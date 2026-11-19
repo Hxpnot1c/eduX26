@@ -8,9 +8,11 @@ from __future__ import annotations
 import csv
 import re
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 from edux.settings import load_settings
 from ingest import registry
@@ -20,7 +22,7 @@ MAX_KEY_WORDING_WORDS = 15  # a key wording must be shorter than this
 MAX_SUMMARY_WORDS = 120
 LOW_CONFIDENCE = 0.5
 KEY_LENGTH_BAND = 0.20  # our choice: each misconception within 20% of a mark point's length (MCQ options of similar length)
-KEY_RANK_SKEW = 0.15    # our choice: warn when the key is the shortest, middle or longest option this much more often than even
+KEY_RANK_SKEW = 0.15  # our choice: warn when the key is the shortest, middle or longest option this much more often than even
 URL = re.compile(r"https?://[A-Za-z0-9.-]+\.[A-Za-z]{2,}(:\d+)?(/\S*)?")
 
 
@@ -101,7 +103,11 @@ def value_error(col: registry.Column, value: str) -> str | None:
     """Why a cell value is invalid for its column (required, type, enum), or None if it is fine."""
     if not value or (col.type == "list" and not split_list(value)):
         return f"{col.name} is required" if col.required else None
-    parsers = {"int": (int, "an integer"), "real": (float, "a number"), "date": (date.fromisoformat, "an ISO date")}
+    parsers: dict[str, tuple[Callable[[str], Any], str]] = {
+        "int": (int, "an integer"),
+        "real": (float, "a number"),
+        "date": (date.fromisoformat, "an ISO date"),
+    }
     if col.type in parsers:
         parse, what = parsers[col.type]
         try:
@@ -247,8 +253,12 @@ class _Checker:
                 if not parent_id:
                     self.error("nodes.csv", r, f"a {level} must have a parent")
                 elif parent and parent.get("level") not in allowed_parents[level]:
-                    self.error("nodes.csv", r, f"a {level}'s parent must be a {' or '.join(sorted(allowed_parents[level]))}, "
-                               f"but {parent_id!r} is a {parent.get('level')}")
+                    self.error(
+                        "nodes.csv",
+                        r,
+                        f"a {level}'s parent must be a {' or '.join(sorted(allowed_parents[level]))}, "
+                        f"but {parent_id!r} is a {parent.get('level')}",
+                    )
             if level == "part" and not r.get("part_type"):
                 self.error("nodes.csv", r, "part_type is required for parts")
             if level != "part" and r.get("part_type"):
@@ -273,7 +283,7 @@ class _Checker:
             etype = r.get("type", "")
             if r.get("from_id") and r.get("from_id") == r.get("to_id"):
                 self.error("edges.csv", r, "an edge cannot link a node to itself")
-            if not r.get("note"):   # the intuition question is built from the note, so it can't be missing there
+            if not r.get("note"):  # the intuition question is built from the note, so it can't be missing there
                 if r.get("teach_use") == "intuition":
                     self.error("edges.csv", r, "an edge with teach_use = intuition needs a note")
                 else:
@@ -310,7 +320,11 @@ class _Checker:
                 self.error("notes.csv", r, f"summary has {n} words (max {MAX_SUMMARY_WORDS})")
             for wording in split_list(r.get("key_wording", "")):
                 if _words(wording) >= MAX_KEY_WORDING_WORDS:
-                    self.error("notes.csv", r, f"key wording has {_words(wording)} words (must be under {MAX_KEY_WORDING_WORDS}): {wording[:40]!r}...")
+                    self.error(
+                        "notes.csv",
+                        r,
+                        f"key wording has {_words(wording)} words (must be under {MAX_KEY_WORDING_WORDS}): {wording[:40]!r}...",
+                    )
 
     # --- warnings -------------------------------------------------------
 
@@ -334,13 +348,17 @@ class _Checker:
             key = len(_option(r["point"]))
             far = sorted(n for n in lengths if abs(n - key) > KEY_LENGTH_BAND * key)
             if far:
-                self.warn("mark_points.csv", r, f"mark point {r.get('id')!r} is {key} characters but {len(far)} of its "
-                          f"part's misconceptions are more than {KEY_LENGTH_BAND:.0%} longer or shorter "
-                          f"({', '.join(map(str, far))}): its multiple-choice check can be answered by length")
+                self.warn(
+                    "mark_points.csv",
+                    r,
+                    f"mark point {r.get('id')!r} is {key} characters but {len(far)} of its "
+                    f"part's misconceptions are more than {KEY_LENGTH_BAND:.0%} longer or shorter "
+                    f"({', '.join(map(str, far))}): its multiple-choice check can be answered by length",
+                )
             if len(lengths) < 2 or len(lengths) + 1 > max_options:
                 continue
             n, below = len(lengths) + 1, sum(x < key for x in lengths)
-            ranks = range(below, n - sum(x > key for x in lengths))   # ties: every rank they could take, equally
+            ranks = range(below, n - sum(x > key for x in lengths))  # ties: every rank they could take, equally
             for rank in ranks:
                 seen["shortest" if rank == 0 else "longest" if rank == n - 1 else "middle"] += 1 / len(ranks)
             even["shortest"] += 1 / n
@@ -348,11 +366,15 @@ class _Checker:
             even["middle"] += (n - 2) / n
             sets += 1
         if sets >= 6:
-            for rank, count in seen.items():
-                if (count - even[rank]) / sets > KEY_RANK_SKEW:
-                    self.warn("mark_points.csv", None, f"the mark point is the {rank} option in {count:.0f} of {sets} "
-                              f"multiple-choice checks (about {even[rank]:.0f} if spread evenly): length alone beats "
-                              "chance; write some misconceptions longer and some shorter than the mark points they sit with")
+            for rank_name, count in seen.items():
+                if (count - even[rank_name]) / sets > KEY_RANK_SKEW:
+                    self.warn(
+                        "mark_points.csv",
+                        None,
+                        f"the mark point is the {rank_name} option in {count:.0f} of {sets} "
+                        f"multiple-choice checks (about {even[rank_name]:.0f} if spread evenly): length alone beats "
+                        "chance; write some misconceptions longer and some shorter than the mark points they sit with",
+                    )
 
     def check_coverage(self) -> None:
         by_id = {r["id"]: r for r in self.rows("nodes.csv") if r.get("id")}
@@ -380,33 +402,40 @@ class _Checker:
         for r in self.rows("mark_points.csv"):
             if r.get("status") != "rejected":
                 points[r.get("node_id", "")] += 1
-        for r in self.rows("notes.csv"):   # a part with no mark points is taught from its notes' key points
+        for r in self.rows("notes.csv"):  # a part with no mark points is taught from its notes' key points
             if r.get("status") != "rejected":
                 points["notes:" + r.get("node_id", "")] += len(split_list(r.get("key_points", "")))
         with_edges: set[str] = set()
         for r in self.rows("edges.csv"):
-            with_edges.update((r.get("from_id"), r.get("to_id")))
+            with_edges.update(x for x in (r.get("from_id"), r.get("to_id")) if x)
         children: dict[str, list[str]] = defaultdict(list)
         for i, r in by_id.items():
             children[r.get("parent_id", "")].append(i)
 
         for i, r in by_id.items():
-            if registry.AI_LITERACY_TOPIC in lineage(i):   # the mini pack is ours: no exam coverage or edges
+            if registry.AI_LITERACY_TOPIC in lineage(i):  # the mini pack is ours: no exam coverage or edges
                 continue
             level = r.get("level")
             if level == "part":
                 if not points[i]:
-                    self.warn("nodes.csv", r, f"part {i!r} has no mark points: its checks are open (explain-back), "
-                              "not multiple choice")
+                    self.warn("nodes.csv", r, f"part {i!r} has no mark points: its checks are open (explain-back), not multiple choice")
                 if not covered.intersection(lineage(i)):
                     self.warn("nodes.csv", r, f"part {i!r} has no question, mark point or note")
                 if misconception_count[i] < settings.mcq.min_distractors:
-                    self.warn("nodes.csv", r, f"part {i!r} has {misconception_count[i]} misconception(s), "
-                              f"fewer than mcq.min_distractors ({settings.mcq.min_distractors})")
+                    self.warn(
+                        "nodes.csv",
+                        r,
+                        f"part {i!r} has {misconception_count[i]} misconception(s), "
+                        f"fewer than mcq.min_distractors ({settings.mcq.min_distractors})",
+                    )
                 n = points[i] or points["notes:" + i]
                 if n and not settings.points.warn_min <= n <= settings.points.warn_max:
-                    self.warn("nodes.csv", r, f"part {i!r} has {n} point(s), outside points.warn_min to "
-                              f"points.warn_max ({settings.points.warn_min}–{settings.points.warn_max})")
+                    self.warn(
+                        "nodes.csv",
+                        r,
+                        f"part {i!r} has {n} point(s), outside points.warn_min to "
+                        f"points.warn_max ({settings.points.warn_min}–{settings.points.warn_max})",
+                    )
                 if not r.get("intuition"):
                     self.warn("nodes.csv", r, f"part {i!r} has no intuition line")
                 if not with_edges.intersection(lineage(i)[:2]):
@@ -445,7 +474,7 @@ def _find_cycles(graph: dict[str, list[str]]) -> list[list[str]]:
         stack.append(node)
         for nxt in graph.get(node, []):
             if colour[nxt] == grey:
-                cycle = stack[stack.index(nxt):] + [nxt]
+                cycle = stack[stack.index(nxt) :] + [nxt]
                 key = frozenset(cycle)
                 if key not in seen:
                     seen.add(key)

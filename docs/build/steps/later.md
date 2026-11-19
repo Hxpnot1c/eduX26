@@ -86,9 +86,9 @@ pytest for:
 - fatigue or getting stuck in the middle of a part;
 - a message that needs a course term the student hasn't met.
 
-Add CI (GitHub Actions) once tests exist.
+CI (GitHub Actions) is done: see `.github/workflows/ci.yml` and step 08.
 
-### 09 Student page (`build/09-student-page`)
+### 09 Student page (`build/09-student-page`) — now in progress, see [09-web](09-web.md)
 A simple read-only page at `/me?key=` showing:
 - the tree with levels
 - the biggest levers
@@ -96,12 +96,12 @@ A simple read-only page at `/me?key=` showing:
 - AI-literacy trends
 - the "Set up my chatbot" copy box
 
-### 10 Teacher view (`build/10-teacher-view`)
+### 10 Teacher view (`build/10-teacher-view`) — now in progress, see [09-web](09-web.md)
 - Class-level weak parts and misconceptions only, never chats.
 - Content review: list flagged and draft rows with approve, reject and edit, writing to the teacher feedback CSV.
 
 ### Priorities, next (after step 05i)
-- Teachers setting assessments for a whole class: planned in step 05u.
+- *(Teachers setting assessments for a whole class: built in step 05u.)*
 - Mock marks counted as evidence.
 - **Research item: per-type learn rates.** The model has one learn rate for all evidence types, so the value score can't prefer the step a student learns most from (step 05n). Find evidence on whether learning differs by question type before adding per-type rates.
 - Learning the `[priorities]` weights from the `considered` logs: a contextual bandit, checked first against old logs (offline evaluation) before it changes any choice.

@@ -20,7 +20,7 @@ This step doc was written after the merge. It describes the feature as it stands
    - **Steps once per session:** it rises at most `max_change_per_session` and falls at most `down_change_factor` times that.
    - **AI-literacy parts use the population learn rate, with no offset** (05m, #32).
    - It is a pure function of earlier events, so rebuild stays identical. It is never shown as a label.
-3. **Switches:** `personalisation.enabled = true` (on for the demo). `EDUX_PERSONALISATION=0` turns it off without editing the file.
+3. **Switches:** `personalisation.enabled = false` by default (changed in step [05m](05m-personal-learning-rate-fixes.md); it was on for the demo). `EDUX_PERSONALISATION=1` turns it on and `=0` off without editing the file.
 4. **Startup check:** the identifiability check uses the learn rate at the top bound.
 5. **CLI:** `python -m edux.cli state --student <id>` prints the offset, its odds weight and n. Nothing is added to `tutor_turn` or `get_my_progress`.
 
