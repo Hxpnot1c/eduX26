@@ -3,7 +3,7 @@
 - **Status:** Proposed
 - **Date:** 2026-11-19
 - **Decision owner:** Vishnu
-- **Pull request:** see the branch `build/demo-design-pages`
+- **Pull request:** #94
 
 ## Decision
 
