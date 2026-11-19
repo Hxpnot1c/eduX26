@@ -1287,6 +1287,7 @@ def score_next(plan: list[dict]) -> dict[str, list[dict]]:
     tick in the student's next answer, lettered a, b, c... in point order. A letter is resolved from the
     course content when the answer comes back, so no mapping is saved."""
     out: dict[str, list[dict]] = {}
+    ends_in_mcq = bool(plan) and plan[-1]["move"] == "ask_mcq"  # the next answer is a letter, so no earlier step needs ticking
     for step in plan:
         if step.get("key") == "say_line_find_error":  # the same four letters for every item, so they give nothing away
             out[step["part_id"]] = [{"id": k, "point": text} for k, text in learner.FIND_ERROR_POINTS]
@@ -1299,7 +1300,7 @@ def score_next(plan: list[dict]) -> dict[str, list[dict]]:
         by_option = step["move"] == "ask_mcq" or step["data"].get("asked") in ("ask_mcq", "prequestion")
         if step["part_id"] == learner.AIL_ASK:  # an ask task is done by asking a research question, not ticked
             continue
-        if step["move"] in ASKS and not by_option and step["part_id"] and step["part_id"] not in out:
+        if step["move"] in ASKS and not by_option and not ends_in_mcq and step["part_id"] and step["part_id"] not in out:
             points = lettered(step["part_id"])
             if step["data"].get("point_id") and step["move"] == "explain_back":  # one point: its own letter only
                 ids = [p["id"] for p in graph.score_points(step["part_id"])]
