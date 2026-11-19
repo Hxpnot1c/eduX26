@@ -17,7 +17,7 @@ Decisions [0023](../../decisions/0023-web-pages-and-teacher-access.md) (access) 
 - **`edux/teachers.py`, migration 020, `teacher` CLI** (`add`, `assign`, `list`, `leave`, `delete`; `purge` includes teachers who left): hashed keys, class scoping.
 - **`edux/web/static/`:** `css/tokens.css` (the palette and type scale, light and dark), `css/base.css`, `js/api.js` (fragment key to `sessionStorage`, bearer header), `js/shell.js` (the level key and the sign-in line), four page shells, six font files (Atkinson Hyperlegible Next, Newsreader; OFL licences alongside).
 - **`scripts/check_contrast.py`:** WCAG contrast for every token pair in both schemes, and the level fills' luminance order.
-- **`[web]` settings:** `public_example_map`.
+- **`[web]` settings:** `public_example_map`. Later (decision 0026): `public_base_url`, `link_minutes`, `session_minutes` for map links from `get_my_progress`.
 
 ## What pull request 2 added
 - **`edux/web/views.py` `course_map`:** topics, concepts and parts as a flat list (each with its parent, a 0 to 1 importance for disc size, and counts of mark points and common wrong ideas, never their text) plus the four link types. AI-literacy parts and rejected or hidden rows are left out. No student data.

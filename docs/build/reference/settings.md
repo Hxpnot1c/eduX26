@@ -169,6 +169,9 @@ max_per_session = 1        # judgement call: rare, at most this many a session, 
 
 [web]                      # the map, student and teacher pages (decision 0023)
 public_example_map = true  # judgement call: serve the synthetic example pack's course map with no key; any other pack always needs a key
+public_base_url = ""       # where the pages are served; get_my_progress links the student's map only when set. EDUX_PUBLIC_BASE_URL overrides it (decision 0026)
+link_minutes = 15          # judgement call: a map link works once, within this many minutes
+session_minutes = 120      # judgement call: the read-only browser session a map link opens ends after this, or when the tab closes
 
 [reminders]               # in-chat deadline reminders (step 05u). Synapse cannot push notifications
 days_ahead = 7             # judgement call, starting value: tests due within this many days are mentioned, once, at the start of a session
