@@ -105,17 +105,21 @@ importance = 0.5           # fixed importance of the AI-literacy parts (they hav
 
 [session]                  # sessions, fatigue and getting stuck, derived from events
 gap_minutes = 30           # a longer gap starts a new session
-fatigue_min_minutes = 25   # no fatigue call before this
-fatigue_window = 4         # pieces of evidence in the rolling mean
-fatigue_threshold = -0.25  # mean surprise at or below this = doing worse than expected
-fatigue_min_parts = 2      # the drop must span at least this many parts
-fatigue_slip_add = 0.15    # extra slip while fatigued
-slip_cap = 0.40
+slip_cap = 0.40            # judgement call: the most any slip can reach, time on task included
 signal_window = 6          # exchanges used for the supporting signals
 stuck_attempts = 3         # open answers on a part before it can count as stuck (MCQ checks: same point missed twice)
 stuck_below = 0.5          # and their mean score below this
-quick_parts = 3            # parts offered for a short burst when fatigued
-pattern_min_sessions = 3   # sessions with a fatigue onset before study_pattern is shown
+quick_parts = 3            # parts offered for a short burst in long-session or rushing mode
+
+[fatigue]                  # time on task and rapid guesses (step 05s). Pacing, never an emotion: no affect label, no biometric data
+slip_start_minutes = 28    # from research: Randles, Harlow & Inzlicht (2017), performance declines from about 28 minutes
+slip_per_minute = 0.002    # from research (fit to the same decline of 4-5 points by about 50 minutes): extra slip per minute after that
+extra_slip_cap = 0.12      # from research: end-of-test declines of 7.5-12% (Brown, Kaur, Kingdon & Schofield; TIMSS); the top is used
+mode_minutes = 50          # from research: Randles et al. (2017), with Sievertsen, Gino & Piovesan (2016) on breaks: long-session mode starts here
+rapid_guesses = 2          # judgement call, starting value: rapid guesses in a session that start rushing mode
+reading_wpm = 300          # from research: Brysbaert (2019), mean silent reading 238 wpm, range 175-300; the top is used so fewer students are flagged wrongly
+typing_wpm = 52            # from research: Dhakal et al. (2018), mean typing speed 52 wpm on a keyboard
+min_students_per_bin = 5   # judgement call: a class fatigue-curve bin with fewer students is hidden
 
 [engagement]               # in-session engagement rules (engagement-rules); never stored as a trait
 passive_run = 4            # passive messages in a row before offer_choice offers ways on (once a session, never when fatigued)

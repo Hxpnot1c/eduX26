@@ -408,13 +408,16 @@ def record_exchange(
     evidence: list[dict] | None = None,
     apply: str = "background",
     request: dict | None = None,
+    timing: dict | None = None,
 ) -> int:
     """Write an exchange event, and any evidence that came with it, then apply them; return the exchange id.
 
     evidence is a list of {part_id, type, score, misconception_ids?}: what the student produced in this turn,
     scored 0–1. Concept ids expand to their parts with the score unchanged. All rows share the exchange's ts.
     apply is "background" (queue for the worker thread), "now" (apply before returning) or "none".
-    The student's message text is never stored. request holds the step 05e labels (request_type,
+    The student's message text is never stored. timing holds {latency_s, question_words, answer_words} (step 05s):
+    seconds since their previous exchange, words in the question they are answering, and words in their message
+    (a count only); the rapid-guess flag is worked out from these when the answer is applied. request holds the step 05e labels (request_type,
     question_features, source_conflict, web_access, asks_recent, pushback_changed); features, web_access and
     asks_recent are kept for research questions only, and source_conflict also sets conflict_flagged.
     """
@@ -441,12 +444,14 @@ def record_exchange(
         cur = conn.execute(
             """INSERT INTO exchange_log (student_id, ts, client, node_ids, question_depth, engagement, offloading,
                  support_given, choice_taken, misconception_ids, conflict_flagged, protocol, settings_hash,
-                 request_type, question_features, source_conflict, web_access, asks_recent, pushback_changed)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                 request_type, question_features, source_conflict, web_access, asks_recent, pushback_changed,
+                 latency_s, question_words, answer_words)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (student_id, ts, client, ";".join(node_ids), question_depth, engagement, int(offloading), support_given,
              choice_taken, ";".join(misconception_ids or []), int(conflict_flagged), protocol_label(s, profile_of(student)),
              settings_hash(), req["request_type"], req["question_features"],
-             req["source_conflict"], req["web_access"], req["asks_recent"], req["pushback_changed"]),
+             req["source_conflict"], req["web_access"], req["asks_recent"], req["pushback_changed"],
+             (timing or {}).get("latency_s"), (timing or {}).get("question_words"), (timing or {}).get("answer_words")),
         )
         exchange_id = cur.lastrowid
         evidence_ids = _write_evidence(conn, student, ts, evidence_rows, "chat", exchange_id=exchange_id)
@@ -792,31 +797,49 @@ def prequestion_weight(conn: sqlite3.Connection, student_id: str, part_id: str, 
     return min(1.0, (exchanges * s.exchange_weight + state["n_evidence"]) / s.full_weight_at)
 
 
-def _fatigued(conn: sqlite3.Connection, event: dict, part_id: str, session_id: str, surprise: float, weight: float) -> bool:
-    """Whether this piece of evidence falls in the session's fatigued state.
+def extra_slip(minutes: float) -> float:
+    """The extra slip from time on task: 0 before fatigue.slip_start_minutes, then fatigue.slip_per_minute per minute,
+    up to fatigue.extra_slip_cap (Randles, Harlow & Inzlicht, 2017; end-of-test declines in TIMSS). Pacing, not a
+    state: it is added to an answer's slip whoever the student is."""
+    f = _settings().fatigue
+    return min(f.extra_slip_cap, max(0.0, (minutes - f.slip_start_minutes) * f.slip_per_minute))
 
-    Once fatigued, a session stays fatigued. Otherwise fatigue starts here when the session is at least
-    session.fatigue_min_minutes old, the last session.fatigue_window weighted pieces of evidence (this one
-    included) have a mean surprise at or below session.fatigue_threshold, and they span at least
-    session.fatigue_min_parts parts. Untaught pre-questions (weight 0) never start it.
-    """
-    s = _settings().session
-    student_id, ts = event["student_id"], event["ts"]
+
+def rapid_guess(latency_s: float | None, question_words: int | None, answer_words: int | None) -> bool:
+    """Whether an answer came faster than the question could be read at fatigue.reading_wpm plus the answer typed at
+    fatigue.typing_wpm (Wise & Kong, 2005, effort-moderated scoring). The latency is the time since the student's
+    previous exchange, which includes the chatbot's writing time, so a flag is less likely: the safe direction. False
+    when any of the three is unknown: a chatbot that doesn't send the word count is never flagged."""
+    if latency_s is None or not question_words or answer_words is None:
+        return False
+    f = _settings().fatigue
+    return latency_s < question_words * 60 / f.reading_wpm + answer_words * 60 / f.typing_wpm
+
+
+def _rapid_for_evidence(conn: sqlite3.Connection, event: dict) -> bool:
+    """Whether a chat answer was a rapid guess, from the timing stored on the exchange it came with."""
+    if not event.get("exchange_id"):
+        return False
+    row = conn.execute("SELECT latency_s, question_words, answer_words FROM exchange_log WHERE id = ?",
+                       (event["exchange_id"],)).fetchone()
+    return bool(row) and rapid_guess(row["latency_s"], row["question_words"], row["answer_words"])
+
+
+def _fatigued(conn: sqlite3.Connection, event: dict, session_id: str, rapid: bool) -> bool:
+    """Whether this piece of evidence falls in long-session or rushing mode (the "fatigued" state).
+
+    Once in the mode, the session stays in it. Otherwise it starts here when the session is fatigue.mode_minutes old,
+    or this is the fatigue.rapid_guesses-th rapid guess in the session. The mode follows time on task and answers
+    faster than the question can be read; it never infers an emotion or a tired state from how well they answer."""
+    f, student_id, ts = _settings().fatigue, event["student_id"], event["ts"]
     if conn.execute("SELECT 1 FROM evidence_derived WHERE student_id = ? AND session_id = ? AND fatigued = 1",
                     (student_id, session_id)).fetchone():
         return True
-    if weight == 0 or (parse_ts(ts) - parse_ts(session_id)).total_seconds() / 60 < s.fatigue_min_minutes:
-        return False
-    earlier = conn.execute(
-        """SELECT l.part_id, d.surprise FROM evidence_derived d JOIN evidence_log l ON l.id = d.evidence_id
-           WHERE d.student_id = ? AND d.session_id = ? AND d.weight > 0 AND l.id != ? AND l.ts <= ?
-           ORDER BY l.ts DESC, l.id DESC LIMIT ?""",
-        (student_id, session_id, event["id"], ts, s.fatigue_window - 1)).fetchall()
-    window = [(part_id, surprise)] + [(r["part_id"], r["surprise"]) for r in earlier]
-    if len(window) < s.fatigue_window:
-        return False
-    mean = sum(x for _, x in window) / len(window)
-    return mean <= s.fatigue_threshold and len({p for p, _ in window}) >= s.fatigue_min_parts
+    if (parse_ts(ts) - parse_ts(session_id)).total_seconds() / 60 >= f.mode_minutes:
+        return True
+    earlier = conn.execute("SELECT COUNT(*) FROM evidence_derived WHERE student_id = ? AND session_id = ? AND rapid = 1",
+                           (student_id, session_id)).fetchone()[0]
+    return rapid and earlier + 1 >= f.rapid_guesses
 
 
 def personalisation_on() -> bool:
@@ -907,25 +930,29 @@ def apply_evidence_event(event: dict) -> None:
         # be told apart from a made-up one: until the student has done one successful check of their own on Verify,
         # reports can't make Verify secure
         cap = s.levels.secure - 0.01
+    session_id = session_start(conn, student_id, ts)
+    rapid = event["origin"] == "chat" and _rapid_for_evidence(conn, event)
+    if rapid:
+        weight = 0.0    # a rapid guess says nothing about knowledge (effort-moderated scoring: Wise & DeMars, 2006)
+    slip_add = extra_slip((parse_ts(ts) - parse_ts(session_id)).total_seconds() / 60)   # time on task raises slip
+    slip = min(s.session.slip_cap, slip + slip_add)
     p_before = _p_at(_load_state(conn, student_id, part_id, ts), ts)
     expected = p_before * (1 - slip) + (1 - p_before) * guess   # chance of a correct answer under this type's slip and guess
     surprise = weight * (event["score"] - expected)
-    session_id = session_start(conn, student_id, ts)
-    fatigued = _fatigued(conn, event, part_id, session_id, surprise, weight)
+    fatigued = _fatigued(conn, event, session_id, rapid)
     conn.execute(
         """INSERT OR REPLACE INTO evidence_derived (evidence_id, student_id, session_id, p_before, surprise, weight, fatigued,
-             immediate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        (event["id"], student_id, session_id, p_before, surprise, weight, int(fatigued), int(immediate)))
+             immediate, rapid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (event["id"], student_id, session_id, p_before, surprise, weight, int(fatigued), int(immediate), int(rapid)))
     if not correct:
         _activate_misconceptions(conn, student_id, split(event.get("misconception_ids")), ts)
-    if weight > 0:  # an untaught pre-question is diagnostic only
-        slip_add = _settings().session.fatigue_slip_add if fatigued else 0.0
+    if weight > 0:  # an untaught pre-question or a rapid guess is not applied to what the student knows
         if part_id == AIL_VERIFY and correct:   # Verify is graded: 3 of 4 ticks moves it 3/4 as far as 4 of 4
             weight *= event["score"]
         # AI literacy is a different skill, measured differently: its parts use the population learn rate
         offset = 0.0 if graph.is_literacy(part_id) else learning_offset(student_id, session_id)["offset"]
         learn_rate = personal_learn_rate(s.bkt.learn_rate, offset)
-        _apply_evidence(conn, student_id, part_id, slip, guess, correct, ts, weight=weight, slip_add=slip_add,
+        _apply_evidence(conn, student_id, part_id, slip, guess, correct, ts, weight=weight, slip_add=0.0,
                         learn_rate=learn_rate, cap=cap)
 
 
@@ -1135,7 +1162,7 @@ def approaches(student_id: str, part_id: str) -> list[dict]:
 
 def _session_evidence(conn: sqlite3.Connection, student_id: str, start: str, until: str) -> list[sqlite3.Row]:
     return conn.execute(
-        """SELECT l.id, l.ts, l.part_id, l.evidence_type, l.point_id, l.score, d.surprise, d.weight, d.fatigued
+        """SELECT l.id, l.ts, l.part_id, l.evidence_type, l.point_id, l.score, d.surprise, d.weight, d.fatigued, d.rapid
            FROM evidence_log l
            JOIN evidence_derived d ON d.evidence_id = l.id
            WHERE l.student_id = ? AND l.ts >= ? AND l.ts <= ? ORDER BY l.ts, l.id""",
@@ -1184,8 +1211,10 @@ def stuck_parts(rows: list) -> list[dict]:
 
 def session_state(student_id: str, at: str | datetime | None = None) -> dict | None:
     """The student's current session as of at (default now), or None if the last event is more than
-    session.gap_minutes ago. Fatigue and surprise come from evidence_derived; stuck parts and the supporting
-    signals ("just show me" and surface shares over the last session.signal_window exchanges) are read here."""
+    session.gap_minutes ago. Long-session or rushing mode ("fatigued") starts at fatigue.mode_minutes into the session
+    or at its fatigue.rapid_guesses-th rapid guess, whichever comes first (time on task and answer speed, never how
+    well they answer); stuck parts and the supporting signals ("just show me" and surface shares over the last
+    session.signal_window exchanges) are read here."""
     s, conn = _settings().session, _conn()
     at_ts = _event_ts(at)
     times = _event_times(conn, student_id, at_ts)
@@ -1193,8 +1222,6 @@ def session_state(student_id: str, at: str | datetime | None = None) -> dict | N
         return None
     start = session_start(conn, student_id, times[0])
     rows = _session_evidence(conn, student_id, start, at_ts)
-    weighted = [r for r in rows if r["weight"] > 0][-s.fatigue_window:]
-    onset = next((r for r in rows if r["fatigued"]), None)
     exchanges = conn.execute(
         """SELECT question_depth, offloading, choice_taken FROM exchange_log WHERE student_id = ? AND ts >= ? AND ts <= ?
            ORDER BY ts DESC, id DESC LIMIT ?""", (student_id, start, at_ts, s.signal_window)).fetchall()
@@ -1202,13 +1229,19 @@ def session_state(student_id: str, at: str | datetime | None = None) -> dict | N
     def minutes(ts: str) -> float:
         return (parse_ts(ts) - parse_ts(start)).total_seconds() / 60
 
+    f = _settings().fatigue
+    rapid_at = [minutes(r["ts"]) for r in rows if r["rapid"]]
+    by_rapid = rapid_at[f.rapid_guesses - 1] if len(rapid_at) >= f.rapid_guesses else None
+    by_time = f.mode_minutes if minutes(at_ts) >= f.mode_minutes else None
+    since = min((m for m in (by_time, by_rapid) if m is not None), default=None)
     return {
         "session_id": start,
         "minutes": minutes(at_ts),
         "n_evidence": len(rows),
-        "rolling_surprise": sum(r["surprise"] for r in weighted) / len(weighted) if weighted else None,
-        "fatigued": onset is not None,
-        "fatigued_since_minute": minutes(onset["ts"]) if onset else None,
+        "rapid_guesses": len(rapid_at),
+        "fatigued": since is not None,
+        "fatigued_since_minute": since,
+        "fatigue_reason": None if since is None else ("rushing" if by_rapid is not None and by_rapid <= (by_time or by_rapid) else "long_session"),
         "stuck_parts": stuck_parts(rows),
         "just_show_me_share": (sum(1 for e in exchanges if e["offloading"] or e["choice_taken"] == "just_show_me")
                                / len(exchanges)) if exchanges else None,

@@ -146,17 +146,23 @@ class Literacy:
 @dataclass(frozen=True)
 class Session:
     gap_minutes: float
-    fatigue_min_minutes: float
-    fatigue_window: int
-    fatigue_threshold: float
-    fatigue_min_parts: int
-    fatigue_slip_add: float
     slip_cap: float
     signal_window: int
     stuck_attempts: int
     stuck_below: float
     quick_parts: int
-    pattern_min_sessions: int
+
+
+@dataclass(frozen=True)
+class Fatigue:
+    slip_start_minutes: float
+    slip_per_minute: float
+    extra_slip_cap: float
+    mode_minutes: float
+    rapid_guesses: int
+    reading_wpm: float
+    typing_wpm: float
+    min_students_per_bin: int
 
 
 @dataclass(frozen=True)
@@ -289,6 +295,7 @@ class Settings:
     mcq: Mcq
     literacy: Literacy
     session: Session
+    fatigue: Fatigue
     engagement: Engagement
     show: Show
     personalisation: Personalisation
