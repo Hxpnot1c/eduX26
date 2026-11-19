@@ -163,7 +163,7 @@
     const titles = h("div", null, head);
     h("p", "Student review", titles, "eyebrow");
     h("h2", s.student.name, titles, "rv-title");
-    h("p", "Based on " + plural(s.record.answers, "answer") + " over " + plural(s.record.over_days, "day") + ".", titles, "muted");
+    h("p", "Based on " + plural(s.record.answers, "answer") + " over " + plural(s.record.over_days, "day") + ", on the topics below.", titles, "muted");
 
     const grid = h("div", null, studentBox, "rv-grid");
     const main = h("section", null, grid, "panel");

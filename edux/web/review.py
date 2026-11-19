@@ -77,8 +77,9 @@ def try_next(part_id: str) -> str:
     return graph.require_node(before[0] if before else part_id)["name"]
 
 
-def _days(first: str, at: str) -> int:
-    return max(1, round((learner.parse_ts(at) - learner.parse_ts(first)).total_seconds() / 86400))
+def _days(first: str, last: str) -> int:
+    """The days a run of answers spans, first to last, counting a single day as 1."""
+    return max(1, round((learner.parse_ts(last) - learner.parse_ts(first)).total_seconds() / 86400) + 1)
 
 
 def _next_test(class_id: str, at: str) -> dict | None:
@@ -236,7 +237,7 @@ def student_review(class_id: str, student_id: str, at: str | None = None) -> dic
                 "correction": wrong["correction"] if wrong else None,
                 "try_next": try_next(part),
                 "answers": answers[part]["n"],
-                "over_days": _days(answers[part]["first"], at),
+                "over_days": _days(answers[part]["first"], answers[part]["last"]),
                 "in_test": part in test_parts,
             }
         )
@@ -250,8 +251,10 @@ def student_review(class_id: str, student_id: str, at: str | None = None) -> dic
                     "in_test": part in test_parts,
                 }
             )
-    total = sum(a["n"] for a in answers.values())
-    first = min((a["first"] for a in answers.values()), default=None)
+    # the header counts exactly what the rows rest on, so it always matches them
+    shown = [answers[r["part_id"]] for r in unsure]
+    total = sum(a["n"] for a in shown)
+    first, last = min((a["first"] for a in shown), default=None), max((a["last"] for a in shown), default=None)
     ai = service._ai_literacy(student_id, at)
     skills = []
     for key, name in (("ask", "Ask"), ("verify", "Verify"), ("how_ai_works", "How AI works")):
@@ -262,7 +265,7 @@ def student_review(class_id: str, student_id: str, at: str | None = None) -> dic
                 "name": name,
                 "level": level,
                 "checks": ai[key]["evidence"]["checks"],
-                "over_days": ai[key]["evidence"]["over_days"],
+                "over_days": max(1, ai[key]["evidence"]["over_days"]) if ai[key]["evidence"]["checks"] else 0,
                 "tip": _tip(key, level),
             }
         )
@@ -270,7 +273,7 @@ def student_review(class_id: str, student_id: str, at: str | None = None) -> dic
         "student": {"id": person["id"], "name": person["name"]},
         "synthetic": person["id"].startswith(demo.SYNTH_PREFIX),
         "test": None if test is None else {"name": test["name"], "date": test["date"]},
-        "record": {"answers": total, "over_days": _days(first, at) if first else 0, "parts": len(answers)},
+        "record": {"answers": total, "over_days": _days(first, last) if first and last else 0, "parts": len(unsure)},
         "unsure": unsure,
         "not_checked": not_checked,
         "ai_literacy": {"note": ai["formative"], "skills": skills},

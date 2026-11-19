@@ -156,8 +156,9 @@ def test_counts_agree_between_cards_bands_and_wrong_ideas(seeded):
     for card in cards:
         one = review.student_review(demo.DEMO_CLASS_ID, card["id"])
         assert [r["part_id"] for r in one["unsure"]] == [w["part_id"] for w in card["weak"]]
-        assert one["record"]["answers"] >= sum(r["answers"] for r in one["unsure"])
+        assert one["record"]["answers"] == sum(r["answers"] for r in one["unsure"])
         assert all(r["over_days"] <= one["record"]["over_days"] for r in one["unsure"])
+        assert all(s["over_days"] >= 1 for s in one["ai_literacy"]["skills"] if s["checks"])
         assert {s["id"] for s in one["ai_literacy"]["skills"]} == {"ask", "verify", "how_ai_works"}
     assert any(r["wrong_idea"] for c in cards for r in review.student_review(demo.DEMO_CLASS_ID, c["id"])["unsure"])
     assert any(s["checks"] for c in cards for s in review.student_review(demo.DEMO_CLASS_ID, c["id"])["ai_literacy"]["skills"])
