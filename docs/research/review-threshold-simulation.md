@@ -47,4 +47,4 @@ The same simulation, rerun on 19 November once learnt parts fade towards their n
 | **0.50 (now)** | 4.99 ± 0.06 | 0.221 ± 0.014 | 0.00 | 1.07 ± 0.11 | 50.1 ± 0.9 |
 | **0.75** | 4.95 ± 0.06 | 0.211 ± 0.012 | 0.00 | 1.13 ± 0.10 | 48.0 ± 0.8 |
 
-Both thresholds now keep more parts truly secure (about 1.1 against 0.73 and 0.45), at slightly more reviews a week and a slightly larger backlog over the cap. The gap between 0.50 and 0.75 has closed to within noise: with forgetting stopping at the normal start, fewer parts drop far enough for the threshold to matter. This does not change the recommendation to keep 0.50; the cap and the half-life are still the levers.
+Both thresholds now keep more parts truly secure (about 1.1 against 0.73 and 0.45), at slightly more reviews a week and a slightly larger backlog over the cap. The gap between 0.50 and 0.75 is now within noise; why has not been tested. This does not change the recommendation to keep 0.50; the cap and the half-life are still the levers.

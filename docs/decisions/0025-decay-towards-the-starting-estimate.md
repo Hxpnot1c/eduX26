@@ -48,7 +48,7 @@ Changes 1 and 2 alone gave 4.96 / 0.220 / 1.05 / 49.2 at 0.50, so the fading rev
 - The display now says what happened: about two thirds of taught pairs read *needs review* rather than *new*, and *new* is left for parts never got right (about a fifth).
 - **By the number most pairs still read new** (84%), because the floor (0.30) is below `levels.new` (0.40). That is intended: a part answered right weeks ago is not known now, and the display carries the difference. Secure stays rare in this class run (1%) because the 3-a-session cap and the 2-day half-life limit how much review sticks; the review-threshold write-up names those as the next levers.
 - The fading review rarely decides, because it only applies between 0.40 and 0.50. It did not make the backlog grow week on week.
-- Vishnu's earlier run with patch 0005's formula monkeypatched in gave 82 / 10 / 8 by the number at week 8, using the covered start as the floor for covered parts.
+- **Review timing matters more than the floor for "secure".** Vishnu's earlier run with patch 0005's formula monkeypatched into `p_now` gave 82 / 10 / 8 by the number at week 8, against 84 / 15 / 1 here. Rerunning this branch with `days_until_below` forced back to the old formula (no floor) gives 81 / 11 / 8 at week 8 and 3.24 reviews a student that week (against 2.44): the old formula puts the `recall_below` crossing sooner, so parts are reviewed sooner and more stay secure. The floored formula is the correct crossing time for the new `p_now`, so it was kept; when `recall_below` should fire is a separate question (see what would change our mind).
 
 ## What stays held
 
@@ -64,7 +64,7 @@ Changes 1 and 2 alone gave 4.96 / 0.220 / 1.05 / 49.2 at 0.50, so the fading rev
 
 ## Consequences
 
-- Later posteriors change, because updates read `p_now` before applying evidence: `protocol` v0.4, and a rebuild replays everything with the new rule (identical twice; tested).
+- Later posteriors change, because updates read `p_now` before applying evidence: `protocol` v0.4. Stored data: no migration (as for v0.3, decision 0003). Events keep their `protocol` and `settings_hash`; existing learner state should be rebuilt (`python -m edux.cli rebuild`), which re-scores them under v0.4 and gives the same state twice (tested).
 - The demo students change: demo-secure's part answered once 60 days ago reads *needs review* (0.24; was *new*, 0.00) and its part answered five times reads *developing* (0.55; was *new*, 0.38), which matches the seed's own description. demo-weak's parts no longer sit near 0.
 - The progress views are slower: the every-part view of a demo student goes from about 23 to 34 ms on the example pack, from the floor and "answered right" lookups. The 384-part scale test still passes.
 
@@ -74,4 +74,4 @@ Changes 1 and 2 alone gave 4.96 / 0.220 / 1.05 / 49.2 at 0.50, so the fading rev
 
 ## What would change our mind
 
-Real students' review answers showing how fast A-level parts are forgotten (a different half-life or floor); a teacher finding *needs review* confusing next to *new*; or the review backlog growing once real classes use it.
+Real students' review answers showing how fast A-level parts are forgotten (a different half-life or floor); a teacher finding *needs review* confusing next to *new*; the review backlog growing once real classes use it; or a decision to review sooner (a higher `review_when_below` or an earlier crossing), which the simulation above suggests would keep more parts secure for about one more review a student a week.
