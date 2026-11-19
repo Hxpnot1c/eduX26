@@ -12,7 +12,7 @@ Three pages (a course map, a student page, a teacher page) show a child's learni
 Taken from `personalisation.md` §5, the DfE product safety standards (10 and 13) and decision 0014:
 - **No grade, prediction, single course score, ranking, streak, badge or comparison with other students.** Levels only, never a probability. A level always comes with its evidence (how many answers, how recently) because it is often based on very few.
 - **An unchecked part is never "weak".** A part the class covered that the student has not answered on reads "taught in class, not yet checked".
-- **Teachers see classes, not students.** Class-level only, cells under 5 students blank. Never a per-student record, chat text, confidence or calibration, fatigue, rapid guesses, learning speed, or any SEND, EAL or demographic data. A per-student view would need a DPIA first (05s).
+- **Teachers see classes, not students.** Class-level only, cells under 5 students blank. Never a per-student record, chat text, confidence or calibration, fatigue, rapid guesses, learning speed, or any SEND, EAL or demographic data. A per-student view would need a DPIA first (05s). *Updated by [0030](0030-per-student-teacher-view-and-the-demo-teacher.md): an opt-in per-student view, off by default, turned on by a school after its DPIA, and for the synthetic demo class.*
 - **No claim that the dashboards improve outcomes** (Kaliisa et al., 2023: limited evidence on achievement across 38 studies).
 - **Nothing leaves the origin:** no CDN, font host, script or analytics.
 

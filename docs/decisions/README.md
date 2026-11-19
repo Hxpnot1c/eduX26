@@ -107,5 +107,6 @@ The result that would make us revisit this.
 | [0024](0024-visual-language-and-what-the-pages-will-not-show.md) | Visual language, and what the pages will not show | Proposed |
 | [0025](0025-decay-towards-the-starting-estimate.md) | Fade learnt parts towards their normal start, show "needs review", and review before a part fades | Proposed |
 | [0026](0026-map-links-from-the-chatbot.md) | Map links from the chatbot: single-use tokens, never the key | Proposed |
+| [0030](0030-per-student-teacher-view-and-the-demo-teacher.md) | The per-student teacher view (off by default, after a DPIA) and the demo teacher | Proposed |
 
 Each later record is added to this table in the pull request that introduces it.

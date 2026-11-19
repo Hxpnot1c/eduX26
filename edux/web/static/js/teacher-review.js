@@ -38,6 +38,11 @@
     });
   }
 
+  function logo(parent) {              // the Synapse logo in the dark band's "S" slot (files from build/synapse-logo)
+    const img = h("img", null, parent, "rv-logo");
+    img.src = "/static/brand/synapse-icon-192.png"; img.alt = "Synapse"; img.width = 48; img.height = 48;
+  }
+
   function chip(text, parent, cls) { return h("span", text, parent, "chip" + (cls ? " " + cls : "")); }
 
   function bar(level, parent) {         // a three-step bar: new, developing, secure. Not buttons
@@ -52,6 +57,7 @@
   function paintClass() {
     classBox.textContent = "";
     const head = h("header", null, classBox, "rv-head");
+    logo(head);
     const titles = h("div", null, head);
     h("p", "Class view", titles, "eyebrow");
     h("h2", data.class.name, titles, "rv-title");
@@ -153,6 +159,7 @@
     catch (e) { h("p", "That review could not be loaded: " + e.message, studentBox, "nothing"); return; }
     const back = h("a", "← Back to " + data.class.name, studentBox, "back"); back.href = "#";
     const head = h("header", null, studentBox, "rv-head");
+    logo(head);
     const titles = h("div", null, head);
     h("p", "Student review", titles, "eyebrow");
     h("h2", s.student.name, titles, "rv-title");

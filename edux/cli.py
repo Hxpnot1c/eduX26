@@ -443,7 +443,9 @@ def cmd_serve(host: str | None = None, port: int | None = None) -> int:
     return 0
 
 
-def cmd_seed_demo(course: str | None = None, reset: bool = False, parts: str | None = None, pupils: int = 0, demo_class: bool = False) -> int:
+def cmd_seed_demo(
+    course: str | None = None, reset: bool = False, parts: str | None = None, pupils: int = 0, demo_class: bool = False
+) -> int:
     """Create the three demo students by replaying scripted events; print the roles picked and their keys. With
     demo_class, create the demo teacher's synthetic class instead (decision 0030)."""
     from edux import demo
@@ -595,7 +597,9 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--course", help="course id (default: the only loaded course)")
     p.add_argument("--reset", action="store_true", help="remove the demo students and their events first")
     p.add_argument("--pupils", type=int, default=0, help="also add this many synthetic pupils to the demo class, for the teacher page")
-    p.add_argument("--class", dest="demo_class", action="store_true", help="instead, seed the demo teacher's class of 12 synthetic students")
+    p.add_argument(
+        "--class", dest="demo_class", action="store_true", help="instead, seed the demo teacher's class of 12 synthetic students"
+    )
     p.add_argument(
         "--parts", help="override roles, e.g. target=ped_values,prereq=ped_formula (review_parts and showme_parts take ;-separated ids)"
     )

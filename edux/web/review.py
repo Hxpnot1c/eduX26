@@ -183,7 +183,12 @@ def class_review(class_id: str, at: str | None = None) -> dict | None:
         "min_cell": minimum,
         "test": None
         if test is None
-        else {"id": test["id"], "name": test["name"], "date": test["date"], "topics": [{"id": t, "name": names[t]} for t in test["topics"]]},
+        else {
+            "id": test["id"],
+            "name": test["name"],
+            "date": test["date"],
+            "topics": [{"id": t, "name": names[t]} for t in test["topics"]],
+        },
         "topics": [{"id": t["id"], "name": t["name"]} for t in topics if any(b["topic_id"] == t["id"] for b in bands)],
         "students": cards,
         "before_test": before,
@@ -238,7 +243,12 @@ def student_review(class_id: str, student_id: str, at: str | None = None) -> dic
     for part in sorted(part_topic, key=lambda p: (p not in test_parts, order.get(p, 0))):
         if part not in answers and learner.shown_level(student_id, part, at) == "taught_in_class":
             not_checked.append(
-                {"part_id": part, "part": graph.require_node(part)["name"], "topic": names.get(part_topic[part], ""), "in_test": part in test_parts}
+                {
+                    "part_id": part,
+                    "part": graph.require_node(part)["name"],
+                    "topic": names.get(part_topic[part], ""),
+                    "in_test": part in test_parts,
+                }
             )
     total = sum(a["n"] for a in answers.values())
     first = min((a["first"] for a in answers.values()), default=None)
