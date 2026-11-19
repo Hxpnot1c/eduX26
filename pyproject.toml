@@ -22,7 +22,10 @@ testpaths = ["tests"]
 filterwarnings = ["ignore:Using .httpx. with .starlette.testclient."]
 
 [tool.setuptools]
-packages = ["edux", "ingest"]
+packages = ["edux", "edux.web", "ingest"]
+
+[tool.setuptools.package-data]
+"edux.web" = ["static/**/*"]
 
 [tool.ruff]
 line-length = 140

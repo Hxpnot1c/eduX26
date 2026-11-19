@@ -298,8 +298,10 @@ def build_server() -> FastMCP:
 
 
 def http_app() -> ASGIApp:
-    """The ASGI app: the MCP endpoint at /mcp behind the key check."""
-    return RequireKey(build_server().streamable_http_app())
+    """The ASGI app: the MCP endpoint at /mcp behind the key check, with the web pages and their API beside it."""
+    from edux.web.app import WebLayer
+
+    return WebLayer(RequireKey(build_server().streamable_http_app()))
 
 
 def serve(host: str, port: int) -> None:
