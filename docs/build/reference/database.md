@@ -209,6 +209,9 @@ CREATE INDEX idx_literacy_skip_student ON literacy_skip(student_id, part_id);
 - **Delete, export, retention** (`python -m edux.cli`): `delete-student --student <id> --yes` removes every row about a student from every table that has a `student_id` column, found from the schema so a table added later is covered; `export-student` writes all of it as JSON (never the key or its hash); `leave-student` marks a student as having left; `purge` deletes call-log rows older than `retention.call_log_days` and students who left more than `retention.after_leaving_days` ago.
 - **Event sourcing and deletion:** deleting a student deletes their events, so there is nothing to replay; other students' state is unaffected, and a rebuild after a deletion gives the same state for everyone else (tested).
 
+## Confidence ratings (step 05z, migration 019)
+`confidence_log(id, student_id, evidence_id, ts, level)` with `level` guess, fairly_sure, certain or skipped: an event, one row per answer rated. It is **not** derived state (a rebuild leaves it alone) and **never** an input to `p_known`; it feeds only the calibration line. `issued_plan.plan_json` gains `confidence_for` `{exchange_id, part_id}` while a reply is held back for "how sure are you?".
+
 ## Class assessments and reminders (step 05u, migration 018)
 `student_assessment(id, student_id, class_id, name, kind, date, part_ids, created_at)` with `CHECK ((student_id IS NULL) <> (class_id IS NULL))`: a row belongs to one student (set by them) or to a class (set by a teacher through `assessment add --class`); `kind` is homework, class_test, mock or written_assignment. Profile, not events. `delete-student` removes only the student's own rows. `student_profile.reminders` (default 1) switches the once-a-session reminder off.
 

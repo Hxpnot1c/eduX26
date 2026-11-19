@@ -188,6 +188,9 @@ Shares are adapted from Cepeda et al. (2008): the optimal gap shrinks as the tes
 
 `reviews_due` returns up to `max_reviews_per_reply` due parts, ordered by importance.
 
+## Confidence and calibration (step 05z)
+A rating (`confidence_log`) is stored beside the answer it rates and read only for the calibration line. It never enters `p_known`, `half_life`, the surprise, the offsets or the fatigue rules: a student who says "certain" and is wrong is not marked down for the confidence, and one who says "guess" and is right is not marked up. A test compares two students with identical answers and different ratings and finds identical state.
+
 ## The reply's ending: the bridge question (step 05t)
 The ending is chosen in four tiers (an urgent review, a bridge, an earned extend, another review); see `tools-and-context.md`. A bridge answer is a pre-question, so it follows the pre-question rules and feeds the starting offset of its target's sector (step 05q): the not-covered offset for a coverage-next target and for any part the class has not covered, the covered offset for a strongest-link target that was covered in class but never practised here. The candidates not picked are logged in `considered` and never sent; the CLI's `context` command prints the tiers (`ending_tiers`).
 

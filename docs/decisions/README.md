@@ -99,5 +99,6 @@ The result that would make us revisit this.
 | [0016](0016-learner-offset-cache.md) | Cache the per-session learner offsets | Proposed |
 | [0017](0017-bridge-ending.md) | End a finished part with a bridge question towards the next topic | Proposed |
 | [0018](0018-class-assessments-reminders-plans.md) | Class assessments, deadline reminders and study plans | Proposed |
+| [0019](0019-confidence-and-calibration.md) | Ask "how sure are you?" after a check and show a calibration line | Proposed |
 
 Each later record is added to this table in the pull request that introduces it.

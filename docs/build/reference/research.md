@@ -128,6 +128,17 @@ The evidence behind Synapse's teaching and modelling decisions. Effect sizes are
 | … and the effect of fixing it | w4-fix-mcq-1 ✓; w5-06g-05 ~; w6-len-1 ✓ | A testwise student who knows nothing fell from 0.96 to 0.28 right (chance 0.31). A remaining cue (drop longest and shortest) got 58%, addressed by patch 0011's rewording and ingest warnings | Our simulation; the wording needs an economist's read |
 | Rotating wrong options (held) | Roediger & Marsh (2005) | Seeing the same wrong option repeatedly can teach it | Held item |
 
+## Confidence and calibration (step 05z)
+
+| Decision | Source | What it shows | Caveat |
+|---|---|---|---|
+| Calibration (confidence against accuracy) as a signature measure, shown to the student as feedback | Fernandes et al. (2025), CHI; the project's literature review (Summary §3.2, principle 3) | AI use raised task scores but inflated self-estimates, and higher AI literacy predicted worse calibration | One research group, seen via a secondary paper; no validated reliance instrument exists |
+| Ask for the commitment before the feedback is revealed | Buçinca et al. (2021), CSCW, cognitive forcing | Making people commit before the AI's answer reduced over-reliance, and was liked less | Decision tasks with AI recommendations, not revision checks |
+| Optional, switch-off, no penalty for skipping | ICO Children's Code, Standard 5 (detrimental use of data); `personalisation.md` §2.4 | Do not make a measure a hurdle or a source of pressure | Design guidance |
+| A calibration line only after 5 rated answers in a level | Our own arithmetic: small counts mislead (research summary §6(e)) | A level with fewer than 5 answers swings with one answer | Judgement call |
+| Rating never changes p_known | Reasoning | A self-report is a different quantity from a performance; mixing them would let confidence inflate or deflate the model | Tested |
+| Not built: early review of high-confidence errors (hypercorrection) | Butterfield & Metcalfe (2001) | Errors made with high confidence are corrected well when feedback is given | Lab recall of facts; thin for A-level |
+
 ## Reminders, deadlines and study plans (step 05u)
 
 | Decision | Source | What it shows | Caveat |
