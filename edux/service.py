@@ -110,13 +110,16 @@ def _save_plan(
     how: dict | None = None,
     considered: list[dict] | None = None,
     confidence_for: dict | None = None,
+    rapid_checks: dict | None = None,
+    rush_waits: str | None = None,
 ) -> None:
     """Save the plan issued this turn, with what the next turn needs: the focus, misconceptions corrected and
     the offer_choice reasons offered this session, the style sent, the question waiting for an answer, the MCQ
     letter map (step 05d), point-by-point progress per part (step 05d; kept across parts and sessions, so
     coming back to a part resumes where it stopped), and the pending literacy task and how-AI-works check
     (step 05e), and the add-on candidates not picked with their values (considered, priorities: data for learning
-    the weights later; never sent to the chatbot)."""
+    the weights later; never sent to the chatbot). rapid_checks is the run of rapid-guess check answers in a row
+    this session, and rush_waits the session whose break offer waits until rushing continues (decision 0027)."""
     conn = learner._conn()
     with conn:
         conn.execute(
@@ -138,6 +141,8 @@ def _save_plan(
                         "how": how,
                         "considered": considered or [],
                         "confidence_for": confidence_for,
+                        "rapid_checks": rapid_checks,
+                        "rush_waits": rush_waits,
                     }
                 ),
             ),
@@ -684,6 +689,16 @@ def tutor_turn(
         again = None
     request = this_message.get("request_type") or "concept"
     course_answer = None if lost or literacy_answer else answer
+    rapid, this_rapid = _rapid_checks(student["id"], last, evidence, course_answer, exchange_id, bool(held), at)
+    ask_how_sure = bool(
+        not held
+        and config.plan
+        and exchange_id
+        and _confidence_due(student["id"], evidence, course_answer, this_message, blocks, choice, at, rapid["n"])
+    )
+    rush_waits = _rush_offer_waits(last, blocks, rapid, ask_how_sure, this_rapid, bool(held))
+    if rush_waits and blocks.get("session"):  # decision 0027: the break offer waits while confidence is asked
+        blocks = {**blocks, "session": {**blocks["session"], "hold_offer": True}}
     if not config.plan or (request == "other" and not course_answer and not wants_reviews):
         steps = []
     elif held:  # deliver the reply kept back while we asked how sure they were
@@ -722,12 +737,6 @@ def tutor_turn(
         steps = reply_style(steps, student, turn, blocks)
     current_style = style(student, client)
     send_style = _style_due(last, current_style, at)
-    ask_how_sure = bool(
-        not held
-        and config.plan
-        and exchange_id
-        and _confidence_due(student["id"], evidence, course_answer, this_message, blocks, choice, at)
-    )
     _save_plan(
         student["id"],
         at,
@@ -743,6 +752,8 @@ def tutor_turn(
         how,
         considered,
         {"exchange_id": exchange_id, "part_id": evidence["part_id"]} if ask_how_sure and evidence else None,
+        rapid,
+        rapid["session"] if rush_waits and "fatigued" not in offered_in(steps) else None,
     )
     shown = [plan.ask_confidence(turn, evidence["part_id"])] if ask_how_sure and evidence else steps  # the reply is held back one turn
     # with no plan (a comparison profile), answers on the focus parts can still be scored
@@ -997,22 +1008,63 @@ def progress_parts(student: dict, include_parts: bool = False, at: str | None = 
     return out
 
 
+CHECK_PURPOSES = ("check", "review", "prereq")
+
+
+def _rapid_checks(
+    student_id: str, last: dict, evidence: dict | None, course_answer: dict | None, exchange_id: int | None, held: bool, at: str
+) -> tuple[dict, bool]:
+    """({"session", "n"}: how many answers to checks, reviews or prerequisite checks in a row this session were rapid
+    guesses, and whether this turn's answer was one). Only such an answer moves the run: a rapid one adds one, a slower
+    one resets it to 0; other messages, and the reply to "how sure are you?", leave it. A new session starts at 0."""
+    session = (learner.session_state(student_id, at) or {}).get("session_id")
+    before = last.get("rapid_checks") or {}
+    n = before.get("n", 0) if before.get("session") == session else 0
+    this_rapid = bool(not held and course_answer and evidence and learner.exchange_rapid(exchange_id))
+    if not held and course_answer and evidence and evidence.get("purpose") in CHECK_PURPOSES:
+        n = n + 1 if this_rapid else 0
+    return {"session": session, "n": n}, this_rapid
+
+
+def _rush_offer_waits(last: dict, blocks: dict, rapid: dict, ask_how_sure: bool, this_rapid: bool, held: bool) -> bool:
+    """Whether the rushing break offer waits this turn (decision 0027): while confidence is asked on the
+    confidence.after_rapid-th rapid check in a row, on the held reply delivered after it, and afterwards until rushing
+    continues (a later answer is a rapid guess again). Long-session mode is never held back."""
+    session = blocks.get("session") or {}
+    if (
+        session.get("state") != "fatigued"
+        or session.get("reason") != "rushing"
+        or session.get("minutes", 0) >= _settings().fatigue.mode_minutes
+    ):
+        return False
+    return ask_how_sure or (last.get("rush_waits") == rapid["session"] and (held or not this_rapid))
+
+
 def _confidence_due(
-    student_id: str, evidence: dict | None, course_answer: dict | None, this_message: dict, blocks: dict, choice: str, at: str
+    student_id: str,
+    evidence: dict | None,
+    course_answer: dict | None,
+    this_message: dict,
+    blocks: dict,
+    choice: str,
+    at: str,
+    rapid_run: int = 0,
 ) -> bool:
-    """Whether to ask "how sure are you?" after this answer (step 05z): only after an answer to a check, a review or a
-    prerequisite check (never ordinary chat, a pre-question or a how-AI-works check), when the chatbot did not already
-    send the confidence, not while they are in long-session or rushing mode or asking to be shown, at most
-    confidence.max_per_session times a session, and not after confidence.stop_after_skips skips in a row."""
+    """Whether to ask "how sure are you?" after this answer (step 05z, decision 0027): only when this answer to a check,
+    a review or a prerequisite check makes confidence.after_rapid rapid guesses on checks in a row this session (never
+    after an ordinary check, ordinary chat, a pre-question or a how-AI-works check), when the chatbot did not already
+    send the confidence and they are not asking to be shown, at most confidence.max_per_session times a session, and
+    never again once confidence.stop_after_skips asks in a row were skipped. Rushing no longer blocks it: it is the
+    trigger. The rating never feeds p_known."""
     c = _settings().confidence
     if (
         not learner.confidence_on()
         or evidence is None
         or course_answer is None
         or this_message.get("confidence") is not None
-        or evidence.get("purpose") not in ("check", "review", "prereq")
+        or evidence.get("purpose") not in CHECK_PURPOSES
         or choice == "just_show_me"
-        or (blocks.get("session") or {}).get("state") == "fatigued"
+        or rapid_run < c.after_rapid
     ):
         return False
     asks = learner.confidence_asks(student_id, at)

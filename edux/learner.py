@@ -450,16 +450,16 @@ def record_confidence(student_id: str, evidence_ids: list[int], level: str, ts: 
 
 
 def confidence_asks(student_id: str, at: str | datetime | None = None) -> dict:
-    """How the confidence question has gone this session: {asked, skips_in_a_row}. Used to ask sparingly and to stop
-    after confidence.stop_after_skips skips in a row (skipping carries no penalty)."""
-    state = session_state(student_id, at)
-    if state is None:
-        return {"asked": 0, "skips_in_a_row": 0}
+    """How the confidence question has gone: {asked, skips_in_a_row}. asked counts the asks this session (one ask
+    rates every piece of evidence of one answer, so its rows share a timestamp and count once); skips_in_a_row counts
+    the student's latest asks across sessions, so confidence.stop_after_skips skipped asks in a row stop it for good
+    (decision 0027; skipping carries no penalty)."""
+    at_ts = _event_ts(at)
     rows = (
         _conn()
         .execute(
-            "SELECT level FROM confidence_log WHERE student_id = ? AND ts >= ? AND ts <= ? ORDER BY ts DESC, id DESC",
-            (student_id, state["session_id"], _event_ts(at)),
+            "SELECT ts, MIN(level) AS level FROM confidence_log WHERE student_id = ? AND ts <= ? GROUP BY ts ORDER BY ts DESC",
+            (student_id, at_ts),
         )
         .fetchall()
     )
@@ -468,7 +468,18 @@ def confidence_asks(student_id: str, at: str | datetime | None = None) -> dict:
         if r["level"] != "skipped":
             break
         streak += 1
-    return {"asked": len(rows), "skips_in_a_row": streak}
+    state = session_state(student_id, at)
+    asked = 0 if state is None else sum(1 for r in rows if r["ts"] >= state["session_id"])
+    return {"asked": asked, "skips_in_a_row": streak}
+
+
+def exchange_rapid(exchange_id: int | None) -> bool:
+    """Whether the answer sent with this exchange was a rapid guess (rapid_guess on its stored timing). One answer is
+    one exchange, however many pieces of evidence it gives."""
+    if not exchange_id:
+        return False
+    row = _conn().execute("SELECT latency_s, question_words, answer_words FROM exchange_log WHERE id = ?", (exchange_id,)).fetchone()
+    return bool(row) and rapid_guess(row["latency_s"], row["question_words"], row["answer_words"])
 
 
 def calibration(student_id: str, at: str | datetime | None = None) -> dict:

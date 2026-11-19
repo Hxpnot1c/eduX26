@@ -10,7 +10,8 @@ Order (first match wins for the main step):
                      intuition answer, teaching; after a check, the next point (or the same point re-taught)
   question instead of the pending answer -> answer_brief, then reask the same question (fatigue and stuck first)
   fatigued        -> offer_choice: stop or quick questions (once a session; also replaces reteach's re-ask, as do
-                     stuck moves)
+                     stuck moves). In rushing mode it waits while "how sure are you?" is asked, and until a later
+                     answer is a rapid guess again (session.hold_offer, decision 0027)
   stuck on focus  -> ask_mcq on the weakest prerequisite (prereq, stuck) / reteach of the whole part (through the anchor);
                      each later miss on it that session climbs the stuck ladder (stuck_ladder): a worked example and
                      its check, an easier prerequisite check, an offer to stop or switch, then worked examples
@@ -441,7 +442,7 @@ def main_step(
     session = blocks.get("session")
     focus = turn.parts[0] if turn.parts else None
 
-    if session and session["state"] == "fatigued" and "fatigued" not in offered:
+    if session and session["state"] == "fatigued" and "fatigued" not in offered and not session.get("hold_offer"):
         quick = [{"id": p["id"], "name": p["name"], "level": p["level"]} for p in session["quick_parts"]]
         line = read_text(f"fatigue/{session['reason']}.md").strip().format(minutes=session["minutes"])
         return [

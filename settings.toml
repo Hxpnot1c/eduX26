@@ -143,7 +143,7 @@ slip_start_minutes = 28    # from research: Randles, Harlow & Inzlicht (2017), p
 slip_per_minute = 0.002    # from research (fit to the same decline of 4-5 points by about 50 minutes): extra slip per minute after that
 extra_slip_cap = 0.12      # from research: end-of-test declines of 7.5-12% (Brown, Kaur, Kingdon & Schofield; TIMSS); the top is used
 mode_minutes = 50          # from research: Randles et al. (2017), with Sievertsen, Gino & Piovesan (2016) on breaks: long-session mode starts here
-rapid_guesses = 2          # judgement call, starting value: rapid guesses in a session that start rushing mode
+rapid_guesses = 2          # judgement call, starting value: rapid guesses in a session that start rushing mode (on the confidence.after_rapid-th in a row the break offer waits: decision 0027)
 reading_wpm = 300          # from research: Brysbaert (2019), mean silent reading 238 wpm, range 175-300; the top is used so fewer students are flagged wrongly
 typing_wpm = 52            # from research: Dhakal et al. (2018), mean typing speed 52 wpm on a keyboard
 min_students_per_bin = 5   # judgement call: a class fatigue-curve bin with fewer students is hidden
@@ -155,10 +155,11 @@ low_share = 0.5            # passive or "just show me" share of the last session
 weakest_last_n = 5          # from research: Galyardt & Goldin (2015), 75-93% of predictive weight on the last 5 attempts
 coasting_min_messages = 2   # judgement call, starting value: messages in the window before a student can count as coasting
 
-[confidence]               # "how sure are you?" after an answer to a check (step 05z). Never an input to p_known
-enabled = true             # judgement call: asked only on checks, reviews and prerequisite checks, never on ordinary chat or while rushing
-max_per_session = 6        # judgement call, starting value: at most this many asks in a session
-stop_after_skips = 2       # judgement call, starting value: two skips in a row and it stops asking for the session (no penalty for skipping)
+[confidence]               # "how sure are you?" after rapid guesses on checks (step 05z, decision 0027). Never an input to p_known
+enabled = true             # judgement call: asked only after rapid-guess answers to checks, reviews or prerequisite checks, never on an ordinary check or chat
+after_rapid = 2            # judgement call (Vishnu, 19 Nov): asked when this many check answers in a row in a session are rapid guesses (fatigue.reading_wpm and typing_wpm); the break offer then waits until rushing continues
+max_per_session = 1        # judgement call (Vishnu, 19 Nov): at most this many asks in a session
+stop_after_skips = 2       # judgement call, starting value: this many skipped asks in a row, across sessions, and it stops asking for good (no penalty for skipping)
 min_per_group = 5          # judgement call (Vishnu, 18 Nov): the calibration line shows a group only after this many rated answers in it
 
 [find_error]               # find-the-error practice (decision 0012). Built but OFF until Vishnu approves it: the evidence is thin

@@ -65,7 +65,7 @@ class ThisMessage(BaseModel):
     pushback_changed: bool = Field(False, description="true when the student challenged your last answer and you are changing it")
     confidence: Literal["guess", "fairly_sure", "certain", "none"] | None = Field(
         None,
-        description="their reply to 'how sure are you?': guess, fairly_sure or certain; none if they skipped or ignored it. Send it only when you asked",
+        description="their reply to 'how sure are you?' (asked only after quick guesses): guess, fairly_sure or certain; none if they skipped or ignored it. Send it only when you asked",
     )
     words: int | None = Field(
         None,

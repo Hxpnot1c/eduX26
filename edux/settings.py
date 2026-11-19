@@ -205,6 +205,7 @@ class Engagement:
 @dataclass(frozen=True)
 class Confidence:
     enabled: bool
+    after_rapid: int
     max_per_session: int
     stop_after_skips: int
     min_per_group: int
@@ -489,6 +490,9 @@ def load_settings(path: Path = SETTINGS_PATH) -> Settings:
         raise SettingsError("personalisation.learn_rate_weight_bounds: expected 0 < low <= 1 <= high")
     if settings.points.max_words_requested < settings.points.max_words:
         raise SettingsError("points.max_words_requested: expected at least points.max_words")
+    c = settings.confidence
+    if c.after_rapid < 1 or c.max_per_session < 0 or c.stop_after_skips < 1:
+        raise SettingsError("confidence: expected after_rapid >= 1, max_per_session >= 0 and stop_after_skips >= 1")
     check_identifiable(settings)
     return settings
 
