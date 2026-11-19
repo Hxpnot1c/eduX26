@@ -98,5 +98,6 @@ The result that would make us revisit this.
 | [0015](0015-coverage-and-starting-points.md) | Classes, coverage and starting points | Proposed |
 | [0016](0016-learner-offset-cache.md) | Cache the per-session learner offsets | Proposed |
 | [0017](0017-bridge-ending.md) | End a finished part with a bridge question towards the next topic | Proposed |
+| [0018](0018-class-assessments-reminders-plans.md) | Class assessments, deadline reminders and study plans | Proposed |
 
 Each later record is added to this table in the pull request that introduces it.

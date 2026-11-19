@@ -128,6 +128,16 @@ The evidence behind Synapse's teaching and modelling decisions. Effect sizes are
 | … and the effect of fixing it | w4-fix-mcq-1 ✓; w5-06g-05 ~; w6-len-1 ✓ | A testwise student who knows nothing fell from 0.96 to 0.28 right (chance 0.31). A remaining cue (drop longest and shortest) got 58%, addressed by patch 0011's rewording and ingest warnings | Our simulation; the wording needs an economist's read |
 | Rotating wrong options (held) | Roediger & Marsh (2005) | Seeing the same wrong option repeatedly can teach it | Held item |
 
+## Reminders, deadlines and study plans (step 05u)
+
+| Decision | Source | What it shows | Caveat |
+|---|---|---|---|
+| A concrete plan with days and topics | Sheeran, Listrom & Gollwitzer (2024), meta-analysis; Gollwitzer & Sheeran (2006); Duckworth et al. (2011) | Implementation intentions improved outcomes (d = .27 to .66); with mental contrasting, high-school students completed over 60% more practice questions | Mostly other goals and populations; not tested on chat-generated plans |
+| Spacing towards the class's tests; weakest first | Cepeda et al. (2008), *Psychological Science* | The best gap is a falling share of the time to the test | Adults, trivia facts |
+| In-chat reminder only, once, switch-off, no streaks | Fryer (2016), *Journal of Public Economics*; Oreopoulos et al. (NBER w25036); Bergman & Chan (2021); ICO Children's Code, Standards 5, 12 and 13 | Texts to students alone had no measurable effect on outcomes; texts to parents did; nudges can crowd out motivation (Damgaard & Nielsen, 2018) | So the reminder is a courtesy, not a claimed lever; the opt-out and wording are design guidance (the Code's Standard 13 text is about data and privacy nudges) |
+| A written-assignment plan never writes the content | JCQ (2025) on unacknowledged AI use in assessed work; DfE (2026) on tools not handing over final answers | Unacknowledged AI use in assessed work can be malpractice | Guidance, not an experiment |
+| Teacher-set low-stakes quizzes help | Yang et al. (2021), *Psychological Bulletin* | Classroom quizzing g = 0.50 (222 studies) | Abstract-level read |
+
 ## Evidence for held work (not yet built)
 
 | Planned item | Source | What it shows | Caveat |

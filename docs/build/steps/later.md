@@ -101,7 +101,7 @@ A simple read-only page at `/me?key=` showing:
 - Content review: list flagged and draft rows with approve, reject and edit, writing to the teacher feedback CSV.
 
 ### Priorities, next (after step 05i)
-- Teachers setting assessments for a whole class: planned in step 05u.
+- *(Teachers setting assessments for a whole class: built in step 05u.)*
 - Mock marks counted as evidence.
 - **Research item: per-type learn rates.** The model has one learn rate for all evidence types, so the value score can't prefer the step a student learns most from (step 05n). Find evidence on whether learning differs by question type before adding per-type rates.
 - Learning the `[priorities]` weights from the `considered` logs: a contextual bandit, checked first against old logs (offline evaluation) before it changes any choice.

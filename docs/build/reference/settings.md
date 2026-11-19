@@ -152,6 +152,12 @@ low_share = 0.5            # passive or "just show me" share of the last session
 weakest_last_n = 5          # from research: Galyardt & Goldin (2015), 75-93% of predictive weight on the last 5 attempts
 coasting_min_messages = 2   # judgement call, starting value: messages in the window before a student can count as coasting
 
+[reminders]               # in-chat deadline reminders (step 05u). Synapse cannot push notifications
+days_ahead = 7             # judgement call, starting value: tests due within this many days are mentioned, once, at the start of a session
+
+[plan]                     # day-by-day study plans (step 05u)
+sessions_per_week = 3      # judgement call, starting value; the student can say otherwise
+
 [show]                     # "just show me" (engagement-rules)
 max_per_part_session = 2   # after this many shows of one part in a session, the next first asks a 2-option question on the point
 
