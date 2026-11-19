@@ -15,6 +15,7 @@
   src: url("../fonts/newsreader-latin-500-normal.woff2") format("woff2"); }
 
 *, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { background: var(--paper); color: var(--ink); -webkit-text-size-adjust: 100%; }
 body { margin: 0; font: 400 var(--step-0)/1.55 var(--font-ui); font-variant-numeric: tabular-nums; }
 

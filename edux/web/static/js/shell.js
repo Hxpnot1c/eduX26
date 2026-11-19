@@ -76,6 +76,7 @@
     if (forget) forget.addEventListener("click", function () { Synapse.forget(); location.reload(); });
   }
 
+  window.SynapseUI = { disc: disc };
   buildKey();
   signIn();
 })();

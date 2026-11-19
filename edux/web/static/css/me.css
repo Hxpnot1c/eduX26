@@ -1,0 +1,19 @@
+/* The student's page (decision 0024): lists as hairline rows, no cards. */
+.items { list-style: none; margin: 0; padding: 0; max-width: 44rem; }
+.items li { display: grid; grid-template-columns: 1.4rem 1fr; gap: 0 var(--space); padding: calc(var(--space) * 1.5) 0; border-top: 1px solid var(--rule); align-items: start; }
+.items li:last-child { border-bottom: 1px solid var(--rule); }
+.items svg { width: 1.2rem; height: 1.2rem; margin-top: 3px; }
+.items .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space); }
+.items .head strong { font-weight: 600; }
+.items .sub { grid-column: 2; color: var(--muted); font-size: var(--step--1); }
+.nothing { color: var(--muted); }
+.skills { max-width: 44rem; }
+.skills dt { font-weight: 600; margin-top: calc(var(--space) * 2); }
+.skills dd { margin: 0; color: var(--muted); font-size: var(--step--1); }
+.copy { background: var(--paper-sunk); padding: calc(var(--space) * 2); max-width: 44rem; white-space: pre-wrap; font-size: var(--step--1); margin: 0 0 var(--space); }
+.facts { display: flex; flex-wrap: wrap; gap: var(--space) calc(var(--space) * 5); margin: 0 0 calc(var(--space) * 3); padding: 0; list-style: none; }
+.facts strong { display: block; font: 500 var(--step-2)/1.1 var(--font-display); }
+.facts span { color: var(--muted); font-size: var(--step--1); }
+select { font: inherit; font-size: var(--step--1); color: var(--ink); background: var(--paper-sunk); border: 0; border-bottom: 1px solid var(--ink); padding: var(--space); border-radius: 0; max-width: 100%; }
+.plain-list { margin: 0 0 calc(var(--space) * 2); padding-left: 1.1rem; max-width: 44rem; }
+.plain-list li { margin-bottom: var(--space); }

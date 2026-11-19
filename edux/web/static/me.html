@@ -7,6 +7,8 @@
 <title>My progress · Synapse</title>
 <link rel="stylesheet" href="/static/css/tokens.css">
 <link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/map.css">
+<link rel="stylesheet" href="/static/css/me.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to the page</a>
@@ -24,7 +26,19 @@
 <div class="label"><h2>Sign in</h2></div>
 <div><p class="status" role="status">Checking…</p><button type="button" class="quiet" data-forget hidden>Forget this device</button></div>
 </section>
-<section class="row"><div class="label"><h2>My progress</h2></div><div><p class="muted">Your map, what to do next and what is due arrive here in a later release.</p><ul data-level-key></ul></div></section>
+<div id="me" hidden>
+<section class="row span">
+<div class="label"><h2>My map</h2><p class="muted">Every part of the course. Fainter means longer since you last answered on it.</p></div>
+<div class="wide"><ul data-level-key></ul><div class="map spaced" data-fill="map"></div></div>
+</section>
+<section class="row"><div class="label"><h2>What next</h2></div><div data-fill="next"></div></section>
+<section class="row"><div class="label"><h2>Ready for a check</h2></div><div data-fill="reviews"></div></section>
+<section class="row"><div class="label"><h2>Coming up</h2></div><div data-fill="coming"></div></section>
+<section class="row"><div class="label"><h2>AI practice</h2></div><div data-fill="literacy"></div></section>
+<section class="row" hidden><div class="label"><h2>How sure you were</h2></div><p data-fill="sure"></p></section>
+<section class="row"><div class="label"><h2>My record</h2></div><div data-fill="record"></div></section>
+<section class="row"><div class="label"><h2>My chatbot</h2></div><div data-fill="setup"></div></section>
+</div>
 </main>
 <footer class="foot">
 <p>Practice feedback, not a grade. Synapse shows what has been practised and how recently, and it is often based on very few answers.</p>
@@ -32,6 +46,8 @@
 </div>
 <script src="/static/js/api.js"></script>
 <script src="/static/js/shell.js"></script>
+<script src="/static/js/graph.js"></script>
+<script src="/static/js/me.js"></script>
 
 </body>
 </html>
