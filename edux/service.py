@@ -606,6 +606,9 @@ def tutor_turn(
     }
     if send_style:
         out["style"] = current_style
+        notice = _class_notice(student["id"])
+        if notice:    # once, with the first call of a session
+            out["notice"] = notice
     if focus.get("candidates"):
         out["candidates"] = [{"id": c["id"], "name": c["name"]} for c in focus["candidates"]]
     if resolution["unknown"]:
@@ -617,8 +620,7 @@ def tutor_turn(
 
 
 def _node_entry(student_id: str, node: dict, at: str) -> dict:
-    p = learner.rollup(student_id, node["id"], at)
-    return {"id": node["id"], "name": node["name"], "level": learner.level(p)}
+    return {"id": node["id"], "name": node["name"], "level": learner.shown_rollup(student_id, node["id"], at)}
 
 
 def _tree(student_id: str, at: str, include_parts: bool) -> list[dict]:
@@ -641,8 +643,8 @@ def _levers(student_id: str, at: str, limit: int) -> list[dict]:
         if learner.level(p) == "secure":
             continue
         importance = graph.weight(part)["importance"]
-        found.append({"part_id": part, "name": graph.get_node(part)["name"], "level": learner.level(p),
-                      "score": importance * (1 - p)})
+        found.append({"part_id": part, "name": graph.get_node(part)["name"],
+                      "level": learner.shown_level(student_id, part, at), "score": importance * (1 - p)})
     found.sort(key=lambda f: -f["score"])
     for f in found:
         del f["score"]
@@ -753,12 +755,23 @@ def my_progress(student: dict, include_parts: bool = False, at: str | None = Non
         "tree": _tree(student_id, at, include_parts),
         "levers": _levers(student_id, at, s.progress.levers),
         "weak_links": _weak_links(student_id, at, s.progress.weak_links),
-        "reviews_due": [{"part_id": r["part_id"], "name": r["name"], "level": learner.level(r["p_now"]),
+        "reviews_due": [{"part_id": r["part_id"], "name": r["name"], "level": learner.shown_level(student_id, r["part_id"], at),
                          "due": r["due"], "reason": r["reason"]} for r in reviews],
         "trends": _trends(student_id, at),
         "ai_literacy": _ai_literacy(student_id, at),
     }
+    notice = _class_notice(student_id)
+    if notice:
+        out["notice"] = notice
     return fit_progress(out, result_limit(include_parts))
+
+
+def _class_notice(student_id: str) -> str | None:
+    """While the school's class estimate is on (coverage.class_estimate_enabled) and the student is in a class: the
+    one-line notice that their class's results shape where new topics start for them (step 05q). Otherwise None."""
+    if not _settings().coverage.class_estimate_enabled or learner.student_class(student_id) is None:
+        return None
+    return read_text("notices/class_estimate.md").strip()
 
 
 PROGRESS_TRIM_ORDER = ("weak_links", "reviews_due", "levers")   # lowest-ranked item first: each list is ranked best first
@@ -785,8 +798,11 @@ def update_profile(
     answer_length: int | None = None,
     add_assessment: dict | None = None,
     remove_assessment: int | None = None,
+    covered_in_class: dict | None = None,
 ) -> dict:
-    """Update student_profile and return it, with the student's upcoming assessments. An empty exam_date_override
+    """Update student_profile and return it, with the student's upcoming assessments. covered_in_class {topics, when?}
+    records what their class has been taught, for this student only (step 05q): topics are matched to nodes by id, spec
+    code or name, and matched and unmatched ones are returned. An empty exam_date_override
     clears it. add_assessment {name, kind, date, topics} adds an upcoming test once its topics match the pack's
     topic names or spec codes (case and spacing aside); with no match nothing is added and the pack's topics come
     back to pick from. remove_assessment is an assessment id."""
@@ -795,6 +811,11 @@ def update_profile(
         added = _check_assessment(add_assessment)
         if not added.get("ok"):
             return added
+    covered = None
+    if covered_in_class is not None:
+        covered = _check_coverage(covered_in_class)
+        if not covered.get("ok"):
+            return covered
     if remove_assessment is not None and not learner._conn().execute(
             "SELECT 1 FROM student_assessment WHERE id = ? AND student_id = ?", (remove_assessment, student["id"])).fetchone():
         return {"ok": False, "error": f"no assessment {remove_assessment} for this student"}
@@ -825,10 +846,16 @@ def update_profile(
             added["id"] = cur.lastrowid
         if remove_assessment is not None:
             conn.execute("DELETE FROM student_assessment WHERE id = ? AND student_id = ?", (remove_assessment, student["id"]))
+        if covered:
+            for node_id in covered["node_ids"]:
+                conn.execute("INSERT OR REPLACE INTO student_coverage (student_id, node_id, taught_on, set_by) VALUES (?, ?, ?, 'student')",
+                             (student["id"], node_id, covered["taught_on"]))
     row = conn.execute("SELECT interests, exam_date_override, answer_length FROM student_profile WHERE student_id = ?",
                        (student["id"],)).fetchone()
     out = {"ok": True, "profile": {**dict(row), "assessments": [
         {k: a[k] for k in ("id", "name", "kind", "date")} for a in learner.assessments(student["id"])]}}
+    if covered:
+        out["covered"] = {"topics": covered["topics"], "taught_on": covered["taught_on"], "unmatched": covered["unmatched"]}
     if added:
         out["added"] = {"id": added["id"], "name": added["name"], "kind": added["kind"], "date": added["date"],
                         "topics": added["topics"], "parts": len(added["part_ids"])}
@@ -844,6 +871,24 @@ def _topic_key(text: str) -> str:
 def _pack_topics() -> list[dict]:
     """The pack's course topics, as the student can name them: {name, spec_ref}."""
     return [{"name": t["name"], "spec_ref": t.get("spec_ref") or ""} for t in graph.topics()]
+
+
+def _check_coverage(item: dict) -> dict:
+    """Validate what a student says their class covered. Returns {ok: True, node_ids, topics, taught_on, unmatched}, or
+    {ok: False, error} (with the pack's topics when nothing matched)."""
+    asked = [str(t) for t in item.get("topics") or [] if str(t).strip()]
+    matched, unmatched = graph.match_sections(asked)
+    if not matched:
+        return {"ok": False, "error": "no topic matched; ask the student which of these they covered", "topics": _pack_topics()}
+    today = learner.parse_ts(learner.now_iso()).date()
+    try:
+        taught = date.fromisoformat(str(item.get("when") or today.isoformat()).strip())
+    except ValueError:
+        return {"ok": False, "error": "covered_in_class.when must be a date like 2026-10-14"}
+    if taught > today:
+        return {"ok": False, "error": "covered_in_class.when cannot be in the future"}
+    return {"ok": True, "node_ids": [n["id"] for n in matched], "topics": [n["name"] for n in matched],
+            "taught_on": taught.isoformat(), "unmatched": unmatched}
 
 
 def _check_assessment(item: dict) -> dict:

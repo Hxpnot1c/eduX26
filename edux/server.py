@@ -132,6 +132,13 @@ class AddAssessment(BaseModel):
     topics: list[str] = Field(description="the topics it covers, as the student names them (topic names or spec codes)")
 
 
+class CoveredInClass(BaseModel):
+    """Topics the student says their class has been taught."""
+
+    topics: list[str] = Field(description="the topics or sections covered (topic names or spec codes)")
+    when: str | None = Field(None, description="YYYY-MM-DD, about when they were taught (default today)")
+
+
 class RemoveAssessment(BaseModel):
     """An assessment to remove."""
 
@@ -145,11 +152,13 @@ def update_my_profile(
     answer_length: int | None = None,
     add_assessment: AddAssessment | None = None,
     remove_assessment: RemoveAssessment | None = None,
+    covered_in_class: CoveredInClass | None = None,
 ) -> dict:
     """Tool adapter for service.update_profile."""
     return service.update_profile(student_from_request(ctx), interests, exam_date_override, answer_length,
                                   add_assessment.model_dump() if add_assessment else None,
-                                  remove_assessment.id if remove_assessment else None)
+                                  remove_assessment.id if remove_assessment else None,
+                                  covered_in_class.model_dump() if covered_in_class else None)
 
 
 def review_due() -> str:
