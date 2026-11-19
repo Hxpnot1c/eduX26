@@ -17,7 +17,7 @@ The demo path has these differences from the earlier script. Each is on a pull r
 Synapse now has three pages beside the chatbot connector, served by the same server. They are on pull requests #72 to #77 and are not merged. See [step 09](build/steps/09-web.md).
 1. **Seed with a class:** `python -m edux.cli seed-demo --reset --pupils 8`, then `python -m edux.cli teacher add --name "Ms Demo"` and `python -m edux.cli teacher assign --teacher <id> --class demo-class`. The 8 pupils are synthetic and the page says so.
 2. **The course map** at `/map` needs no sign-in for the example pack. Show the three views (Map, Path, List), then select PED: formula and calculation: its detail shows what it needs first and what it is related to, and links are drawn only for the part you are on. Say: "colour will mean one thing only: how well a part is known."
-3. **A student's page** at `/me#key=<demo-weak key>`: the same map coloured by what they have practised (dashed ring: taught in class, not yet checked; fainter: longer since last answered), what to do next, what is ready for a check and why, the mock coming up with a plan, and what is recorded about them and how to have it deleted. Say: "no score, no rank, no streak: levels with the evidence behind them."
+3. **A student's page** at `/me#key=<demo-weak key>`: the same map coloured by what they have practised (dashed ring: taught in class, not yet checked; a marked disc: needs review, got right before and fading; fainter: longer since last answered), what to do next, what is ready for a check and why, the mock coming up with a plan, and what is recorded about them and how to have it deleted. Say: "no score, no rank, no streak: levels with the evidence behind them."
 4. **A teacher's page** at `/teacher#key=<teacher key>`: the class map in bands, never a count per level; common wrong ideas held by five or more students; the help-seeking pattern with its caution; and the "what this page does not show" list. Say: "teachers see a class, never one student, and nothing under five."
 5. **Sign-in:** the key is in the link's fragment, which a browser never sends to a server, and the page forgets it when the tab closes.
 - Say on camera that the dashboards are **not shown to improve outcomes** (Kaliisa et al., 2023), that the teacher view is a first version, and that the class data is **seeded, synthetic**.
@@ -63,7 +63,8 @@ Optionally show the plans side by side (`python -m edux.cli context --student <i
 
 ## 4. Reviews: recall and transfer (demo-secure, about 1 minute)
 Ask **"Quiz me on what's due"** (the `review_due` prompt). After each answer the chatbot asks how sure they are (skip it, or set `EDUX_CONFIDENCE=0`), then gives the feedback. Three reviews are due:
-- `tax_incidence_split` and `tax_supply_shift`, weak (below `levels.new`): **recall** questions ("who bears an indirect tax, and what decides the split?")
+- `tax_incidence_split`, needs review (answered right once, now below `levels.new`): a **recall** question ("who bears an indirect tax, and what decides the split?")
+- `tax_supply_shift`, developing after several right answers, now due: a **transfer** question
 - `pes_definition`, developing: a **transfer** question in a new context, e.g. a linked idea from the graph
 
 Whether the answer is right or wrong, the feedback should explain why.

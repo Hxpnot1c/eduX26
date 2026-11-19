@@ -7,7 +7,7 @@ Every number the system uses lives in `settings.toml`. Everything about what the
 ## settings.toml
 
 ```toml
-protocol = "v0.3"          # bump when the meaning of labels or scoring changes (v0.2: labels describe the student's message; scores come from points met; v0.3: an exchange alone can't lift a part past nudges.ceiling)
+protocol = "v0.4"          # bump when the meaning of labels or scoring changes (v0.2: labels describe the student's message; scores come from points met; v0.3: an exchange alone can't lift a part past nudges.ceiling; v0.4: stale evidence fades towards the part's starting estimate, not to 0, so p_now and every later update read differently)
 
 [levels]                   # part levels shown to students
 new = 0.40                 # p_known below this = new
@@ -60,6 +60,8 @@ on_success = 2.0           # half-life multiplier after correct evidence
 on_failure = 0.5           # multiplier after incorrect evidence
 min_half_life_days = 1.0
 seen_refresh = 0.2         # an exchange moves the forgetting clock this share of the way to now; a correct answer resets it
+floor = "start"            # from research: research.md row 53, patch 0005 (our simulation: day-30 inversions 0.82-1.00 -> 0.03-0.26, AUC 0.48-0.59 -> 0.62-0.71). p_now fades towards the part's normal start (0.30 here), not to 0; not the covered start, which is above levels.new (Vishnu, 19 Nov); "zero" keeps the old behaviour
+literacy_floor = 0.0       # judgement call (patch 0005): Ask and Verify fade towards 0, so passing once doesn't keep a student near secure
 
 [propagation]
 prereq_boost = 0.20        # share of a gain passed one hop to prerequisites
@@ -97,6 +99,7 @@ share_mid = 0.19           # 14–60 days (was 0.15)
 share_near = 0.30          # < 14 days (was 0.08)
 min_gap_days = 1
 review_when_below = 0.50   # judgement call, starting value: also due when recall is expected to fall below this, if that comes before the share gap. Not from research (see docs/research/review-threshold-simulation.md)
+review_before_new = true   # judgement call (Vishnu, 19 Nov), mirrors review_when_below: after a right answer, also due when p_now is expected to fade below levels.new, if that comes before the share gap (reason "fading")
 just_show_me_gap_days = 1.5
 max_reviews_per_reply = 3
 untested_after = 4         # this many exchanges on a part with no check
