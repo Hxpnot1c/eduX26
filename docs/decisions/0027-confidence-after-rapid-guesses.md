@@ -3,7 +3,7 @@
 - **Status:** Proposed
 - **Date:** 2026-11-19
 - **Decision owner:** Vishnu (his rule of 19 November)
-- **Pull request:** see the branch `build/confidence-after-rapid`
+- **Pull request:** #86
 - **Amends:** [0019](0019-confidence-and-calibration.md) (when the question is asked; the calibration line and the "never feeds `p_known`" rule are unchanged)
 
 ## Context
