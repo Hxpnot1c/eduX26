@@ -13,6 +13,16 @@ The demo path has these differences from the earlier script. Each is on a pull r
 - **Personalisation is off by default (step 05m)** and find-the-error practice is built but off (`EDUX_FIND_ERROR=1` to show it; say on camera that it is untested at this age).
 - **Film with web search off.** Plan A was **re-run on 19 November against the full stack** (the overnight `run_episode.py`, all six scenarios, with one line changed in the harness copy because it read the plaintext key that step 05x removed): Verify ends at **0.740, "developing"**, the same as the overnight run, Ask at 0.528, and no result went over budget. The margin below "secure" (0.75) is **0.01**, so do not add a Verify task to the take; re-run before filming if anything in `settings.toml` changes.
 
+## The web pages (new: about 3 minutes, optional)
+Synapse now has three pages beside the chatbot connector, served by the same server. They are on pull requests #72 to #77 and are not merged. See [step 09](build/steps/09-web.md).
+1. **Seed with a class:** `python -m edux.cli seed-demo --reset --pupils 8`, then `python -m edux.cli teacher add --name "Ms Demo"` and `python -m edux.cli teacher assign --teacher <id> --class demo-class`. The 8 pupils are synthetic and the page says so.
+2. **The course map** at `/map` needs no sign-in for the example pack. Show the three views (Map, Path, List), then select PED: formula and calculation: its detail shows what it needs first and what it is related to, and links are drawn only for the part you are on. Say: "colour will mean one thing only: how well a part is known."
+3. **A student's page** at `/me#key=<demo-weak key>`: the same map coloured by what they have practised (dashed ring: taught in class, not yet checked; fainter: longer since last answered), what to do next, what is ready for a check and why, the mock coming up with a plan, and what is recorded about them and how to have it deleted. Say: "no score, no rank, no streak: levels with the evidence behind them."
+4. **A teacher's page** at `/teacher#key=<teacher key>`: the class map in bands, never a count per level; common wrong ideas held by five or more students; the help-seeking pattern with its caution; and the "what this page does not show" list. Say: "teachers see a class, never one student, and nothing under five."
+5. **Sign-in:** the key is in the link's fragment, which a browser never sends to a server, and the page forgets it when the tab closes.
+- Say on camera that the dashboards are **not shown to improve outcomes** (Kaliisa et al., 2023), that the teacher view is a first version, and that the class data is **seeded, synthetic**.
+- Not yet done: a screen-reader or keyboard-only walkthrough by a person, and a check on a phone (the layout was checked at 390 px in a desktop browser only).
+
 ## Before recording
 - Run `scripts/demo.sh` and note the roles it prints. On `example-mini` they are:
   - target `ped_formula`

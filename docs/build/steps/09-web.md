@@ -10,7 +10,7 @@ Decisions [0023](../../decisions/0023-web-pages-and-teacher-access.md) (access) 
 | 3 | Student page (`build/web-student-page`) | `/me`: map coloured by level, what next, ready for a check, coming up, AI practice, my record, my chatbot | **built** |
 | 4 | Teacher page, read-only (`build/web-teacher-page`) | `/teacher`: class map in bands (≥5 per cell), coverage, wrong ideas held by ≥5, assessments, help-seeking pattern, what the page does not show | **built** |
 | 5 | Teacher actions (`build/web-teacher-actions`) | set or remove a test, mark sections as taught, audit trail | **built**; content review (approve, reject, edit rows) is **not built yet** and will be its own pull request |
-| 6 | Polish | accessibility pass, print, responsive, demo script | planned |
+| 6 | Polish (`build/web-polish`) | h1 and landmarks, 44 px tap targets, print, a 384-part scale test, accessibility checks in the tests, demo script | **built**; content review still to come |
 
 ## What pull request 1 added
 - **`edux/web/app.py`:** `WebLayer` sends the pages, `/static` and `/api` to a small Starlette app and everything else (`/mcp`, the lifespan) to the existing MCP app behind `RequireKey`, unchanged. `/api/whoami` returns the role (and, for a teacher, their name and classes; nothing about a student). Security headers on every response; `no-store` on `/api`. A key in an `/api` URL is refused with a 400.
@@ -47,6 +47,18 @@ Decisions [0023](../../decisions/0023-web-pages-and-teacher-access.md) (access) 
 
 ## Not built: content review
 Listing draft and flagged pack rows and letting a teacher approve, reject or edit them (writing the teacher feedback CSV that `ingest.load.apply_feedback` reads) is a separate pull request. It writes to the content database that live chats read, so it needs its own care: apply only the new row (re-applying the whole CSV would repeat log lines), authorise per course, and show what each change will do before it is made.
+
+## What pull request 6 added
+- **Accessibility basics, now tested:** one `h1` per page (visually hidden, so the design is unchanged), headings that do not skip a level, landmarks, a skip link that goes somewhere, a label for every form control, text on every button, no positive `tabindex`, tap targets of at least 44 px, reduced motion, and a print stylesheet that hides forms and controls. `tests/test_web_accessibility.py` keeps these from regressing.
+- **Scale, measured:** `tests/test_web_scale.py` generates a 384-part course (8 topics of 5 concepts, the middle concept of each topic holding 20 parts), loads it through the real ingest, serves it and times the real page in Chromium. Every large concept collapses to one disc whose ring shows the spread, 224 discs are drawn, the accessible list has a row per part, and **drawing took 9 ms** (headless desktop Chromium; not a phone). `course_map` builds in well under 3 s.
+- Demo script section for the pages; a favicon placeholder so browsers do not request one.
+
+## Not checked (be honest about these)
+- **A person using a screen reader or only the keyboard.** The markup checks and the roving keyboard focus are tested, but focus order and what a screen reader says were not tried with real assistive technology.
+- **A real phone.** Layout was reviewed at 390 px in a desktop browser.
+- **Colour-blindness by a person.** The palette keeps its order in greyscale (checked by `check_contrast.py`) and every level also has a ring and fill state, but it was not tried with colour-blind users.
+- **Real students and teachers.** Nothing here has been used by either; the wording, the bands and what is left out are all untested with them.
+- **A real course pack.** Only the 9-part example and a generated 384-part pack have been drawn.
 
 ## Try it
 ```bash

@@ -23,10 +23,15 @@ Written for Vishnu and whoever picks this up next. It says what is built, in wha
 | #68 | `docs/dfe-safety-mapping` | Mapping to the DfE product safety standards; signposting line |
 | #69 | `build/soak-test` | Seeded random soak test |
 | #70 | `build/find-error-check-sentence` | Server checks the named sentence in find-the-error |
+| #71 | `build/ci-and-coverage` | CI (ruff, mypy, pytest, coverage 94%), a soak test, a days-left fix |
+| #72 to #77 | `build/web-*` | The web pages (see 1b) |
 | #56 | `docs/dpia-and-scoping` | DPIA notes (updated for the newer tables), find-the-error scoping (0012). A sibling off #54, not in the chain |
 | #20 | `research/overnight` | Untouched |
 
-**Merge order** (each a fast-forward of `main` once the one before is in): #48, #49, #50, #51, #52, #53, #54, then #55, #57, #58, #59, #60, #61, #62, #63, #64, #65, #66, #67, #68, #69, #70. Merge #56 after #54 (it only adds docs). Decision records 0021 and 0012 link to each other, so merge #56 before or with #64 to avoid a dead link.
+**Merge order** (each a fast-forward of `main` once the one before is in): #48, #49, #50, #51, #52, #53, #54, then #55, #57, #58, #59, #60, #61, #62, #63, #64, #65, #66, #67, #68, #69, #70, #71, then #72, #73, #74, #75, #76, #77. Merge #56 after #54 (it only adds docs). Decision records 0021 and 0012 link to each other, so merge #56 before or with #64 to avoid a dead link.
+
+## 1b. The web pages (added later on 19 November; PRs #72 to #77, stacked after #71)
+A course map (`/map`), a student page (`/me`) and a teacher page (`/teacher`), with teacher keys, bearer-only sign-in and a strict content security policy. See [step 09](steps/09-web.md) and decisions 0023 and 0024. **Content review (approve/reject/edit pack rows) is not built.** Product calls for Vishnu: whether teachers see the help-seeking pattern at all, the class band wording, fonts, and the public example map on the live URL. Not tested with real students, teachers, screen readers or a phone.
 
 ## 2. Checked on the tip of the stack (19 November)
 - `pytest`: 215 passed.
