@@ -77,6 +77,20 @@ input[type="text"], input[type="password"] { font: inherit; color: var(--ink); b
   .row { break-inside: avoid; }
 }
 
+/* forms: hairline, no boxes */
+form { max-width: 44rem; }
+fieldset { border: 0; border-top: 1px solid var(--rule); margin: 0 0 calc(var(--space) * 2); padding: calc(var(--space) * 2) 0 0; min-width: 0; }
+legend { font-weight: 600; padding: 0; }
+label { display: block; margin: 0 0 var(--space); }
+.field { margin-bottom: calc(var(--space) * 2); }
+.field > label { color: var(--muted); font-size: var(--step--1); margin-bottom: 2px; }
+input[type="date"] { font: inherit; color: var(--ink); background: var(--paper-sunk); border: 0; border-bottom: 1px solid var(--ink); padding: var(--space); border-radius: 0; }
+.checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0 calc(var(--space) * 2); }
+.checks label { display: flex; gap: var(--space); align-items: baseline; margin: 0 0 6px; }
+.checks input { accent-color: var(--ink); }
+.said { min-height: 1.6em; font-size: var(--step--1); }
+.said.bad { color: var(--accent); }
+
 /* discs: one drawing for a part's level, used by the key and (later) the map. Colour says the level; ring and fill repeat it. */
 .disc .ring { fill: none; stroke-width: 1.5; }
 .disc.new .ring { fill: var(--lv-new-fill); stroke: var(--lv-new-ring); }

@@ -12,7 +12,7 @@
   const day = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
   const rows = {};
   document.querySelectorAll("[data-fill]").forEach((el) => { rows[el.getAttribute("data-fill")] = el; });
-  let mapData = null, graph = null;
+  let mapData = null, graph = null, currentClass = null;
 
   function legend(into) {
     into.textContent = "";
@@ -62,7 +62,15 @@
     list(rows.coming, data.assessments, (li, a) => {
       li.appendChild(document.createElement("span"));
       const head = h("div", null, li, "head"); h("strong", a.name, head); h("span", a.kind.replace("_", " ") + " · " + day(a.date), head, "muted");
+      const remove = h("button", "Remove", li, "quiet"); remove.type = "button"; remove.setAttribute("aria-label", "Remove " + a.name);
+      remove.addEventListener("click", () => act("assessments/remove", { id: a.id }, null));
     }, "No tests or assignments are set for this class.");
+
+    list(rows.changes, data.recent_changes, (li, c) => {
+      li.appendChild(document.createElement("span"));
+      const head = h("div", null, li, "head"); h("strong", c.who + " " + c.action, head); h("span", day(c.when), head, "muted");
+      h("span", c.detail, li, "sub");
+    }, "No changes have been made here yet.");
 
     const help = rows.help; help.textContent = "";
     if (!data.help_seeking) h("p", "Not enough students have written in to show this without pointing at individuals.", help, "nothing");
@@ -73,8 +81,51 @@
     }
   }
 
+  function concepts() {           // the course's concepts, grouped under their topics, for the checkboxes
+    const topics = new Map(mapData.nodes.filter((n) => n.level === "topic").map((n) => [n.id, n.name]));
+    return mapData.nodes.filter((n) => n.level === "concept").map((n) => ({ id: n.id, label: n.name + (n.spec_ref ? " (" + n.spec_ref + ")" : ""), topic: topics.get(n.parent) }));
+  }
+
+  function checkboxes() {
+    document.querySelectorAll("[data-checks]").forEach((box) => {
+      if (box.childElementCount) return;
+      concepts().forEach((c) => {
+        const label = h("label", null, box), input = h("input", null, label);
+        input.type = "checkbox"; input.value = c.id; label.appendChild(document.createTextNode(c.label));
+      });
+    });
+  }
+
+  async function act(path, body, form) {
+    const said = form ? form.querySelector("[data-said]") : null;
+    if (said) { said.className = "said"; said.textContent = "Saving…"; }
+    try {
+      paint(await Synapse.post("/api/teacher/class/" + encodeURIComponent(currentClass) + "/" + path, body));
+      const fresh = form ? document.querySelector('[data-form="' + form.getAttribute("data-form") + '"] [data-said]') : null;
+      if (fresh) { fresh.className = "said"; fresh.textContent = "Done."; }
+      if (form) { form.reset(); form.querySelectorAll("input[type=checkbox]").forEach((b) => { b.checked = false; }); }
+    } catch (e) {
+      const where = said || document.querySelector("[data-signin] .status");
+      if (where) { where.className = "said bad"; where.textContent = e.message; }
+    }
+  }
+
+  function wireForms() {
+    document.querySelectorAll("form[data-form]").forEach((form) => {
+      if (form.dataset.wired) return;
+      form.dataset.wired = "1";
+      form.addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        const picked = Array.from(form.querySelectorAll("input[type=checkbox]:checked")).map((b) => b.value);
+        if (form.getAttribute("data-form") === "coverage") act("coverage", { sections: picked, taught_on: form.elements.taught_on.value || undefined }, form);
+        else act("assessments", { name: form.elements.name.value, kind: form.elements.kind.value, date: form.elements.date.value, topics: picked }, form);
+      });
+    });
+  }
+
   async function show(id) {
-    try { paint(await Synapse.get("/api/teacher/class/" + encodeURIComponent(id))); }
+    currentClass = id;
+    try { paint(await Synapse.get("/api/teacher/class/" + encodeURIComponent(id))); checkboxes(); wireForms(); }
     catch (e) { const s = document.querySelector("[data-signin] .status"); if (s) s.textContent = "That class could not be loaded: " + e.message; }
   }
 

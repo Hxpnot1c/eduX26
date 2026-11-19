@@ -34,8 +34,20 @@
 <div class="wide"><ul id="class-key"></ul><p class="muted spaced">Colour shows how many of the students who have answered on a part are at developing or secure. A part is lighter when it rests on few students. This is practice evidence, not a grade, and it is often based on very few answers.</p><div class="map spaced" data-fill="map"></div></div>
 </section>
 <section class="row"><div class="label"><h2>Where we are in the spec</h2></div><div data-fill="coverage"></div></section>
+<section class="row"><div class="label"><h2>Mark what has been taught</h2><p class="muted">A section you mark here tells Synapse where the class is, so students are not shown it as a weakness before they have met it.</p></div>
+<form data-form="coverage"><fieldset><legend>Sections taught</legend><div class="checks" data-checks></div></fieldset>
+<div class="field"><label for="taught-on">Taught on</label><input type="date" id="taught-on" name="taught_on"></div>
+<button type="submit">Mark as taught</button><p class="said" role="status" data-said></p></form></section>
 <section class="row"><div class="label"><h2>Common wrong ideas</h2><p class="muted">Held by five or more students right now.</p></div><div data-fill="wrong"></div></section>
 <section class="row"><div class="label"><h2>Coming up</h2></div><div data-fill="coming"></div></section>
+<section class="row"><div class="label"><h2>Set a test or assignment</h2><p class="muted">Students are reminded in chat, and their reviews lean towards what it covers.</p></div>
+<form data-form="assessment">
+<div class="field"><label for="a-name">Name</label><input type="text" id="a-name" name="name" maxlength="80" autocomplete="off"></div>
+<div class="field"><label for="a-kind">Kind</label><select id="a-kind" name="kind"><option value="class_test">Class test</option><option value="mock">Mock</option><option value="homework">Homework</option><option value="written_assignment">Written assignment</option></select></div>
+<div class="field"><label for="a-date">Date</label><input type="date" id="a-date" name="date"></div>
+<fieldset><legend>Sections it covers</legend><div class="checks" data-checks></div></fieldset>
+<button type="submit">Set it</button><p class="said" role="status" data-said></p></form></section>
+<section class="row"><div class="label"><h2>Recent changes</h2></div><div data-fill="changes"></div></section>
 <section class="row"><div class="label"><h2>Asking to be shown</h2></div><div data-fill="help"></div></section>
 <section class="row"><div class="label"><h2>What this page does not show</h2></div><div>
 <ul class="plain-list">

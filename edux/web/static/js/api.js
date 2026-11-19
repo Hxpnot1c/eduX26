@@ -32,11 +32,22 @@
     return res.json();
   }
 
+  async function post(path, body) {
+    const k = key();
+    const headers = { "Content-Type": "application/json" };
+    if (k) headers.Authorization = "Bearer " + k;
+    const res = await fetch(path, { method: "POST", headers: headers, body: JSON.stringify(body), cache: "no-store" });
+    let data = {};
+    try { data = await res.json(); } catch (e) { /* not JSON */ }
+    if (!res.ok) { const err = new Error(data.error || res.statusText); err.status = res.status; throw err; }
+    return data;
+  }
+
   function forget() {
     window.__synapseKey = "";
     try { sessionStorage.removeItem(STORE); } catch (e) { /* nothing to clear */ }
   }
 
   readFragment();
-  window.Synapse = { key, get, forget };
+  window.Synapse = { key, get, post, forget };
 })();
