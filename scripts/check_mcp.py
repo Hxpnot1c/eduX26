@@ -79,7 +79,12 @@ def payload(result) -> dict:
     return json.loads(result.content[0].text) if result.content else {}
 
 
+ASK_HOW_SURE = False        # the confidence run turns this on; every other run answers as if the chatbot did not ask
+
+
 async def call(url: str, name: str, arguments: dict) -> dict:
+    if name == "tutor_turn" and arguments.get("answer") and not ASK_HOW_SURE:
+        arguments = {**arguments, "this_message": {"confidence": "none", **arguments.get("this_message", {})}}      # step 05z
     async with streamablehttp_client(url) as (read, write, _), ClientSession(read, write) as session:
         await session.initialize()
         result = await session.call_tool(name, arguments)
@@ -537,6 +542,47 @@ def new_student(student: str) -> str:
     drop_student(student)
     course = learner._conn().execute("SELECT id FROM content.course").fetchone()[0]
     return learner.add_student(student, course, student_id=student)["key"]
+
+
+async def calibration(url: str) -> None:
+    """"How sure are you?" (step 05z): after an answer to a check the reply asks and keeps the feedback back one turn; the
+    reply stores the rating, a skip costs nothing, and the rating never changes what the model thinks they know."""
+    global ASK_HOW_SURE
+    student = "check-sure"
+    keyed = f"{url}?key={new_student(student)}"
+    labels = {"question_depth": "mechanism", "engagement": "active"}
+    ASK_HOW_SURE = True
+    try:
+        out = await call(keyed, "tutor_turn", {"message": "Teach me the PED formula", "client": "check_mcp", "node_ids": [PART], "this_message": labels})
+        for _ in range(4):          # answer any pre-question until the first check
+            step = next((s for s in out["plan"] if s["move"] == "ask_mcq"), None)
+            if step is None or step["data"].get("purpose") == "check":
+                break
+            chosen, _ = letter(student, True)
+            out = await call(keyed, "tutor_turn", {"message": chosen, "client": "check_mcp", "node_ids": [PART], "this_message": labels,
+                                                   "answer": {"part_id": step["part_id"], "type": step["data"]["answer_type"], "choice": chosen}})
+        step = next((s for s in out["plan"] if s["move"] == "ask_mcq" and s["data"].get("purpose") == "check"), None)
+        check(step is not None, "the loop reaches a check question", json.dumps(moves(out)))
+        if step is None:
+            return
+        chosen, _ = letter(student, True)
+        asked = await call(keyed, "tutor_turn", {"message": chosen, "client": "check_mcp", "node_ids": [PART], "this_message": labels,
+                                                 "answer": {"part_id": step["part_id"], "type": "mcq", "choice": chosen}})
+        check(moves(asked) == ["ask_confidence"] and asked["score_next"] == {} and "how sure" in asked["plan"][0]["data"]["line"].lower(),
+              "after a check answer the reply asks how sure they are and keeps the feedback back", json.dumps(moves(asked)))
+        before = {r["part_id"]: round(r["p_known"], 9) for r in learner._conn().execute("SELECT part_id, p_known FROM part_state WHERE student_id = ?", (student,))}
+        time.sleep(1.1)
+        given = await call(keyed, "tutor_turn", {"message": "fairly sure", "client": "check_mcp", "node_ids": [PART],
+                                                 "this_message": {**labels, "confidence": "fairly_sure"}})
+        rating = learner._conn().execute("SELECT level FROM confidence_log WHERE student_id = ?", (student,)).fetchone()
+        check(moves(given)[:1] == ["feedback"] and rating and rating["level"] == "fairly_sure",
+              "the reply to 'how sure' delivers the held feedback and stores the rating", f"{json.dumps(moves(given))} {rating and rating['level']}")
+        after = {r["part_id"]: round(r["p_known"], 9) for r in learner._conn().execute("SELECT part_id, p_known FROM part_state WHERE student_id = ?", (student,))}
+        check(all(after.get(p) is not None and abs(after[p] - v) < 1e-9 for p, v in before.items() if p == step["part_id"]),
+              "the rating does not change what the model thinks they know", json.dumps(after))
+    finally:
+        ASK_HOW_SURE = False
+        drop_student(student)
 
 
 async def class_assessments(url: str) -> None:
@@ -1058,6 +1104,7 @@ async def main(url: str, key: str, student: str) -> None:
     await coverage(url)
     await bridge(url)
     await class_assessments(url)
+    await calibration(url)
     await waiting_task(url)
     await engagement_rules(url)
     await priorities(url)
