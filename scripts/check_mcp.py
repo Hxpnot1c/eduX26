@@ -539,6 +539,34 @@ def new_student(student: str) -> str:
     return learner.add_student(student, course, student_id=student)["key"]
 
 
+async def coverage(url: str) -> None:
+    """What a student says their class covered (step 05q): matched and unmatched topics come back, and the progress view
+    shows the covered, untouched topic as "taught in class, not yet checked", never developing or secure."""
+    student = "check-covered"
+    keyed = f"{url}?key={new_student(student)}"
+    try:
+        bad = await call(keyed, "update_my_profile", {"covered_in_class": {"topics": ["not a topic"]}})
+        check(bad.get("ok") is False and bad.get("topics"), "covered_in_class with no match returns the pack's topics to pick from",
+              json.dumps(bad)[:120])
+        got = await call(keyed, "update_my_profile", {"covered_in_class": {"topics": ["PED", "nonsense"], "when": "2026-10-01"}})
+        check(got.get("ok") is True and got["covered"]["unmatched"] == ["nonsense"] and got["covered"]["taught_on"] == "2026-10-01",
+              "covered_in_class matches topics and returns the unmatched ones", json.dumps(got.get("covered")))
+        progress = await call(keyed, "get_my_progress", {"include_parts": True})
+        levels = {}
+
+        def walk(nodes):
+            for n in nodes:
+                levels[n["id"]] = n["level"]
+                walk(n.get("children", []))
+        walk(progress["tree"])
+        check(levels.get("ped") == "taught_in_class" and levels.get("ped_definition") == "taught_in_class"
+              and not {"developing", "secure"} & {levels[k] for k in ("ped", "ped_definition", "ped_formula", "pes")},
+              "a covered part with no answer shows 'taught in class', and an uncovered one shows new, never developing or secure",
+              json.dumps({k: levels.get(k) for k in ("ped", "ped_definition", "pes")}))
+    finally:
+        drop_student(student)
+
+
 async def rushing_student(url: str) -> None:
     """Two answers faster than the question can be read (step 05s) start rushing mode: the plan offers a change in
     plain words (data.line), not a comment on tiredness. Answers sent without a word count are never flagged."""
@@ -944,6 +972,7 @@ async def main(url: str, key: str, student: str) -> None:
     await how_ai_works(url)
     await fatigued_student(url)
     await rushing_student(url)
+    await coverage(url)
     await waiting_task(url)
     await engagement_rules(url)
     await priorities(url)
