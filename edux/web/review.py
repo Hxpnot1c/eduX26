@@ -16,6 +16,13 @@ from edux.web import links, views
 
 UNSURE = ("new", "developing", "needs_review")  # answered on and not yet secure
 AT_DEVELOPING = ("developing", "secure")
+TOPIC_SHARE = 0.5  # judgement call: a student is at developing or above in a topic when at least half the parts they answered there are
+
+
+def _at_developing(levels: dict[str, str], parts: set[str]) -> bool:
+    """Whether a student counts as at developing or above in a topic: at least TOPIC_SHARE of the parts they answered in it
+    are developing or secure (decision 0030)."""
+    return bool(parts) and sum(levels[p] in AT_DEVELOPING for p in parts) >= TOPIC_SHARE * len(parts)
 
 
 def allowed(class_id: str) -> bool:
@@ -32,7 +39,7 @@ def _members(class_id: str) -> list[dict]:
 
 
 def _topics() -> tuple[list[dict], dict[str, str]]:
-    topics = [t for t in graph.topics() if not graph.is_literacy(t["id"])]
+    topics = [t for t in graph.sections() if not graph.is_literacy(t["id"])]  # subtopics where the pack has them
     part_topic = {p: t["id"] for t in topics for p in graph.parts_of(t["id"]) if not graph.is_literacy(p)}
     return topics, part_topic
 
@@ -144,7 +151,7 @@ def class_review(class_id: str, at: str | None = None) -> dict | None:
         answered = [sid for sid in ids if parts & set(answers[sid])]
         if not answered:
             continue
-        ok = sum(all(levels[sid][p] in AT_DEVELOPING for p in parts & set(answers[sid])) for sid in answered)
+        ok = sum(_at_developing(levels[sid], parts & set(answers[sid])) for sid in answered)
         common = sorted((m for m in count if _misconception(m)["part_id"] in parts), key=lambda m: (-count[m], m))
         entry: dict = {"topic_id": t["id"], "name": t["name"], "answered": len(answered), "enough": len(answered) >= minimum}
         if entry["enough"]:
