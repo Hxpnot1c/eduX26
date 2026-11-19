@@ -1,1 +1,1 @@
-Point {index} of {total}: two sentences and one worked line, then the check. They can stop or switch topic.
+Point {index} of {total}: two sentences, one worked line, check. They may stop or switch.

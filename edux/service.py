@@ -94,7 +94,7 @@ def _this_session(student_id: str, last: dict, at: str) -> tuple[set[str], froze
 def _save_plan(student_id: str, at: str, steps: list[dict], focus: list[str], corrected: set[str],
                offered: set[str], style_sent: dict | None, pending: dict | None, mcq: dict | None,
                points: dict, literacy: dict | None = None, how: dict | None = None,
-               considered: list[dict] | None = None) -> None:
+               considered: list[dict] | None = None, confidence_for: dict | None = None) -> None:
     """Save the plan issued this turn, with what the next turn needs: the focus, misconceptions corrected and
     the offer_choice reasons offered this session, the style sent, the question waiting for an answer, the MCQ
     letter map (step 05d), point-by-point progress per part (step 05d; kept across parts and sessions, so
@@ -108,7 +108,7 @@ def _save_plan(student_id: str, at: str, steps: list[dict], focus: list[str], co
                                                   "offered": sorted(offered), "style_sent": style_sent,
                                                   "pending": pending, "mcq": mcq, "points": points,
                                                   "literacy": literacy, "how": how,
-                                                  "considered": considered or []})))
+                                                  "considered": considered or [], "confidence_for": confidence_for})))
 
 
 def _how_ai_works(turn: context_blocks.Turn, blocks: dict, last: dict, steps: list[dict], evidence: dict | None,
@@ -509,6 +509,11 @@ def tutor_turn(
     except ValueError as e:
         return {"ok": False, "error": f"this_message.{e}"}
     last = _last_plan(student["id"])
+    held = last.get("confidence_for")        # the last reply asked "how sure are you?" and kept the plan back (step 05z)
+    if held and (last["ts"] is None or (learner.parse_ts(at) - learner.parse_ts(last["ts"])).total_seconds() / 60 > s.session.gap_minutes):
+        held = None                            # they never answered and have gone away: drop it, nothing is recorded
+    if held:
+        answer = None                          # this message is the confidence word, not an answer
     lost = False
     try:
         evidence = learner.score_answer(answer, last.get("mcq")) if answer else None
@@ -549,9 +554,10 @@ def tutor_turn(
         if this_message.get("request_type") == "research" else [])
     literacy_answer = bool(evidence and evidence["type"] in learner.LITERACY_ANSWERS)
     tagged = list(dict.fromkeys([e["part_id"] for e in recorded] + ([] if side_turn else resolution["parts"])))
+    exchange_id = None
     if tagged and not lost:
         try:
-            learner.record_exchange(student["id"], tagged, depth, engagement, choice == "just_show_me",
+            exchange_id = learner.record_exchange(student["id"], tagged, depth, engagement, choice == "just_show_me",
                                     _support_given(last["plan"]), choice,
                                     evidence["misconception_ids"] if evidence else None,
                                     conflict_flagged=bool(this_message.get("conflict_flagged")), client=client, ts=at,
@@ -560,6 +566,12 @@ def tutor_turn(
                                     timing=_timing(last, this_message, at))
         except ValueError as e:
             return {"ok": False, "error": str(e)}
+        if held:          # the student's reply to "how sure are you?": store it (or that they skipped), then give the held reply
+            said = this_message.get("confidence")
+            learner.record_confidence(student["id"], learner.evidence_ids_of_exchange(held["exchange_id"]),
+                                      said if said in learner.CONFIDENCE_LEVELS else "skipped", at)
+        elif evidence and this_message.get("confidence") in learner.CONFIDENCE_LEVELS and exchange_id:   # sent with the answer
+            learner.record_confidence(student["id"], learner.evidence_ids_of_exchange(exchange_id), this_message["confidence"], at)
         if evidence:   # feedback judges "secure" on the level before this answer was applied
             before = learner.answer_p_before(student["id"], evidence["part_id"], at)
             evidence = {**evidence, "p_before": before} if before is not None else evidence
@@ -580,6 +592,8 @@ def tutor_turn(
     course_answer = None if lost or literacy_answer else answer
     if not config.plan or (request == "other" and not course_answer and not wants_reviews):
         steps = []
+    elif held:      # deliver the reply kept back while we asked how sure they were
+        steps = json.loads(json.dumps(last["plan"]))
     elif again:   # the letter can't be scored: the same question, freshly shuffled
         steps = plan.add_terms(turn, [plan.ask_again(turn, again)])
     elif request == "research" and not course_answer:   # answered in full with sources, plus a literacy task
@@ -589,22 +603,27 @@ def tutor_turn(
                                                  evidence if course_answer else None,
                                                  last["plan"], corrected, offered, pending, points,
                                                  last.get("mcq")))
-    if config.plan and this_message.get("source_conflict"):
+    if config.plan and this_message.get("source_conflict") and not held:
         steps = plan.with_source_conflict(steps)
-    how, literacy, course_steps = None, None, steps
-    if config.plan:
+    how, literacy, course_steps = (last.get("how"), last.get("literacy"), steps) if held else (None, None, steps)
+    if config.plan and not held:
         steps, how = _how_ai_works(turn, blocks, last, steps, evidence, this_message)
         steps, literacy = _literacy_followup(student["id"], last, steps, evidence, request, at, stopping=choice == "stop")
         _unchecked(course_steps, steps, points)
     considered = [c for step in steps for c in step.pop("considered", [])]   # add-on candidates not picked (priorities)
-    steps = reply_style(steps, student, turn, blocks)
+    if not held:
+        steps = reply_style(steps, student, turn, blocks)
     current_style = style(student, client)
     send_style = _style_due(last, current_style, at)
+    ask_how_sure = bool(not held and config.plan and exchange_id and _confidence_due(
+        student["id"], evidence, course_answer, this_message, blocks, choice, at))
     _save_plan(student["id"], at, steps, last["focus"] if side_turn else parts, corrected | plan.corrected_in(steps),
                offered | offered_in(steps), current_style,
-               _pending_after(steps, pending), _mcq_after(steps, last), points, literacy, how, considered)
+               _pending_after(steps, pending), _mcq_after(steps, last), points, literacy, how, considered,
+               {"exchange_id": exchange_id, "part_id": evidence["part_id"]} if ask_how_sure else None)
+    shown = [plan.ask_confidence(turn, evidence["part_id"])] if ask_how_sure else steps     # the reply is held back one turn
     # with no plan (a comparison profile), answers on the focus parts can still be scored
-    next_points = plan.score_next(steps) if config.plan else {
+    next_points = {} if ask_how_sure else plan.score_next(steps) if config.plan else {
         p: points for p in parts if (points := plan.lettered(p))}
     if request == "research":   # a student who checks a claim unprompted can be scored on the next turn
         next_points.setdefault(learner.AIL_VERIFY, plan.lettered(learner.AIL_VERIFY))
@@ -612,9 +631,9 @@ def tutor_turn(
     focus = blocks.get("focus") or {}
     out = {
         "ok": True,
-        "plan": public_steps(steps),
+        "plan": public_steps(shown),
         "score_next": next_points,
-        "reference": _plan_reference(turn, steps, config.blocks) if config.plan else _reference(blocks),
+        "reference": _plan_reference(turn, shown, config.blocks) if config.plan else _reference(blocks),
         "focus": [{"id": p["id"], "name": p["name"], "level": p["level"]} for p in focus.get("parts", [])],
     }
     if send_style:
@@ -776,10 +795,40 @@ def my_progress(student: dict, include_parts: bool = False, at: str | None = Non
         "trends": _trends(student_id, at),
         "ai_literacy": _ai_literacy(student_id, at),
     }
+    calibration = _calibration(student_id, at)
+    if calibration:
+        out["calibration"] = calibration
     notice = _class_notice(student_id)
     if notice:
         out["notice"] = notice
     return fit_progress(out, result_limit(include_parts))
+
+
+def _confidence_due(student_id: str, evidence: dict | None, course_answer: dict | None, this_message: dict,
+                    blocks: dict, choice: str, at: str) -> bool:
+    """Whether to ask "how sure are you?" after this answer (step 05z): only after an answer to a check, a review or a
+    prerequisite check (never ordinary chat, a pre-question or a how-AI-works check), when the chatbot did not already
+    send the confidence, not while they are in long-session or rushing mode or asking to be shown, at most
+    confidence.max_per_session times a session, and not after confidence.stop_after_skips skips in a row."""
+    c = _settings().confidence
+    if (not c.enabled or evidence is None or course_answer is None or this_message.get("confidence") is not None
+            or evidence.get("purpose") not in ("check", "review", "prereq") or choice == "just_show_me"
+            or (blocks.get("session") or {}).get("state") == "fatigued"):
+        return False
+    asks = learner.confidence_asks(student_id, at)
+    return asks["asked"] < c.max_per_session and asks["skips_in_a_row"] < c.stop_after_skips
+
+
+def _calibration(student_id: str, at: str) -> dict | None:
+    """The calibration line for get_my_progress: how often they were right at each confidence level, once a level has
+    at least confidence.min_per_group rated answers. Feedback for the student; never an input to p_known."""
+    groups = learner.calibration(student_id, at)
+    if not groups:
+        return None
+    labels = {"certain": "certain", "fairly_sure": "fairly sure", "guess": "guessing"}
+    template = read_text("progress/calibration.md").strip()
+    parts = [template.format(label=labels[k], right=groups[k]["right"], n=groups[k]["n"]) for k in ("certain", "fairly_sure", "guess") if k in groups]
+    return {"groups": groups, "line": "; ".join(parts)}
 
 
 def _reminder(student_id: str, last: dict, at: str, new_session: bool) -> dict | None:

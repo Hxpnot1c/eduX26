@@ -46,7 +46,7 @@ from edux.settings import TEXT_DIR, Settings, SettingsError, read_text
 
 log = logging.getLogger(__name__)
 
-STOP = {"reteach", "offer_choice", "ask_which", "ask_mcq", "explain_back", "reask", "session_summary", "extend"}   # each ends in a question or the end of the chat
+STOP = {"reteach", "offer_choice", "ask_which", "ask_mcq", "explain_back", "reask", "session_summary", "extend", "ask_confidence"}   # each ends in a question or the end of the chat
 PICKS = ("quiz", "extend", "stop")   # ways on from offer_choice the student picks, sent back as this_message.choice
 ASKS = {"reteach", "ask_mcq", "explain_back", "extend", "reask"}
 MAX_STEPS = 3
@@ -61,6 +61,7 @@ LETTERS = "ABCDEFGHIJ"
 TEXT_FIELDS: dict[str, tuple[set[str], set[str]]] = {
     "answer_brief": (set(), set()),
     "ask_which": ({"candidates"}, set()),
+    "ask_confidence": ({"line"}, set()),
     "ask_mcq_intuition": ({"purpose", "options", "answer_type"}, {"note", "via", "extra_option"}),
     "ask_mcq_check": ({"purpose", "options", "index", "answer_type"}, {"extra_option"}),
     "ask_mcq_prereq": ({"purpose", "options", "name", "for", "answer_type"}, {"note", "stuck", "extra_option"}),
@@ -528,6 +529,12 @@ def two_option_check(turn: Turn, part_id: str, index: int, settings: Settings, b
     wrong = two_option_wrong(turn, part_id, blocks)
     q = {**q, "wrong": [wrong] if wrong else [], "extra": wrong is None}
     return ask_mcq(turn, q, {"index": index, "then_show": True})
+
+
+def ask_confidence(turn: Turn, part_id: str) -> dict:
+    """ask_confidence (stop): "how sure are you?" after an answer to a check, before the feedback (step 05z). The plan with
+    the feedback is kept back one turn (service). The wording is data.line, so the move text stays short."""
+    return _step("ask_confidence", part_id, {"line": read_text("confidence/ask.md").strip()})
 
 
 def explain_back(turn: Turn, part_id: str, points: list[dict], settings: Settings) -> dict:

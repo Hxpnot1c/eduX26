@@ -1,1 +1,1 @@
-Teach only data.point: a heading "Point data.index of data.total: <short title>", one or two sentences, then one worked line (a full example at data.level worked_example, the last step left for them at hint). At most data.max_words words of explanation, no tangents, then the check.
+Teach only data.point: a heading "Point data.index of data.total: <short title>", one or two sentences, then one worked line (a full example at data.level worked_example, the last step left for them at hint). At most data.max_words words of explanation, then the check.
