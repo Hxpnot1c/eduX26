@@ -44,7 +44,7 @@ The register cites sources in short form. Each implementing record gives the ful
 | C11 | Students are not told what is recorded or how to delete it. | ICO Children's Code Standard 11 (transparency). | Medium | Vishnu | Planned |
 | C12 | `try_first` and `hint` choices are accepted but do nothing. The first "just show me" gives the answer at once. | Attempt-first and hint ladders (Bastani et al., 2025; DfE generative AI product safety standards: no full answers by default). | Medium | Vishnu | **Held** (Part 3 better reteach) |
 | C13 | Feedback has no feed-forward line. "Mark the figures that need checking" is a blanket flag. | Hattie & Timperley (2007); blanket hedging cut correct reliance as well (94.8% to 83.1%). | Medium | Engineering | Planned |
-| C14 | `review_when_below` is 0.50 against evidence favouring 0.70 to 0.80. Decay numbers are uncited. | Cepeda et al. (2008); Carpenter, Pan & Butler (2022): feedback on retrieval and 1 to 7 day gaps in classrooms. | Medium | Engineering | Planned |
+| C14 | `review_when_below` is 0.50 against evidence favouring 0.70 to 0.80. Decay numbers are uncited. | Cepeda et al. (2008); Carpenter, Pan & Butler (2022): feedback on retrieval and 1 to 7 day gaps in classrooms. | Medium | Engineering | Simulated 19 Nov (synthetic students): no case for 0.75; keep 0.50. [Write-up](../research/review-threshold-simulation.md). Vishnu decides |
 
 ### P2: robustness and housekeeping
 

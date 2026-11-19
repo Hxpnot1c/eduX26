@@ -100,5 +100,6 @@ The result that would make us revisit this.
 | [0017](0017-bridge-ending.md) | End a finished part with a bridge question towards the next topic | Proposed |
 | [0018](0018-class-assessments-reminders-plans.md) | Class assessments, deadline reminders and study plans | Proposed |
 | [0019](0019-confidence-and-calibration.md) | Ask "how sure are you?" after a check and show a calibration line | Proposed |
+| [0020](0020-keep-the-review-threshold.md) | Keep review_when_below at 0.50; label it a judgement call | Proposed |
 
 Each later record is added to this table in the pull request that introduces it.
