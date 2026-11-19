@@ -8,7 +8,7 @@ Decisions [0023](../../decisions/0023-web-pages-and-teacher-access.md) (access) 
 | 1 | Foundations (`build/web-foundations`) | `edux/web` layer, routing next to `/mcp`, bearer-only sign-in, security headers, teacher keys and CLI, design tokens, fonts, level key, page shells | **built** |
 | 2 | Course map (`build/web-course-map`) | `/api/map` and `/api/public/map`, the map, path and list views, detail panel, keyboard movement, public example map | **built** |
 | 3 | Student page (`build/web-student-page`) | `/me`: map coloured by level, what next, ready for a check, coming up, AI practice, my record, my chatbot | **built** |
-| 4 | Teacher page (read-only) | `/teacher`: class map (≥5 per cell), coverage, misconceptions, assessments, help-seeking pattern | planned |
+| 4 | Teacher page, read-only (`build/web-teacher-page`) | `/teacher`: class map in bands (≥5 per cell), coverage, wrong ideas held by ≥5, assessments, help-seeking pattern, what the page does not show | **built** |
 | 5 | Teacher actions | assessment and coverage forms, content review writing the teacher feedback CSV | planned |
 | 6 | Polish | accessibility pass, print, responsive, demo script | planned |
 
@@ -32,10 +32,18 @@ Decisions [0023](../../decisions/0023-web-pages-and-teacher-access.md) (access) 
 - **`/me`:** the map from PR 2 with the overlay, then hairline lists: *What next* (the existing levers), *Ready for a check* (each review with its reason in plain words, no "overdue"), *Coming up* (tests, and the plan from `plan_study`), *AI practice* (practice feedback with the number of checks and days behind each level), *How sure you were* (only once there are enough rated answers), *My record* (counts, what is kept and how to have it deleted, and a copy button to ask the chatbot to re-check a part), *My chatbot* (the paste-in text, read from `text/chatbot_setup.md` so the two cannot differ).
 - Found by looking at the real page: literal `**` in the "what is kept" lines, and an empty section shown because `.row { display: grid }` beat the `hidden` attribute. Both fixed, with tests.
 
+## What pull request 4 added
+- **`GET /api/teacher/class/<id>`** (a teacher key; a student key gets 403; a class that is not theirs gets the same 404 as one that does not exist; a URL key 400): `views.class_summary`.
+- **Privacy rules kept in one place (decision 0024):** a class under 5 students shows only coverage and assessments, and no student data. A part where fewer than 5 students have answered is **withheld**. A part is shown as a **band** (few at developing yet / about half / most at developing or secure) and never as a count at each level, so a small group cannot be found by subtraction; the bands borrow the three level colours so colour keeps one meaning. A cell resting on fewer than 8 students is drawn lighter and called thin (judgement call `THIN`; the band edges at one third and two thirds are also judgement calls). Wrong ideas are listed only when 5 or more students hold one now. The help-seeking pattern (share of messages asking to be shown the answer, recent against before) is shown only when 5 or more students wrote in each window, with a line saying a rise can mean a hard topic. No student id, name, key, confidence, calibration, fatigue or learning-speed figure appears; a test walks the JSON for them.
+- **`/teacher`:** a class picker (only the teacher's own classes), the class map with the shared graph code, coverage ("where we are in the spec" and what is not yet covered), common wrong ideas with the right idea, coming up, asking to be shown, and a plain "what this page does not show" list that also says dashboards have not been shown to improve results.
+- **Synthetic class for demos:** `seed-demo --pupils 8` adds "Synthetic pupil N" to the demo class from a seeded generator (the same count always gives the same class); the page says "Seeded data". `seed-demo --reset` removes them.
+- Teacher write actions (assessment and coverage forms, content review) are the next pull request.
+
 ## Try it
 ```bash
-python -m edux.cli load coursepacks/example-mini && python -m edux.cli seed-demo --reset
+python -m edux.cli load coursepacks/example-mini && python -m edux.cli seed-demo --reset --pupils 8
 python -m edux.cli teacher add --name "Ms Demo"        # prints the key once
+python -m edux.cli teacher assign --teacher <t-id> --class demo-class
 python -m edux.cli serve                               # then open http://127.0.0.1:8000/
 # student: /me#key=<a demo student's key from demo-keys.json>    teacher: /teacher#key=<teacher key>
 ```
