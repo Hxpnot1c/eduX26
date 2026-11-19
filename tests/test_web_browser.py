@@ -73,3 +73,21 @@ def test_selecting_a_part_shows_what_it_needs_first(live, tmp_path):
 def test_a_student_key_in_the_fragment_signs_in_and_leaves_the_address_clean(live, student, tmp_path):
     dom = _dom(tmp_path, f"{live}/me#key={student['key']}")
     assert "Signed in as a" in dom and student["key"] not in dom
+
+
+def test_the_student_page_draws_their_record(live, student, part, tmp_path):
+    learner.record_evidence(student["id"], part, "explain_back", 1.0, apply="now")
+    dom = _dom(tmp_path, f"{live}/me#key={student['key']}")
+    assert "Ready for a check" in dom and "What next" in dom and "My record" in dom and "Copy" in dom
+    assert dom.count('class="node disc ') >= len([p for p in learner.all_parts() if not graph.is_literacy(p)])
+    assert "1 answer, last today" in dom  # the note on the answered part's disc is in its accessible label
+    assert student["key"] not in dom and "**" not in dom
+
+
+def test_a_teacher_key_on_the_student_page_gets_a_plain_refusal(live, tmp_path):
+    from edux import teachers
+
+    key = teachers.add_teacher("Ms T")["key"]
+    dom = _dom(tmp_path, f"{live}/me#key={key}")
+    assert "This key is for a teacher, and this page is for a student." in dom
+    assert '<div id="me" hidden' in dom  # the student's sections stay hidden
