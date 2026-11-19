@@ -78,6 +78,8 @@ class Decay:
     on_failure: float
     min_half_life_days: float
     seen_refresh: float
+    floor: str
+    literacy_floor: float
 
 
 @dataclass(frozen=True)
@@ -473,6 +475,10 @@ def load_settings(path: Path = SETTINGS_PATH) -> Settings:
         raise SettingsError("levels: expected 0 < new < secure < 1")
     if not 0 < settings.nudges.ceiling < settings.levels.new:
         raise SettingsError("nudges.ceiling: expected 0 < ceiling < levels.new, so conversation alone always leaves a part at 'new'")
+    if settings.decay.floor not in ("start", "zero"):
+        raise SettingsError(f'decay.floor: expected "start" or "zero", got {settings.decay.floor!r}')
+    if not 0 <= settings.decay.literacy_floor < settings.levels.new:
+        raise SettingsError("decay.literacy_floor: expected 0 <= literacy_floor < levels.new")
     low, high = settings.personalisation.learn_rate_weight_bounds
     if not 0 < low <= 1 <= high:
         raise SettingsError("personalisation.learn_rate_weight_bounds: expected 0 < low <= 1 <= high")

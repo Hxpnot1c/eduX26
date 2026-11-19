@@ -3,7 +3,7 @@
 # ones are: the slip + guess < 1 and the 0.5 caps (BKT identifiability), the spacing shares (Cepeda et al., 2008), the class
 # estimate sizes (personalisation.md), the class_k range (Simpson et al., 2024) and the ceiling/retention figures noted below.
 # tests/test_settings_labels.py checks that this rule stays at the top.
-protocol = "v0.3"          # bump when the meaning of labels or scoring changes (v0.2: labels describe the student's message; scores come from points met; v0.3: an exchange alone can't lift a part past nudges.ceiling)
+protocol = "v0.4"          # bump when the meaning of labels or scoring changes (v0.2: labels describe the student's message; scores come from points met; v0.3: an exchange alone can't lift a part past nudges.ceiling; v0.4: stale evidence fades towards the part's starting estimate, not to 0, so p_now and every later update read differently)
 
 [levels]                   # part levels shown to students
 new = 0.40                 # p_known below this = new
@@ -51,6 +51,8 @@ on_success = 2.0           # half-life multiplier after correct evidence
 on_failure = 0.5           # multiplier after incorrect evidence
 min_half_life_days = 1.0
 seen_refresh = 0.2         # an exchange moves the forgetting clock this share of the way to now; a correct answer resets it
+floor = "start"            # from research: research.md row 53, patch 0005 (our simulation: day-30 inversions 0.82-1.00 -> 0.03-0.26, AUC 0.48-0.59 -> 0.62-0.71). p_now fades towards the part's normal start (0.30 here), not to 0; not the covered start, which is above levels.new (Vishnu, 19 Nov); "zero" keeps the old behaviour
+literacy_floor = 0.0       # judgement call (patch 0005): Ask and Verify fade towards 0, so passing once doesn't keep a student near secure
 
 [propagation]
 prereq_boost = 0.20        # share of a gain passed one hop to prerequisites

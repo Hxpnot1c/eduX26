@@ -1066,11 +1066,12 @@ def _own_start(student_id: str, part_id: str, at: str | datetime | None) -> dict
 def _now_without_forward(student_id: str, part_id: str, at: str | datetime | None) -> float:
     """A part's p_now where its own prerequisites' shift is left out (so the feed-forward is one hop, never recursive)."""
     row = _conn().execute("SELECT * FROM part_state WHERE student_id = ? AND part_id = ?", (student_id, part_id)).fetchone()
+    floor = decay_floor(part_id)
     if row is not None:
-        return p_now(row["p_known"], row["half_life_days"], row["clock_start"], at)
+        return p_now(row["p_known"], row["half_life_days"], row["clock_start"], at, floor)
     own = _own_start(student_id, part_id, at)
     clock = own["taught_on"]
-    return p_now(_sigmoid(own.get("logit", _logit(own["p"]))), own["half_life"], clock, at)
+    return p_now(_sigmoid(own.get("logit", _logit(own["p"]))), own["half_life"], clock, at, floor)
 
 
 def forward_shift(student_id: str, part_id: str, at: str | datetime | None = None) -> float:
@@ -1147,15 +1148,35 @@ def shown_rollup(student_id: str, node_id: str, at: str | datetime | None = None
     return level(rollup(student_id, node_id, at))
 
 
-def p_now(p_known: float, half_life_days: float, since: datetime | str | None, now: datetime | str | None = None) -> float:
-    """p_known decayed by the time from since (the forgetting clock's start) to now.
+def p_now(
+    p_known: float, half_life_days: float, since: datetime | str | None, now: datetime | str | None = None, floor: float = 0.0
+) -> float:
+    """p_known decayed by the time from since (the forgetting clock's start) to now, towards floor (decay_floor: the
+    part's starting estimate, so stale evidence counts for less instead of making the part read below an untouched one).
+    A p_known below the floor rises towards it the same way: an old wrong answer counts for less too.
 
     since is None until the student first gets the part right: with nothing learnt yet there is nothing to forget.
     """
     if since is None:
         return p_known
     days = max(0.0, (parse_ts(now or now_iso()) - parse_ts(since)).total_seconds() / 86400)
-    return p_known * 0.5 ** (days / half_life_days)
+    return floor + (p_known - floor) * 0.5 ** (days / half_life_days)
+
+
+def decay_floor(part_id: str) -> float:
+    """What a part's p_now fades towards (decay.floor, research.md row 53, patch 0005): its normal start
+    (initial_state), the same for every student. Not the covered start: the coverage boost (0.30 -> about 0.41) sits
+    above levels.new, so a covered part could then never fade back to new, lose its pre-question and never come up
+    for a "fading" review (Vishnu's call, 19 Nov). The boost still sets where a covered part starts; it fades from
+    there. Ask and Verify fade towards decay.literacy_floor (0), so passing once doesn't keep a student near secure.
+    decay.floor = "zero": 0 (the old rule)."""
+    d = _settings().decay
+    if d.floor == "zero":
+        return 0.0
+    part_id = graph.canonical(part_id)
+    if part_id in (AIL_ASK, AIL_VERIFY):
+        return d.literacy_floor
+    return initial_state(part_id)[0]
 
 
 def _load_state(conn: sqlite3.Connection, student_id: str, part_id: str, ts: str) -> dict:
@@ -1193,18 +1214,9 @@ def _save_state(conn: sqlite3.Connection, state: dict) -> None:
     )
 
 
-def _floored(p: float, part_id: str, has_answers: bool, clock_start: str | None) -> float:
-    """A part taught in class and never answered here forgets only as far as where it would have started untaught: a
-    covered part must not look weaker than an untaught one. (A minimal decay-to-prior, for parts with no answers; the
-    full change for answered parts is held.)"""
-    if has_answers or not clock_start:
-        return p
-    return max(p, initial_state(part_id)[0])
-
-
 def _p_at(state: dict, ts: str) -> float:
-    p = p_now(state["p_known"], state["half_life_days"], state["clock_start"], ts)
-    return _floored(p, state["part_id"], state["n_evidence"] > 0, state["clock_start"])
+    floor = decay_floor(state["part_id"])
+    return p_now(state["p_known"], state["half_life_days"], state["clock_start"], ts, floor)
 
 
 def _queue_review(conn: sqlite3.Connection, student_id: str, part_id: str, due: datetime, reason: str, replace: bool = False) -> None:
@@ -1879,7 +1891,7 @@ def _apply_evidence(
         (int(correct), student_id, part_id),
     )
     gap, reason = review_gap_days(student_id, part_id, t), "scheduled"
-    below = days_until_below(state, s.scheduling.review_when_below)
+    below = days_until_below(state, s.scheduling.review_when_below, decay_floor(part_id))
     if below is not None and below < gap:
         gap, reason = below, "recall_below"
     gap = max(s.scheduling.min_gap_days, gap)
@@ -1902,12 +1914,13 @@ def answer_p_before(student_id: str, part_id: str, ts: str) -> float | None:
     return row["p_before"] if row else None
 
 
-def days_until_below(state: dict, threshold: float) -> float | None:
-    """Days from the clock's start until p_now decays below threshold, or None when it never crosses it: no clock
-    yet (nothing learnt, nothing to forget) or p_known already at or below it."""
-    if not state["clock_start"] or state["p_known"] <= threshold:
+def days_until_below(state: dict, threshold: float, floor: float = 0.0) -> float | None:
+    """Days from the clock's start until p_now, fading towards floor, decays below threshold, or None when it never
+    crosses it: no clock yet (nothing learnt, nothing to forget), p_known already at or below it, or the floor at or
+    above it (it never gets there)."""
+    if not state["clock_start"] or state["p_known"] <= threshold or threshold <= floor:
         return None
-    return state["half_life_days"] * math.log2(state["p_known"] / threshold)
+    return state["half_life_days"] * math.log2((state["p_known"] - floor) / (threshold - floor))
 
 
 # --- reading state ---------------------------------------------------------
@@ -1917,12 +1930,11 @@ def part_p(student_id: str, part_id: str, at: datetime | str | None = None) -> f
     """The student's current p_now on a part; a part they haven't met is at its starting estimate."""
     part_id = graph.canonical(part_id)
     row = _conn().execute("SELECT * FROM part_state WHERE student_id = ? AND part_id = ?", (student_id, part_id)).fetchone()
-    if row is None:  # a part they haven't met: its starting point, decaying from the date the class was taught it
+    floor = decay_floor(part_id)
+    if row is None:  # a part they haven't met: its starting point, fading from the date the class was taught it to its normal start
         start = starting_point(student_id, part_id, at)
-        return _floored(p_now(start["p"], start["half_life"], start["clock_start"], at), part_id, False, start["clock_start"])
-    return _floored(
-        p_now(row["p_known"], row["half_life_days"], row["clock_start"], at), part_id, row["n_evidence"] > 0, row["clock_start"]
-    )
+        return p_now(start["p"], start["half_life"], start["clock_start"], at, floor)
+    return p_now(row["p_known"], row["half_life_days"], row["clock_start"], at, floor)
 
 
 def level(p: float) -> str:
