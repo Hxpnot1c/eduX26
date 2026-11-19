@@ -846,6 +846,13 @@ async def calibration(url: str) -> None:
                 "answer": {"part_id": step["part_id"], "type": "mcq", "choice": chosen},
             },
         )
+        if not learner.confidence_on():  # switched off (EDUX_CONFIDENCE=0, as for filming): nothing is asked and nothing is held back
+            check(
+                moves(asked)[:1] == ["feedback"] and "how sure" not in json.dumps(asked).lower(),
+                "with the question switched off (EDUX_CONFIDENCE=0) a check answer gets its feedback at once and nothing is asked",
+                json.dumps(moves(asked)),
+            )
+            return
         check(
             moves(asked) == ["say_line"] and asked["score_next"] == {} and "how sure" in asked["plan"][0]["data"]["line"].lower(),
             "after a check answer the reply asks how sure they are and keeps the feedback back",
