@@ -1,0 +1,2 @@
+# the design pages are served byte for byte (decision 0031): never convert their line endings
+edux/web/static/demo/*.html -text
