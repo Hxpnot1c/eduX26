@@ -1402,7 +1402,9 @@ def upcoming(student_id: str, at: datetime | str | None = None, days: float | No
     for a in assessments(student_id, at_dt):
         left = _days_until(a["date"], at_dt)
         if 0 < left <= limit:
-            out.append({"name": a["name"], "kind": a["kind"], "date": a["date"], "days_left": round(left)})
+            # calendar days, not round(left): at midday a test 3 days away is 2.5 days from midnight, and round(2.5) is 2
+            days_left = (date.fromisoformat(a["date"]) - at_dt.date()).days
+            out.append({"name": a["name"], "kind": a["kind"], "date": a["date"], "days_left": days_left})
     return out
 
 

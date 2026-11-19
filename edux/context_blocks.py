@@ -10,6 +10,7 @@ message's relevance, never a fixed top N. context.toml chooses the blocks, their
 from __future__ import annotations
 
 import logging
+import math
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -509,7 +510,7 @@ def exam_relevance(turn: Turn, settings: Settings) -> dict | None:
                 "id": paper["id"],
                 "name": paper["name"],
                 "date": paper["date"],
-                "days_to_exam": None if days is None else round(days),
+                "days_to_exam": None if days is None else math.ceil(days),  # calendar days: round(2.5) is 2 at midday
             }
     questions = graph.questions_for(turn.parts)
     if not questions and not papers:
@@ -664,7 +665,7 @@ def teaching_note(turn: Turn, settings: Settings) -> dict | None:
     if turn.parts:
         days = learner.days_to_exam(turn.student_id, turn.parts[0], learner.parse_ts(turn.at))
         if days is not None and days <= settings.teaching_note.exam_close_days:
-            add("exam_close", days=round(days))
+            add("exam_close", days=math.ceil(days))
     approach = _worked_before(turn, settings)
     if approach:
         add("worked_before", approach=approach)

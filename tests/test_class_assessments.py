@@ -183,3 +183,21 @@ def test_a_long_plan_stays_within_the_result_budget_and_keeps_the_mixed_practice
     out = service.plan_study(learner.get_student(student["id"]), aid, 7)
     assert service.result_size(out) <= service._settings().results.max_chars
     assert out["sessions"][-1]["kind"] == "mixed practice" and out.get("more_sessions", 0) > 0
+
+
+@pytest.mark.parametrize("hour", [0, 6, 12, 13, 18, 23])
+def test_days_left_is_calendar_days_whatever_the_time_of_day(student, klass, hour):
+    """Found by CI: at midday a test three days away is 2.5 days from midnight and round(2.5) is 2."""
+    at = datetime(2026, 11, 19, hour, 30, tzinfo=timezone.utc)
+    learner.add_class_assessment(klass, "Soon", "class_test", "2026-11-22", _parts("ped"))
+    found = learner.upcoming(student["id"], at)
+    assert [f["days_left"] for f in found] == [3]
+
+
+@pytest.mark.parametrize("hour", [0, 12, 23])
+def test_the_exam_countdown_is_calendar_days_whatever_the_time_of_day(hour):
+    from edux import context_blocks
+
+    at = datetime(2026, 11, 19, hour, 30, tzinfo=timezone.utc).isoformat()
+    days = context_blocks._days_until("2026-11-22", at)
+    assert __import__("math").ceil(days) == 3
