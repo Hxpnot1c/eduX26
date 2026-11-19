@@ -321,10 +321,23 @@ def research_turns(student_id: str, at: str | datetime | None = None) -> int:
                            (student_id, _event_ts(at))).fetchone()[0]
 
 
-def question_evidence(features: list[str] | None) -> dict:
+def verified_this_session(student_id: str, at: str | datetime | None = None) -> bool:
+    """Whether the student has checked a claim (Verify evidence) in the current session."""
+    state = session_state(student_id, at)
+    if state is None:
+        return False
+    return _conn().execute("SELECT 1 FROM evidence_log WHERE student_id = ? AND part_id = ? AND ts >= ? AND ts <= ? LIMIT 1",
+                           (student_id, AIL_VERIFY, state["session_id"], _event_ts(at))).fetchone() is not None
+
+
+def question_evidence(features: list[str] | None, sources_credit: bool = False) -> dict:
     """Ask evidence for a research question (step 05e): ail_question on ail_ask, scored by the question features
-    it shows out of the four."""
+    it shows out of the four. Asking for sources earns its feature only alongside checking them: without
+    sources_credit (a Verify moment this session) asks_sources counts for nothing, because a chatbot asked for
+    sources invites invented ones, and asking is not checking (step 05y)."""
     shown = {f for f in features or [] if f in QUESTION_FEATURES}
+    if not sources_credit:
+        shown.discard("asks_sources")
     return {"part_id": AIL_ASK, "type": "ail_question", "score": len(shown) / len(QUESTION_FEATURES), "misconception_ids": []}
 
 

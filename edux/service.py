@@ -531,7 +531,8 @@ def tutor_turn(
         resolution = {**graph.resolve("", last["focus"]), "unknown": resolution["unknown"]}
     # a research question is Ask evidence; a verify answer is AI-literacy evidence, not an answer on the course
     recorded = ([evidence] if evidence else []) + (
-        [learner.question_evidence(this_message.get("question_features"))]
+        [learner.question_evidence(this_message.get("question_features"),
+                                   sources_credit=learner.verified_this_session(student["id"], at))]
         if this_message.get("request_type") == "research" else [])
     literacy_answer = bool(evidence and evidence["type"] in learner.LITERACY_ANSWERS)
     tagged = list(dict.fromkeys([e["part_id"] for e in recorded] + ([] if side_turn else resolution["parts"])))
@@ -721,13 +722,23 @@ def _ai_literacy(student_id: str, at: str) -> dict:
     recent, before = [r for r in rows if r["ts"] > cut], [r for r in rows if r["ts"] <= cut]
     how_parts = graph.parts_of(learner.AIL_HOW)
     held = [m["wrong_idea"] for m in context_blocks.held_misconceptions(student_id, how_parts)]
+
+    def evidence(parts: list[str]) -> dict:   # what a level rests on: how many checks, over how long (counts only)
+        marks = "?" + ",?" * (len(parts) - 1)
+        row = learner._conn().execute(
+            f"SELECT COUNT(*) AS n, MIN(ts) AS first FROM evidence_log WHERE student_id = ? AND ts <= ? AND part_id IN ({marks})",
+            (student_id, at, *parts)).fetchone()
+        days = round((learner.parse_ts(at) - learner.parse_ts(row["first"])).total_seconds() / 86400) if row["first"] else 0
+        return {"checks": row["n"], "over_days": days}
+
     return {   # skipped: tasks or checks left unanswered, which count as missing, not wrong
+        "formative": "practice feedback, not a grade",
         "ask": {"level": learner.level(learner.part_p(student_id, learner.AIL_ASK, at)),
-                "skipped": learner.skips(student_id, [learner.AIL_ASK], at)},
+                "evidence": evidence([learner.AIL_ASK]), "skipped": learner.skips(student_id, [learner.AIL_ASK], at)},
         "verify": {"level": learner.level(learner.part_p(student_id, learner.AIL_VERIFY, at)),
-                   "skipped": learner.skips(student_id, [learner.AIL_VERIFY], at)},
+                   "evidence": evidence([learner.AIL_VERIFY]), "skipped": learner.skips(student_id, [learner.AIL_VERIFY], at)},
         "how_ai_works": {"level": learner.level(learner.rollup(student_id, learner.AIL_HOW, at)), "held": held,
-                         "skipped": learner.skips(student_id, how_parts, at)},
+                         "evidence": evidence(how_parts), "skipped": learner.skips(student_id, how_parts, at)},
         "question_features": {f: _trend(share(f, recent), share(f, before)) for f in learner.QUESTION_FEATURES},
     }
 

@@ -6,6 +6,6 @@ Returns:
 - weak_links: pairs of related ideas where one side is still new.
 - reviews_due: what is due for review.
 - trends: how their use of the chatbot is changing: deeper questions, their own reasoning, and how often they ask to be shown answers.
-- ai_literacy: how well they ask a chatbot precise questions (ask), check its claims (verify) and understand how chatbots work (how_ai_works, with the wrong ideas they still hold), how many tasks they skipped (skipped never lowers a level), and which question features they use more or less than before.
+- ai_literacy: how well they ask a chatbot precise questions (ask), check its claims (verify) and understand how chatbots work (how_ai_works, with the wrong ideas they still hold), each with the evidence behind its level (evidence.checks over evidence.over_days), how many tasks they skipped (skipped never lowers a level), and which question features they use more or less than before. It is formative: say each level with its evidence and that it is practice feedback, not a grade, e.g. "Verify: developing, from 4 checks over 2 weeks".
 
 Explain it in plain words and suggest one next step. Don't read out the numbers.
