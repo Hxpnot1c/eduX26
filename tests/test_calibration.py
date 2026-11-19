@@ -83,8 +83,10 @@ def test_the_rating_never_changes_what_the_model_thinks_they_know(course):
         _answer_check(s, right=False)
         _turn(s, said, confidence=said)
         results.append([tuple(r) for r in learner._conn().execute(
-            "SELECT part_id, round(p_known, 9) FROM part_state WHERE student_id = ? ORDER BY part_id", (s["id"],))])
-    assert results[0] == results[1]
+            "SELECT part_id, p_known FROM part_state WHERE student_id = ? ORDER BY part_id", (s["id"],))])
+    # identical to within the second or so between the two students' timestamps (forgetting decay), not because of the rating
+    assert [r[0] for r in results[0]] == [r[0] for r in results[1]]
+    assert [r[1] for r in results[0]] == pytest.approx([r[1] for r in results[1]], abs=1e-4)
 
 
 def test_a_confidence_sent_with_the_answer_is_stored_without_asking(student):
