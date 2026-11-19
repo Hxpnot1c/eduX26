@@ -18,7 +18,7 @@ import secrets
 import sqlite3
 import threading
 import traceback
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from edux import db, graph
@@ -547,12 +547,316 @@ def difficulty(part_id: str) -> float:
 
 
 def initial_state(part_id: str) -> tuple[float, float]:
-    """Starting (p_known, half_life_days) for a part the student hasn't met, shifted by its difficulty."""
+    """The normal starting (p_known, half_life_days) for a part: bkt.prior shifted by its difficulty. It knows nothing
+    about the student; starting_point adds their coverage, starting adjustment and prerequisites."""
     s = _settings()
     shift = max(-1.0, min(1.0, (difficulty(part_id) - s.difficulty.default) / 0.5))
     prior = min(0.99, max(0.01, s.bkt.prior - s.difficulty.prior_shift * shift))
     half_life = max(s.decay.min_half_life_days, s.decay.base_half_life_days * (1 - s.difficulty.half_life_shift * shift))
     return prior, half_life
+
+
+# --- coverage and starting points (step 05q) -------------------------------------------------------------------
+
+
+def _logit(p: float) -> float:
+    p = min(0.999, max(0.001, p))
+    return math.log(p / (1 - p))
+
+
+def _sigmoid(x: float) -> float:
+    return 1 / (1 + math.exp(-x))
+
+
+def _day(at: str | datetime | None) -> str:
+    return parse_ts(_event_ts(at)).date().isoformat()
+
+
+def add_class(name: str, course_pack: str | None = None, class_id: str | None = None) -> str:
+    """Create a class and return its id (c-<random> unless fixed)."""
+    class_id = class_id or f"c-{secrets.token_hex(3)}"
+    conn = _conn()
+    with conn:
+        conn.execute("INSERT INTO class (id, name, course_pack, created) VALUES (?, ?, ?, ?)", (class_id, name, course_pack, now_iso()))
+    return class_id
+
+
+def add_students_to_class(class_id: str, student_ids: list[str]) -> None:
+    """Put students in a class (one class per student row). Raises ValueError for an unknown class or student."""
+    conn = _conn()
+    if conn.execute("SELECT 1 FROM class WHERE id = ?", (class_id,)).fetchone() is None:
+        raise ValueError(f"unknown class {class_id!r}")
+    unknown = [s for s in student_ids if conn.execute("SELECT 1 FROM student WHERE id = ?", (s,)).fetchone() is None]
+    if unknown:
+        raise ValueError(f"unknown student(s): {', '.join(unknown)}")
+    with conn:
+        for student_id in student_ids:
+            conn.execute("UPDATE student SET class_id = ? WHERE id = ?", (class_id, student_id))
+
+
+def set_class_coverage(class_id: str, node_ids: list[str], taught_on: str, set_by: str = "cli") -> None:
+    """Record that a class was taught these nodes (a node marks all its parts) on a date (YYYY-MM-DD)."""
+    date.fromisoformat(taught_on)          # ValueError for a bad date
+    conn = _conn()
+    if conn.execute("SELECT 1 FROM class WHERE id = ?", (class_id,)).fetchone() is None:
+        raise ValueError(f"unknown class {class_id!r}")
+    with conn:
+        for node_id in node_ids:
+            conn.execute("INSERT OR REPLACE INTO class_coverage (class_id, node_id, taught_on, set_by) VALUES (?, ?, ?, ?)",
+                         (class_id, node_id, taught_on, set_by))
+
+
+def class_coverage(class_id: str) -> list[dict]:
+    """A class's coverage rows, by taught date: {node_id, name, spec_ref, taught_on, set_by, parts}."""
+    out = []
+    for r in _conn().execute("SELECT * FROM class_coverage WHERE class_id = ? ORDER BY taught_on, node_id", (class_id,)):
+        node = graph.get_node(r["node_id"]) or {}
+        out.append({"node_id": r["node_id"], "name": node.get("name"), "spec_ref": node.get("spec_ref"),
+                    "taught_on": r["taught_on"], "set_by": r["set_by"], "parts": len(graph.parts_of(r["node_id"]))})
+    return out
+
+
+def student_class(student_id: str) -> str | None:
+    row = _conn().execute("SELECT class_id FROM student WHERE id = ?", (student_id,)).fetchone()
+    return row["class_id"] if row else None
+
+
+def covered_since(student_id: str, part_id: str, at: str | datetime | None = None) -> str | None:
+    """The date the part was taught (YYYY-MM-DD) as of at, or None: the earliest coverage row on or before that date
+    that covers the part, set by the student or for their class, on the part or any node above it. Coverage is
+    profile, not events: a row counts only from its taught_on date, so a rebuild gives the same state. AI-literacy
+    parts have no coverage."""
+    if graph.is_literacy(part_id):
+        return None
+    nodes = [part_id] + [n["id"] for n in graph.ancestors(part_id)]
+    marks = ",".join("?" * len(nodes))
+    day, conn, class_id = _day(at), _conn(), student_class(student_id)
+    found = [r[0] for r in conn.execute(
+        f"SELECT taught_on FROM student_coverage WHERE student_id = ? AND node_id IN ({marks}) AND taught_on <= ?",
+        (student_id, *nodes, day))]
+    if class_id:
+        found += [r[0] for r in conn.execute(
+            f"SELECT taught_on FROM class_coverage WHERE class_id = ? AND node_id IN ({marks}) AND taught_on <= ?",
+            (class_id, *nodes, day))]
+    return min(found) if found else None
+
+
+def covered_parts(student_id: str, at: str | datetime | None = None) -> dict[str, str]:
+    """Every part the student's coverage record covers as of at, with its taught_on date (the earliest)."""
+    conn, day, class_id = _conn(), _day(at), student_class(student_id)
+    rows = list(conn.execute("SELECT node_id, taught_on FROM student_coverage WHERE student_id = ? AND taught_on <= ?",
+                             (student_id, day)))
+    if class_id:
+        rows += list(conn.execute("SELECT node_id, taught_on FROM class_coverage WHERE class_id = ? AND taught_on <= ?",
+                                  (class_id, day)))
+    out: dict[str, str] = {}
+    for row in rows:
+        for part in graph.parts_of(row["node_id"]):
+            if not graph.is_literacy(part):
+                out[part] = min(row["taught_on"], out.get(part, row["taught_on"]))
+    return out
+
+
+def _expected(p: float, evidence_type: str, n_options: int | None) -> float:
+    slip, guess = slip_guess(evidence_type, n_options)
+    return p * (1 - slip) + (1 - p) * guess
+
+
+def _taught_before(conn: sqlite3.Connection, student_id: str, part_id: str, ts: str) -> bool:
+    """Whether the student was taught the part by ts: an exchange on it (at or before ts) that gave a worked example or a
+    hint, or was "just show me"."""
+    for row in conn.execute("""SELECT node_ids FROM exchange_log WHERE student_id = ? AND ts <= ?
+                               AND (support_given IN ('worked_example', 'hint') OR choice_taken = 'just_show_me')""",
+                            (student_id, ts)):
+        if part_id in _tagged_parts(split(row["node_ids"])):
+            return True
+    return False
+
+
+def _pre_teaching_answers(conn: sqlite3.Connection, student_id: str, before: str) -> list[sqlite3.Row]:
+    """The student's first answer on each part, from sessions before `before`, when it came before any teaching of the
+    part: a pre-question, an "I know this" check, or an explain-back. AI-literacy parts are left out."""
+    rows = conn.execute(
+        """SELECT l.id, l.ts, l.part_id, l.evidence_type, l.score, l.n_options, x.choice_taken FROM evidence_log l
+           LEFT JOIN exchange_log x ON x.id = l.exchange_id
+           WHERE l.student_id = ? AND l.ts < ? AND l.id IN (SELECT MIN(id) FROM evidence_log WHERE student_id = ? GROUP BY part_id)
+           ORDER BY l.ts, l.id""", (student_id, before, student_id)).fetchall()
+    keep = []
+    for r in rows:
+        if graph.is_literacy(r["part_id"]):
+            continue
+        if not (r["evidence_type"] in ("prequestion", "explain_back") or r["choice_taken"] == "skip_point"):
+            continue
+        if not _taught_before(conn, student_id, r["part_id"], r["ts"]):
+            keep.append(r)
+    return keep
+
+
+def _state_key(student_id: str) -> tuple:
+    """What the starting offsets depend on, cheaply: the row counts of the logs and coverage tables."""
+    conn = _conn()
+    cid = student_class(student_id)
+    return (student_id, cid,
+            conn.execute("SELECT COUNT(*) FROM evidence_log WHERE student_id = ?", (student_id,)).fetchone()[0],
+            conn.execute("SELECT COUNT(*) FROM exchange_log WHERE student_id = ?", (student_id,)).fetchone()[0],
+            conn.execute("SELECT COUNT(*) FROM student_coverage WHERE student_id = ?", (student_id,)).fetchone()[0],
+            conn.execute("SELECT COUNT(*) FROM class_coverage WHERE class_id IS ?", (cid,)).fetchone()[0])
+
+
+_offsets_memo: dict[tuple, dict] = {}
+
+
+def starting_offsets(student_id: str, before: str | datetime | None = None) -> dict:
+    """The student's personal starting adjustment, in log-odds, in two sectors that never mix: parts the class had
+    covered when they answered, and parts it had not. Built from their pre-teaching first answers in sessions before
+    `before` (default now), so it is stable within a session. Each sector: n / (n + starting.k) x (logit of the
+    smoothed score minus logit of the smoothed expected success under the part's starting point), both smoothed
+    ((sum + 0.5) / (n + 1)) so an all-right or all-wrong start cannot give an infinite offset, within
+    +-starting.bound_logits. Returns {covered, not_covered, n_covered, n_not_covered}."""
+    st, conn = _settings().starting, _conn()
+    cutoff = session_start(conn, student_id, _event_ts(before))
+    key = (*_state_key(student_id), cutoff)
+    if key in _offsets_memo:
+        return _offsets_memo[key]
+    sums = {True: [0, 0.0, 0.0], False: [0, 0.0, 0.0]}      # sector -> [n, sum score, sum expected]
+    for r in _pre_teaching_answers(conn, student_id, cutoff):
+        sector = covered_since(student_id, r["part_id"], r["ts"]) is not None
+        p0 = base_start(student_id, r["part_id"], r["ts"])["p"]
+        n_sum = sums[sector]
+        n_sum[0] += 1
+        n_sum[1] += r["score"]
+        n_sum[2] += _expected(p0, r["evidence_type"], r["n_options"])
+
+    def offset(n: int, score: float, expected: float) -> float:
+        if n == 0:
+            return 0.0
+        raw = n / (n + st.k) * (_logit((score + 0.5) / (n + 1)) - _logit((expected + 0.5) / (n + 1)))
+        return max(-st.bound_logits, min(st.bound_logits, raw))
+
+    out = {"covered": offset(*sums[True]), "not_covered": offset(*sums[False]),
+           "n_covered": sums[True][0], "n_not_covered": sums[False][0]}
+    if len(_offsets_memo) > 2000:
+        _offsets_memo.clear()
+    _offsets_memo[key] = out
+    return out
+
+
+def class_shift(class_id: str, at: str | datetime | None = None) -> float | None:
+    """The class's own shift of its covered starting point, in log-odds, or None. Only when the school has turned the
+    class estimate on (coverage.class_estimate_enabled) and at least coverage.class_min_students members have a first
+    answer on a covered part before `at`. It reads one class's raw first answers only, against the boosted default, so
+    there is no circularity and a rebuild gives the same state. Shrunk with k = coverage.class_k like the personal
+    adjustment."""
+    c = _settings().coverage
+    if not c.class_estimate_enabled:
+        return None
+    conn, at_ts = _conn(), _event_ts(at)
+    n, total, expected, who = 0, 0.0, 0.0, set()
+    for member in (r["id"] for r in conn.execute("SELECT id FROM student WHERE class_id = ?", (class_id,))):
+        for r in _pre_teaching_answers(conn, member, at_ts):
+            if covered_since(member, r["part_id"], r["ts"]) is None:
+                continue
+            p0, _ = initial_state(r["part_id"])
+            boosted = _sigmoid(_logit(p0) + c.boost_logit)
+            n, total, expected = n + 1, total + r["score"], expected + _expected(boosted, r["evidence_type"], r["n_options"])
+            who.add(member)
+    if len(who) < c.class_min_students:
+        return None
+    return n / (n + c.class_k) * (_logit((total + 0.5) / (n + 1)) - _logit((expected + 0.5) / (n + 1)))
+
+
+def base_start(student_id: str, part_id: str, at: str | datetime | None = None) -> dict:
+    """A part's starting point before the student's own adjustment and prerequisites: {p, half_life, taught_on}. A
+    covered part starts coverage.boost_logit up in log-odds from its normal start (Vishnu's change of 18 November,
+    replacing a fixed covered prior); with the class estimate on, the class's own shift replaces the boost's size, but
+    never starts the part more than coverage.class_max_down below the boosted start."""
+    p0, half_life = initial_state(part_id)
+    taught = covered_since(student_id, part_id, at)
+    if taught is None:
+        return {"p": p0, "half_life": half_life, "taught_on": None}
+    c = _settings().coverage
+    boosted = _sigmoid(_logit(p0) + c.boost_logit)
+    cid = student_class(student_id)
+    shift = class_shift(cid, at) if cid else None
+    p = boosted if shift is None else max(_sigmoid(_logit(boosted) + shift), boosted - c.class_max_down)
+    return {"p": p, "half_life": half_life, "taught_on": taught}
+
+
+def has_evidence(student_id: str, part_id: str, at: str | datetime | None = None) -> bool:
+    return _conn().execute("SELECT 1 FROM evidence_log WHERE student_id = ? AND part_id = ? AND ts <= ? LIMIT 1",
+                           (student_id, graph.canonical(part_id), _event_ts(at))).fetchone() is not None
+
+
+def _own_start(student_id: str, part_id: str, at: str | datetime | None) -> dict:
+    """base_start plus the student's sector offset, before the prerequisite shift and the cap."""
+    base = base_start(student_id, part_id, at)
+    if graph.is_literacy(part_id):
+        return base
+    offsets = starting_offsets(student_id, at)
+    sector = offsets["covered"] if base["taught_on"] else offsets["not_covered"]
+    return {**base, "logit": _logit(base["p"]) + sector}
+
+
+def _now_without_forward(student_id: str, part_id: str, at: str | datetime | None) -> float:
+    """A part's p_now where its own prerequisites' shift is left out (so the feed-forward is one hop, never recursive)."""
+    row = _conn().execute("SELECT * FROM part_state WHERE student_id = ? AND part_id = ?", (student_id, part_id)).fetchone()
+    if row is not None:
+        return p_now(row["p_known"], row["half_life_days"], row["clock_start"], at)
+    own = _own_start(student_id, part_id, at)
+    clock = own["taught_on"]
+    return p_now(_sigmoid(own.get("logit", _logit(own["p"]))), own["half_life"], clock, at)
+
+
+def forward_shift(student_id: str, part_id: str, at: str | datetime | None = None) -> float:
+    """How far a part's starting point moves because of its direct prerequisites: propagation.forward_weight x the mean,
+    over them, of logit p_now minus logit of their starting point. Only a prerequisite the student has answered on
+    moves it; one with no answers contributes 0 (its forgetting is not fed forward, because a covered dependent
+    decays from its own taught date and counting both would penalise it twice). Course-pack edges, one hop, never
+    recursive. It stops mattering once the part has its own evidence (it has a state then)."""
+    if graph.is_literacy(part_id):
+        return 0.0
+    prereqs = [pp for edge in graph.prerequisites(part_id, 1) for pp in graph.parts_of(edge["other"])]
+    deltas = []
+    for pp in dict.fromkeys(prereqs):
+        if not has_evidence(student_id, pp, at):
+            deltas.append(0.0)
+            continue
+        start = _own_start(student_id, pp, at)
+        now = _now_without_forward(student_id, pp, at)
+        deltas.append(_logit(now) - start.get("logit", _logit(start["p"])))
+    return _settings().propagation.forward_weight * sum(deltas) / len(deltas) if deltas else 0.0
+
+
+def starting_point(student_id: str, part_id: str, at: str | datetime | None = None) -> dict:
+    """Where a part the student has no evidence on starts, as {p, half_life, clock_start, taught_on}. In order:
+    logit of the base start (the normal start, or the covered boost or class estimate), plus the student's sector
+    offset, plus the prerequisite shift; back to a probability, within [0.01, starting.cap] (answers can take a
+    part anywhere). The forgetting clock starts at taught_on for a covered part. AI-literacy parts are the plain prior."""
+    st = _settings().starting
+    own = _own_start(student_id, part_id, at)
+    if graph.is_literacy(part_id):
+        return {"p": own["p"], "half_life": own["half_life"], "clock_start": None, "taught_on": None}
+    x = own["logit"] + forward_shift(student_id, part_id, at)
+    return {"p": min(st.cap, max(0.01, _sigmoid(x))), "half_life": own["half_life"],
+            "clock_start": own["taught_on"], "taught_on": own["taught_on"]}
+
+
+def shown_level(student_id: str, part_id: str, at: str | datetime | None = None) -> str:
+    """The level to show a student for a part: new, developing or secure once they have an answer on it; before that
+    never developing or secure, whatever the starting number: "taught_in_class" if their class covered it ("taught in
+    class, not yet checked"), else new. The planner still uses the number."""
+    if graph.is_literacy(part_id) or has_evidence(student_id, part_id, at):
+        return level(part_p(student_id, part_id, at))
+    return "taught_in_class" if covered_since(student_id, part_id, at) else "new"
+
+
+def shown_rollup(student_id: str, node_id: str, at: str | datetime | None = None) -> str:
+    """shown_level for a concept or topic: with no answer on any part under it, taught_in_class if any part is
+    covered, else new; otherwise the rollup's level."""
+    parts = [p for p in graph.parts_of(node_id)]
+    if parts and not any(has_evidence(student_id, p, at) for p in parts):
+        return "taught_in_class" if any(covered_since(student_id, p, at) for p in parts) else "new"
+    return level(rollup(student_id, node_id, at))
 
 
 def p_now(p_known: float, half_life_days: float, since: datetime | str | None, now: datetime | str | None = None) -> float:
@@ -570,10 +874,10 @@ def _load_state(conn: sqlite3.Connection, student_id: str, part_id: str, ts: str
     row = conn.execute("SELECT * FROM part_state WHERE student_id = ? AND part_id = ?", (student_id, part_id)).fetchone()
     if row:
         return dict(row)
-    prior, half_life = initial_state(part_id)
-    return {"student_id": student_id, "part_id": part_id, "p_known": prior, "half_life_days": half_life,
+    start = starting_point(student_id, part_id, ts)
+    return {"student_id": student_id, "part_id": part_id, "p_known": start["p"], "half_life_days": start["half_life"],
             "last_seen": ts, "n_evidence": 0, "offload_left": 0, "was_secure": 0,
-            "clock_start": None, "last_correct": None, "exchanges_since_evidence": 0}
+            "clock_start": start["clock_start"], "last_correct": None, "exchanges_since_evidence": 0}
 
 
 def _clamp(p: float) -> float:
@@ -590,8 +894,18 @@ def _save_state(conn: sqlite3.Connection, state: dict) -> None:
                  [state[c] for c in columns])
 
 
+def _floored(p: float, part_id: str, has_answers: bool, clock_start: str | None) -> float:
+    """A part taught in class and never answered here forgets only as far as where it would have started untaught: a
+    covered part must not look weaker than an untaught one. (A minimal decay-to-prior, for parts with no answers; the
+    full change for answered parts is held.)"""
+    if has_answers or not clock_start:
+        return p
+    return max(p, initial_state(part_id)[0])
+
+
 def _p_at(state: dict, ts: str) -> float:
-    return p_now(state["p_known"], state["half_life_days"], state["clock_start"], ts)
+    p = p_now(state["p_known"], state["half_life_days"], state["clock_start"], ts)
+    return _floored(p, state["part_id"], state["n_evidence"] > 0, state["clock_start"])
 
 
 def _queue_review(conn: sqlite3.Connection, student_id: str, part_id: str, due: datetime, reason: str,
@@ -932,7 +1246,10 @@ def apply_evidence_event(event: dict) -> None:
     else:
         weight = 1.0
         immediate = event["origin"] == "chat" and _recently_taught(conn, student_id, part_id, ts)
-    slip, guess = slip_guess(evidence_type, event.get("n_options"), immediate)
+    n_points = None
+    if evidence_type == "explain_back":
+        n_points = 1 if event.get("point_id") else len(graph.score_points(part_id))
+    slip, guess = slip_guess(evidence_type, event.get("n_options"), immediate, n_points)
     cap = None
     if immediate and event["evidence_type"] not in OPEN_ANSWERS:
         # a pick straight after being shown or hinted (the option repeats the point just shown) can't make a part
@@ -969,17 +1286,23 @@ def apply_evidence_event(event: dict) -> None:
                         learn_rate=learn_rate, cap=cap)
 
 
-def slip_guess(evidence_type: str, n_options: int | None = None, immediate: bool = False) -> tuple[float, float]:
+def slip_guess(evidence_type: str, n_options: int | None = None, immediate: bool = False,
+               n_points: int | None = None) -> tuple[float, float]:
     """Slip and guess for a piece of evidence. With bkt.mcq_guess_from_options, a multiple-choice question that
     recorded how many options it showed guesses 1 / n_options (older rows keep the type's guess). Immediate
     evidence (straight after a worked example or hint) takes immediate's slip and the larger of immediate's guess
-    and the type's own, so a question with few options is never discounted less."""
+    and the type's own, so a question with few options is never discounted less. An explain-back that needs
+    n_points mark points guesses less as they rise (bkt.explain_back_guess: a complete multi-point answer is far
+    harder to produce by luck); n_points is 1 for a narrowed explain-back, else the part's point count."""
     s = _settings()
     if evidence_type not in s.bkt.evidence:
         raise ValueError(f"evidence_type must be one of {', '.join(s.bkt.evidence)}")
     slip, guess = s.bkt.evidence[evidence_type].slip, s.bkt.evidence[evidence_type].guess
     if s.bkt.mcq_guess_from_options and n_options:
         guess = 1 / n_options
+    if evidence_type == "explain_back" and n_points is not None:
+        g = s.bkt.explain_back_guess
+        guess = g.up_to_2 if n_points <= 2 else g.three if n_points == 3 else g.four_plus
     if immediate:
         slip, guess = s.bkt.evidence["immediate"].slip, max(s.bkt.evidence["immediate"].guess, guess)
     return slip, guess
@@ -1078,9 +1401,11 @@ def part_p(student_id: str, part_id: str, at: datetime | str | None = None) -> f
     """The student's current p_now on a part; a part they haven't met is at its starting estimate."""
     part_id = graph.canonical(part_id)
     row = _conn().execute("SELECT * FROM part_state WHERE student_id = ? AND part_id = ?", (student_id, part_id)).fetchone()
-    if row is None:
-        return initial_state(part_id)[0]
-    return p_now(row["p_known"], row["half_life_days"], row["clock_start"], at)
+    if row is None:    # a part they haven't met: its starting point, decaying from the date the class was taught it
+        start = starting_point(student_id, part_id, at)
+        return _floored(p_now(start["p"], start["half_life"], start["clock_start"], at), part_id, False, start["clock_start"])
+    return _floored(p_now(row["p_known"], row["half_life_days"], row["clock_start"], at), part_id,
+                    row["n_evidence"] > 0, row["clock_start"])
 
 
 def level(p: float) -> str:
@@ -1111,6 +1436,17 @@ def due_reviews(student_id: str, limit: int, at: datetime | str | None = None) -
         if node and parse_ts(row["due"]) <= at_dt and not graph.is_literacy(node["id"]):
             due.append({"part_id": node["id"], "name": node["name"], "due": row["due"], "reason": row["reason"],
                         "p_now": part_p(student_id, node["id"], at), "importance": graph.weight(node["id"])["importance"]})
+    queued = {row["part_id"] for row in _conn().execute("SELECT part_id FROM review_queue WHERE student_id = ?", (student_id,))}
+    course_parts = set(all_parts())
+    for part, taught in covered_parts(student_id, at_dt).items():   # taught in class, never practised here: reviewed too
+        if part in queued or has_evidence(student_id, part, at_dt) or part not in course_parts:
+            continue
+        t = parse_ts(taught)
+        when = t + timedelta(days=max(_settings().scheduling.min_gap_days, review_gap_days(student_id, part, t)))
+        if when <= at_dt:
+            due.append({"part_id": part, "name": graph.get_node(part)["name"], "due": when.isoformat(timespec="seconds"),
+                        "reason": "taught_in_class", "p_now": part_p(student_id, part, at_dt),
+                        "importance": graph.weight(part)["importance"]})
     due.sort(key=lambda r: (-r["importance"], r["due"]))
     return due[:limit]
 

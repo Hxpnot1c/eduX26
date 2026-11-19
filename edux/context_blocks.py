@@ -64,12 +64,14 @@ def _r(value: float) -> float:
 def _part_summary(turn: Turn, part_id: str) -> dict:
     node = graph.get_node(part_id)
     p = turn.p(part_id)
-    return {"id": part_id, "name": node["name"], "part_type": node["part_type"], "level": learner.level(p), "p_now": _r(p)}
+    return {"id": part_id, "name": node["name"], "part_type": node["part_type"],
+            "level": learner.shown_level(turn.student_id, part_id, turn.at), "p_now": _r(p)}
 
 
 def _node_level(turn: Turn, node_id: str) -> str:
-    """Level of a part, or of a concept/topic from the rollup of its parts."""
-    return learner.level(learner.rollup(turn.student_id, node_id, turn.at))
+    """Level to show for a concept or topic from the rollup of its parts (learner.shown_rollup: before any answer, never
+    developing or secure)."""
+    return learner.shown_rollup(turn.student_id, node_id, turn.at)
 
 
 def link_weight(edge: dict, from_id: str, settings: Settings) -> float:
@@ -291,7 +293,7 @@ def weak_prerequisites(turn: Turn, settings: Settings) -> dict | None:
                 score = (turn.value(pre) * w, (1 - p) * w * graph.weight(pre)["importance"])
                 if pre not in found or score > found[pre]["score"]:
                     node = graph.get_node(pre)
-                    found[pre] = {"part_id": pre, "name": node["name"], "level": learner.level(p), "p_now": _r(p),
+                    found[pre] = {"part_id": pre, "name": node["name"], "level": learner.shown_level(turn.student_id, pre, turn.at), "p_now": _r(p),
                                   "for": part, "note": edge["note"], "score": score}
     items = sorted(found.values(), key=lambda i: (-i["score"][0], -i["score"][1]))[:turn.limit("weak_prerequisites")]
     for item in items:
@@ -491,7 +493,8 @@ def _new_context(part_id: str, settings: Settings) -> dict:
 def _review_item(turn: Turn, r: dict, is_linked: bool, settings: Settings) -> dict:
     """A due review with its mode: recall when the part is weak (p_now < levels.new), otherwise transfer to a new context."""
     mode = "recall" if r["p_now"] < settings.levels.new else "transfer"
-    item = {"part_id": r["part_id"], "name": r["name"], "level": learner.level(r["p_now"]), "p_now": _r(r["p_now"]),
+    item = {"part_id": r["part_id"], "name": r["name"], "level": learner.shown_level(turn.student_id, r["part_id"], turn.at),
+            "p_now": _r(r["p_now"]),
             "reason": r["reason"], "due": r["due"], "linked_to_focus": is_linked, "mode": mode}
     if mode == "transfer":
         item["new_context"] = _new_context(r["part_id"], settings)

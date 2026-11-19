@@ -208,7 +208,7 @@ def _step(move: str, part_id: str | None, data: dict | None = None, key: str | N
 
 def _summary(turn: Turn, part_id: str) -> dict:
     node = graph.get_node(part_id)
-    return {"id": part_id, "name": node["name"], "level": learner.level(turn.p(part_id))}
+    return {"id": part_id, "name": node["name"], "level": learner.shown_level(turn.student_id, part_id, turn.at)}
 
 
 # --- multiple-choice questions (step 05d) ---------------------------------------------
@@ -417,7 +417,7 @@ def main_step(turn: Turn, blocks: dict, settings: Settings, choice: str, last_pl
         return [ask_mcq(turn, question(pq["part_id"], "intuition", pq["correct"], settings), pq.get("source") or {})]
 
     for item in (blocks.get("weak_prerequisites") or {}).get("items", []):
-        if item["level"] == "new" and not _checked_this_session(turn, item["part_id"], last_plan):
+        if item["p_now"] < settings.levels.new and not _checked_this_session(turn, item["part_id"], last_plan):
             asked = prereq_check(turn, item["part_id"], item["for"], settings, note=item["note"])
             if asked:
                 return [asked]
