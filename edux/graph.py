@@ -103,6 +103,27 @@ def topics() -> list[dict]:
     return [_node_dict(r) for r in rows]
 
 
+def sections() -> list[dict]:
+    """The course's sections, in pack order: under each top-level topic, its subtopics when the pack has that level
+    (as the Edexcel pack does: Theme 1 > Nature of economics > ...), else the topic itself (as example-mini has).
+    These are the "topics" a student or teacher page groups by. AI-literacy nodes are not sections."""
+    out: list[dict] = []
+    for topic in topics():
+        subs = [c for c in children(topic["id"]) if c.get("level") == "subtopic"]
+        out += subs or [topic]
+    return out
+
+
+def section_of(node_id: str) -> dict | None:
+    """The section (see sections) a node sits in, or None outside the course."""
+    ids = {s["id"]: s for s in sections()}
+    node = get_node(node_id)
+    for n in ([node] if node else []) + ancestors(node_id):
+        if n["id"] in ids:
+            return ids[n["id"]]
+    return None
+
+
 def is_diagram(part_id: str) -> bool:
     """True when the pack marks the part's content as a diagram (nodes.csv `diagram`). It depends on the content,
     never on the student."""

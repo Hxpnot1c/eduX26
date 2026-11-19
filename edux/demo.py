@@ -458,8 +458,9 @@ CLASS_SEED = 27
 
 
 def class_topics() -> list[dict]:
-    """The course topics that hold parts, in pack order, without the AI-literacy ones."""
-    return [t for t in graph.topics() if not graph.is_literacy(t["id"]) and graph.parts_of(t["id"])]
+    """The course's sections (subtopics where the pack has them) that hold parts, in pack order, without the AI-literacy
+    ones."""
+    return [t for t in graph.sections() if not graph.is_literacy(t["id"]) and graph.parts_of(t["id"])]
 
 
 def is_synthetic_class(class_id: str) -> bool:

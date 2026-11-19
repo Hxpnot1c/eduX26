@@ -1,7 +1,7 @@
 /* The concept network on the student's page (decision 0029), from the design preview synapse-concept-network.html.
    Its own palette, scoped to .cn; the site's fonts (decision 0024: nothing leaves the origin). */
 .cn{color-scheme:light dark;--cn-bg:light-dark(#efeee9,#141516);--cn-paper:light-dark(#f7f6f2,#1c1e20);--cn-ink:light-dark(#161616,#ecebe6);--cn-soft:light-dark(#6b6a66,#a4a39e);--cn-line:light-dark(#cfcdc6,#3a3c3f);--cn-hl:#f6d64a;--cn-red:light-dark(#c8402a,#ff7a5c);--cn-board:#23262a;
-  display:flex;flex-direction:column;height:min(80vh,760px);min-height:460px;background:var(--cn-bg);color:var(--cn-ink);font:16px/1.5 var(--font-ui);overflow:hidden;border:1px solid var(--cn-line)}
+  display:flex;flex-direction:column;height:min(90vh,940px);min-height:480px;background:var(--cn-bg);color:var(--cn-ink);font:16px/1.5 var(--font-ui);overflow:hidden;border:1px solid var(--cn-line)}
 .cn *{box-sizing:border-box;min-width:0}
 .cn h2,.cn h3{font-family:var(--font-display);font-weight:600;margin:0}
 .cn .top{background:var(--cn-board);color:#f2f1ec;padding:16px 24px;display:flex;flex-wrap:wrap;gap:8px 32px;align-items:flex-end;justify-content:space-between}

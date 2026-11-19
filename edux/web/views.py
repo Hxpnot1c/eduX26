@@ -38,7 +38,9 @@ def course_map(course_id: str | None = None) -> dict | None:
     nodes: list[dict] = []
     ids: set[str] = set()
     top_weight = max((graph.weight(p)["importance"] for t in graph.topics() for p in graph.parts_of(t["id"])), default=0.0) or 1.0
-    for topic in graph.topics():
+    # A pack with subtopics (topic > subtopic > concept > part) is drawn with each subtopic as a topic, so the map
+    # always has three levels and every part appears at the part level.
+    for topic in graph.sections():
         nodes.append({"id": topic["id"], "parent": None, "level": "topic", "name": topic["name"], "spec_ref": topic.get("spec_ref") or ""})
         ids.add(topic["id"])
         for concept in graph.children(topic["id"]):
@@ -52,7 +54,7 @@ def course_map(course_id: str | None = None) -> dict | None:
                 }
             )
             ids.add(concept["id"])
-            for part in graph.children(concept["id"]):
+            for part in (p for p in graph.children(concept["id"]) if p.get("level", "part") == "part"):
                 importance = graph.weight(part["id"])["importance"]
                 nodes.append(
                     {
