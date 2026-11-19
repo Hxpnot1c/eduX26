@@ -10,9 +10,10 @@ Pages and a small JSON API, served by the same process as the MCP endpoint. See 
 | `/static/*` | anyone | CSS, JavaScript, fonts |
 | `/api/public/map` | anyone | the structure of the synthetic example pack (`views.EXAMPLE_COURSE_ID`), only if `web.public_example_map`; 404 for any other pack |
 | `/api/map` | a student or teacher key (bearer) | the course structure: `{course, nodes, edges}`; a student gets their own course, a teacher may add `?course=` |
+| `/api/me` | a student key (bearer); a teacher key gets 403 | the student's own page: `overlay`, `next`, `reviews`, `coming_up`, `ai_literacy`, `calibration`, `record`, `parts`, `setup` |
 | `/api/whoami` | a student or teacher key, as `Authorization: Bearer` | `{"role": "student"}`, or for a teacher `{"role": "teacher", "name", "classes": [{id, name}]}` |
 
-An `/api` request with `?key=` is refused with 400. A teacher key never opens `/mcp`; a student key never opens the teacher API. Later pull requests add `/api/me/*` and `/api/teacher/*`.
+An `/api` request with `?key=` is refused with 400. A teacher key never opens `/mcp`; a student key never opens the teacher API. A later pull request adds `/api/teacher/*`.
 
 ## Headers (every response from this layer)
 `Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, a restrictive `Permissions-Policy`; `Cache-Control: no-store` on `/api`.
