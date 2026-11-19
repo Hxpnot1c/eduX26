@@ -3,7 +3,7 @@
 - **Status:** Proposed
 - **Date:** 2026-11-19
 - **Decision owner:** Vishnu (his rule of 19 November)
-- **Pull request:** see the branch `build/open-after-mcq`
+- **Pull request:** #87 (stacked on #86)
 
 ## Context
 
