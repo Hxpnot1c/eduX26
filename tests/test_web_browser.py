@@ -79,8 +79,9 @@ def test_the_student_page_draws_their_record(live, student, part, tmp_path):
     learner.record_evidence(student["id"], part, "explain_back", 1.0, apply="now")
     dom = _dom(tmp_path, f"{live}/me#key={student['key']}")
     assert "Ready for a check" in dom and "What next" in dom and "My record" in dom and "Copy" in dom
-    assert dom.count('class="node disc ') >= len([p for p in learner.all_parts() if not graph.is_literacy(p)])
-    assert "1 answer, last today" in dom  # the note on the answered part's disc is in its accessible label
+    assert dom.count('<g class="n"') >= len([p for p in learner.all_parts() if not graph.is_literacy(p)])  # the concept network
+    assert "1 answer, last today" in dom  # the note on the answered idea is in its accessible label
+    assert "fits together" in dom and "Easy to mix up" in dom
     assert student["key"] not in dom and "**" not in dom
 
 

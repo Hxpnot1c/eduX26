@@ -156,6 +156,42 @@ def test_the_hidden_attribute_really_hides():
 
 def test_the_student_page_loads_its_scripts_and_sections():
     html = (web.STATIC / "me.html").read_text(encoding="utf-8")
-    assert html.index("graph.js") < html.index("me.js") and "me.css" in html
+    assert html.index("network.js") < html.index("me.js") and "me.css" in html and "network.css" in html and "graph.js" not in html
     for section in ("next", "reviews", "coming", "literacy", "record", "setup"):
         assert f'data-fill="{section}"' in html
+
+
+# --- the concept network (decision 0029) --------------------------------------------------------------------------
+
+
+def test_the_network_has_every_part_with_a_level_and_never_a_probability(student, part):
+    learner.record_evidence(student["id"], part, "explain_back", 1.0, apply="now")
+    net = views.student_page(learner.get_student(student["id"]))["network"]
+    parts = [p for p in learner.all_parts() if not graph.is_literacy(p)]
+    assert sorted(n["id"] for n in net["nodes"]) == sorted(parts)
+    assert {n["level"] for n in net["nodes"]} <= {"new", "developing", "secure", "review", "taught", "none"}
+    assert all(set(n) == {"id", "short", "name", "band", "concept", "level", "note", "test", "q", "d", "imp"} for n in net["nodes"])
+    answered = next(n for n in net["nodes"] if n["id"] == part)
+    assert answered["note"] == "1 answer, last today" and answered["level"] != "none"
+    assert "p_known" not in str(net) and "p_now" not in str(net)
+
+
+def test_the_network_links_and_groups_only_what_the_pack_has(student):
+    net = views.student_page(learner.get_student(student["id"]))["network"]
+    ids, bands = {n["id"] for n in net["nodes"]}, {b["id"] for b in net["bands"]}
+    assert net["edges"] and all(e["a"] in ids and e["b"] in ids and e["t"] in views.EDGE_TYPES for e in net["edges"])
+    assert all(n["band"] in bands for n in net["nodes"]) and all(0 <= n["imp"] <= 1 for n in net["nodes"])
+    first = next(n for n in net["nodes"])
+    assert first["q"] == (graph.require_node(first["id"]).get("intuition") or "") and first["concept"]
+
+
+def test_a_test_this_week_tags_its_parts(student, part):
+    from datetime import timedelta
+
+    day = (learner.parse_ts(learner.now_iso()) + timedelta(days=3)).date()
+    class_id = learner.add_class("Network class")
+    learner.add_students_to_class(class_id, [student["id"]])
+    learner.add_class_assessment(class_id, "Elasticity test", "class_test", day.isoformat(), [part])
+    net = views.student_page(learner.get_student(student["id"]))["network"]
+    tagged = {n["id"]: n["test"] for n in net["nodes"] if n["test"]}
+    assert tagged == {part: f"In {day.strftime('%A')}'s test"}
