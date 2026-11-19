@@ -9,6 +9,7 @@ These are demo fixtures, not teaching rules: the numbers here only shape the dem
 from __future__ import annotations
 
 import json
+import random
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 
@@ -17,6 +18,7 @@ from edux import db, graph, learner
 STUDENTS = {"demo-secure": "Demo: mostly secure", "demo-weak": "Demo: weak prerequisite", "demo-showme": "Demo: just show me"}
 EXAM_IN_DAYS = 150
 CLASS_ID = "demo-class"
+PUPIL_PREFIX = "demo-pupil-"  # synthetic pupils for the teacher page; always named so, never real
 COVERED_DAYS_AGO = 25  # the demo class was taught its first two Theme 1 sections about 3-4 weeks ago
 ROLES = ("target", "prereq", "misconception", "anchor", "confusable", "review_parts", "showme_parts")
 
@@ -337,6 +339,8 @@ def remove_students() -> dict[str, str]:
     demo-keys.json, or, for a database from before step 05x, from the student row."""
     saved, conn = demo_keys(), learner._conn()
     keys = {}
+    for row in conn.execute("SELECT id FROM student WHERE id LIKE ?", (PUPIL_PREFIX + "%",)).fetchall():
+        learner.delete_student(row["id"])  # the synthetic class goes too; it has no keys worth keeping
     for sid in STUDENTS:
         if learner.get_student(sid) is None:
             continue
@@ -360,9 +364,48 @@ def _seed_class(clock: _Clock) -> None:
     learner.set_class_coverage(CLASS_ID, nodes, taught, "seed")
 
 
-def seed(course: str | None = None, reset: bool = False, overrides: str | None = None) -> dict:
-    """Create the three demo students. Returns {"course", "roles", "warnings", "students": {id: key}}.
-    With reset, existing demo students are removed and recreated with the same keys."""
+def seed_pupils(count: int, course_id: str, clock: _Clock, seed: int = 26) -> list[str]:
+    """A synthetic class for the teacher page: `count` pupils (named "Synthetic pupil N") in the demo class, each with
+    a different spread of answers over the last month, some wrong ideas held, and a few "just show me" requests,
+    from a seeded random generator so the same count always gives the same class. SYNTHETIC DATA: it exists only so a
+    class view has at least the minimum cell size to show; the page labels it as seeded and it is never real."""
+    rng = random.Random(seed)
+    parts = learner.all_parts()
+    ids = []
+    for i in range(1, count + 1):
+        sid = f"{PUPIL_PREFIX}{i}"
+        learner.add_student(f"Synthetic pupil {i}", course_id, student_id=sid)
+        learner.add_students_to_class(CLASS_ID, [sid])
+        ids.append(sid)
+        ability = 0.45 + 0.53 * (i - 1) / max(1, count - 1)
+        for part in parts:
+            if rng.random() < 0.3:
+                continue
+            wrong_ideas = [m["id"] for m in graph.misconceptions_for([part])]
+            for _ in range(rng.randint(2, 5)):
+                ts = clock.session(rng.randint(1, 24), rng.randint(0, 30))
+                right = rng.random() < ability
+                kind = rng.choice(["explain_back", "mcq_check"])
+                score = 1.0 if right else (0.5 if kind == "explain_back" and rng.random() < 0.5 else 0.0)
+                common = wrong_ideas[0] if wrong_ideas and rng.random() < 0.7 else None  # one wrong idea per part is the common one
+                held = [common or rng.choice(wrong_ideas)] if (not right and wrong_ideas and score == 0.0) else None
+                _evidence(sid, part, kind, score, ts, held)
+        if i <= (count * 2) // 3:  # the weaker two thirds were all caught by the same wrong ideas this week
+            for part in parts[:2]:
+                wrong_ideas = [m["id"] for m in graph.misconceptions_for([part])]
+                if wrong_ideas:
+                    _evidence(sid, part, "mcq_check", 0.0, clock.session(1, rng.randint(0, 30)), [wrong_ideas[0]])
+        for _ in range(rng.randint(6, 14)):
+            days = rng.randint(1, 27)
+            asked = rng.random() < (0.22 if days <= 13 else 0.1)  # asking to be shown a little more often lately
+            _exchange(sid, [rng.choice(parts)], clock.session(days, rng.randint(0, 40)), choice="just_show_me" if asked else None)
+    _flush()
+    return ids
+
+
+def seed(course: str | None = None, reset: bool = False, overrides: str | None = None, pupils: int = 0) -> dict:
+    """Create the three demo students (and, with pupils > 0, a synthetic class). Returns {"course", "roles",
+    "warnings", "students": {id: key}}. With reset, existing demo students are removed and recreated with the same keys."""
     from edux import service
 
     course_id = _course(course)
@@ -383,4 +426,6 @@ def seed(course: str | None = None, reset: bool = False, overrides: str | None =
         SEEDS[sid](sid, roles, clock)
         _flush()
     keys_path().write_text(json.dumps(keys), encoding="utf-8")
-    return {"course": course_id, "roles": roles, "warnings": warnings, "students": keys}
+    if pupils > 0:
+        seed_pupils(pupils, course_id, clock)
+    return {"course": course_id, "roles": roles, "warnings": warnings, "students": keys, "pupils": pupils}
