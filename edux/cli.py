@@ -142,6 +142,90 @@ def _learning_line(student: str, at: str | None) -> str:
             f"from n={found['n']} pieces of evidence")
 
 
+def _starting_line(student: str, at: str | None) -> str:
+    """The personal starting adjustment by sector (step 05q): CLI only, never shown to students or teachers."""
+    o = learner.starting_offsets(student, at)
+    cls = learner.student_class(student)
+    return (f"starting adjustment: covered {o['covered']:+.2f} (n={o['n_covered']}), not covered {o['not_covered']:+.2f} "
+            f"(n={o['n_not_covered']}); class {cls or '-'}")
+
+
+def cmd_class_add(name: str, pack: str | None) -> int:
+    print(f"class: {learner.add_class(name, pack)}")
+    return 0
+
+
+def cmd_class_add_students(class_id: str, students: list[str]) -> int:
+    try:
+        learner.add_students_to_class(class_id, students)
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(f"{class_id}: {len(students)} student(s) added")
+    return 0
+
+
+def _sections(class_id: str, keys: list[str]) -> list[str] | None:
+    matched, unmatched = graph.match_sections(keys)
+    if unmatched or not matched:
+        print("no match for: " + ", ".join(unmatched or keys), file=sys.stderr)
+        return None
+    return [n["id"] for n in matched]
+
+
+def cmd_coverage_set(class_id: str, sections: list[str], taught_on: str | None) -> int:
+    ids = _sections(class_id, sections)
+    if ids is None:
+        return 1
+    day = taught_on or learner.parse_ts(learner.now_iso()).date().isoformat()
+    try:
+        learner.set_class_coverage(class_id, ids, day, "cli")
+    except ValueError as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(f"{class_id}: {len(ids)} section(s) marked as taught on {day}")
+    return 0
+
+
+def cmd_coverage_import(class_id: str, path: Path) -> int:
+    """Import coverage from a CSV with columns section,taught_on (a node id, spec code or name, and YYYY-MM-DD)."""
+    import csv
+
+    try:
+        with path.open(encoding="utf-8", newline="") as f:
+            rows = list(csv.DictReader(f))
+    except OSError as e:
+        print(e, file=sys.stderr)
+        return 1
+    if not rows or not {"section", "taught_on"} <= set(rows[0]):
+        print("the CSV needs the columns section,taught_on", file=sys.stderr)
+        return 1
+    done = 0
+    for row in rows:
+        ids = _sections(class_id, [row["section"]])
+        if ids is None:
+            return 1
+        try:
+            learner.set_class_coverage(class_id, ids, row["taught_on"].strip(), "csv")
+        except ValueError as e:
+            print(f"{row['section']}: {e}", file=sys.stderr)
+            return 1
+        done += len(ids)
+    print(f"{class_id}: {done} section(s) imported from {path}")
+    return 0
+
+
+def cmd_coverage_export(class_id: str, as_json: bool) -> int:
+    """The class's coverage, for the teacher mock-up's 'where we are in the spec' tick-list (--json) or as a table."""
+    rows = learner.class_coverage(class_id)
+    if as_json:
+        print(json.dumps({"class": class_id, "coverage": rows}, indent=2))
+    else:
+        for r in rows:
+            print(f"{r['taught_on']}  {r['spec_ref'] or '-':8} {r['name']}  ({r['parts']} parts, set by {r['set_by']})")
+    return 0
+
+
 def cmd_state(student: str, node: str | None = None, at: str | None = None) -> int:
     """Print parts with p_now, level and due date."""
     if learner.get_student(student) is None:
@@ -157,6 +241,7 @@ def cmd_state(student: str, node: str | None = None, at: str | None = None) -> i
 
     print(_session_line(learner.session_state(student, at)))
     print(_learning_line(student, at))
+    print(_starting_line(student, at))
     for line in _priority_lines(student, at):
         print(line)
     print(f"{'part':24} {'level':10} {'p_now':>5} {'p_known':>7} {'half-life':>9} {'checks':>6} {'chats':>5}  "
@@ -172,7 +257,8 @@ def cmd_state(student: str, node: str | None = None, at: str | None = None) -> i
             else:
                 numbers = f"{'-':>7} {'-':>9} {'-':>6} {'-':>5}  {'-':12}"
             due = f"{review['due'][:16].replace('T', ' ')} ({review['reason']})" if review else "-"
-            print(f"  {part:22} {learner.level(p):10} {p:5.2f} {numbers} {due}")
+            mark = "*" if learner.covered_since(student, part, at) else " "     # * = covered in class
+            print(f" {mark}{part:22} {learner.level(p):10} {p:5.2f} {numbers} {due}")
     return 0
 
 
@@ -324,6 +410,26 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--student", required=True)
     p.add_argument("--on", help="the date they left, YYYY-MM-DD (default: today)")
     p = sub.add_parser("purge", help="apply the retention settings: old call-log rows and students who left")
+    p = sub.add_parser("class", help="classes: class add, class add-students")
+    csub = p.add_subparsers(dest="class_command", required=True)
+    q = csub.add_parser("add", help="create a class")
+    q.add_argument("--name", required=True)
+    q.add_argument("--pack", help="the course pack the class follows")
+    q = csub.add_parser("add-students", help="put students in a class")
+    q.add_argument("--class", dest="class_id", required=True)
+    q.add_argument("--students", required=True, type=_list, help="comma-separated student ids")
+    p = sub.add_parser("coverage", help="what a class has been taught: coverage set, import, export")
+    vsub = p.add_subparsers(dest="coverage_command", required=True)
+    q = vsub.add_parser("set", help="mark sections as taught")
+    q.add_argument("--class", dest="class_id", required=True)
+    q.add_argument("--sections", required=True, type=_list, help="comma-separated node ids, spec codes or names")
+    q.add_argument("--taught-on", help="YYYY-MM-DD (default today)")
+    q = vsub.add_parser("import", help="import coverage from a CSV with columns section,taught_on")
+    q.add_argument("--class", dest="class_id", required=True)
+    q.add_argument("file", type=Path)
+    q = vsub.add_parser("export", help="show a class's coverage")
+    q.add_argument("--class", dest="class_id", required=True)
+    q.add_argument("--json", action="store_true", help="JSON, for the teacher mock-up's tick-list")
     p = sub.add_parser("set-profile", help="switch a student's context profile")
     p.add_argument("--student", required=True)
     p.add_argument("--profile", required=True, help="a profile in context.toml, or 'default'")
@@ -383,6 +489,13 @@ def main(argv: list[str] | None = None) -> None:
         code = cmd_leave_student(args.student, args.on)
     elif args.command == "purge":
         code = cmd_purge()
+    elif args.command == "class":
+        code = (cmd_class_add(args.name, args.pack) if args.class_command == "add"
+                else cmd_class_add_students(args.class_id, args.students))
+    elif args.command == "coverage":
+        code = (cmd_coverage_set(args.class_id, args.sections, args.taught_on) if args.coverage_command == "set"
+                else cmd_coverage_import(args.class_id, args.file) if args.coverage_command == "import"
+                else cmd_coverage_export(args.class_id, args.json))
     elif args.command == "set-profile":
         code = cmd_set_profile(args.student, args.profile)
     elif args.command == "log":

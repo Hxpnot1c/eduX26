@@ -16,6 +16,8 @@ from edux import db, graph, learner
 
 STUDENTS = {"demo-secure": "Demo: mostly secure", "demo-weak": "Demo: weak prerequisite", "demo-showme": "Demo: just show me"}
 EXAM_IN_DAYS = 150
+CLASS_ID = "demo-class"
+COVERED_DAYS_AGO = 25          # the demo class was taught its first two Theme 1 sections about 3-4 weeks ago
 ROLES = ("target", "prereq", "misconception", "anchor", "confusable", "review_parts", "showme_parts")
 
 
@@ -322,6 +324,18 @@ def remove_students() -> dict[str, str]:
     return keys
 
 
+def _seed_class(clock: "_Clock") -> None:
+    """The demo class, with the first two concepts of the first topic marked as taught COVERED_DAYS_AGO days ago (set by
+    'seed'). The class estimate stays off in the demo: covered parts start at the covered boost."""
+    conn = learner._conn()
+    if conn.execute("SELECT 1 FROM class WHERE id = ?", (CLASS_ID,)).fetchone() is None:
+        learner.add_class("Demo class", None, class_id=CLASS_ID)
+    first = graph.topics()[0]
+    nodes = [c["id"] for c in graph.children(first["id"]) if c["level"] == "concept"][:2] or [first["id"]]
+    taught = (clock.now - timedelta(days=COVERED_DAYS_AGO)).date().isoformat()
+    learner.set_class_coverage(CLASS_ID, nodes, taught, "seed")
+
+
 def seed(course: str | None = None, reset: bool = False, overrides: str | None = None) -> dict:
     """Create the three demo students. Returns {"course", "roles", "warnings", "students": {id: key}}.
     With reset, existing demo students are removed and recreated with the same keys."""
@@ -336,9 +350,11 @@ def seed(course: str | None = None, reset: bool = False, overrides: str | None =
     clock = _Clock()
     exam = (clock.now + timedelta(days=EXAM_IN_DAYS)).date().isoformat()
     keys = {}
+    _seed_class(clock)
     for sid, name in STUDENTS.items():
         # --reset keeps each demo student's key, so connector URLs keep working
         keys[sid] = learner.add_student(name, course_id, student_id=sid, key=old_keys.get(sid))["key"]
+        learner.add_students_to_class(CLASS_ID, [sid])
         service.update_profile(learner.get_student(sid), exam_date_override=exam)
         SEEDS[sid](sid, roles, clock)
         _flush()
