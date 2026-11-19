@@ -527,11 +527,9 @@ THROWAWAY_TABLES = ("student_profile", "student_assessment", "exchange_log", "pa
 
 
 def drop_student(student: str) -> None:
-    """Remove a throwaway check student and everything recorded for them."""
-    with learner._conn() as conn:
-        for table in THROWAWAY_TABLES:
-            conn.execute(f"DELETE FROM {table} WHERE student_id = ?", (student,))
-        conn.execute("DELETE FROM student WHERE id = ?", (student,))
+    """Remove a throwaway check student and every row about them (learner.delete_student finds every table)."""
+    if learner.get_student(student) is not None:
+        learner.delete_student(student)
 
 
 def new_student(student: str) -> str:
@@ -541,16 +539,47 @@ def new_student(student: str) -> str:
     return learner.add_student(student, course, student_id=student)["key"]
 
 
+async def rushing_student(url: str) -> None:
+    """Two answers faster than the question can be read (step 05s) start rushing mode: the plan offers a change in
+    plain words (data.line), not a comment on tiredness. Answers sent without a word count are never flagged."""
+    student = "check-rushing"
+    keyed = f"{url}?key={new_student(student)}"
+    try:
+        labels = {"question_depth": "surface", "engagement": "active", "words": 1}
+        await call(keyed, "tutor_turn", {"message": "Teach me PED", "client": "check_mcp", "node_ids": [PART],
+                                         "this_message": {**labels, "words": 4}})
+        got = None
+        for _ in range(4):      # answer each question at once, with a word count, until the offer comes
+            time.sleep(1.1)
+            pending = plan_json(student).get("pending") or {}
+            if not plan_json(student).get("mcq") or not pending.get("part_id"):
+                break
+            chosen, _ = letter(student, True)
+            got = await call(keyed, "tutor_turn", {"message": chosen, "client": "check_mcp", "this_message": labels,
+                                                   "answer": {"part_id": pending["part_id"], "type": "mcq", "choice": chosen}})
+            if "offer_choice" in moves(got):
+                break
+        state_now = learner.session_state(student) or {}
+        offer = next((s for s in (got or {}).get("plan", []) if s["move"] == "offer_choice"), {})
+        check(state_now.get("fatigue_reason") == "rushing" and state_now.get("rapid_guesses", 0) >= 2
+              and "rushing" in (offer.get("data") or {}).get("line", "")
+              and not {"tired", "tiredness", "fatigue", "fatigued"} & set((offer.get("data") or {}).get("line", "").lower().split()),
+              "two answers faster than the question can be read start rushing mode, offered as pacing (no tiredness wording)",
+              f"{json.dumps(moves(got or {}))} rapid={state_now.get('rapid_guesses')} reason={state_now.get('fatigue_reason')}")
+    finally:
+        drop_student(student)
+
+
 async def fatigued_student(url: str) -> None:
-    """A fatigued student whose link failed gets the correction, but no how-AI-works check and no literacy task
-    (step 05e). Fatigue comes from evidence recorded in time order: right answers, then 30 minutes of wrong ones."""
+    """A student in long-session mode whose link failed gets the correction, but no how-AI-works check and no literacy
+    task (step 05e). The mode comes from time on task (step 05s): right answers every few minutes for 55 minutes."""
     student = "check-fatigued"
     keyed = f"{url}?key={new_student(student)}"
     try:
         now = learner.parse_ts(learner.now_iso())
-        for minutes, part, score in ((-40, "ped_formula", 1), (-38, "yed_definition", 1), (-30, "ped_formula", 0),
-                                     (-24, "yed_definition", 0), (-18, "ped_formula", 0), (-12, "yed_definition", 0),
-                                     (-6, "ped_formula", 0)):
+        for minutes, part, score in ((-55, "ped_formula", 1), (-48, "yed_definition", 1), (-41, "ped_formula", 1),
+                                     (-34, "yed_definition", 1), (-27, "ped_formula", 1), (-20, "yed_definition", 1),
+                                     (-13, "ped_formula", 1), (-6, "yed_definition", 1)):
             learner.record_evidence(student, part, "explain_back", float(score),
                                     ts=learner._event_ts(now + timedelta(minutes=minutes)), apply="now")
         tired = bool((learner.session_state(student) or {}).get("fatigued"))
@@ -914,6 +943,7 @@ async def main(url: str, key: str, student: str) -> None:
     await secure_every(url)
     await how_ai_works(url)
     await fatigued_student(url)
+    await rushing_student(url)
     await waiting_task(url)
     await engagement_rules(url)
     await priorities(url)
