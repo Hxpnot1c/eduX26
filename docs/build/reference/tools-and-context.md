@@ -256,10 +256,12 @@ For students. Levels only, never numbers.
 - Weak links: confusable or causal pairs where one side is weak.
 - Reviews due.
 - AI-literacy trends, as directions over the last 14 days vs before: share of mechanism/transfer questions, share of constructive engagement, "just show me" rate.
+- *Levels* (step 05q): a part with no answer yet shows `taught_in_class` ("taught in class, not yet checked") if their class covered it, else `new`, never developing or secure. While the school's class estimate is on, `notice` carries a one-line note that their class's results shape where new topics start (also once with the first `tutor_turn` of a session).
 - `ai_literacy` (step 05e): each skill also has `skipped`, the tasks or checks left unanswered after their re-ask, which never lower a level (research fixes, 0003). `ask` and `verify`, each with the `level` of `ail_ask` and `ail_verify`; `how_ai_works`, the rollup `level` of its parts and `held`, the wrong ideas about AI the student still holds; and `question_features`: for each feature, the share of research questions showing it over the last `progress.trend_days` against before (`recent`, `before`, `direction` up, down or steady, as for `trends`). These parts are left out of the tree, levers and reviews above. From step 05y it also carries `formative` ("practice feedback, not a grade") and, for `ask`, `verify` and `how_ai_works`, `evidence`: `{checks, over_days}`, the counts the level rests on, so the chatbot can say "Verify: developing, from 4 checks over 2 weeks".
 - *(`study_pattern` was removed in step 05s: it came from the old performance-based detection and was a stored per-student trait.)*
 
 ### update_my_profile(interests?, exam_date_override?, answer_length?, add_assessment?, remove_assessment?)
+(Step 05q adds `covered_in_class {topics, when?}`: what their class has been taught, matched to nodes by id, spec code or name; matched and unmatched topics come back, and a future date or no match is refused. It applies to that student only.)
 Updates `student_profile`. `interests` and `answer_length` come back in every turn's `style`. The result's `profile` lists the student's upcoming `assessments` (`id`, `name`, `kind`, `date`).
 - `add_assessment {name, kind, date, topics}` (priorities): one of the student's own upcoming tests. It is stored in `student_assessment`.
   - `kind` is `homework`, `class_test` or `mock`.

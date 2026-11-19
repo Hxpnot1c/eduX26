@@ -95,5 +95,6 @@ The result that would make us revisit this.
 | [0011](0011-data-handling.md) | Opaque ids, hashed keys, and delete, export and retention | Proposed |
 | [0013](0013-fatigue-as-pacing.md) | Fatigue becomes pacing: time on task and rapid guesses | Proposed |
 | [0014](0014-formative-literacy-and-ask-scoring.md) | Ask and Verify are formative practice feedback, and asking for sources earns nothing alone | Proposed |
+| [0015](0015-coverage-and-starting-points.md) | Classes, coverage and starting points | Proposed |
 
 Each later record is added to this table in the pull request that introduces it.

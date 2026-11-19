@@ -2,6 +2,18 @@
 
 Branch `build/class-coverage-and-starting-points`, from `main` after step 05p.
 
+## Changes agreed on 18 November (these win over the text below)
+Vishnu's decisions replace the fixed covered prior and add a cap and an honest display. Decision [0015](../../decisions/0015-coverage-and-starting-points.md) has the reasoning.
+- **A coverage boost, not a fixed prior.** A covered part's starting point is its normal starting point (the prior with the difficulty shift) **plus `coverage.boost_logit = 0.5` in log-odds** (0.30 becomes about 0.41; a hard part 0.24 about 0.34; an easy one 0.36 about 0.48). `coverage.prior_default` is gone.
+- **Class estimate:** off by default, school instruction only, at least 5 students. When on, it replaces the boost for that class, bounded below at the boosted start minus `coverage.class_max_down` (0.075).
+- **Combined cap:** the starting point after coverage, the personal sector adjustment and the prerequisite shift is at most `starting.cap = 0.65` (a judgement call). Answers can take a part anywhere.
+- **Display:** until a part has its first answer in Synapse it never shows "developing" or "secure", whatever its starting number. A covered part shows "taught in class, not yet checked" (`taught_in_class`); any other shows "new". The planner still uses the number.
+- The forgetting clock from `taught_on` is as specified. **One addition:** a part taught in class and never answered here forgets only as far as where it would have started untaught (a minimal decay-to-prior for parts with no answers). Without it a part taught three weeks ago, with a 2-day half-life, would sit at 0.00, weaker than an untaught one (0.30). The full decay-to-prior change for answered parts stays held.
+- **Feed-forward** uses only prerequisites the student has answered on; an unanswered prerequisite contributes 0, because a covered dependent already decays from its own taught date and counting both would penalise it twice.
+
+## Built (this pull request) and not
+Built: classes, class and student coverage (migration 016), CLI (`class add`, `class add-students`, `coverage set | import | export`), `update_my_profile(covered_in_class)`, `starting_point` with the boost, class estimate, sector offsets and feed-forward, the cap, the display rule, the taught-in-class reviews, the explain-back guess by number of points, the demo class, the student notice, and 36 tests. **Not built here:** the teacher mock-up's tick-list (the JSON export is ready for it), and per-class views.
+
 ## What
 1. **Classes.**
    - A `class` table: `id`, `name`, `course_pack`.
@@ -126,7 +138,7 @@ With it off, the coverage record still works fully: covered parts start at the d
 ## Settings
 ```toml
 [coverage]
-prior_default = 0.50             # judgement call, starting value
+# (prior_default was replaced by boost_logit = 0.5 on 18 November; see above)
 class_k = 25                     # from research: Simpson et al. (2024) spread plus our simulation
 class_estimate_enabled = false   # off by default: on only with the school's written instruction (personalisation.md §7)
 class_min_students = 5           # from personalisation.md §5/§7: minimum cell size

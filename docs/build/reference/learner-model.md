@@ -29,6 +29,17 @@ A part the student hasn't met starts at `bkt.prior` with `decay.base_half_life_d
 - The starting half-life is `base_half_life_days × (1 − half_life_shift × shift)`.
 - So hard parts start lower and are forgotten faster.
 
+### Where a part starts for this student (step 05q)
+`learner.starting_point(student, part, at)` applies to a part with no evidence yet. In order:
+1. **Base:** the normal start above. If the student's class (or the student, by `covered_in_class`) has been taught the part by `at`, it is raised by `coverage.boost_logit` (0.5) in log-odds. With the school's class estimate on, the class's own shift replaces the boost's size, never starting the part more than `coverage.class_max_down` (0.075) below the boosted start, and only with at least `coverage.class_min_students` (5) students.
+2. **Plus the student's starting adjustment**, one log-odds offset for covered parts and a separate one for not-covered parts, which never mix. Built from their first answer on each part when it came before any teaching (a pre-question, an "I know this" check, an explain-back), in sessions before the current one: `n / (n + starting.k) × (logit(smoothed score) − logit(smoothed expected))`, both smoothed as `(sum + 0.5) / (n + 1)`, within ±`starting.bound_logits` (1.5). "Teaching" is an earlier exchange on the part with a worked example, a hint or "just show me".
+3. **Plus the prerequisite shift:** `propagation.forward_weight × mean over its direct prerequisites of (logit p_now − logit starting point)`, counting only prerequisites the student has answered on (the others contribute 0). One hop; zero once the part has its own evidence.
+4. Back to a probability within [0.01, `starting.cap`] (0.65); answers can take a part anywhere.
+
+AI-literacy parts get none of this. **The forgetting clock starts at the date the part was taught** (`taught_on`), and a covered part with no answer is due for review (reason `taught_in_class`) at `taught_on` + the share gap. Because the half-life is short, a part taught weeks ago and never answered would decay to nothing, weaker than an untaught one, so **its forgetting stops at its normal start**; the same floor applies to its first answer's `p_before`. Coverage is profile, not events: a coverage row counts for an event only from its `taught_on` date, so a rebuild gives the same state.
+
+**What the student sees.** Until a part has its first answer it never shows developing or secure: a covered part shows `taught_in_class` ("taught in class, not yet checked"), any other shows `new` (`learner.shown_level`, `shown_rollup`). The planner uses the number.
+
 Later, a cross-student estimate (`learner.difficulty_signal`, e.g. first-attempt failure rates) is blended in at share `difficulty.w_cross`. It's 0 until there is enough evidence across students.
 
 ## Current p_known (decay)

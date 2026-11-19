@@ -208,3 +208,14 @@ CREATE INDEX idx_literacy_skip_student ON literacy_skip(student_id, part_id);
 - **Message text is never stored.** The `prompt_text` column and `STORE_PROMPTS` are gone.
 - **Delete, export, retention** (`python -m edux.cli`): `delete-student --student <id> --yes` removes every row about a student from every table that has a `student_id` column, found from the schema so a table added later is covered; `export-student` writes all of it as JSON (never the key or its hash); `leave-student` marks a student as having left; `purge` deletes call-log rows older than `retention.call_log_days` and students who left more than `retention.after_leaving_days` ago.
 - **Event sourcing and deletion:** deleting a student deletes their events, so there is nothing to replay; other students' state is unaffected, and a rebuild after a deletion gives the same state for everyone else (tested).
+
+## Classes and coverage (step 05q, migration 016)
+```sql
+CREATE TABLE class (id TEXT PRIMARY KEY, name TEXT NOT NULL, course_pack TEXT, created TEXT NOT NULL);
+-- student.class_id (nullable): one class per student row; a student in two courses has two keys
+CREATE TABLE class_coverage (class_id TEXT NOT NULL, node_id TEXT NOT NULL, taught_on TEXT NOT NULL, set_by TEXT NOT NULL,
+  PRIMARY KEY (class_id, node_id));      -- set_by: cli, csv, mockup or seed; a node marks all its parts
+CREATE TABLE student_coverage (student_id TEXT NOT NULL, node_id TEXT NOT NULL, taught_on TEXT NOT NULL, set_by TEXT NOT NULL,
+  PRIMARY KEY (student_id, node_id));    -- the student's own say (update_my_profile covered_in_class), set_by 'student'
+```
+Coverage is profile, not events (like assessments): a rebuild uses the rows as they are now, and a row counts for an event only from its `taught_on` date. `student_coverage` has a `student_id` column, so `delete-student` and `export-student` cover it without a change.
