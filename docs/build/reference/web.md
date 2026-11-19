@@ -47,3 +47,7 @@ Minimum cell `coverage.class_min_students` (5). A class under the minimum: cover
 
 ## Changes a teacher makes, and the audit trail
 `edux/web/actions.py` holds the three operations. Every change writes one `teacher_action` row (migration 021): time, teacher id, class, what, detail. A deleted teacher's id becomes "former teacher". `teachers.recent_actions(class_id)` feeds the "Recent changes" list.
+
+## Demo design pages (decision 0031)
+
+In demo mode only (`EDUX_DEMO_TEACHER=1`): `/teacher` returns `static/demo/synapse-teacher-demo.html` and `/me/demo` returns `static/demo/synapse-student-demo.html`, byte for byte, with their own Content-Security-Policy (inline script and style, Google Fonts, `data:` images); every other route keeps the site policy. A successful `#link=` swap on `/me` returns `"demo": true` and the page goes on to `/me/demo`. With demo mode off, `/me/demo` is 404, and `/static/demo/*` is always 404.
