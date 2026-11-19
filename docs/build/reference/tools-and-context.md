@@ -209,7 +209,7 @@ Fewer moves means a shorter server instructions text and fewer cues to keep apar
   "focus": [{"id": "ped_formula", "name": "PED: formula and calculation", "level": "new"}]
 }
 ```
-- `score_next`: for each part a step asks about (and an `offer_choice`'s quick parts), except a pre-question or `ask_mcq` (step 05d), which are answered by option: the points to tick in the student's next answer.
+- `score_next`: for each part a step asks about (and an `offer_choice`'s quick parts), except a pre-question or `ask_mcq` (step 05d), which are answered by option: the points to tick in the student's next answer. When the reply **ends in** an `ask_mcq`, no earlier step contributes points either (a `reteach` before it, for example): the next answer is a letter, and the points cost about 300 characters of a result that is near its limit (found by the soak test, 19 Nov).
 - `data.terms` (step 05c), once per plan, on its first step on a part: names and aliases of the steps' parts, then of known parts (developing or above) linked to them, then of other known parts by importance, up to `limits.terms`. The chatbot doesn't introduce course terms outside it, and explains in plain words when one is needed.
 - `score_next` ids are letters, `a`, `b`, `c`… per part in point order (step 05c). A research turn's `score_next` always includes `ail_verify`'s ticks (step 05e).
 - `style`, sent only on the first `tutor_turn` of a session or when `client`, `interests` or `max_words` changed since it was last sent (step 05c):

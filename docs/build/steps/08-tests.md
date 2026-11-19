@@ -20,12 +20,20 @@ Several audit findings need a test to prove the fix and to stop it breaking agai
 ```bash
 .venv/bin/pip install -e '.[dev]'
 .venv/bin/python -m pytest -q
+.venv/bin/ruff check . && .venv/bin/ruff format --check . && .venv/bin/mypy
+.venv/bin/coverage run -m pytest -q && .venv/bin/coverage report      # fails under 90%
 ```
+
+## Continuous integration (19 Nov)
+`.github/workflows/ci.yml` runs on every push and every pull request: a **lint** job (`ruff check`, `ruff format --check`, `mypy`) on Python 3.11, and a **test** job (`coverage run -m pytest`, then `coverage report`, which fails under `fail_under = 90` in `pyproject.toml`) on Python 3.11 and 3.14. Settings for ruff (E, F, I, UP, B at line length 140), mypy and coverage are in `pyproject.toml`; `UP017`, `B905`, `B007` and `E731` are ignored as style noise, with a reason beside each. All of it passes locally on 3.11 and 3.14.
+
+**Coverage was 70% (statements, measured with coverage.py, not branches) and is now 94%.** What moved it: in-process tests of the command lines (`test_cli.py`, `test_ingest.py`, `test_demo.py`), the HTTP key check and tool adapters (`test_server.py`), configuration errors (`test_settings_validation.py`), service and learner refusals (`test_service_validation.py`, `test_learner_validation.py`), and a soak test (`test_soak.py`) that answers the questions it is asked, which reaches the teaching branches of `plan.py` that scripted tests do not. No `# pragma: no cover` was needed; the only exclusions are `if __name__ == "__main__":` and `raise NotImplementedError`. The soak test found one real waste: a reteach before a multiple-choice question still sent its points in `score_next` (300 characters), pushing about 1% of replies over 2,400 characters; fixed in `plan.score_next`.
 
 ## Done when
 - All tests pass on a clean checkout.
 - `pytest` prints the instruction word count (`-s` shows it).
+- `ruff check`, `ruff format --check` and `mypy` pass, and coverage is at least 90% (CI enforces all four).
 - `scripts/check_mcp.py` is unchanged and still passes.
 
 ## Not in this step
-CI (GitHub Actions), the MCP round-trip tests and the tricky-message set. They stay in [Later](later.md).
+The MCP round-trip tests and the tricky-message set. They stay in [Later](later.md).

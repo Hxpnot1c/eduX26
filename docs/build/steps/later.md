@@ -86,7 +86,7 @@ pytest for:
 - fatigue or getting stuck in the middle of a part;
 - a message that needs a course term the student hasn't met.
 
-Add CI (GitHub Actions) once tests exist.
+CI (GitHub Actions) is done: see `.github/workflows/ci.yml` and step 08.
 
 ### 09 Student page (`build/09-student-page`)
 A simple read-only page at `/me?key=` showing:
