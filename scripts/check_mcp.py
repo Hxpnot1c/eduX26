@@ -32,6 +32,10 @@ example-mini pack loaded and the demo students seeded. It:
 - checks rebuild gives identical state for every demo student and tutor_turn's median server time is under 100 ms;
 - resets the demo students again, so the demo is left as seeded (--keep leaves the run's events).
 Exits non-zero if any check fails. The key is read from the database when --key is not given.
+
+The question mix (decision 0028: after a multiple-choice question, the next two are open) changes the loop above, so
+start the server, and run this script, with EDUX_QUESTION_GAP=0 for the full run. With the gap on (the default), the
+script runs only the question-mix check: a multiple-choice question, then open questions on the same points.
 """
 
 from __future__ import annotations
@@ -1614,7 +1618,67 @@ async def point_ids(keyed: str, student: str) -> None:
     check(got.get("ok") is False and max_evidence_id() == before, "a point id from another part is refused", got.get("error", ""))
 
 
+async def question_mix(url: str) -> None:
+    """Decision 0028, against the server's own gap (EDUX_QUESTION_GAP or questions.min_open_between_mcq): after a
+    multiple-choice question the next ones are open, each on one point and scored on that point."""
+    from edux import plan as plan_module
+    from edux import service
+
+    gap = service.question_gap()
+    student = "check-mix"
+    keyed = f"{url}?key={new_student(student)}"
+    labels = {"question_depth": "mechanism", "engagement": "active"}
+    kinds: list[str] = []
+    try:
+        out = await call(
+            keyed, "tutor_turn", {"message": "Teach me the PED formula", "client": "check_mcp", "node_ids": [PART], "this_message": labels}
+        )
+        for _ in range(8):
+            saved = plan_json(student)
+            step = plan_module.asking_step(saved["plan"])
+            kind = plan_module.counts_as(step)
+            if kind:
+                kinds.append(kind)
+            if step is None:
+                break
+            time.sleep(1.1)
+            if step["move"] == "ask_mcq":
+                chosen, _ = letter(student, True)
+                answer = {"part_id": step["part_id"], "type": "mcq", "choice": chosen}
+            else:
+                check(
+                    len(out["score_next"].get(step["part_id"], []))
+                    == (1 if step["data"].get("point_id") else len(out["score_next"].get(step["part_id"], []))),
+                    "an open question on one point is ticked on that point's letter only",
+                    json.dumps(out["score_next"]),
+                )
+                answer = {
+                    "part_id": step["part_id"],
+                    "type": step["data"]["answer_type"],
+                    "points_met": [p["id"] for p in out["score_next"].get(step["part_id"], [])],
+                }
+            out = await call(
+                keyed,
+                "tutor_turn",
+                {"message": "answer", "client": "check_mcp", "node_ids": [PART], "this_message": labels, "answer": answer},
+            )
+        ok = "mcq" in kinds and all(
+            kinds[i + 1 : i + 1 + gap] == ["open"] * len(kinds[i + 1 : i + 1 + gap]) for i, k in enumerate(kinds) if k == "mcq"
+        )
+        check(ok and (gap == 0 or "open" in kinds), f"after a multiple-choice question the next {gap} are open", " ".join(kinds))
+    finally:
+        drop_student(student)
+
+
 async def main(url: str, key: str, student: str) -> None:
+    from edux import service
+
+    if service.question_gap():
+        print(
+            f"question gap {service.question_gap()}: running the question-mix check only (EDUX_QUESTION_GAP=0 on the server and here for the full run)"
+        )
+        await question_mix(url)
+        return
     keyed = f"{url}?key={key}"
     async with streamablehttp_client(keyed) as (read, write, _), ClientSession(read, write) as session:
         init = await session.initialize()
