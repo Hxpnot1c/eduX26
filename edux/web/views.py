@@ -261,7 +261,9 @@ def _class_overlay(members: list[str], at: str, minimum: int) -> dict[str, dict]
                 "fade": 1.0,
             }
             continue
-        practised = sum(learner.shown_level(sid, part, at) in ("developing", "secure") for sid in who)
+        shown = [learner.shown_level(sid, part, at) for sid in who]
+        practised = sum(lv in ("developing", "secure") for lv in shown)
+        fading = shown.count("needs_review")  # answered right before, now faded below new (decision 0025)
         share = practised / len(who)
         band = "few" if share < BAND_LOW else "mixed" if share <= BAND_HIGH else "most"
         last = max(who.values())[:10]
@@ -270,7 +272,10 @@ def _class_overlay(members: list[str], at: str, minimum: int) -> dict[str, dict]
             "level": BAND_LEVEL[band],
             "band": band,
             "label": BAND_WORDS[band],
-            "note": f"{len(who)} students have answered. Latest answer {last}." + (" Thin: this rests on few students." if thin else ""),
+            "note": f"{len(who)} students have answered. Latest answer {last}."
+            # never the count itself: with the answered count it would show a small group by subtraction (decision 0024)
+            + (f" {minimum} or more need review: they got it right before and it has faded." if fading >= minimum else "")
+            + (" Thin: this rests on few students." if thin else ""),
             "fade": 0.6 if thin else 1.0,
         }
     return overlay
