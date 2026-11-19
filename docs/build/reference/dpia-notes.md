@@ -15,6 +15,12 @@
 | Derived state: understanding per part, forgetting clock, held misconceptions, review queue, approaches tried, session signals | `part_state` and the derived tables | Choose what to teach and review; rebuilt from the events | Core |
 | The plan last issued and the question waiting for an answer | `issued_plan` | Score the next answer | Core |
 | Skipped AI-literacy tasks | `literacy_skip` | A skip is missing, not wrong | Core |
+| Classes and what each class has been taught (class id, student membership, part, date taught) | `class`, `class_coverage`, `student_coverage` | Start a student's estimate for a part their class has covered; show "taught in class, not yet checked" | Optional (needs a teacher to set up); the class-level estimate is off unless the school instructs in writing, and never below 5 students |
+| Cached per-student starting offsets, by session | `learner_offset_cache` | Speed (a rebuild of derived state can recreate it) | Operational; deleted with the student |
+| "How sure are you?" ratings (guess, fairly sure, certain) paired with the answer they follow | `confidence_log` | Show the student their own calibration; never feeds the understanding estimate | Optional (the student can skip) |
+| Per-answer timing: seconds taken and word counts (never the text, never keystrokes) | `exchange_log`, `evidence_derived.rapid` | Tell a quick guess from a considered answer; suggest a break after a long session | Core; **not biometric and not used to infer emotion**. See decision 0013 |
+| Reminder preference | `student_profile.reminders` | Opt-in reminders | Optional, student-set |
+| Find-the-error practice results (kind of item, hit or miss) | `evidence_log` (types `find_error`, `ail_find_error`) | Practice feedback on spotting mistakes; **off unless switched on** | Optional |
 | Student-set: interests (free text), exam date, answer length | `student_profile` | Examples and pacing the student asked for | Optional, student-set |
 | Student-set: their own tests (name, kind, date, topics) | `student_assessment` | Order reviews towards their tests | Optional, student-set |
 | Call log: time, tool, duration, result size, error text (cut to 200 characters) | `call_log` | Performance and faults | Operational |
@@ -40,7 +46,7 @@
 | Storage limitation (Art. 5(1)(e)) | Retention settings and `purge` |
 | Erasure and access (Art. 17, 20) | `delete-student`, `export-student` |
 | Profiling off by default (Children's Code, Standard 12) | Learning-rate offset off; class estimates off |
-| Transparency (Standard 11) | Student notice planned (step C3); not yet written **[open]** |
+| Transparency (Standard 11) | A plain notice is in `text/chatbot_setup.md` (register C11, #66): what is kept, formative not a grade, no mood inference, how to delete. Wording needs teacher and DPO review **[open]** |
 | Detrimental use, nudges (Standards 5 and 13) | Reminders opt-in, no streaks, no guilt wording (step 05u) |
 
 ## Open items
