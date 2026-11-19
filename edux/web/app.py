@@ -10,6 +10,7 @@ pupil's address is never sent to a font or script host."""
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from starlette.applications import Starlette
@@ -20,7 +21,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from edux import learner, teachers
-from edux.web import views
+from edux.web import actions, views
 
 STATIC = Path(__file__).resolve().parent / "static"
 
@@ -131,6 +132,78 @@ async def api_teacher_class(request: Request) -> Response:
     return JSONResponse(views.class_summary(class_id))
 
 
+MAX_BODY = 16_000
+
+
+async def _teacher_class(request: Request) -> tuple[dict, str] | Response:
+    """The signed-in teacher and the class from the path, or the response to send instead (401, 400, 403 or 404)."""
+    refused = refuse_url_key(request)
+    if refused:
+        return refused
+    found = principal(request)
+    if found is None:
+        return unauthorised()
+    role, who = found
+    if role != "teacher":
+        return JSONResponse({"error": "this page is for teachers"}, status_code=403)
+    class_id = request.path_params["class_id"]
+    if not teachers.may_see(who["id"], class_id):
+        return JSONResponse({"error": "no such class"}, status_code=404)
+    return who, class_id
+
+
+async def _json_body(request: Request) -> dict | Response:
+    raw = await request.body()
+    if len(raw) > MAX_BODY:
+        return JSONResponse({"error": "that request is too large"}, status_code=413)
+    try:
+        body = json.loads(raw or b"{}")
+    except ValueError:
+        return JSONResponse({"error": "the request body must be JSON"}, status_code=400)
+    return body if isinstance(body, dict) else JSONResponse({"error": "the request body must be a JSON object"}, status_code=400)
+
+
+def _acted(class_id: str, ok: bool, error: str | None) -> Response:
+    if not ok:
+        return JSONResponse({"error": error}, status_code=400)
+    return JSONResponse(views.class_summary(class_id))
+
+
+async def api_teacher_assessment(request: Request) -> Response:
+    """Set a test or assignment for the whole class."""
+    got = await _teacher_class(request)
+    if isinstance(got, Response):
+        return got
+    teacher, class_id = got
+    body = await _json_body(request)
+    if isinstance(body, Response):
+        return body
+    return _acted(class_id, *actions.set_assessment(teacher["id"], class_id, body))
+
+
+async def api_teacher_assessment_remove(request: Request) -> Response:
+    got = await _teacher_class(request)
+    if isinstance(got, Response):
+        return got
+    teacher, class_id = got
+    body = await _json_body(request)
+    if isinstance(body, Response):
+        return body
+    return _acted(class_id, *actions.remove_assessment(teacher["id"], class_id, body.get("id")))
+
+
+async def api_teacher_coverage(request: Request) -> Response:
+    """Mark sections as taught to the class."""
+    got = await _teacher_class(request)
+    if isinstance(got, Response):
+        return got
+    teacher, class_id = got
+    body = await _json_body(request)
+    if isinstance(body, Response):
+        return body
+    return _acted(class_id, *actions.set_coverage(teacher["id"], class_id, body))
+
+
 async def api_public_map(request: Request) -> Response:
     """The map of the synthetic example pack, with no key, if web.public_example_map is on. Any other pack: 404."""
     if not learner._settings().web.public_example_map:
@@ -181,6 +254,9 @@ def build_web_app() -> ASGIApp:
     routes.append(Route("/api/public/map", api_public_map, methods=["GET"]))
     routes.append(Route("/api/me", api_me, methods=["GET"]))
     routes.append(Route("/api/teacher/class/{class_id}", api_teacher_class, methods=["GET"]))
+    routes.append(Route("/api/teacher/class/{class_id}/assessments", api_teacher_assessment, methods=["POST"]))
+    routes.append(Route("/api/teacher/class/{class_id}/assessments/remove", api_teacher_assessment_remove, methods=["POST"]))
+    routes.append(Route("/api/teacher/class/{class_id}/coverage", api_teacher_coverage, methods=["POST"]))
     routes.append(Mount("/static", StaticFiles(directory=STATIC), name="static"))
     return _Headers(Starlette(routes=routes))
 

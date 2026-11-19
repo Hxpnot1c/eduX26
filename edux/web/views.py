@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from edux import graph, learner
+from edux import graph, learner, teachers
 
 EXAMPLE_COURSE_ID = "example-mini"  # the synthetic pack that may be shown without a key (web.public_example_map)
 EDGE_TYPES = ("prerequisite", "analogous", "confusable", "causal")
@@ -326,7 +326,7 @@ def _help_seeking(members: list[str], at: str, minimum: int) -> dict | None:
 def _class_assessments(class_id: str, at: str) -> list[dict]:
     today = learner.parse_ts(at).date().isoformat()
     rows = learner._conn().execute(
-        "SELECT DISTINCT name, kind, date FROM student_assessment WHERE class_id = ? AND date >= ? ORDER BY date, name", (class_id, today)
+        "SELECT id, name, kind, date FROM student_assessment WHERE class_id = ? AND date >= ? ORDER BY date, name, id", (class_id, today)
     )
     return [dict(r) for r in rows]
 
@@ -360,6 +360,7 @@ def class_summary(class_id: str, at: str | None = None) -> dict | None:
         "coverage": _coverage(class_id),
         "assessments": _class_assessments(class_id, at),
         "seeded": any(m.startswith("demo-") for m in members),
+        "recent_changes": teachers.recent_actions(class_id),
     }
     if len(members) < minimum:
         return summary | {"enough": False, "overlay": {}, "wrong_ideas": [], "help_seeking": None}
