@@ -102,5 +102,6 @@ The result that would make us revisit this.
 | [0019](0019-confidence-and-calibration.md) | Ask "how sure are you?" after a check and show a calibration line | Proposed |
 | [0020](0020-keep-the-review-threshold.md) | Keep review_when_below at 0.50; label it a judgement call | Proposed |
 | [0021](0021-find-the-error-build.md) | Build find-the-error practice, off by default | Proposed |
+| [0022](0022-aided-and-unaided-evidence-scoping.md) | Aided and unaided evidence: scoping (not built) | Held |
 
 Each later record is added to this table in the pull request that introduces it.
